@@ -4,6 +4,20 @@ All notable changes to `@am-fernandes/ui` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] — 2026-05-17
+
+### Breaking
+- `Button` no longer supports `size="sm"` or `size="lg"`. Only `default` and `icon` (shape) sizes remain. Migration: drop the prop (defaults to `default`) or replace with custom Tailwind classes via `className`.
+- `SidebarMenuButton` no longer supports `size="sm"` or `size="lg"`. Only `default` remains.
+
+### Added
+- `TimePicker` primitive (`src/forms/time-picker.tsx`): lightweight wrapper around native `<input type="time">` with our Input styling. Defaults to 24h pt-BR via `lang="pt-BR"` and minute precision (`step={60}`). Both overridable.
+- `Typography` primitive (`src/primitives/typography.tsx`): polymorphic component with 5 semantic variants (`display`, `title`, `subtitle`, `body`, `caption`). Each variant has a default semantic element, overridable via `as` prop.
+- `src/docs/Typography.mdx` updated with `## Componente Typography` section documenting the new primitive.
+
+### Changed
+- `Calendar` (`src/forms/calendar.tsx`) now defaults its `locale` prop to `ptBR` (imported from `date-fns/locale`). Consumers can override (e.g., pass `enUS`).
+
 ## [1.0.0] — 2026-05-17
 
 ### Added
