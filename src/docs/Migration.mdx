@@ -1,0 +1,86 @@
+import { Meta } from "@storybook/addon-docs/blocks"
+
+<Meta title="Migration" />
+
+# Migração de apps para @am-fernandes/ui
+
+Guia passo-a-passo para migrar apps internas que hoje carregam cópias locais de shadcn/ui (`src/components/ui/*.tsx`) para o pacote `@am-fernandes/ui`. O foco principal são `requerimento-contratos-pf` e `assistencia-tecnica`, mas o roteiro se aplica a qualquer app interno.
+
+## Por que migrar
+
+- **Consistência visual** entre todas as apps internas — mesma paleta, mesmos raios, mesma tipografia.
+- **Fonte única de verdade** para componentes; bugs e melhorias chegam a todas as apps com `bun update`.
+- **Menos drift** — sem variantes locais incompatíveis, sem `lib/utils.ts` divergente, sem `lib/currency.ts` duplicado.
+
+## Pré-requisitos
+
+A app que vai consumir o pacote deve ter:
+
+- **React 19** (peer-dep estrita).
+- **Tailwind CSS v4** (tokens do pacote dependem do bloco `@theme`).
+- **Bun** como package manager (ou um compatível com `.npmrc` do GitHub Packages).
+- Acesso ao registro privado `@am-fernandes` no GitHub Packages (token `GITHUB_TOKEN` com escopo `read:packages`).
+
+## Passo a passo
+
+1. **Adicionar o registro privado ao `.npmrc`** (uma vez por máquina ou no repo da app):
+
+   ```bash
+   # ~/.npmrc  (ou .npmrc no root da app)
+   @am-fernandes:registry=https://npm.pkg.github.com
+   //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+   ```
+
+2. **Instalar o pacote** e remover dependências que agora viajam como transitivas:
+
+   ```bash
+   bun add @am-fernandes/ui
+
+   # Remova deps diretas que o pacote já carrega (exemplos)
+   bun remove @radix-ui/react-dialog @radix-ui/react-popover \
+              class-variance-authority clsx tailwind-merge \
+              react-day-picker date-fns sonner input-otp
+   ```
+
+3. **Atualizar o CSS principal da app** para importar fonte e tokens do pacote, e remover o bloco local de tokens:
+
+   ```css
+   /* src/index.css */
+   @import "@am-fernandes/ui/fonts";
+   @import "@am-fernandes/ui/styles";
+
+   /* o pacote agora é dono do bloco @theme com cores, raios e tipografia.
+      Remova src/styles/globals.css (ou equivalente) que duplica esses tokens. */
+   ```
+
+4. **Substituir os imports de componentes**, uma pasta por vez. Exports nomeados são preservados — só muda o caminho:
+
+   ```bash
+   # Exemplo: trocar o shadcn local pelo pacote
+   find src -type f -name '*.tsx' -exec sed -i 's|from "@/components/ui/button"|from "@am-fernandes/ui"|g' {} +
+   find src -type f -name '*.tsx' -exec sed -i 's|from "@/components/ui/dialog"|from "@am-fernandes/ui"|g' {} +
+   # ...repita para cada componente.
+   ```
+
+   Após o codemod, agrupe imports duplicados manualmente (vários `from "@am-fernandes/ui"` no mesmo arquivo). O `biome check --apply` resolve a maior parte automaticamente.
+
+5. **Apagar os arquivos locais** em `src/components/ui/*.tsx`. Rode `bun run typecheck` e resolva os últimos holdouts (geralmente um botão custom ou um wrapper de form).
+
+   ```bash
+   rm -rf src/components/ui
+   bun run typecheck
+   ```
+
+6. **Smoke-test em dev mode** uma página representativa (ex.: a tela mais densa em formulários) antes de abrir o PR de merge.
+
+## Ordem de migração recomendada
+
+Prefira páginas com **poucos variants customizados** primeiro — telas de listagem, telas de detalhe somente-leitura, dashboards simples. Deixe páginas **forms-heavy** para o fim: elas tocam mais componentes (`form`, `field`, `select`, `combobox`, `date-input`, `currency-input`, etc.) e são onde aparecem as divergências sutis de behavior.
+
+## Gotchas conhecidos
+
+- **`<Button confirm>` virou `<ConfirmButton>`.** O fluxo de confirmação do Button foi extraído para um componente dedicado. Apps que usavam `<Button confirm ...>` devem trocar para `<ConfirmButton confirmTitle="..." confirmDescription="..." onConfirm={...}>`. A assinatura é preservada o mais próximo possível.
+- **Light-only.** O pacote não suporta dark mode por escolha de produto. Se a app tinha toggles `.dark` na raiz, remova-os; as classes Tailwind continuam funcionando sem o seletor.
+- **Helpers de moeda.** As funções `toCents`, `fromCents`, `percentOfTotal`, `percentFromValue`, `centsToDisplay` e `formatBRL` agora são exportadas de `@am-fernandes/ui`. Apps que mantinham um `src/lib/currency.ts` próprio devem deletá-lo e importar do pacote — a aritmética sobre inteiros em centavos é idêntica.
+- **`cn` único.** O `cn` do pacote já combina `clsx` + `tailwind-merge`. Não mantenha um `lib/utils.ts` local exportando outro `cn` (causa divergência sutil em ordem de classes).
+- **Tokens, não hex.** Não hardcode cores no JSX (`bg-[#000]`). Use sempre o token (`bg-primary`, `text-muted-foreground`); senão a app fica fora de sincronia quando a paleta evoluir.
