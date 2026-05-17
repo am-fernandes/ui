@@ -143,6 +143,16 @@ export { Tabs, TabsContent, TabsList, TabsTrigger } from "./navigation/tabs"
 
 // Forms
 export {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  useFormField,
+} from "./forms/form"
+export {
   Select,
   SelectContent,
   SelectGroup,
