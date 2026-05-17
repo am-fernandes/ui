@@ -1,0 +1,42 @@
+import { Meta } from "@storybook/addon-docs/blocks"
+
+<Meta title="Foundations/Iconography" />
+
+# Iconography
+
+Biblioteca oficial: **[Lucide React](https://lucide.dev)** (`lucide-react`). Cada componente do DS que aceita ícone segue o padrão de slot do Radix (`[&_svg]:size-4 [&_svg]:shrink-0`) — ícones se ajustam ao container automaticamente.
+
+## Instalação no app consumidor
+
+```bash
+bun add lucide-react
+```
+
+Não é peer-dep do `@am-fernandes/ui` (cada app escolhe sua versão de Lucide; mudanças entre minor releases são compatíveis).
+
+## Tamanhos padronizados
+
+| Contexto | Classe | Pixels |
+|---|---|---|
+| Inline (button, input) | `size-4` | 16 |
+| Listagem, badge | `size-3.5` | 14 |
+| Toolbar, navegação | `size-5` | 20 |
+| Header / page | `size-6` | 24 |
+| Empty state | `size-12` | 48 |
+
+## Convenções
+
+- Use `strokeWidth={2}` (padrão Lucide).
+- Color via `currentColor` — não passe `color={...}` na prop; deixe o container ditar.
+- Evite ícones decorativos sem `aria-hidden`. Para ícones com significado, use `aria-label` no elemento pai.
+
+## Exemplo
+
+```tsx
+import { Search } from "lucide-react"
+
+<button className="inline-flex items-center gap-2">
+  <Search className="size-4" aria-hidden />
+  Buscar
+</button>
+```
