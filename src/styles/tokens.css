@@ -1,0 +1,172 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: "Google Sans Flex", sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  /* Status badge palettes — tinted bg, WCAG AA text, medium border */
+  --color-status-success-bg: var(--status-success-bg);
+  --color-status-success-text: var(--status-success-text);
+  --color-status-success-border: var(--status-success-border);
+  --color-status-warning-bg: var(--status-warning-bg);
+  --color-status-warning-text: var(--status-warning-text);
+  --color-status-warning-border: var(--status-warning-border);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-status-info-text: var(--status-info-text);
+  --color-status-info-border: var(--status-info-border);
+  --color-status-destructive-bg: var(--status-destructive-bg);
+  --color-status-destructive-text: var(--status-destructive-text);
+  --color-status-destructive-border: var(--status-destructive-border);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.5rem;
+
+  /* Backgrounds & Foregrounds */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.203 0.013 252);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.203 0.013 252);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.203 0.013 252);
+
+  /* Primary: preto 100% */
+  --primary: oklch(0 0 0);
+  --primary-foreground: oklch(1 0 0);
+
+  /* Secondary: branco */
+  --secondary: oklch(1 0 0);
+  --secondary-foreground: oklch(0 0 0);
+
+  /* Muted & Accent */
+  --muted: oklch(0.934 0.008 252);
+  --muted-foreground: oklch(0.185 0 0);
+  --accent: oklch(0.968 0.005 252);
+  --accent-foreground: oklch(0.203 0.013 252);
+
+  /* Destructive: vermelho puro #ff0000 (0 100% 50%) */
+  --destructive: oklch(0.628 0.258 29.2);
+  --destructive-foreground: oklch(1 0 0);
+
+  /* Success: verde #6d8d0b (74 85% 30%) */
+  --success: oklch(0.497 0.135 120.7);
+  --success-foreground: oklch(1 0 0);
+
+  /* Warning: amarelo #ebcd17 (49 86% 51%) */
+  --warning: oklch(0.868 0.167 92.6);
+  --warning-foreground: oklch(0 0 0);
+
+  /* Info: azul claro #03a9f4 (199 98% 48%) */
+  --info: oklch(0.668 0.151 236.3);
+  --info-foreground: oklch(1 0 0);
+
+  /* Status badge palettes — tinted bg, WCAG AA contrast text, medium border */
+  --status-success-bg: oklch(0.96 0.025 120.7);
+  --status-success-text: oklch(0.33 0.07 120.7);
+  --status-success-border: oklch(0.68 0.1 120.7);
+  --status-warning-bg: oklch(0.97 0.03 92.6);
+  --status-warning-text: oklch(0.38 0.1 92.6);
+  --status-warning-border: oklch(0.75 0.12 92.6);
+  --status-info-bg: oklch(0.96 0.02 236.3);
+  --status-info-text: oklch(0.35 0.1 236.3);
+  --status-info-border: oklch(0.6 0.12 236.3);
+  --status-destructive-bg: oklch(0.97 0.02 29.2);
+  --status-destructive-text: oklch(0.42 0.18 29.2);
+  --status-destructive-border: oklch(0.6 0.2 29.2);
+
+  /* Inputs & Borders */
+  --border: oklch(0.875 0.01 252);
+  --input: oklch(0.875 0.01 252);
+  --placeholder: oklch(0.638 0.016 252);
+  --ring: oklch(0 0 0);
+
+  /* Charts */
+  --chart-1: oklch(0 0 0);
+  --chart-2: oklch(0.507 0.189 17.6);
+  --chart-3: oklch(0.497 0.135 120.7);
+  --chart-4: oklch(0.868 0.167 92.6);
+  --chart-5: oklch(0.668 0.151 236.3);
+
+  /* Sidebar */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.203 0.013 252);
+  --sidebar-primary: oklch(0 0 0);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.968 0.005 252);
+  --sidebar-accent-foreground: oklch(0.203 0.013 252);
+  --sidebar-border: oklch(0.875 0.01 252);
+  --sidebar-ring: oklch(0 0 0);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--placeholder);
+  }
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+}
