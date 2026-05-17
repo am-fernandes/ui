@@ -224,6 +224,7 @@ export {
   CardHeader,
   CardTitle,
 } from "./data/card"
+export { ScrollArea, ScrollBar } from "./data/scroll-area"
 export {
   Table,
   TableBody,
