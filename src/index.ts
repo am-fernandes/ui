@@ -54,3 +54,9 @@ export {
   PopoverContent,
   PopoverTrigger,
 } from "./overlays/popover"
+export {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./overlays/tooltip"
