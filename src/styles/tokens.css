@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Required by overlay components for data-state animations. */
+@import "tw-animate-css";
 
 @theme inline {
   --font-sans: "Google Sans Flex", sans-serif;

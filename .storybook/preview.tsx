@@ -12,6 +12,8 @@ const preview: Preview = {
           "Foundations",
           ["Colors", "Typography", "Spacing", "Radius", "Iconography"],
           "Primitives",
+          "Overlays",
+          "Composed",
         ],
       },
     },
