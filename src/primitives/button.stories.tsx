@@ -29,16 +29,11 @@ export const Variants: Story = {
   ),
 }
 
-export const Sizes: Story = {
+export const WithIconOnly: Story = {
   render: () => (
-    <div className="flex flex-wrap items-center gap-3">
-      <Button size="sm">sm</Button>
-      <Button size="default">default</Button>
-      <Button size="lg">lg</Button>
-      <Button size="icon" aria-label="Search">
-        <Search className="size-4" />
-      </Button>
-    </div>
+    <Button size="icon" aria-label="Search">
+      <Search className="size-4" />
+    </Button>
   ),
 }
 
