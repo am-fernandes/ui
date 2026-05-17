@@ -26,3 +26,15 @@ export {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "./overlays/alert-dialog"
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+} from "./overlays/dialog"
