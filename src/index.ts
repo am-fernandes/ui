@@ -70,4 +70,13 @@ export { ConfirmButton, type ConfirmButtonProps } from "./composed/confirm-butto
 export { useIsMobile } from "./hooks/use-is-mobile"
 
 // Navigation
+export {
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "./navigation/breadcrumb"
 export { Tabs, TabsContent, TabsList, TabsTrigger } from "./navigation/tabs"
