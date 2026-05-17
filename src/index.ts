@@ -48,3 +48,9 @@ export {
   SheetTitle,
   SheetTrigger,
 } from "./overlays/sheet"
+export {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverTrigger,
+} from "./overlays/popover"
