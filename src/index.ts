@@ -60,3 +60,4 @@ export {
   TooltipProvider,
   TooltipTrigger,
 } from "./overlays/tooltip"
+export { Toaster, toast } from "./overlays/sonner"
