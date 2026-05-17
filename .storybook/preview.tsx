@@ -16,6 +16,7 @@ const preview: Preview = {
           "Composed",
           "Navigation",
           "Forms",
+          "Domain",
         ],
       },
     },
