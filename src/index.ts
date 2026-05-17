@@ -65,3 +65,6 @@ export { Progress } from "./overlays/progress"
 
 // Composed
 export { ConfirmButton, type ConfirmButtonProps } from "./composed/confirm-button"
+
+// Hooks
+export { useIsMobile } from "./hooks/use-is-mobile"
