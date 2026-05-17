@@ -1,4 +1,3 @@
-import { withThemeByClassName } from "@storybook/addon-themes"
 import type { Preview } from "@storybook/react-vite"
 
 import "../src/styles/fonts.css"
@@ -6,7 +5,6 @@ import "../src/styles/tokens.css"
 
 const preview: Preview = {
   parameters: {
-    backgrounds: { default: "background" },
     options: {
       storySort: {
         order: [
@@ -18,10 +16,6 @@ const preview: Preview = {
     },
   },
   decorators: [
-    withThemeByClassName({
-      themes: { light: "" },
-      defaultTheme: "light",
-    }),
     (Story) => (
       <div className="font-sans text-foreground bg-background p-6">
         <Story />
