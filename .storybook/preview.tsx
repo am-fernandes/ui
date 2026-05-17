@@ -14,6 +14,7 @@ const preview: Preview = {
           "Primitives",
           "Overlays",
           "Composed",
+          "Navigation",
         ],
       },
     },
