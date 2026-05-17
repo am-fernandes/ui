@@ -140,3 +140,17 @@ export {
   useSidebar,
 } from "./navigation/sidebar"
 export { Tabs, TabsContent, TabsList, TabsTrigger } from "./navigation/tabs"
+
+// Forms
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectScrollDownButton,
+  SelectScrollUpButton,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "./forms/select"
