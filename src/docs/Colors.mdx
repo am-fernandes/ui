@@ -6,7 +6,7 @@ import { Meta } from "@storybook/addon-docs/blocks"
 
 Paleta OKLCH com `oklch(L C H)`. Primary é preto absoluto, secundárias semânticas (success/warning/info/destructive), e família "status" com fundos tintados para badges.
 
-export const Swatch = ({ name, varName, fg = "var(--foreground)" }) => (
+export const Swatch = ({ name, varName }) => (
   <div
     style={{
       display: "flex",
@@ -28,7 +28,7 @@ export const Swatch = ({ name, varName, fg = "var(--foreground)" }) => (
       }}
     />
     <div style={{ flex: 1 }}>
-      <div style={{ fontWeight: 600, color: fg }}>{name}</div>
+      <div style={{ fontWeight: 600, color: "var(--foreground)" }}>{name}</div>
       <code style={{ fontSize: 12, color: "var(--muted-foreground)" }}>{varName}</code>
     </div>
   </div>
