@@ -1,0 +1,68 @@
+# Changelog
+
+All notable changes to `@am-fernandes/ui` are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.0] — 2026-05-17
+
+### Added
+- First stable release — feature work complete; documentation + migration guide added.
+- `README.md` rewritten with full component inventory, install/setup instructions and migration pointer.
+- `src/docs/Migration.mdx` Storybook page with step-by-step guide for consuming apps (`requerimento-contratos-pf`, `assistencia-tecnica`).
+- `src/docs/GettingStarted.mdx` updated to reflect all 7 categories shipped.
+- `LICENSE` (proprietary, AM Fernandes & Associados).
+
+## [0.6.0] — 2026-05-17
+
+### Added
+- 4 data components: card, chart, scroll-area, table.
+- `// Data` section in barrel and Storybook sidebar.
+- Dependencies: `@tanstack/react-table`, `recharts`, `@radix-ui/react-scroll-area`.
+
+## [0.5.0] — 2026-05-17
+
+### Added
+- 4 AM-domain components: currency-input, percentage-input, days-installment-input, input-otp.
+- Currency helpers exported from barrel: `toCents`, `fromCents`, `percentOfTotal`, `percentFromValue`, `centsToDisplay`, `formatBRL`.
+- Dependency: `input-otp`.
+- `// Domain` section in barrel and Storybook sidebar.
+
+## [0.4.0] — 2026-05-17
+
+### Added
+- 8 forms components: calendar, combobox, date-input, date-range-picker, field, form, multi-select, select.
+- React Hook Form integration via `form` + `field` wrappers.
+- Dependencies: `@radix-ui/react-select`, `react-day-picker`, `react-hook-form`, `date-fns`.
+- `// Forms` section in barrel and Storybook sidebar.
+
+## [0.3.0] — 2026-05-17
+
+### Added
+- 6 navigation components: accordion, breadcrumb, command, dropdown-menu, sidebar, tabs.
+- Hook: `useIsMobile`.
+- Dependencies: `@radix-ui/react-accordion`, `@radix-ui/react-dropdown-menu`, `@radix-ui/react-tabs`, `cmdk`.
+- `// Navigation` section in barrel and Storybook sidebar.
+
+## [0.2.0] — 2026-05-17
+
+### Added
+- 8 overlay components: alert, alert-dialog, dialog, popover, progress, sheet, sonner, tooltip.
+- 1 composed component: confirm-button (extracted from prior `<Button confirm>` API).
+- Dependencies: `@radix-ui/react-alert-dialog`, `@radix-ui/react-dialog`, `@radix-ui/react-popover`, `@radix-ui/react-progress`, `@radix-ui/react-tooltip`, `sonner`.
+- `// Overlays` and `// Composed` sections in barrel and Storybook sidebar.
+
+## [0.1.0] — 2026-05-17
+
+### Added
+- 11 primitive components: avatar, badge, button, checkbox, input, label, radio-group, separator, skeleton, switch, textarea.
+- `// Primitives` section in barrel and Storybook sidebar.
+
+## [0.0.1] — 2026-05-16
+
+### Added
+- Project scaffold: Bun + tsup + Storybook 10 + Tailwind v4 + Biome.
+- Token foundation: `tokens.css` (OKLCH palette, radius scale, light-only) and `fonts.css`.
+- Helper: `cn` (clsx + tailwind-merge).
+- Storybook foundation pages: Colors, Typography, Spacing, Radius, Iconography.
+- Getting Started MDX page.
