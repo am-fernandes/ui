@@ -1,5 +1,6 @@
 "use client"
 
+import { ptBR } from "date-fns/locale"
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import * as React from "react"
 import { type DayButton, DayPicker, type Locale, getDefaultClassNames } from "react-day-picker"
@@ -13,7 +14,7 @@ function Calendar({
   showOutsideDays = true,
   captionLayout = "label",
   buttonVariant = "ghost",
-  locale,
+  locale = ptBR,
   formatters,
   components,
   ...props
