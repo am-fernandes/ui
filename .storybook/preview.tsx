@@ -11,6 +11,7 @@ const preview: Preview = {
           "Getting Started",
           "Foundations",
           ["Colors", "Typography", "Spacing", "Radius", "Iconography"],
+          "Primitives",
         ],
       },
     },
