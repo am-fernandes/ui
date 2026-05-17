@@ -1,4 +1,5 @@
 export { cn } from "./lib/utils"
+export { Avatar, AvatarFallback, AvatarImage } from "./primitives/avatar"
 export { Badge, badgeVariants, type BadgeProps } from "./primitives/badge"
 export { Button, buttonVariants, type ButtonProps } from "./primitives/button"
 export { Checkbox } from "./primitives/checkbox"
