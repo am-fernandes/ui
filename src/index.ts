@@ -38,3 +38,13 @@ export {
   DialogTitle,
   DialogTrigger,
 } from "./overlays/dialog"
+export {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "./overlays/sheet"
