@@ -195,6 +195,12 @@ export {
   type DateRangePickerProps,
 } from "./forms/date-range-picker"
 
+// Domain
+export {
+  CurrencyInput,
+  type CurrencyInputProps,
+} from "./domain/currency-input"
+
 // Lib
 export {
   centsToDisplay,
