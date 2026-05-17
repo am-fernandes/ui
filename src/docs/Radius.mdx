@@ -1,0 +1,41 @@
+import { Meta } from "@storybook/addon-docs/blocks"
+
+<Meta title="Foundations/Radius" />
+
+# Radius
+
+Escala derivada da base `--radius: 0.5rem` (8px). Sete tamanhos cobrem desde inputs/botões até modais e cards grandes.
+
+export const Box = ({ varName, label, size = 80 }) => (
+  <div style={{ display: "inline-block", textAlign: "center", marginRight: 16, marginBottom: 16 }}>
+    <div
+      style={{
+        width: size,
+        height: size,
+        background: "var(--primary)",
+        borderRadius: `var(${varName})`,
+      }}
+    />
+    <div style={{ fontSize: 12, marginTop: 6, color: "var(--muted-foreground)" }}>{label}</div>
+    <code style={{ fontSize: 11, color: "var(--muted-foreground)" }}>{varName}</code>
+  </div>
+)
+
+<div>
+  <Box varName="--radius-sm" label="sm (4px)" />
+  <Box varName="--radius-md" label="md (6px)" />
+  <Box varName="--radius-lg" label="lg (8px)" />
+  <Box varName="--radius-xl" label="xl (12px)" />
+  <Box varName="--radius-2xl" label="2xl (16px)" />
+  <Box varName="--radius-3xl" label="3xl (20px)" />
+  <Box varName="--radius-4xl" label="4xl (24px)" />
+</div>
+
+## Uso recomendado
+
+| Componente | Classe |
+|---|---|
+| Input, button | `rounded-md` |
+| Card, dialog | `rounded-lg` |
+| Sheet, drawer | `rounded-xl` |
+| Avatar | `rounded-full` |
