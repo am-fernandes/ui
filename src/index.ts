@@ -205,6 +205,12 @@ export {
   type DaysInstallmentInputProps,
 } from "./domain/days-installment-input"
 export {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from "./domain/input-otp"
+export {
   PercentageInput,
   type PercentageInputProps,
 } from "./domain/percentage-input"
