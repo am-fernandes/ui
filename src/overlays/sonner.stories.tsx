@@ -20,9 +20,7 @@ export const Default: Story = {
   render: () => (
     <>
       <Toaster />
-      <Button onClick={() => toast.success("Salvo com sucesso!")}>
-        Disparar toast
-      </Button>
+      <Button onClick={() => toast.success("Salvo com sucesso!")}>Disparar toast</Button>
     </>
   ),
 }
