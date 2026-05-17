@@ -194,6 +194,7 @@ export {
   DateRangePicker,
   type DateRangePickerProps,
 } from "./forms/date-range-picker"
+export { TimePicker, type TimePickerProps } from "./forms/time-picker"
 
 // Domain
 export {
