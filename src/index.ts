@@ -10,6 +10,11 @@ export { Separator } from "./primitives/separator"
 export { Skeleton } from "./primitives/skeleton"
 export { Switch } from "./primitives/switch"
 export { Textarea } from "./primitives/textarea"
+export {
+  Typography,
+  typographyVariants,
+  type TypographyProps,
+} from "./primitives/typography"
 
 // Overlays
 export { Alert, AlertDescription, AlertTitle, alertVariants } from "./overlays/alert"
