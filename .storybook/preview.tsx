@@ -15,6 +15,7 @@ const preview: Preview = {
           "Overlays",
           "Composed",
           "Navigation",
+          "Forms",
         ],
       },
     },
