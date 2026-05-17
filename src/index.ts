@@ -61,3 +61,4 @@ export {
   TooltipTrigger,
 } from "./overlays/tooltip"
 export { Toaster, toast } from "./overlays/sonner"
+export { Progress } from "./overlays/progress"
