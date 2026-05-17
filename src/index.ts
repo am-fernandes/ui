@@ -224,6 +224,16 @@ export {
   CardHeader,
   CardTitle,
 } from "./data/card"
+export {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./data/table"
 
 // Lib
 export {
