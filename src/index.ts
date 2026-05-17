@@ -68,3 +68,6 @@ export { ConfirmButton, type ConfirmButtonProps } from "./composed/confirm-butto
 
 // Hooks
 export { useIsMobile } from "./hooks/use-is-mobile"
+
+// Navigation
+export { Tabs, TabsContent, TabsList, TabsTrigger } from "./navigation/tabs"
