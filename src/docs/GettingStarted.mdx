@@ -1,0 +1,51 @@
+import { Meta } from "@storybook/addon-docs/blocks"
+
+<Meta title="Getting Started" />
+
+# AM Fernandes UI
+
+Design system de componentes React da AM Fernandes. Esta documentação cobre os fundamentos visuais (cores, tipografia, espaçamento, raios, ícones) e — nas próximas releases — a biblioteca completa de componentes.
+
+## Instalação
+
+```bash
+bun add @am-fernandes/ui
+```
+
+Configure o registro privado (uma vez por máquina):
+
+```bash
+# ~/.npmrc
+@am-fernandes:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+## Setup na sua app
+
+1. Importe os tokens e a fonte no CSS de entrada da app:
+
+```css
+/* src/index.css */
+@import "@am-fernandes/ui/fonts";
+@import "@am-fernandes/ui/styles";
+```
+
+2. Garanta que a app usa Tailwind v4 e React 19 (peer-deps).
+
+3. Use a helper `cn` ao combinar classes:
+
+```tsx
+import { cn } from "@am-fernandes/ui"
+
+<div className={cn("p-4 rounded-md", isActive && "bg-primary")} />
+```
+
+## Princípios
+
+- **Light only** — apps internas; sem dark mode por escolha de produto.
+- **Tokens são a API** — não hardcode cores ou raios em apps; consuma sempre via classe Tailwind (`bg-primary`, `rounded-md`).
+- **Acessibilidade ≥ AA** — status badges, contraste e ARIA validados via `addon-a11y`.
+
+## Status atual
+
+Fase 1 (foundations) — sem componentes. Próximas releases adicionam primitives → overlays → navigation → forms → domínio → data.
