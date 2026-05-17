@@ -1,5 +1,6 @@
 export { cn } from "./lib/utils"
 export { Button, buttonVariants, type ButtonProps } from "./primitives/button"
+export { Checkbox } from "./primitives/checkbox"
 export { Input } from "./primitives/input"
 export { Label } from "./primitives/label"
 export { Textarea } from "./primitives/textarea"
