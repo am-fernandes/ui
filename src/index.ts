@@ -13,3 +13,16 @@ export { Textarea } from "./primitives/textarea"
 
 // Overlays
 export { Alert, AlertDescription, AlertTitle, alertVariants } from "./overlays/alert"
+export {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
+  AlertDialogPortal,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./overlays/alert-dialog"
