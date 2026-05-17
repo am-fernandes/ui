@@ -4,6 +4,11 @@ All notable changes to `@am-fernandes/ui` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] — 2026-05-17
+
+### Fixed
+- `TimePicker` (`src/forms/time-picker.tsx`) rewritten as a custom 24h dual-input. Native `<input type="time">` follows the OS/browser locale, so even with `lang="pt-BR"` it could render as 12h AM/PM. The new implementation uses two numeric inputs (HH and MM) separated by `:` inside a single styled container, guaranteeing 24h display regardless of locale. Adds keyboard support (ArrowUp/Down increments with wrapping at the field's bounds; `:` jumps focus to the minute field).
+
 ## [2.0.0] — 2026-05-17
 
 ### Breaking
