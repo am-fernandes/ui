@@ -200,6 +200,10 @@ export {
   CurrencyInput,
   type CurrencyInputProps,
 } from "./domain/currency-input"
+export {
+  PercentageInput,
+  type PercentageInputProps,
+} from "./domain/percentage-input"
 
 // Lib
 export {
