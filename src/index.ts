@@ -62,3 +62,6 @@ export {
 } from "./overlays/tooltip"
 export { Toaster, toast } from "./overlays/sonner"
 export { Progress } from "./overlays/progress"
+
+// Composed
+export { ConfirmButton, type ConfirmButtonProps } from "./composed/confirm-button"
