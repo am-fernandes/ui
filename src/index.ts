@@ -176,3 +176,9 @@ export {
   SelectTrigger,
   SelectValue,
 } from "./forms/select"
+export {
+  Combobox,
+  useComboboxOptions,
+  type ComboboxOption,
+  type ComboboxProps,
+} from "./forms/combobox"
