@@ -1,0 +1,105 @@
+import { Meta } from "@storybook/addon-docs/blocks"
+
+<Meta title="Foundations/Colors" />
+
+# Colors
+
+Paleta OKLCH com `oklch(L C H)`. Primary é preto absoluto, secundárias semânticas (success/warning/info/destructive), e família "status" com fundos tintados para badges.
+
+export const Swatch = ({ name, varName, fg = "var(--foreground)" }) => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      padding: 8,
+      border: "1px solid var(--border)",
+      borderRadius: 8,
+      marginBottom: 8,
+    }}
+  >
+    <div
+      style={{
+        width: 48,
+        height: 48,
+        borderRadius: 6,
+        background: `var(${varName})`,
+        border: "1px solid var(--border)",
+      }}
+    />
+    <div style={{ flex: 1 }}>
+      <div style={{ fontWeight: 600, color: fg }}>{name}</div>
+      <code style={{ fontSize: 12, color: "var(--muted-foreground)" }}>{varName}</code>
+    </div>
+  </div>
+)
+
+## Base
+
+<Swatch name="Background" varName="--background" />
+<Swatch name="Foreground" varName="--foreground" />
+<Swatch name="Card" varName="--card" />
+<Swatch name="Popover" varName="--popover" />
+<Swatch name="Muted" varName="--muted" />
+<Swatch name="Accent" varName="--accent" />
+<Swatch name="Border" varName="--border" />
+<Swatch name="Input" varName="--input" />
+<Swatch name="Ring" varName="--ring" />
+
+## Brand
+
+<Swatch name="Primary" varName="--primary" />
+<Swatch name="Secondary" varName="--secondary" />
+
+## Semantic
+
+<Swatch name="Destructive" varName="--destructive" />
+<Swatch name="Success" varName="--success" />
+<Swatch name="Warning" varName="--warning" />
+<Swatch name="Info" varName="--info" />
+
+## Status Badges (WCAG AA)
+
+Trios bg/text/border desenhados para badges de estado em listagens.
+
+export const StatusBadge = ({ kind, label }) => (
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      padding: "2px 10px",
+      borderRadius: 6,
+      fontSize: 12,
+      fontWeight: 600,
+      background: `var(--status-${kind}-bg)`,
+      color: `var(--status-${kind}-text)`,
+      border: `1px solid var(--status-${kind}-border)`,
+      marginRight: 8,
+    }}
+  >
+    {label}
+  </span>
+)
+
+<div style={{ padding: 12 }}>
+  <StatusBadge kind="success" label="Success" />
+  <StatusBadge kind="warning" label="Warning" />
+  <StatusBadge kind="info" label="Info" />
+  <StatusBadge kind="destructive" label="Destructive" />
+</div>
+
+## Charts
+
+<Swatch name="Chart 1" varName="--chart-1" />
+<Swatch name="Chart 2" varName="--chart-2" />
+<Swatch name="Chart 3" varName="--chart-3" />
+<Swatch name="Chart 4" varName="--chart-4" />
+<Swatch name="Chart 5" varName="--chart-5" />
+
+## Sidebar
+
+<Swatch name="Sidebar" varName="--sidebar" />
+<Swatch name="Sidebar Foreground" varName="--sidebar-foreground" />
+<Swatch name="Sidebar Primary" varName="--sidebar-primary" />
+<Swatch name="Sidebar Accent" varName="--sidebar-accent" />
+<Swatch name="Sidebar Border" varName="--sidebar-border" />
