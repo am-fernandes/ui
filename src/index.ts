@@ -182,3 +182,9 @@ export {
   type ComboboxOption,
   type ComboboxProps,
 } from "./forms/combobox"
+export {
+  MultiSelect,
+  useMultiSelectOptions,
+  type MultiSelectOption,
+  type MultiSelectProps,
+} from "./forms/multi-select"
