@@ -43,7 +43,7 @@ ui/
 ├── tsup.config.ts            # bundler: tsup → ESM + .d.ts
 ├── biome.json                # lint/format (alinhar com apps)
 ├── .storybook/
-│   ├── main.ts               # Storybook 8 + framework: @storybook/react-vite
+│   ├── main.ts               # Storybook 10 + defineMain({ framework: "@storybook/react-vite" })
 │   ├── preview.tsx           # importa tokens.css + fonts.css; decorator de fonte
 │   └── manager.ts            # tema branded da própria UI do Storybook
 ├── src/
@@ -73,7 +73,7 @@ ui/
 
 - **Runtime/build:** Bun (alinhado com `CLAUDE.md` global).
 - **Bundler do package:** `tsup` (ESM + `.d.ts`, tree-shakeable).
-- **Storybook:** 8.x + `@storybook/react-vite`.
+- **Storybook:** 10.x + `@storybook/react-vite` (atual estável; v10 removeu `addon-essentials` e moveu controls/actions/viewport/backgrounds/etc. para o core).
 - **Tailwind:** v4 (peer-dep).
 - **Lint/format:** Biome (verificar se apps já usam; se sim, espelhar config).
 - **Versioning:** semver manual (`changeset` opcional se complexidade crescer).
@@ -123,7 +123,9 @@ table, card, chart, scroll-area
 
 ### Addons
 
-- `@storybook/addon-essentials` (controls, actions, docs, viewport)
+Em Storybook 10, controls/actions/viewport/backgrounds/highlight/measure/outline/toolbars já fazem parte do core — não instalar nem listar.
+
+- `@storybook/addon-docs` (autodocs CSF3 — instalar via `npx storybook add @storybook/addon-docs`)
 - `@storybook/addon-a11y` (axe-core nas stories)
 - `@storybook/addon-themes` (toggle preparado para light only no início; estrutura pronta caso dark volte no futuro)
 
@@ -223,7 +225,7 @@ import { Button, CurrencyInput, Sidebar } from "@am-fernandes/ui";
 
 | Fase | Entregável | Componentes | Versão |
 |---|---|---|---|
-| 1 | Repo + Bun + tsup + Storybook + tokens + foundations MDX | (foundations only) | `0.0.1` |
+| 1 | Repo + Bun + tsup + Storybook 10 + tokens + foundations MDX | (foundations only) | `0.0.1` |
 | 2 | Primitives | 11 | `0.1.0` |
 | 3 | Overlays & feedback | 8 | `0.2.0` |
 | 4 | Navigation | 6 | `0.3.0` |
