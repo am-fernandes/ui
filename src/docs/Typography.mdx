@@ -39,3 +39,28 @@ export const Specimen = ({ size, weight = 400, label }) => (
 | Subsection (H3) | `text-xl font-semibold` |
 | Body | `text-sm` ou `text-base` |
 | Caption / metadata | `text-xs text-muted-foreground` |
+
+## Componente Typography
+
+A escala Tailwind documentada acima continua disponível para estilização pontual. Para garantir consistência entre páginas e produtos, prefira o primitivo `Typography` sempre que possível:
+
+```tsx
+import { Typography } from "@am-fernandes/ui"
+
+<Typography variant="title">Página de contratos</Typography>
+<Typography variant="subtitle">Filtros aplicados</Typography>
+<Typography variant="body">Lista paginada de 50 registros.</Typography>
+<Typography variant="caption">Atualizado em 17/05/2026</Typography>
+```
+
+Elemento padrão por variante:
+
+| Variante | Elemento default |
+|---|---|
+| `display` | `h1` |
+| `title` | `h2` |
+| `subtitle` | `h3` |
+| `body` | `p` |
+| `caption` | `span` |
+
+Use a prop `as` para sobrescrever o elemento semântico quando o outline do documento exigir (ex.: `<Typography variant="title" as="h1">` em uma página onde o título é o H1 principal).
