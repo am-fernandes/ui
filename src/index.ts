@@ -201,6 +201,10 @@ export {
   type CurrencyInputProps,
 } from "./domain/currency-input"
 export {
+  DaysInstallmentInput,
+  type DaysInstallmentInputProps,
+} from "./domain/days-installment-input"
+export {
   PercentageInput,
   type PercentageInputProps,
 } from "./domain/percentage-input"
