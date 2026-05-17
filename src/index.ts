@@ -224,6 +224,15 @@ export {
   CardHeader,
   CardTitle,
 } from "./data/card"
+export {
+  type ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartStyle,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "./data/chart"
 export { ScrollArea, ScrollBar } from "./data/scroll-area"
 export {
   Table,
