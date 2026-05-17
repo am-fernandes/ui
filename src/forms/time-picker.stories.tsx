@@ -18,18 +18,33 @@ export const Default: Story = {
   render: () => {
     const [value, setValue] = useState("09:30")
     return (
-      <div className="flex w-[280px] flex-col gap-2">
+      <div className="flex flex-col gap-2">
         <Label htmlFor="start-time">Horário de início</Label>
-        <TimePicker
-          id="start-time"
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-        />
+        <TimePicker id="start-time" value={value} onChange={setValue} />
+        <span className="text-xs text-muted-foreground">Valor: {value || "(vazio)"}</span>
       </div>
     )
   },
 }
 
 export const Disabled: Story = {
-  args: { disabled: true, value: "14:00" },
+  render: () => (
+    <div className="flex flex-col gap-2">
+      <Label>Encerramento</Label>
+      <TimePicker value="18:00" disabled />
+    </div>
+  ),
+}
+
+export const Empty: Story = {
+  render: () => {
+    const [value, setValue] = useState("")
+    return (
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="empty-time">Horário</Label>
+        <TimePicker id="empty-time" value={value} onChange={setValue} />
+        <span className="text-xs text-muted-foreground">Valor: {value || "(vazio)"}</span>
+      </div>
+    )
+  },
 }
