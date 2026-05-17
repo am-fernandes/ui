@@ -80,6 +80,17 @@ export {
   BreadcrumbSeparator,
 } from "./navigation/breadcrumb"
 export {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut,
+} from "./navigation/command"
+export {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
