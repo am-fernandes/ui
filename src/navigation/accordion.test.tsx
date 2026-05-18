@@ -79,6 +79,91 @@ describe("Accordion", () => {
     expect(disabledTrigger.getAttribute("data-state")).toBe("closed")
   })
 
+  it("disabled item does not expand on click", async () => {
+    render(
+      <Accordion
+        type="single"
+        collapsible
+        items={[
+          { value: "a", title: "Available", content: "Open content" },
+          { value: "b", title: "Locked", content: "Hidden content", disabled: true },
+        ]}
+      />,
+    )
+
+    const lockedTrigger = screen.getByRole("button", { name: "Locked" })
+    await userEvent.click(lockedTrigger)
+    expect(lockedTrigger.getAttribute("data-state")).toBe("closed")
+    expect(screen.queryByText("Hidden content")).not.toBeInTheDocument()
+  })
+
+  it("renders item.action next to the trigger and clicks fire independently", async () => {
+    const onAction = vi.fn()
+    const onValueChange = vi.fn()
+    render(
+      <Accordion
+        type="single"
+        collapsible
+        onValueChange={onValueChange}
+        items={[
+          {
+            value: "a",
+            title: "Removable",
+            content: "Body",
+            action: (
+              <button type="button" aria-label="Remover Removable" onClick={onAction}>
+                X
+              </button>
+            ),
+          },
+        ]}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: "Remover Removable" }))
+    expect(onAction).toHaveBeenCalledTimes(1)
+    // Action click should NOT bubble into the accordion trigger.
+    expect(onValueChange).not.toHaveBeenCalled()
+    expect(screen.getByRole("button", { name: "Removable" }).getAttribute("data-state")).toBe(
+      "closed",
+    )
+  })
+
+  it("renders an action slot with the accordion-action data-slot", () => {
+    const { container } = render(
+      <Accordion
+        type="single"
+        collapsible
+        items={[
+          {
+            value: "a",
+            title: "T",
+            content: "C",
+            action: <span data-testid="custom-action">Act</span>,
+          },
+        ]}
+      />,
+    )
+    expect(container.querySelector('[data-slot="accordion-action"]')).toBeTruthy()
+    expect(screen.getByTestId("custom-action")).toBeInTheDocument()
+  })
+
+  it("respects defaultValue (single) — item starts open", () => {
+    render(
+      <Accordion
+        type="single"
+        collapsible
+        defaultValue="b"
+        items={[
+          { value: "a", title: "First", content: "FC" },
+          { value: "b", title: "Second", content: "SC" },
+        ]}
+      />,
+    )
+    expect(screen.getByRole("button", { name: "Second" }).getAttribute("data-state")).toBe("open")
+    expect(screen.getByRole("button", { name: "First" }).getAttribute("data-state")).toBe("closed")
+  })
+
   it("keyboard arrow navigation moves focus across triggers", async () => {
     render(
       <Accordion

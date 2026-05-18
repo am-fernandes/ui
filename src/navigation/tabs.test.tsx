@@ -102,6 +102,7 @@ describe("Tabs", () => {
     const list = container.querySelector('[data-slot="tabs-list"]')
     expect(list).toBeTruthy()
     expect(list?.className).toMatch(/flex-col/)
+    expect(list?.getAttribute("aria-orientation")).toBe("vertical")
   })
 
   it('orientation="horizontal" (default) does not add flex-col on list', () => {
@@ -116,5 +117,79 @@ describe("Tabs", () => {
     )
     const list = container.querySelector('[data-slot="tabs-list"]')
     expect(list?.className).not.toMatch(/flex-col/)
+  })
+
+  it("renders a badge on the trigger when provided", () => {
+    const { container } = render(
+      <Tabs
+        defaultValue="inbox"
+        items={[
+          {
+            value: "inbox",
+            label: "Inbox",
+            badge: <span data-testid="badge-12">12</span>,
+            content: "Inbox content",
+          },
+          { value: "archive", label: "Archive", content: "Archive content" },
+        ]}
+      />,
+    )
+    expect(screen.getByTestId("badge-12")).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="tabs-badge"]')).toBeTruthy()
+    // The trigger accessible name includes both label and badge content.
+    expect(screen.getByRole("tab", { name: /Inbox/ })).toBeInTheDocument()
+  })
+
+  it("lazy mounts only the active panel; switching mounts the new panel", async () => {
+    const { container } = render(
+      <Tabs
+        lazy
+        defaultValue="a"
+        items={[
+          {
+            value: "a",
+            label: "A",
+            content: <div data-testid="panel-a">PA</div>,
+          },
+          {
+            value: "b",
+            label: "B",
+            content: <div data-testid="panel-b">PB</div>,
+          },
+          {
+            value: "c",
+            label: "C",
+            content: <div data-testid="panel-c">PC</div>,
+          },
+        ]}
+      />,
+    )
+
+    // Only the active panel is mounted in the DOM.
+    expect(container.querySelector('[data-testid="panel-a"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="panel-b"]')).toBeNull()
+    expect(container.querySelector('[data-testid="panel-c"]')).toBeNull()
+    // There should be exactly one rendered tabpanel.
+    expect(container.querySelectorAll('[data-slot="tabs-content"]')).toHaveLength(1)
+
+    await userEvent.click(screen.getByRole("tab", { name: "B" }))
+
+    expect(container.querySelector('[data-testid="panel-b"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="panel-a"]')).toBeNull()
+    expect(container.querySelector('[data-testid="panel-c"]')).toBeNull()
+  })
+
+  it("non-lazy (default) mounts all panels", () => {
+    const { container } = render(
+      <Tabs
+        defaultValue="a"
+        items={[
+          { value: "a", label: "A", content: <div data-testid="panel-a">PA</div> },
+          { value: "b", label: "B", content: <div data-testid="panel-b">PB</div> },
+        ]}
+      />,
+    )
+    // Both panels are in the DOM (just one visible).
+    expect(container.querySelectorAll('[data-slot="tabs-content"]')).toHaveLength(2)
   })
 })
