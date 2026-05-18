@@ -194,6 +194,7 @@ function MultiInput(props: MultiInputProps) {
           disabled && "cursor-not-allowed opacity-50",
           hasError && "border-destructive",
         )}
+        // biome-ignore lint/a11y/useSemanticElements: <fieldset> conflicts with the flex chip layout.
         role="group"
         aria-label={props.type === "number" ? "Lista de números" : "Lista de itens"}
       >

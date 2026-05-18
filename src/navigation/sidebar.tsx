@@ -132,7 +132,13 @@ function Sidebar({
           {header ? <div data-slot="sidebar-header">{header}</div> : null}
           <div data-slot="sidebar-body" className="flex-1 overflow-auto">
             {resolvedGroups.map((g, gi) => (
-              <SidebarGroupRender key={gi} group={g} isActive={isActive} collapsedToIcon={false} />
+              <SidebarGroupRender
+                // biome-ignore lint/suspicious/noArrayIndexKey: groups are positional
+                key={gi}
+                group={g}
+                isActive={isActive}
+                collapsedToIcon={false}
+              />
             ))}
           </div>
           {footer ? <div data-slot="sidebar-footer">{footer}</div> : null}
@@ -167,6 +173,7 @@ function Sidebar({
       <div data-slot="sidebar-body" className="flex-1 overflow-auto">
         {resolvedGroups.map((g, gi) => (
           <SidebarGroupRender
+            // biome-ignore lint/suspicious/noArrayIndexKey: groups are positional
             key={gi}
             group={g}
             isActive={isActive}

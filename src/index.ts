@@ -6,6 +6,39 @@
  * See: docs/superpowers/plans/2026-05-18-api-simplification.md
  */
 
+// Data
+export { Card, type CardProps } from "./data/card"
+export {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartStyle,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "./data/chart"
+export { DataTable, type DataTableProps } from "./data/data-table"
+export { Image, type ImageProps } from "./data/image"
+export { ScrollArea, type ScrollAreaOrientation } from "./data/scroll-area"
+export { tableStyles, type TableStyles } from "./data/table-styles"
+export { Tree, type TreeNodeData, type TreeProps } from "./data/tree"
+export { Video, type VideoCaptionTrack, type VideoProps } from "./data/video"
+
+// Hooks
+export { useIsMobile } from "./hooks/use-is-mobile"
+
+// Lib
+export {
+  centsToDisplay,
+  formatBRL,
+  fromCents,
+  percentFromValue,
+  percentOfTotal,
+  toCents,
+} from "./lib/currency"
+export { bytes, gb, kb, mb } from "./lib/size"
+export { cn } from "./lib/utils"
+
 // Navigation
 export { Accordion, type AccordionItemData, type AccordionProps } from "./navigation/accordion"
 export {

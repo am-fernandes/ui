@@ -19,7 +19,60 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./table"
+
+// Internal Table primitives — inlined here (was src/data/table.tsx).
+function Table({ className, children, ...props }: React.HTMLAttributes<HTMLTableElement>) {
+  return (
+    <div className="relative w-full overflow-auto">
+      <table
+        data-slot="table"
+        className={cn("w-full caption-bottom text-sm", className)}
+        {...props}
+      >
+        {children}
+      </table>
+    </div>
+  )
+}
+function TableHeader({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
+  return <thead data-slot="table-header" className={cn("[&_tr]:border-b", className)} {...props} />
+}
+function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
+  return (
+    <tbody
+      data-slot="table-body"
+      className={cn("[&_tr:last-child]:border-0", className)}
+      {...props}
+    />
+  )
+}
+function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
+  return (
+    <tr
+      data-slot="table-row"
+      className={cn(
+        "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+        className,
+      )}
+      {...props}
+    />
+  )
+}
+function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
+  return (
+    <th
+      data-slot="table-head"
+      className={cn(
+        "h-10 px-2 text-left align-middle font-medium text-muted-foreground",
+        className,
+      )}
+      {...props}
+    />
+  )
+}
+function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
+  return <td data-slot="table-cell" className={cn("p-2 align-middle", className)} {...props} />
+}
 
 export interface DataTableLabels {
   search?: string

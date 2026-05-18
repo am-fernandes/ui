@@ -58,8 +58,8 @@ function Slot({ index }: { index: number }) {
 
 function Separator({ children }: { children: React.ReactNode }) {
   return (
-    <div data-slot="input-otp-separator" role="separator">
-      {children ?? <Dot className="size-3" aria-hidden="true" />}
+    <div data-slot="input-otp-separator" aria-hidden="true">
+      {children ?? <Dot className="size-3" />}
     </div>
   )
 }

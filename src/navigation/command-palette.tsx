@@ -87,6 +87,7 @@ function CommandPalette({
           </CommandPrimitive.Empty>
           {groups.map((group, gi) => (
             <CommandPrimitive.Group
+              // biome-ignore lint/suspicious/noArrayIndexKey: groups are positional in the prop array
               key={`g-${gi}`}
               heading={typeof group.heading === "string" ? group.heading : undefined}
               className={cn(
