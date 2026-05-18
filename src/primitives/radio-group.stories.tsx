@@ -51,6 +51,22 @@ export const WithLabels: Story = {
   ),
 }
 
+export const Horizontal: Story = {
+  render: () => (
+    <div className="flex flex-col gap-2">
+      <Label>Cidade</Label>
+      <RadioGroup defaultValue="São Paulo" orientation="horizontal">
+        {cities.map((city) => (
+          <div key={city} className="flex items-center gap-2">
+            <RadioGroupItem value={city} id={`horizontal-${city}`} />
+            <Label htmlFor={`horizontal-${city}`}>{city}</Label>
+          </div>
+        ))}
+      </RadioGroup>
+    </div>
+  ),
+}
+
 export const Disabled: Story = {
   render: () => (
     <RadioGroup defaultValue="São Paulo" disabled>

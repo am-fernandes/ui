@@ -6,14 +6,17 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function RadioGroup({
-  className,
-  ...props
-}: React.ComponentProps<typeof RadioGroupPrimitive.Root>) {
+type RadioGroupProps = React.ComponentProps<typeof RadioGroupPrimitive.Root>
+
+function RadioGroup({ className, orientation = "vertical", ...props }: RadioGroupProps) {
   return (
     <RadioGroupPrimitive.Root
       data-slot="radio-group"
-      className={cn("grid gap-3", className)}
+      orientation={orientation}
+      className={cn(
+        orientation === "horizontal" ? "flex flex-row flex-wrap gap-6" : "grid gap-3",
+        className,
+      )}
       {...props}
     />
   )
