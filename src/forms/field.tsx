@@ -1,15 +1,21 @@
 "use client"
 
 import { type VariantProps, cva } from "class-variance-authority"
+import type * as React from "react"
 import { useMemo } from "react"
 
 import { cn } from "@/lib/utils"
 import { Label } from "../primitives/label"
 import { Separator } from "../primitives/separator"
 
-function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
+type FieldSetProps = React.ComponentProps<"fieldset"> & {
+  ref?: React.Ref<HTMLFieldSetElement>
+}
+
+function FieldSet({ className, ref, ...props }: FieldSetProps) {
   return (
     <fieldset
+      ref={ref}
       data-slot="field-set"
       className={cn(
         "flex flex-col gap-6",
@@ -21,13 +27,15 @@ function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   )
 }
 
-function FieldLegend({
-  className,
-  variant = "legend",
-  ...props
-}: React.ComponentProps<"legend"> & { variant?: "legend" | "label" }) {
+type FieldLegendProps = React.ComponentProps<"legend"> & {
+  variant?: "legend" | "label"
+  ref?: React.Ref<HTMLLegendElement>
+}
+
+function FieldLegend({ className, variant = "legend", ref, ...props }: FieldLegendProps) {
   return (
     <legend
+      ref={ref}
       data-slot="field-legend"
       data-variant={variant}
       className={cn(
@@ -41,9 +49,14 @@ function FieldLegend({
   )
 }
 
-function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
+type FieldGroupProps = React.ComponentProps<"div"> & {
+  ref?: React.Ref<HTMLDivElement>
+}
+
+function FieldGroup({ className, ref, ...props }: FieldGroupProps) {
   return (
     <div
+      ref={ref}
       data-slot="field-group"
       className={cn(
         "group/field-group @container/field-group flex w-full flex-col gap-7 data-[slot=checkbox-group]:gap-3 [&>[data-slot=field-group]]:gap-4",
@@ -75,13 +88,15 @@ const fieldVariants = cva("group/field data-[invalid=true]:text-destructive flex
   },
 })
 
-function Field({
-  className,
-  orientation = "vertical",
-  ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof fieldVariants>) {
+type FieldProps = React.ComponentProps<"div"> &
+  VariantProps<typeof fieldVariants> & {
+    ref?: React.Ref<HTMLDivElement>
+  }
+
+function Field({ className, orientation = "vertical", ref, ...props }: FieldProps) {
   return (
     <div
+      ref={ref}
       role="group"
       data-slot="field"
       data-orientation={orientation}
@@ -91,9 +106,14 @@ function Field({
   )
 }
 
-function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
+type FieldContentProps = React.ComponentProps<"div"> & {
+  ref?: React.Ref<HTMLDivElement>
+}
+
+function FieldContent({ className, ref, ...props }: FieldContentProps) {
   return (
     <div
+      ref={ref}
       data-slot="field-content"
       className={cn("group/field-content flex flex-1 flex-col gap-1.5 leading-snug", className)}
       {...props}
@@ -101,9 +121,14 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function FieldLabel({ className, ...props }: React.ComponentProps<typeof Label>) {
+type FieldLabelProps = React.ComponentProps<typeof Label> & {
+  ref?: React.Ref<React.ComponentRef<typeof Label>>
+}
+
+function FieldLabel({ className, ref, ...props }: FieldLabelProps) {
   return (
     <Label
+      ref={ref}
       data-slot="field-label"
       className={cn(
         "group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50",
@@ -116,10 +141,15 @@ function FieldLabel({ className, ...props }: React.ComponentProps<typeof Label>)
   )
 }
 
-function FieldTitle({ className, ...props }: React.ComponentProps<"div">) {
+type FieldTitleProps = React.ComponentProps<"div"> & {
+  ref?: React.Ref<HTMLDivElement>
+}
+
+function FieldTitle({ className, ref, ...props }: FieldTitleProps) {
   return (
     <div
-      data-slot="field-label"
+      ref={ref}
+      data-slot="field-title"
       className={cn(
         "flex w-fit items-center gap-2 text-sm font-medium leading-snug group-data-[disabled=true]/field:opacity-50",
         className,
@@ -129,9 +159,14 @@ function FieldTitle({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
+type FieldDescriptionProps = React.ComponentProps<"p"> & {
+  ref?: React.Ref<HTMLParagraphElement>
+}
+
+function FieldDescription({ className, ref, ...props }: FieldDescriptionProps) {
   return (
     <p
+      ref={ref}
       data-slot="field-description"
       className={cn(
         "text-muted-foreground text-sm font-normal leading-normal group-has-[[data-orientation=horizontal]]/field:text-balance",
@@ -144,15 +179,15 @@ function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
   )
 }
 
-function FieldSeparator({
-  children,
-  className,
-  ...props
-}: React.ComponentProps<"div"> & {
+type FieldSeparatorProps = React.ComponentProps<"div"> & {
   children?: React.ReactNode
-}) {
+  ref?: React.Ref<HTMLDivElement>
+}
+
+function FieldSeparator({ children, className, ref, ...props }: FieldSeparatorProps) {
   return (
     <div
+      ref={ref}
       data-slot="field-separator"
       data-content={!!children}
       className={cn(
@@ -174,38 +209,41 @@ function FieldSeparator({
   )
 }
 
-function FieldError({
-  className,
-  children,
-  errors,
-  ...props
-}: React.ComponentProps<"div"> & {
+type FieldErrorProps = React.ComponentProps<"div"> & {
   errors?: Array<{ message?: string } | undefined>
-}) {
+  /** Single error object (e.g. react-hook-form `FieldError`). */
+  error?: { message?: string } | null
+  ref?: React.Ref<HTMLDivElement>
+}
+
+function FieldError({ className, children, errors, error, ref, ...props }: FieldErrorProps) {
+  const normalizedErrors = useMemo(() => {
+    if (errors && errors.length > 0) return errors
+    if (error) return [error]
+    return undefined
+  }, [errors, error])
+
   const content = useMemo(() => {
     if (children) {
       return children
     }
 
-    if (!errors) {
+    if (!normalizedErrors) {
       return null
     }
 
-    if (errors?.length === 1 && errors[0]?.message) {
-      return errors[0].message
+    if (normalizedErrors.length === 1 && normalizedErrors[0]?.message) {
+      return normalizedErrors[0].message
     }
 
     return (
       <ul className="ml-4 flex list-disc flex-col gap-1">
-        {errors.map((error, index) =>
-          error?.message ? (
-            // biome-ignore lint/suspicious/noArrayIndexKey: error list has stable order
-            <li key={index}>{error.message}</li>
-          ) : null,
+        {normalizedErrors.map((err, index) =>
+          err?.message ? <li key={err.message ?? `err-${index}`}>{err.message}</li> : null,
         )}
       </ul>
     )
-  }, [children, errors])
+  }, [children, normalizedErrors])
 
   if (!content) {
     return null
@@ -213,6 +251,7 @@ function FieldError({
 
   return (
     <div
+      ref={ref}
       role="alert"
       data-slot="field-error"
       className={cn("text-destructive text-sm font-normal", className)}

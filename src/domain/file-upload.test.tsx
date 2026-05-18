@@ -98,4 +98,58 @@ describe("FileUpload", () => {
     render(<FileUpload />)
     expect(screen.queryByRole("button", { name: /Capturar foto/ })).not.toBeInTheDocument()
   })
+
+  it("accepts files dropped on the dropzone via a synthesized DataTransfer", () => {
+    const onValueChange = vi.fn()
+    render(<FileUpload onValueChange={onValueChange} accept="text/*" />)
+    const dropzone = screen.getByRole("button", { name: /Arraste um arquivo/ })
+    const file = makeFile("dropped.txt", "text/plain")
+    fireEvent.drop(dropzone, {
+      dataTransfer: { files: [file] },
+    })
+    expect(onValueChange).toHaveBeenCalledWith([file])
+  })
+
+  it("removing a file via the Remover button updates the value", () => {
+    const onValueChange = vi.fn()
+    render(<FileUpload multiple onValueChange={onValueChange} />)
+    const input = document.querySelector("input[type=file]") as HTMLInputElement
+    const a = makeFile("a.txt", "text/plain")
+    const b = makeFile("b.txt", "text/plain")
+    fireEvent.change(input, { target: { files: [a, b] } })
+    onValueChange.mockClear()
+    const remove = screen.getByRole("button", { name: /Remover a\.txt/ })
+    fireEvent.click(remove)
+    expect(onValueChange).toHaveBeenLastCalledWith([b])
+  })
+
+  it("renders an image preview thumbnail (img element) for image files", () => {
+    render(<FileUpload accept="image/*" />)
+    const input = document.querySelector("input[type=file]") as HTMLInputElement
+    const png = makeFile("foto.png", "image/png", 100)
+    fireEvent.change(input, { target: { files: [png] } })
+    const img = document.querySelector("img[alt='foto.png']") as HTMLImageElement | null
+    expect(img).not.toBeNull()
+    expect(img?.src).toContain("blob:")
+  })
+
+  it("does not match an extension that equals the whole filename (e.g. '.pdf' file)", () => {
+    const onReject = vi.fn()
+    const onValueChange = vi.fn()
+    render(<FileUpload accept=".pdf" onValueChange={onValueChange} onReject={onReject} />)
+    const input = document.querySelector("input[type=file]") as HTMLInputElement
+    const file = new File(["x"], ".pdf", { type: "" })
+    fireEvent.change(input, { target: { files: [file] } })
+    expect(onValueChange).not.toHaveBeenCalled()
+    expect(onReject).toHaveBeenCalledWith([{ file, reason: "type" }])
+  })
+
+  it("matches an extension pattern only when a base name is present", () => {
+    const onValueChange = vi.fn()
+    render(<FileUpload accept=".pdf" onValueChange={onValueChange} />)
+    const input = document.querySelector("input[type=file]") as HTMLInputElement
+    const file = new File(["x"], "doc.pdf", { type: "" })
+    fireEvent.change(input, { target: { files: [file] } })
+    expect(onValueChange).toHaveBeenCalledWith([file])
+  })
 })

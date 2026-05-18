@@ -66,7 +66,10 @@ function fileMatchesAccept(file: File, accept?: string | string[]): boolean {
   return patterns.some((pattern) => {
     if (!pattern) return false
     if (pattern.startsWith(".")) {
-      return file.name.toLowerCase().endsWith(pattern.toLowerCase())
+      const name = file.name.toLowerCase()
+      const ext = pattern.toLowerCase()
+      // Require a stem before the extension — files literally named ".pdf" should not match ".pdf".
+      return name.length > ext.length && name.endsWith(ext)
     }
     if (pattern.endsWith("/*")) {
       const prefix = pattern.slice(0, -1)

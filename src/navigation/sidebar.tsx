@@ -19,7 +19,7 @@ const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
-const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+const SIDEBAR_KEYBOARD_SHORTCUT_DEFAULT = "b"
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
@@ -46,6 +46,8 @@ function SidebarProvider({
   defaultOpen = true,
   open: openProp,
   onOpenChange: setOpenProp,
+  persistOpenState = false,
+  keyboardShortcut = SIDEBAR_KEYBOARD_SHORTCUT_DEFAULT,
   className,
   style,
   children,
@@ -54,6 +56,16 @@ function SidebarProvider({
   defaultOpen?: boolean
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  /**
+   * When true (and the sidebar is uncontrolled), the open state is persisted
+   * to a cookie. Defaults to false so consumers must opt-in to a cookie write.
+   */
+  persistOpenState?: boolean
+  /**
+   * The single-character key used (combined with Ctrl/Cmd) to toggle the
+   * sidebar. Pass `null` to disable the global shortcut entirely.
+   */
+  keyboardShortcut?: string | null
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
@@ -71,21 +83,35 @@ function SidebarProvider({
         _setOpen(openState)
       }
 
-      // This sets the cookie to keep the sidebar state.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+      // Only persist when explicitly opted in AND the sidebar is uncontrolled.
+      // SSR guard: `document` may be unavailable.
+      if (persistOpenState && !setOpenProp && typeof document !== "undefined") {
+        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}; SameSite=Lax; Secure`
+      }
     },
-    [setOpenProp, open],
+    [setOpenProp, open, persistOpenState],
   )
 
   // Helper to toggle the sidebar.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: setOpenMobile is a stable useState setter; keeping it in deps documents the contract.
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
-  }, [isMobile, setOpen])
+  }, [isMobile, setOpen, setOpenMobile])
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
+    if (keyboardShortcut == null) return
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === SIDEBAR_KEYBOARD_SHORTCUT && (event.metaKey || event.ctrlKey)) {
+      // Skip when the user is typing in an editable element so common
+      // shortcuts (e.g. Ctrl+B bold) keep working inside text inputs.
+      const target = event.target as HTMLElement | null
+      const isEditable =
+        !!target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+      if (isEditable) return
+
+      if (event.key === keyboardShortcut && (event.metaKey || event.ctrlKey)) {
         event.preventDefault()
         toggleSidebar()
       }
@@ -93,7 +119,7 @@ function SidebarProvider({
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [toggleSidebar])
+  }, [toggleSidebar, keyboardShortcut])
 
   // We add a state so that we can do data-state="expanded" or "collapsed".
   // This makes it easier to style the sidebar with Tailwind classes.
@@ -167,8 +193,11 @@ function Sidebar({
   }
 
   if (isMobile) {
+    // Do not spread div-shaped `props` onto Sheet (Radix Dialog Root) — those
+    // belong to the inner wrapper div. Forward className/style to the wrapper
+    // inside SheetContent so consumer styling still lands somewhere sensible.
     return (
-      <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+      <Sheet open={openMobile} onOpenChange={setOpenMobile}>
         <SheetContent
           data-sidebar="sidebar"
           data-slot="sidebar"
@@ -185,7 +214,9 @@ function Sidebar({
             <SheetTitle>Sidebar</SheetTitle>
             <SheetDescription>Displays the mobile sidebar.</SheetDescription>
           </SheetHeader>
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <div className={cn("flex h-full w-full flex-col", className)} {...props}>
+            {children}
+          </div>
         </SheetContent>
       </Sheet>
     )
@@ -456,7 +487,9 @@ const sidebarMenuButtonVariants = cva(
           "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
       },
       size: {
+        sm: "h-7 text-xs",
         default: "h-8 text-sm",
+        lg: "h-12 text-sm group-data-[collapsible=icon]:p-0!",
       },
     },
     defaultVariants: {
@@ -487,7 +520,7 @@ function SidebarMenuButton({
       data-slot="sidebar-menu-button"
       data-sidebar="menu-button"
       data-size={size}
-      data-active={isActive}
+      data-active={isActive ? "true" : undefined}
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
       {...props}
     />
@@ -570,14 +603,24 @@ function SidebarMenuBadge({ className, ...props }: React.ComponentProps<"div">) 
 function SidebarMenuSkeleton({
   className,
   showIcon = false,
+  width: widthProp,
   ...props
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean
+  /** Optional fixed width (e.g. "70%"). When omitted, a stable width is
+   * derived from `useId()` so SSR and CSR render the same markup. */
+  width?: string
 }) {
-  // Random width between 50 to 90%.
+  const id = React.useId()
   const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`
-  }, [])
+    if (widthProp) return widthProp
+    // Cheap, stable hash of the component id → width in the 50%..89% range.
+    let h = 0
+    for (let i = 0; i < id.length; i++) {
+      h = ((h << 5) - h + id.charCodeAt(i)) | 0
+    }
+    return `${50 + (Math.abs(h) % 40)}%`
+  }, [id, widthProp])
 
   return (
     <div
@@ -644,7 +687,7 @@ function SidebarMenuSubButton({
       data-slot="sidebar-menu-sub-button"
       data-sidebar="menu-sub-button"
       data-size={size}
-      data-active={isActive}
+      data-active={isActive ? "true" : undefined}
       className={cn(
         "text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground [&>svg]:text-sidebar-accent-foreground flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 outline-hidden focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
         "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground",

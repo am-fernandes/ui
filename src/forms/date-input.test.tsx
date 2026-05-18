@@ -14,9 +14,9 @@ describe("DateInput", () => {
     expect(screen.getByText("14/03/2025")).toBeInTheDocument()
   })
 
-  it("renders disabled as an Input when disabled", () => {
+  it("renders as a disabled button when disabled", () => {
     render(<DateInput value="2025-03-14" disabled />)
-    const input = screen.getByDisplayValue("14/03/2025") as HTMLInputElement
-    expect(input).toBeDisabled()
+    const button = screen.getByRole("button", { name: /14\/03\/2025|Selecionar data/i })
+    expect(button).toBeDisabled()
   })
 })

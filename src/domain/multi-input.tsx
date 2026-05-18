@@ -1,7 +1,14 @@
 "use client"
 
 import { X } from "lucide-react"
-import { type KeyboardEvent, useRef, useState } from "react"
+import {
+  type ClipboardEvent,
+  type FocusEvent,
+  type KeyboardEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 
 import { cn } from "@/lib/utils"
 import { Badge } from "../primitives/badge"
@@ -14,6 +21,10 @@ interface MultiInputBaseProps {
   prefix?: string
   /** Optional suffix rendered after each token in its Badge (e.g. " dias", " %"). */
   suffix?: string
+  /** Maximum number of tokens. Extras are dropped and onReject is fired with "max-items". */
+  maxItems?: number
+  /** Called when input is rejected (e.g. invalid numeric token, exceeds maxItems). */
+  onReject?: (reason: "max-items" | "invalid") => void
 }
 
 interface MultiInputStringProps extends MultiInputBaseProps {
@@ -34,16 +45,26 @@ type MultiInputProps = MultiInputStringProps | MultiInputNumberProps
 
 function parseStringInput(raw: string): string[] {
   return raw
-    .split(/[\n,]+/)
+    .split(/[\n,;]+/)
     .map((s) => s.trim())
     .filter((s) => s.length > 0)
 }
 
-function parseNumberInput(raw: string): number[] {
-  return raw
-    .split(/[/,\s]+/)
-    .map((s) => Number.parseInt(s.trim(), 10))
-    .filter((n) => Number.isInteger(n) && n > 0)
+interface ParsedNumberResult {
+  tokens: number[]
+  hadInvalid: boolean
+}
+
+function parseNumberInput(raw: string): ParsedNumberResult {
+  const pieces = raw.split(/[/,;\s]+/).filter((s) => s.length > 0)
+  const tokens: number[] = []
+  let hadInvalid = false
+  for (const piece of pieces) {
+    const n = Number.parseInt(piece.trim(), 10)
+    if (Number.isInteger(n) && n > 0) tokens.push(n)
+    else hadInvalid = true
+  }
+  return { tokens, hadInvalid }
 }
 
 function MultiInput(props: MultiInputProps) {
@@ -53,29 +74,48 @@ function MultiInput(props: MultiInputProps) {
     error = false,
     prefix,
     suffix,
+    maxItems,
+    onReject,
   } = props
   const [inputValue, setInputValue] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
-  const tokens: (string | number)[] =
-    props.type === "number" ? [...props.value].sort((a, b) => a - b) : props.value
+  const tokens: (string | number)[] = useMemo(() => {
+    if (props.type === "number") return [...props.value].sort((a, b) => a - b)
+    return props.value
+  }, [props.value, props.type])
 
-  const commitInput = () => {
+  function commitFromRaw(raw: string): boolean {
     if (props.type === "number") {
-      const parsed = parseNumberInput(inputValue)
-      if (parsed.length === 0) return
+      const { tokens: parsed, hadInvalid } = parseNumberInput(raw)
+      if (hadInvalid) onReject?.("invalid")
+      if (parsed.length === 0) return false
       const set = new Set(props.value)
       for (const n of parsed) set.add(n)
-      props.onValueChange([...set].sort((a, b) => a - b))
-      setInputValue("")
-    } else {
-      const parsed = parseStringInput(inputValue)
-      if (parsed.length === 0) return
-      const set = new Set(props.value)
-      for (const s of parsed) set.add(s)
-      props.onValueChange([...set])
-      setInputValue("")
+      let next = [...set].sort((a, b) => a - b)
+      if (maxItems !== undefined && next.length > maxItems) {
+        next = next.slice(0, maxItems)
+        onReject?.("max-items")
+      }
+      props.onValueChange(next)
+      return true
     }
+    const parsed = parseStringInput(raw)
+    if (parsed.length === 0) return false
+    const set = new Set(props.value)
+    for (const s of parsed) set.add(s)
+    let next = [...set]
+    if (maxItems !== undefined && next.length > maxItems) {
+      next = next.slice(0, maxItems)
+      onReject?.("max-items")
+    }
+    props.onValueChange(next)
+    return true
+  }
+
+  const commitInput = () => {
+    if (commitFromRaw(inputValue)) setInputValue("")
   }
 
   const removeToken = (token: string | number) => {
@@ -96,24 +136,39 @@ function MultiInput(props: MultiInputProps) {
     }
   }
 
+  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    const text = e.clipboardData?.getData("text") ?? ""
+    if (!text.includes("\n") && !text.includes(",") && !text.includes(";")) return
+    e.preventDefault()
+    if (commitFromRaw(text)) setInputValue("")
+  }
+
+  const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
+    const related = e.relatedTarget as Node | null
+    if (related && wrapperRef.current?.contains(related)) return
+    commitInput()
+  }
+
   const focusInput = () => inputRef.current?.focus()
   const renderToken = (token: string | number) => `${prefix ?? ""}${token}${suffix ?? ""}`
 
   return (
+    // The wrapper proxies click → focus the inner input. Keyboard users reach the input
+    // directly via Tab, so a useKeyWithClickEvents handler would be a no-op.
+    // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard focus reaches the input natively via Tab.
+    // biome-ignore lint/a11y/useSemanticElements: intentional div wrapper; <fieldset> defaults fight the flex layout. The role="group"+aria-label preserves ARIA semantics.
     <div
+      ref={wrapperRef}
       data-slot="multi-input"
       data-type={props.type === "number" ? "number" : "string"}
       onClick={focusInput}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") focusInput()
-      }}
       className={cn(
         "flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-1.5 text-sm transition-colors",
         "focus-within:border-primary cursor-text",
         disabled && "cursor-not-allowed opacity-50",
         error && "border-destructive",
       )}
-      // biome-ignore lint/a11y/useSemanticElements: intentional div wrapper; <fieldset> defaults fight the flex layout. The role="group"+aria-label preserves ARIA semantics.
+      // biome-ignore lint/a11y/useSemanticElements: <fieldset> would force a <legend> and conflict with the flex chip layout. Group semantics preserved via role+aria-label.
       role="group"
       aria-label={props.type === "number" ? "Lista de números" : "Lista de itens"}
     >
@@ -125,7 +180,10 @@ function MultiInput(props: MultiInputProps) {
               type="button"
               aria-label={`Remover ${renderToken(token)}`}
               className="ml-0.5 rounded-sm hover:bg-secondary-foreground/20 cursor-pointer"
-              onClick={(e) => {
+              onMouseDown={(e) => {
+                // Run on mousedown so we fire BEFORE the input's blur — avoids the race
+                // where blur commits the pending input and then we remove a different token.
+                e.preventDefault()
                 e.stopPropagation()
                 removeToken(token)
               }}
@@ -141,11 +199,12 @@ function MultiInput(props: MultiInputProps) {
         inputMode={props.type === "number" ? "numeric" : "text"}
         aria-label={placeholder}
         className="flex-1 min-w-[60px] bg-transparent outline-none disabled:cursor-not-allowed"
-        placeholder={tokens.length === 0 ? placeholder : ""}
+        placeholder={tokens.length === 0 ? placeholder : undefined}
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        onBlur={commitInput}
+        onPaste={handlePaste}
+        onBlur={handleBlur}
         disabled={disabled}
       />
     </div>

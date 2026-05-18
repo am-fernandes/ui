@@ -4,6 +4,17 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+const MIN_HOUR = 0
+const MAX_HOUR = 23
+const MIN_MINUTE = 0
+const MAX_MINUTE = 59
+
+const containerClasses =
+  "inline-flex h-9 items-center gap-1 rounded-md border border-input bg-transparent px-3 py-1 text-base transition-colors focus-within:border-primary focus-within:ring-1 focus-within:ring-ring md:text-sm"
+
+const fieldClasses =
+  "w-7 bg-transparent text-center tabular-nums outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
+
 export interface TimePickerProps {
   value?: string
   onChange?: (value: string) => void
@@ -11,15 +22,16 @@ export interface TimePickerProps {
   id?: string
   className?: string
   "aria-label"?: string
-}
-
-function clamp(n: number, min: number, max: number) {
-  if (Number.isNaN(n)) return min
-  return Math.min(max, Math.max(min, n))
+  /** Forwarded to the hour input. */
+  ref?: React.Ref<HTMLInputElement>
 }
 
 function pad(n: number) {
   return n.toString().padStart(2, "0")
+}
+
+function isInRange(n: number, min: number, max: number) {
+  return Number.isFinite(n) && n >= min && n <= max
 }
 
 function parseValue(value: string | undefined): { hour: string; minute: string } {
@@ -28,144 +40,233 @@ function parseValue(value: string | undefined): { hour: string; minute: string }
   return { hour: h.slice(0, 2), minute: m.slice(0, 2) }
 }
 
-const TimePicker = React.forwardRef<HTMLInputElement, TimePickerProps>(
-  ({ value, onChange, disabled, id, className, "aria-label": ariaLabel = "Horário" }, ref) => {
-    const minuteRef = React.useRef<HTMLInputElement>(null)
-    const parsed = parseValue(value)
-    const [hour, setHour] = React.useState(parsed.hour)
-    const [minute, setMinute] = React.useState(parsed.minute)
+interface TimeFieldProps {
+  id?: string
+  min: number
+  max: number
+  value: string
+  ariaLabel: string
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]
+  onChange: (raw: string) => void
+  onBlur: () => void
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  disabled?: boolean
+  ref?: React.Ref<HTMLInputElement>
+}
 
-    // Sync external value into local state when the prop changes
-    React.useEffect(() => {
-      const next = parseValue(value)
-      setHour(next.hour)
-      setMinute(next.minute)
-    }, [value])
+function TimeField({
+  id,
+  value,
+  ariaLabel,
+  inputMode = "numeric",
+  onChange,
+  onBlur,
+  onKeyDown,
+  disabled,
+  ref,
+}: TimeFieldProps) {
+  return (
+    <input
+      ref={ref}
+      id={id}
+      type="text"
+      inputMode={inputMode}
+      aria-label={ariaLabel}
+      maxLength={2}
+      placeholder="--"
+      value={value}
+      onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 2))}
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
+      onFocus={(e) => e.target.select()}
+      disabled={disabled}
+      className={fieldClasses}
+    />
+  )
+}
+TimeField.displayName = "TimeField"
 
-    function emit(h: string, m: string) {
+function TimePicker({
+  value,
+  onChange,
+  disabled,
+  id,
+  className,
+  "aria-label": ariaLabel = "Horário",
+  ref,
+}: TimePickerProps) {
+  const minuteRef = React.useRef<HTMLInputElement>(null)
+
+  // Derive the committed values directly from the prop.
+  const { hour: committedHour, minute: committedMinute } = React.useMemo(
+    () => parseValue(value),
+    [value],
+  )
+
+  // Draft state is only used while the user is actively typing.
+  const [draft, setDraft] = React.useState<{ hour: string | null; minute: string | null }>({
+    hour: null,
+    minute: null,
+  })
+
+  // Whenever the committed values change, drop the draft.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-init when committed values change.
+  React.useEffect(() => {
+    setDraft({ hour: null, minute: null })
+  }, [committedHour, committedMinute])
+
+  const hour = draft.hour ?? committedHour
+  const minute = draft.minute ?? committedMinute
+
+  const emit = React.useCallback(
+    (h: string, m: string) => {
       if (!onChange) return
-      // Only emit a clean value when both fields parse to numbers.
       if (h === "" || m === "") {
         onChange("")
         return
       }
-      const hh = pad(clamp(Number.parseInt(h, 10), 0, 23))
-      const mm = pad(clamp(Number.parseInt(m, 10), 0, 59))
-      onChange(`${hh}:${mm}`)
-    }
-
-    function handleHourChange(e: React.ChangeEvent<HTMLInputElement>) {
-      const raw = e.target.value.replace(/\D/g, "").slice(0, 2)
-      setHour(raw)
-      if (raw.length === 2) {
-        emit(raw, minute)
-        minuteRef.current?.focus()
-        minuteRef.current?.select()
-      }
-    }
-
-    function handleMinuteChange(e: React.ChangeEvent<HTMLInputElement>) {
-      const raw = e.target.value.replace(/\D/g, "").slice(0, 2)
-      setMinute(raw)
-      if (raw.length === 2) emit(hour, raw)
-    }
-
-    function handleHourBlur() {
-      if (hour === "") return emit("", minute)
-      const h = pad(clamp(Number.parseInt(hour, 10), 0, 23))
-      setHour(h)
-      emit(h, minute)
-    }
-
-    function handleMinuteBlur() {
-      if (minute === "") return emit(hour, "")
-      const m = pad(clamp(Number.parseInt(minute, 10), 0, 59))
-      setMinute(m)
-      emit(hour, m)
-    }
-
-    function handleHourKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-      if (e.key === ":" || e.key === "Tab") {
-        if (e.key === ":") {
-          e.preventDefault()
-          minuteRef.current?.focus()
-          minuteRef.current?.select()
-        }
+      const hNum = Number.parseInt(h, 10)
+      const mNum = Number.parseInt(m, 10)
+      if (!isInRange(hNum, MIN_HOUR, MAX_HOUR) || !isInRange(mNum, MIN_MINUTE, MAX_MINUTE)) {
+        onChange("")
         return
       }
-      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-        e.preventDefault()
-        const current = hour === "" ? 0 : Number.parseInt(hour, 10)
-        const next = pad(clamp(current + (e.key === "ArrowUp" ? 1 : -1), 0, 23))
-        setHour(next)
-        emit(next, minute)
+      onChange(`${pad(hNum)}:${pad(mNum)}`)
+    },
+    [onChange],
+  )
+
+  const handleHourChange = (raw: string) => {
+    setDraft((d) => ({ ...d, hour: raw }))
+    if (raw.length === 2) {
+      const hNum = Number.parseInt(raw, 10)
+      if (isInRange(hNum, MIN_HOUR, MAX_HOUR)) {
+        emit(raw, minute)
       }
+      minuteRef.current?.focus()
+      minuteRef.current?.select()
     }
+  }
 
-    function handleMinuteKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-        e.preventDefault()
-        const current = minute === "" ? 0 : Number.parseInt(minute, 10)
-        const next = pad(clamp(current + (e.key === "ArrowUp" ? 1 : -1), 0, 59))
-        setMinute(next)
-        emit(hour, next)
-      }
+  const handleMinuteChange = (raw: string) => {
+    setDraft((d) => ({ ...d, minute: raw }))
+    if (raw.length === 2) emit(hour, raw)
+  }
+
+  const handleHourBlur = () => {
+    if (hour === "") {
+      emit("", minute)
+      setDraft((d) => ({ ...d, hour: null }))
+      return
     }
+    const hNum = Number.parseInt(hour, 10)
+    if (!isInRange(hNum, MIN_HOUR, MAX_HOUR)) {
+      // Out-of-range -> clear the field rather than clamping.
+      setDraft((d) => ({ ...d, hour: "" }))
+      emit("", minute)
+      return
+    }
+    const padded = pad(hNum)
+    setDraft((d) => ({ ...d, hour: null }))
+    emit(padded, minute)
+  }
 
-    const containerClasses = cn(
-      "inline-flex h-9 items-center gap-1 rounded-md border border-input bg-transparent px-3 py-1 text-base transition-colors focus-within:border-primary focus-within:ring-1 focus-within:ring-ring md:text-sm",
-      disabled && "cursor-not-allowed opacity-50",
-      className,
-    )
+  const handleMinuteBlur = () => {
+    if (minute === "") {
+      emit(hour, "")
+      setDraft((d) => ({ ...d, minute: null }))
+      return
+    }
+    const mNum = Number.parseInt(minute, 10)
+    if (!isInRange(mNum, MIN_MINUTE, MAX_MINUTE)) {
+      setDraft((d) => ({ ...d, minute: "" }))
+      emit(hour, "")
+      return
+    }
+    const padded = pad(mNum)
+    setDraft((d) => ({ ...d, minute: null }))
+    emit(hour, padded)
+  }
 
-    const fieldClasses =
-      "w-7 bg-transparent text-center tabular-nums outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
+  const handleHourKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === ":") {
+      e.preventDefault()
+      minuteRef.current?.focus()
+      minuteRef.current?.select()
+      return
+    }
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault()
+      const current = hour === "" ? 0 : Number.parseInt(hour, 10)
+      const delta = e.key === "ArrowUp" ? 1 : -1
+      const span = MAX_HOUR - MIN_HOUR + 1
+      const wrapped = ((((current - MIN_HOUR + delta) % span) + span) % span) + MIN_HOUR
+      const next = pad(wrapped)
+      setDraft((d) => ({ ...d, hour: null }))
+      emit(next, minute)
+    }
+  }
 
-    return (
-      <fieldset
-        className={containerClasses}
-        aria-label={ariaLabel}
-        data-slot="time-picker"
+  const handleMinuteKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault()
+      const current = minute === "" ? 0 : Number.parseInt(minute, 10)
+      const delta = e.key === "ArrowUp" ? 1 : -1
+      const span = MAX_MINUTE - MIN_MINUTE + 1
+      const wrapped = ((((current - MIN_MINUTE + delta) % span) + span) % span) + MIN_MINUTE
+      const next = pad(wrapped)
+      setDraft((d) => ({ ...d, minute: null }))
+      emit(hour, next)
+      return
+    }
+    if (e.key === "Backspace" && minute === "") {
+      e.preventDefault()
+      const hourInput = e.currentTarget.parentElement?.querySelector<HTMLInputElement>(
+        'input[aria-label="Horas"]',
+      )
+      hourInput?.focus()
+      hourInput?.select()
+    }
+  }
+
+  return (
+    <div
+      // biome-ignore lint/a11y/useSemanticElements: a <fieldset> would force a <legend>, breaking the inline flex layout intended.
+      role="group"
+      aria-label={ariaLabel}
+      data-slot="time-picker"
+      data-disabled={disabled ? "true" : undefined}
+      className={cn(containerClasses, disabled && "cursor-not-allowed opacity-50", className)}
+    >
+      <TimeField
+        ref={ref}
+        id={id}
+        value={hour}
+        ariaLabel="Horas"
+        min={MIN_HOUR}
+        max={MAX_HOUR}
+        onChange={handleHourChange}
+        onBlur={handleHourBlur}
+        onKeyDown={handleHourKeyDown}
         disabled={disabled}
-      >
-        <input
-          ref={ref}
-          id={id}
-          type="text"
-          inputMode="numeric"
-          aria-label="Horas"
-          maxLength={2}
-          placeholder="--"
-          value={hour}
-          onChange={handleHourChange}
-          onBlur={handleHourBlur}
-          onKeyDown={handleHourKeyDown}
-          onFocus={(e) => e.target.select()}
-          disabled={disabled}
-          className={fieldClasses}
-        />
-        <span aria-hidden className="text-muted-foreground">
-          :
-        </span>
-        <input
-          ref={minuteRef}
-          type="text"
-          inputMode="numeric"
-          aria-label="Minutos"
-          maxLength={2}
-          placeholder="--"
-          value={minute}
-          onChange={handleMinuteChange}
-          onBlur={handleMinuteBlur}
-          onKeyDown={handleMinuteKeyDown}
-          onFocus={(e) => e.target.select()}
-          disabled={disabled}
-          className={fieldClasses}
-        />
-      </fieldset>
-    )
-  },
-)
+      />
+      <span aria-hidden className="text-muted-foreground">
+        :
+      </span>
+      <TimeField
+        ref={minuteRef}
+        value={minute}
+        ariaLabel="Minutos"
+        min={MIN_MINUTE}
+        max={MAX_MINUTE}
+        onChange={handleMinuteChange}
+        onBlur={handleMinuteBlur}
+        onKeyDown={handleMinuteKeyDown}
+        disabled={disabled}
+      />
+    </div>
+  )
+}
 TimePicker.displayName = "TimePicker"
 
 export { TimePicker }

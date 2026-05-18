@@ -13,20 +13,23 @@ describe("Collapsible", () => {
     render(
       <Collapsible defaultOpen>
         <CollapsibleTrigger>Toggle</CollapsibleTrigger>
-        <CollapsibleContent>Hidden content</CollapsibleContent>
+        <CollapsibleContent data-testid="content">Hidden content</CollapsibleContent>
       </Collapsible>,
     )
     expect(screen.getByText("Hidden content")).toBeInTheDocument()
+    expect(screen.getByTestId("content")).toHaveAttribute("data-state", "open")
   })
 
   it("hides content when closed", () => {
     render(
       <Collapsible defaultOpen={false}>
         <CollapsibleTrigger>Toggle</CollapsibleTrigger>
-        <CollapsibleContent>Hidden content</CollapsibleContent>
+        <CollapsibleContent data-testid="content">Hidden content</CollapsibleContent>
       </Collapsible>,
     )
-    expect(screen.queryByText("Hidden content")).not.toBeInTheDocument()
+    // Assert behavior via Radix's data-state instead of DOM presence — Radix
+    // may keep the element in the tree for animation purposes.
+    expect(screen.getByTestId("content")).toHaveAttribute("data-state", "closed")
   })
 
   it("CollapsibleHeader renders trigger on the right by default", () => {
@@ -37,8 +40,8 @@ describe("Collapsible", () => {
     )
     const header = screen.getByTestId("header")
     expect(header).toHaveAttribute("data-trigger-side", "right")
-    // Last element-child is the trigger button (title is in the middle div).
-    expect(header.lastElementChild?.tagName).toBe("BUTTON")
+    // The trigger button carries a data-position attribute reflecting its side.
+    expect(screen.getByRole("button")).toHaveAttribute("data-position", "right")
   })
 
   it("CollapsibleHeader renders trigger on the left when triggerSide=left", () => {
@@ -49,6 +52,6 @@ describe("Collapsible", () => {
     )
     const header = screen.getByTestId("header")
     expect(header).toHaveAttribute("data-trigger-side", "left")
-    expect(header.firstElementChild?.tagName).toBe("BUTTON")
+    expect(screen.getByRole("button")).toHaveAttribute("data-position", "left")
   })
 })

@@ -3,6 +3,7 @@
 import {
   type ColumnDef,
   type ColumnFiltersState,
+  type OnChangeFn,
   type PaginationState,
   type SortingState,
   flexRender,
@@ -19,6 +20,13 @@ import { cn } from "@/lib/utils"
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./table"
+
+export interface DataTableLabels {
+  search?: string
+  empty?: string
+  /** Render the row-count line, given filtered + total counts. */
+  rowCount?: (filtered: number, total: number) => string
+}
 
 export interface DataTableProps<TData> {
   columns: ColumnDef<TData>[]
@@ -37,55 +45,187 @@ export interface DataTableProps<TData> {
   }
   /** Show row count in the footer (e.g. `12 registros` or `5 de 12 registros` when filtered). Default `false`. */
   showRowCount?: boolean
+  /** Controlled sorting state. */
+  sorting?: SortingState
+  /** Controlled sorting change handler. */
+  onSortingChange?: OnChangeFn<SortingState>
+  /** Controlled global filter value. */
+  globalFilter?: string
+  /** Controlled global filter change handler. */
+  onGlobalFilterChange?: OnChangeFn<string>
+  /** Controlled page index (0-based). */
+  pageIndex?: number
+  /** Controlled pagination change handler. */
+  onPaginationChange?: OnChangeFn<PaginationState>
+  /** Total page count (required when `manualPagination` is true). */
+  pageCount?: number
+  /** Whether pagination is server-driven. */
+  manualPagination?: boolean
+  /** Overridable copy. */
+  labels?: DataTableLabels
+}
+
+function defaultRowCount(filtered: number, total: number): string {
+  if (filtered === total) {
+    return `${total} registro${total === 1 ? "" : "s"}`
+  }
+  return `${filtered} de ${total} registros`
 }
 
 function DataTable<TData>({
   columns,
   data,
   searchableColumns,
-  searchPlaceholder = "Buscar...",
-  emptyMessage = "Nenhum resultado.",
+  searchPlaceholder,
+  emptyMessage,
   className,
   pagination,
   showRowCount = false,
+  sorting: sortingProp,
+  onSortingChange: onSortingChangeProp,
+  globalFilter: globalFilterProp,
+  onGlobalFilterChange: onGlobalFilterChangeProp,
+  pageIndex: pageIndexProp,
+  onPaginationChange: onPaginationChangeProp,
+  pageCount,
+  manualPagination,
+  labels,
 }: DataTableProps<TData>) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const isSortingControlled = sortingProp !== undefined
+  const isGlobalFilterControlled = globalFilterProp !== undefined
+  const isPaginationControlled = pageIndexProp !== undefined || onPaginationChangeProp !== undefined
+
+  const [internalSorting, setInternalSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [globalFilter, setGlobalFilter] = React.useState("")
+  const [internalGlobalFilter, setInternalGlobalFilter] = React.useState("")
   const [paginationState, setPaginationState] = React.useState<PaginationState>({
-    pageIndex: 0,
+    pageIndex: pageIndexProp ?? 0,
     pageSize: pagination?.pageSize ?? 10,
   })
 
-  const paginationEnabled = pagination != null
+  // Keep pageSize in sync with prop (consumer may change it later).
+  React.useEffect(() => {
+    setPaginationState((prev) => {
+      const nextPageSize = pagination?.pageSize ?? 10
+      if (prev.pageSize === nextPageSize) return prev
+      return { ...prev, pageSize: nextPageSize }
+    })
+  }, [pagination?.pageSize])
 
-  const table = useReactTable({
-    data,
-    columns,
-    state: {
-      sorting,
-      columnFilters,
-      globalFilter,
-      ...(paginationEnabled ? { pagination: paginationState } : {}),
+  // Sync controlled pageIndex into local state when present.
+  React.useEffect(() => {
+    if (pageIndexProp === undefined) return
+    setPaginationState((prev) =>
+      prev.pageIndex === pageIndexProp ? prev : { ...prev, pageIndex: pageIndexProp },
+    )
+  }, [pageIndexProp])
+
+  const sorting = isSortingControlled ? sortingProp : internalSorting
+  const globalFilter = isGlobalFilterControlled ? globalFilterProp : internalGlobalFilter
+
+  const paginationEnabled = pagination != null || manualPagination === true
+
+  const handleSortingChange: OnChangeFn<SortingState> = React.useCallback(
+    (updater) => {
+      if (isSortingControlled) {
+        onSortingChangeProp?.(updater)
+        return
+      }
+      setInternalSorting(updater)
+      onSortingChangeProp?.(updater)
     },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    onPaginationChange: paginationEnabled ? setPaginationState : undefined,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    ...(paginationEnabled ? { getPaginationRowModel: getPaginationRowModel() } : {}),
-    globalFilterFn: (row, _columnId, filterValue) => {
-      if (!searchableColumns || searchableColumns.length === 0) return true
+    [isSortingControlled, onSortingChangeProp],
+  )
+
+  const handleGlobalFilterChange: OnChangeFn<string> = React.useCallback(
+    (updater) => {
+      if (isGlobalFilterControlled) {
+        onGlobalFilterChangeProp?.(updater)
+        return
+      }
+      setInternalGlobalFilter(updater)
+      onGlobalFilterChangeProp?.(updater)
+    },
+    [isGlobalFilterControlled, onGlobalFilterChangeProp],
+  )
+
+  const handlePaginationChange: OnChangeFn<PaginationState> = React.useCallback(
+    (updater) => {
+      const next =
+        typeof updater === "function"
+          ? (updater as (old: PaginationState) => PaginationState)(paginationState)
+          : updater
+      if (!isPaginationControlled) {
+        setPaginationState(next)
+      }
+      onPaginationChangeProp?.(next)
+    },
+    [isPaginationControlled, onPaginationChangeProp, paginationState],
+  )
+
+  const globalFilterFn = React.useCallback(
+    (row: { getValue: (id: string) => unknown }, _columnId: string, filterValue: unknown) => {
       if (!filterValue) return true
+      if (!searchableColumns || searchableColumns.length === 0) return true
       const needle = String(filterValue).toLowerCase()
       return searchableColumns.some((col) => {
         const value = row.getValue(col)
         return value != null && String(value).toLowerCase().includes(needle)
       })
     },
-  })
+    [searchableColumns],
+  )
+
+  const tableOptions = React.useMemo(
+    () => ({
+      data,
+      columns,
+      state: {
+        sorting,
+        columnFilters,
+        globalFilter,
+        ...(paginationEnabled ? { pagination: paginationState } : {}),
+      },
+      onSortingChange: handleSortingChange,
+      onColumnFiltersChange: setColumnFilters,
+      onGlobalFilterChange: handleGlobalFilterChange,
+      onPaginationChange: paginationEnabled ? handlePaginationChange : undefined,
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      getFilteredRowModel: getFilteredRowModel(),
+      ...(paginationEnabled && !manualPagination
+        ? { getPaginationRowModel: getPaginationRowModel() }
+        : {}),
+      ...(manualPagination ? { manualPagination: true, pageCount: pageCount ?? -1 } : {}),
+      // When `searchableColumns` is provided, scope global filter to those columns;
+      // otherwise fall back to TanStack's built-in `includesString` matcher.
+      ...(searchableColumns && searchableColumns.length > 0
+        ? { globalFilterFn }
+        : { globalFilterFn: "includesString" as const }),
+    }),
+    [
+      data,
+      columns,
+      sorting,
+      columnFilters,
+      globalFilter,
+      paginationState,
+      paginationEnabled,
+      handleSortingChange,
+      handleGlobalFilterChange,
+      handlePaginationChange,
+      manualPagination,
+      pageCount,
+      searchableColumns,
+      globalFilterFn,
+    ],
+  )
+
+  const table = useReactTable(tableOptions)
+
+  const resolvedSearchPlaceholder = searchPlaceholder ?? labels?.search ?? "Buscar..."
+  const resolvedEmptyMessage = emptyMessage ?? labels?.empty ?? "Nenhum resultado."
+  const rowCountFn = labels?.rowCount ?? defaultRowCount
 
   return (
     <div className={cn("space-y-3", className)} data-slot="data-table">
@@ -97,8 +237,8 @@ function DataTable<TData>({
           />
           <Input
             value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            placeholder={searchPlaceholder}
+            onChange={(e) => handleGlobalFilterChange(e.target.value)}
+            placeholder={resolvedSearchPlaceholder}
             className="pl-9"
             aria-label="Buscar na tabela"
           />
@@ -113,14 +253,19 @@ function DataTable<TData>({
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort()
                   const sorted = header.column.getIsSorted()
+                  const ariaSort: "ascending" | "descending" | "none" =
+                    sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"
+                  const headerDef = header.column.columnDef.header
+                  const headerText = typeof headerDef === "string" ? headerDef : header.id
+                  const ariaLabel = `Ordenar por ${headerText}`
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} aria-sort={canSort ? ariaSort : undefined}>
                       {header.isPlaceholder ? null : canSort ? (
                         <button
                           type="button"
                           onClick={header.column.getToggleSortingHandler()}
-                          className="-mx-2 inline-flex h-8 items-center gap-2 rounded-md px-2 text-left hover:bg-accent cursor-pointer"
-                          aria-label={`Ordenar por ${String(header.column.columnDef.header ?? header.id)}`}
+                          className="-mx-2 inline-flex h-8 items-center gap-2 rounded-md px-2 text-left hover:bg-accent"
+                          aria-label={ariaLabel}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
                           {sorted === "asc" ? (
@@ -154,10 +299,10 @@ function DataTable<TData>({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={table.getVisibleLeafColumns().length}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  {emptyMessage}
+                  {resolvedEmptyMessage}
                 </TableCell>
               </TableRow>
             )}
@@ -169,9 +314,7 @@ function DataTable<TData>({
         <div className="flex items-center justify-between gap-2 px-2 py-3">
           {showRowCount ? (
             <span className="text-xs text-muted-foreground">
-              {table.getFilteredRowModel().rows.length === data.length
-                ? `${data.length} registro${data.length === 1 ? "" : "s"}`
-                : `${table.getFilteredRowModel().rows.length} de ${data.length} registros`}
+              {rowCountFn(table.getFilteredRowModel().rows.length, data.length)}
             </span>
           ) : (
             <span />

@@ -6,11 +6,14 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-type RadioGroupProps = React.ComponentProps<typeof RadioGroupPrimitive.Root>
+type RadioGroupProps = React.ComponentProps<typeof RadioGroupPrimitive.Root> & {
+  ref?: React.Ref<React.ComponentRef<typeof RadioGroupPrimitive.Root>>
+}
 
-function RadioGroup({ className, orientation = "vertical", ...props }: RadioGroupProps) {
+function RadioGroup({ className, orientation = "vertical", ref, ...props }: RadioGroupProps) {
   return (
     <RadioGroupPrimitive.Root
+      ref={ref}
       data-slot="radio-group"
       orientation={orientation}
       className={cn(
@@ -22,12 +25,14 @@ function RadioGroup({ className, orientation = "vertical", ...props }: RadioGrou
   )
 }
 
-function RadioGroupItem({
-  className,
-  ...props
-}: React.ComponentProps<typeof RadioGroupPrimitive.Item>) {
+type RadioGroupItemProps = React.ComponentProps<typeof RadioGroupPrimitive.Item> & {
+  ref?: React.Ref<React.ComponentRef<typeof RadioGroupPrimitive.Item>>
+}
+
+function RadioGroupItem({ className, ref, ...props }: RadioGroupItemProps) {
   return (
     <RadioGroupPrimitive.Item
+      ref={ref}
       data-slot="radio-group-item"
       className={cn(
         "border-input text-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive aspect-square size-4 shrink-0 rounded-full border shadow-xs transition-[color,box-shadow] outline-none cursor-pointer focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",

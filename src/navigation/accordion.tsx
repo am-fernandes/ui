@@ -2,7 +2,7 @@
 
 import * as AccordionPrimitive from "@radix-ui/react-accordion"
 import { ChevronDown } from "lucide-react"
-import * as React from "react"
+import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -13,42 +13,52 @@ export interface AccordionItemData {
   disabled?: boolean
 }
 
-type AccordionBase = Omit<
+type AccordionRootRef = React.ComponentRef<typeof AccordionPrimitive.Root>
+
+type AccordionSingleProps = Omit<
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Root>,
   "children" | "type"
->
+> & {
+  type?: "single"
+  value?: string
+  defaultValue?: string
+  onValueChange?: (value: string) => void
+  collapsible?: boolean
+  items: AccordionItemData[]
+  ref?: React.Ref<AccordionRootRef>
+}
 
-export type AccordionProps =
-  | (AccordionBase & {
-      type?: "single"
-      items: AccordionItemData[]
-      collapsible?: boolean
-    })
-  | (AccordionBase & {
-      type: "multiple"
-      items: AccordionItemData[]
-    })
+type AccordionMultipleProps = Omit<
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Root>,
+  "children" | "type"
+> & {
+  type: "multiple"
+  value?: string[]
+  defaultValue?: string[]
+  onValueChange?: (value: string[]) => void
+  items: AccordionItemData[]
+  ref?: React.Ref<AccordionRootRef>
+}
 
-const Accordion = React.forwardRef<
-  React.ComponentRef<typeof AccordionPrimitive.Root>,
-  AccordionProps
->(({ items, className, ...props }, ref) => (
-  <AccordionPrimitive.Root
-    ref={ref}
-    data-slot="accordion"
-    className={className}
-    // biome-ignore lint/suspicious/noExplicitAny: Radix Root has a discriminated union over `type`; forwarding the narrowed AccordionProps requires bypassing the narrowing here.
-    {...(props as any)}
-  >
-    {items.map((item) => (
+export type AccordionProps = AccordionSingleProps | AccordionMultipleProps
+
+function renderItems(items: AccordionItemData[]) {
+  return items.map((item, i) => {
+    // AccordionItemData does not carry an id; prefer the (required) `value`
+    // and fall back to a positional key derived from the string title.
+    const key =
+      typeof item.value === "string" && item.value
+        ? item.value
+        : `${i}-${typeof item.title === "string" ? item.title : ""}`
+    return (
       <AccordionPrimitive.Item
-        key={item.value}
+        key={key}
         value={item.value}
         disabled={item.disabled}
         data-slot="accordion-item"
-        className="border-b"
+        className="border-b last:border-b-0"
       >
-        <AccordionPrimitive.Header className="flex">
+        <AccordionPrimitive.Header data-slot="accordion-header" className="flex">
           <AccordionPrimitive.Trigger
             data-slot="accordion-trigger"
             className={cn(
@@ -56,7 +66,10 @@ const Accordion = React.forwardRef<
             )}
           >
             {item.title}
-            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+            <ChevronDown
+              data-slot="accordion-chevron"
+              className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200"
+            />
           </AccordionPrimitive.Trigger>
         </AccordionPrimitive.Header>
         <AccordionPrimitive.Content
@@ -66,9 +79,40 @@ const Accordion = React.forwardRef<
           <div className="pb-4 pt-0">{item.content}</div>
         </AccordionPrimitive.Content>
       </AccordionPrimitive.Item>
-    ))}
-  </AccordionPrimitive.Root>
-))
+    )
+  })
+}
+
+function Accordion(props: AccordionProps) {
+  if (props.type === "multiple") {
+    const { items, className, ref, type: _type, ...rest } = props
+    return (
+      <AccordionPrimitive.Root
+        ref={ref}
+        type="multiple"
+        data-slot="accordion"
+        className={className}
+        {...rest}
+      >
+        {renderItems(items)}
+      </AccordionPrimitive.Root>
+    )
+  }
+
+  const { items, className, ref, type: _type, collapsible, ...rest } = props
+  return (
+    <AccordionPrimitive.Root
+      ref={ref}
+      type="single"
+      collapsible={collapsible}
+      data-slot="accordion"
+      className={className}
+      {...rest}
+    >
+      {renderItems(items)}
+    </AccordionPrimitive.Root>
+  )
+}
 Accordion.displayName = "Accordion"
 
 export { Accordion }

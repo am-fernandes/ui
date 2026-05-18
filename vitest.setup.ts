@@ -46,3 +46,11 @@ if (typeof globalThis !== "undefined" && !("IntersectionObserver" in globalThis)
     }
   }
 }
+
+// jsdom does not implement URL.createObjectURL / revokeObjectURL (used by FileUpload thumbnails).
+if (typeof URL !== "undefined" && typeof URL.createObjectURL === "undefined") {
+  let counter = 0
+  ;(URL as unknown as { createObjectURL: (obj: Blob) => string }).createObjectURL = () =>
+    `blob:test-${++counter}`
+  ;(URL as unknown as { revokeObjectURL: (url: string) => void }).revokeObjectURL = () => {}
+}

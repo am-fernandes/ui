@@ -1,5 +1,6 @@
 "use client"
 
+import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import * as React from "react"
@@ -7,6 +8,11 @@ import { type DayButton, DayPicker, type Locale, getDefaultClassNames } from "re
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "../primitives/button"
+
+type CalendarProps = React.ComponentProps<typeof DayPicker> & {
+  buttonVariant?: React.ComponentProps<typeof Button>["variant"]
+  ref?: React.Ref<HTMLDivElement>
+}
 
 function Calendar({
   className,
@@ -17,11 +23,52 @@ function Calendar({
   locale = ptBR,
   formatters,
   components,
+  ref,
   ...props
-}: React.ComponentProps<typeof DayPicker> & {
-  buttonVariant?: React.ComponentProps<typeof Button>["variant"]
-}) {
+}: CalendarProps) {
   const defaultClassNames = getDefaultClassNames()
+
+  const memoizedComponents = React.useMemo(
+    () => ({
+      Root: ({
+        className,
+        rootRef,
+        ...rootProps
+      }: React.ComponentProps<"div"> & {
+        rootRef?: React.Ref<HTMLDivElement>
+      }) => (
+        <div
+          data-slot="calendar"
+          ref={(node) => {
+            if (typeof rootRef === "function") rootRef(node)
+            else if (rootRef)
+              (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = node
+            if (typeof ref === "function") ref(node)
+            else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+          }}
+          className={cn(className)}
+          {...rootProps}
+        />
+      ),
+      Chevron: ({
+        className,
+        orientation,
+      }: {
+        className?: string
+        orientation?: "left" | "right" | "up" | "down"
+      }) => {
+        if (orientation === "left")
+          return <ChevronLeftIcon aria-hidden="true" className={cn("size-4", className)} />
+        if (orientation === "right")
+          return <ChevronRightIcon aria-hidden="true" className={cn("size-4", className)} />
+        return <ChevronDownIcon aria-hidden="true" className={cn("size-4", className)} />
+      },
+      DayButton: (dayButtonProps: React.ComponentProps<typeof DayButton>) => (
+        <CalendarDayButton locale={locale} {...dayButtonProps} />
+      ),
+    }),
+    [locale, ref],
+  )
 
   return (
     <DayPicker
@@ -93,17 +140,7 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        Root: ({ className, rootRef, ...props }) => (
-          <div data-slot="calendar" ref={rootRef} className={cn(className)} {...props} />
-        ),
-        Chevron: ({ className, orientation, ...props }) => {
-          if (orientation === "left")
-            return <ChevronLeftIcon className={cn("size-4", className)} {...props} />
-          if (orientation === "right")
-            return <ChevronRightIcon className={cn("size-4", className)} {...props} />
-          return <ChevronDownIcon className={cn("size-4", className)} {...props} />
-        },
-        DayButton: ({ ...props }) => <CalendarDayButton locale={locale} {...props} />,
+        ...memoizedComponents,
         ...components,
       }}
       {...props}
@@ -112,27 +149,26 @@ function Calendar({
 }
 Calendar.displayName = "Calendar"
 
+type CalendarDayButtonProps = React.ComponentProps<typeof DayButton> & {
+  locale?: Partial<Locale>
+}
+
 function CalendarDayButton({
   className,
   day,
   modifiers,
-  locale,
+  locale: _locale,
   ...props
-}: React.ComponentProps<typeof DayButton> & { locale?: Partial<Locale> }) {
+}: CalendarDayButtonProps) {
   const defaultClassNames = getDefaultClassNames()
-  const ref = React.useRef<HTMLButtonElement>(null)
-
-  React.useEffect(() => {
-    if (modifiers.focused) ref.current?.focus()
-  }, [modifiers.focused])
+  const isOutside = !!modifiers.outside
 
   return (
     <Button
-      ref={ref}
       variant="ghost"
       size="icon"
       data-slot="calendar-day-button"
-      data-day={day.date.toLocaleDateString(locale?.code)}
+      {...(!isOutside && { "data-day": format(day.date, "yyyy-MM-dd") })}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

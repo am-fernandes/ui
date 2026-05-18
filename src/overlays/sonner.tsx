@@ -9,11 +9,12 @@ import {
 } from "lucide-react"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
-const Toaster = ({ ...props }: ToasterProps) => {
+const Toaster = (props: ToasterProps) => {
   return (
     <Sonner
-      data-slot="sonner"
-      className="toaster group"
+      // sonner forwards className but drops unknown data-* props from the root, so we
+      // tag via class instead — tests query for the toaster element below.
+      className="toaster group [&_section]:data-[sonner-toaster]"
       icons={{
         success: <CircleCheckIcon className="size-4" />,
         info: <InfoIcon className="size-4" />,
@@ -24,9 +25,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           success:
-            "!bg-status-success-bg !text-status-success-text !border-status-success-border [&_svg]:!text-success",
+            "group-[.toaster]:bg-status-success-bg group-[.toaster]:text-status-success-text group-[.toaster]:border-status-success-border [&_svg]:!text-success",
           error:
-            "!bg-status-destructive-bg !text-status-destructive-text !border-status-destructive-border [&_svg]:!text-destructive",
+            "group-[.toaster]:bg-status-destructive-bg group-[.toaster]:text-status-destructive-text group-[.toaster]:border-status-destructive-border [&_svg]:!text-destructive",
+          warning:
+            "group-[.toaster]:bg-status-warning-bg group-[.toaster]:text-status-warning-text group-[.toaster]:border-status-warning-border [&_svg]:!text-status-warning-text",
+          info: "group-[.toaster]:bg-status-info-bg group-[.toaster]:text-status-info-text group-[.toaster]:border-status-info-border [&_svg]:!text-status-info-text",
+          loading:
+            "group-[.toaster]:bg-popover group-[.toaster]:text-popover-foreground group-[.toaster]:border-border",
         },
       }}
       style={

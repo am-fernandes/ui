@@ -21,6 +21,24 @@ const roundedMap = {
   full: "rounded-full",
 } as const
 
+const DEFAULT_ALLOWED_PROTOCOLS = ["http:", "https:"] as const
+
+function isAllowedSrc(src: string, allowed: readonly string[]): boolean {
+  // Always block javascript: pseudo URLs.
+  if (/^\s*javascript:/i.test(src)) return false
+  try {
+    // For absolute URLs (with a scheme), URL() will succeed.
+    // For relative URLs, this resolves against the document base.
+    const base = typeof window !== "undefined" ? window.location.href : "http://localhost/"
+    const u = new URL(src, base)
+    return allowed.includes(u.protocol)
+  } catch {
+    // If parsing fails for some exotic input, fall back to a conservative
+    // string check: only allow if not a known dangerous scheme.
+    return !/^\s*(javascript|data|vbscript|file):/i.test(src)
+  }
+}
+
 export interface ImageProps
   extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "loading" | "decoding"> {
   src: string
@@ -31,94 +49,123 @@ export interface ImageProps
   rounded?: keyof typeof roundedMap
   /** Override native lazy loading. Defaults to "lazy". */
   loading?: "lazy" | "eager"
+  /** Allowed URL protocols. Defaults to `["http:", "https:"]`. Pass `["data:"]` to opt in to data URIs. */
+  allowedProtocols?: string[]
+  /** Mirror the native attribute; forwarded directly to `<img>`. */
+  srcSet?: string
+  /** Mirror the native attribute; forwarded directly to `<img>`. */
+  sizes?: string
+  /** When true, the image is purely decorative — alt is forced to "" and role="presentation". */
+  decorative?: boolean
+  ref?: React.Ref<HTMLImageElement>
 }
 
-const Image = React.forwardRef<HTMLImageElement, ImageProps>(
-  (
-    {
-      src,
-      alt,
-      className,
-      aspectRatio,
-      placeholder = "skeleton",
-      objectFit = "cover",
-      rounded = "none",
-      loading = "lazy",
-      onLoad,
-      onError,
-      style,
-      ...props
-    },
-    ref,
-  ) => {
-    const [isLoaded, setIsLoaded] = React.useState(false)
-    const [hasError, setHasError] = React.useState(false)
+function Image({
+  src,
+  alt,
+  className,
+  aspectRatio,
+  placeholder = "skeleton",
+  objectFit = "cover",
+  rounded = "none",
+  loading = "lazy",
+  onLoad,
+  onError,
+  style,
+  allowedProtocols,
+  srcSet,
+  sizes,
+  decorative = false,
+  ref,
+  ...props
+}: ImageProps) {
+  const [isLoaded, setIsLoaded] = React.useState(false)
+  const [hasError, setHasError] = React.useState(false)
 
-    function handleLoad(e: React.SyntheticEvent<HTMLImageElement>) {
-      setIsLoaded(true)
-      onLoad?.(e)
-    }
-    function handleError(e: React.SyntheticEvent<HTMLImageElement>) {
-      setHasError(true)
-      onError?.(e)
-    }
+  const allowed = allowedProtocols ?? DEFAULT_ALLOWED_PROTOCOLS
+  const srcIsValid = isAllowedSrc(src, allowed)
 
-    const img = (
-      // biome-ignore lint/a11y/useAltText: alt is a required prop and passed through.
-      <img
-        ref={ref}
-        src={src}
-        alt={alt}
-        loading={loading}
-        decoding="async"
-        onLoad={handleLoad}
-        onError={handleError}
-        className={cn(
-          "h-full w-full",
-          objectFitMap[objectFit],
-          roundedMap[rounded],
-          "transition-opacity duration-300",
-          isLoaded ? "opacity-100" : "opacity-0",
-          className,
-        )}
-        style={style}
-        {...props}
-      />
-    )
+  // Reset loading/error state whenever the source changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deliberate — only re-run when `src` changes; the setters are stable.
+  React.useEffect(() => {
+    setIsLoaded(false)
+    setHasError(false)
+  }, [src])
 
-    const wrapperClasses = cn(
-      "relative overflow-hidden",
-      roundedMap[rounded],
-      aspectRatio ? "" : "inline-block",
-    )
+  function handleLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+    setIsLoaded(true)
+    onLoad?.(e)
+  }
+  function handleError(e: React.SyntheticEvent<HTMLImageElement>) {
+    setHasError(true)
+    onError?.(e)
+  }
 
-    return (
-      <div
-        className={wrapperClasses}
-        data-slot="image"
-        style={aspectRatio ? { aspectRatio: String(aspectRatio) } : undefined}
-      >
-        {!isLoaded && !hasError && placeholder === "skeleton" ? (
-          <Skeleton className={cn("absolute inset-0", roundedMap[rounded])} />
-        ) : null}
-        {!isLoaded && !hasError && placeholder === "blur" ? (
-          <div className={cn("absolute inset-0 bg-muted backdrop-blur-md", roundedMap[rounded])} />
-        ) : null}
-        {hasError ? (
-          <div
-            className={cn(
-              "absolute inset-0 flex items-center justify-center bg-muted text-xs text-muted-foreground",
-              roundedMap[rounded],
-            )}
-          >
-            Falha ao carregar imagem
-          </div>
-        ) : null}
-        {img}
-      </div>
-    )
-  },
-)
-Image.displayName = "Image"
+  const showError = hasError || !srcIsValid
+  const effectiveAlt = decorative ? "" : alt
+  const role = decorative ? "presentation" : undefined
+
+  const img = !srcIsValid ? null : (
+    // biome-ignore lint/a11y/useAltText: `effectiveAlt` is derived from `alt` prop (required) or "" when `decorative`.
+    <img
+      ref={ref}
+      src={src}
+      srcSet={srcSet}
+      sizes={sizes}
+      alt={effectiveAlt}
+      role={role}
+      loading={loading}
+      decoding="async"
+      onLoad={handleLoad}
+      onError={handleError}
+      className={cn(
+        "h-full w-full",
+        objectFitMap[objectFit],
+        roundedMap[rounded],
+        "transition-opacity duration-300",
+        isLoaded ? "opacity-100" : "opacity-0",
+        className,
+      )}
+      style={style}
+      {...props}
+    />
+  )
+
+  const wrapperClasses = cn(
+    "relative overflow-hidden",
+    roundedMap[rounded],
+    aspectRatio ? "" : "inline-block",
+  )
+
+  return (
+    <div
+      className={wrapperClasses}
+      data-slot="image"
+      style={aspectRatio ? { aspectRatio: String(aspectRatio) } : undefined}
+    >
+      {!isLoaded && !showError && placeholder === "skeleton" ? (
+        <Skeleton aria-hidden="true" className={cn("absolute inset-0", roundedMap[rounded])} />
+      ) : null}
+      {!isLoaded && !showError && placeholder === "blur" ? (
+        <div
+          aria-hidden="true"
+          className={cn("absolute inset-0 bg-muted backdrop-blur-md", roundedMap[rounded])}
+        />
+      ) : null}
+      {showError ? (
+        <div
+          aria-hidden="true"
+          className={cn(
+            "absolute inset-0 flex items-center justify-center bg-muted text-xs text-muted-foreground",
+            roundedMap[rounded],
+          )}
+        >
+          Falha ao carregar imagem
+        </div>
+      ) : null}
+      {img}
+    </div>
+  )
+}
 
 export { Image }

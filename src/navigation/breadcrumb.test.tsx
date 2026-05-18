@@ -25,4 +25,71 @@ describe("Breadcrumb", () => {
     const current = screen.getByText("Current")
     expect(current.getAttribute("aria-current")).toBe("page")
   })
+
+  it('emits exactly one aria-current="page"', () => {
+    const { container } = render(
+      <Breadcrumb
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Middle", href: "/middle" },
+          { label: "Last" },
+        ]}
+      />,
+    )
+    const currents = container.querySelectorAll('[aria-current="page"]')
+    expect(currents).toHaveLength(1)
+    expect(currents[0]?.textContent).toBe("Last")
+  })
+
+  it("does NOT set aria-current on a middle item that lacks an href", () => {
+    render(
+      <Breadcrumb
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Middle-no-href" },
+          { label: "Last", href: "/last" },
+        ]}
+      />,
+    )
+    const middle = screen.getByText("Middle-no-href")
+    expect(middle.getAttribute("aria-current")).toBeNull()
+    // Still rendered as a span (no href)
+    expect(middle.tagName).toBe("SPAN")
+  })
+
+  it("renders custom separator", () => {
+    render(
+      <Breadcrumb
+        separator={<span data-testid="sep">/</span>}
+        items={[{ label: "Home", href: "/" }, { label: "Sub", href: "/sub" }, { label: "Last" }]}
+      />,
+    )
+    // 3 items → 2 separators
+    expect(screen.getAllByTestId("sep")).toHaveLength(2)
+  })
+
+  it("uses a configurable aria-label on the nav (default capitalized)", () => {
+    const { container, rerender } = render(
+      <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Last" }]} />,
+    )
+    expect(container.querySelector("nav")?.getAttribute("aria-label")).toBe("Breadcrumb")
+
+    rerender(
+      <Breadcrumb ariaLabel="Trilha" items={[{ label: "Home", href: "/" }, { label: "Last" }]} />,
+    )
+    expect(container.querySelector("nav")?.getAttribute("aria-label")).toBe("Trilha")
+  })
+
+  it("separator items do not carry aria-hidden", () => {
+    const { container } = render(
+      <Breadcrumb
+        items={[{ label: "A", href: "/a" }, { label: "B", href: "/b" }, { label: "C" }]}
+      />,
+    )
+    const separators = container.querySelectorAll('[data-slot="breadcrumb-separator"]')
+    expect(separators.length).toBeGreaterThan(0)
+    for (const sep of separators) {
+      expect(sep.hasAttribute("aria-hidden")).toBe(false)
+    }
+  })
 })

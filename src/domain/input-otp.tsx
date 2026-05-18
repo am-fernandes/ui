@@ -1,6 +1,6 @@
 "use client"
 
-import { OTPInput, OTPInputContext } from "input-otp"
+import { OTPInput, OTPInputContext, REGEXP_ONLY_DIGITS } from "input-otp"
 import { MinusIcon } from "lucide-react"
 import * as React from "react"
 
@@ -9,15 +9,20 @@ import { cn } from "@/lib/utils"
 function InputOTP({
   className,
   containerClassName,
+  pattern = REGEXP_ONLY_DIGITS,
+  ref,
   ...props
 }: React.ComponentProps<typeof OTPInput> & {
   containerClassName?: string
+  ref?: React.Ref<HTMLInputElement>
 }) {
   return (
     <OTPInput
+      ref={ref}
       data-slot="input-otp"
       containerClassName={cn("flex items-center gap-2 has-disabled:opacity-50", containerClassName)}
       className={cn("disabled:cursor-not-allowed", className)}
+      pattern={pattern}
       {...props}
     />
   )
@@ -42,7 +47,7 @@ function InputOTPSlot({
   return (
     <div
       data-slot="input-otp-slot"
-      data-active={isActive}
+      data-active={isActive || undefined}
       className={cn(
         "data-[active=true]:border-ring data-[active=true]:ring-ring/50 data-[active=true]:aria-invalid:ring-destructive/20 aria-invalid:border-destructive data-[active=true]:aria-invalid:border-destructive border-input relative flex h-9 w-9 items-center justify-center border-y border-r text-sm shadow-xs transition-all outline-none first:rounded-l-md first:border-l last:rounded-r-md data-[active=true]:z-10 data-[active=true]:ring-[3px]",
         className,
@@ -67,4 +72,4 @@ function InputOTPSeparator({ ...props }: React.ComponentProps<"div">) {
   )
 }
 
-export { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot }
+export { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot, REGEXP_ONLY_DIGITS }

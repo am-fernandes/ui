@@ -1,5 +1,5 @@
 import { type VariantProps, cva } from "class-variance-authority"
-import * as React from "react"
+import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -28,22 +28,32 @@ const defaultElementByVariant = {
 
 type TypographyVariant = NonNullable<VariantProps<typeof typographyVariants>["variant"]>
 
+export type TypographyAs =
+  | "div"
+  | "span"
+  | "p"
+  | "h1"
+  | "h2"
+  | "h3"
+  | "h4"
+  | "h5"
+  | "h6"
+  | "label"
+  | "small"
+  | "blockquote"
+
 export interface TypographyProps
   extends React.HTMLAttributes<HTMLElement>,
     VariantProps<typeof typographyVariants> {
   /** Override the rendered element. Defaults to a semantic tag per variant. */
-  as?: keyof React.JSX.IntrinsicElements
+  as?: TypographyAs
+  ref?: React.Ref<HTMLElement>
 }
 
-const Typography = React.forwardRef<HTMLElement, TypographyProps>(
-  ({ className, variant, as, ...props }, ref) => {
-    const resolvedVariant: TypographyVariant = variant ?? "body"
-    const Element = (as ?? defaultElementByVariant[resolvedVariant]) as React.ElementType
-    return (
-      <Element ref={ref} className={cn(typographyVariants({ variant }), className)} {...props} />
-    )
-  },
-)
-Typography.displayName = "Typography"
+function Typography({ className, variant, as, ref, ...props }: TypographyProps) {
+  const resolvedVariant: TypographyVariant = variant ?? "body"
+  const Element = (as ?? defaultElementByVariant[resolvedVariant]) as React.ElementType
+  return <Element ref={ref} className={cn(typographyVariants({ variant }), className)} {...props} />
+}
 
 export { Typography, typographyVariants }

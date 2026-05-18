@@ -76,8 +76,8 @@ export const Playground: Story = {
     placeholder: "Selecione o período",
   },
   render: (args) => {
-    const [from, setFrom] = useState(args.from)
-    const [to, setTo] = useState(args.to)
+    const [from, setFrom] = useState<string>(args.from ?? "")
+    const [to, setTo] = useState<string>(args.to ?? "")
     return (
       <div className="flex w-[320px] flex-col gap-2">
         <Label>Período</Label>

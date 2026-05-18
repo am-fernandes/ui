@@ -33,7 +33,7 @@ function CollapsibleHeader({
 }: CollapsibleHeaderProps) {
   const triggerNode = trigger ?? (
     <CollapsibleTrigger asChild>
-      <Button variant="ghost" size="icon" aria-label={triggerLabel}>
+      <Button variant="ghost" size="icon" aria-label={triggerLabel} data-position={triggerSide}>
         <ChevronsUpDown className="size-4" />
       </Button>
     </CollapsibleTrigger>

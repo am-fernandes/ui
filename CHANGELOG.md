@@ -4,6 +4,73 @@ All notable changes to `@am-fernandes/ui` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [10.0.0] — 2026-05-18
+
+Comprehensive review pass. Every component in `primitives`, `overlays`, `navigation`, `forms`, `domain`, and `data` was audited against Google Engineering Practices, OWASP Top 10:2025, and Clean Code. This release lands the resulting fixes — critical correctness, accessibility, and security bugs first; then conventions; then nits.
+
+### Breaking
+- **`React.forwardRef` removed across the library.** All components now use the React 19 native `ref` prop pattern (function components accepting `ref?: React.Ref<...>`). Consumers wrapping these in `forwardRef`-aware HOCs may see slightly different types. The ref behavior is preserved.
+- **`DateInput`/`DateRangePicker`/`Calendar` — `parseISO` replaced with `parse(value, "yyyy-MM-dd", new Date())`.** Fixes the off-by-one timezone bug where the ISO date was parsed as UTC midnight and reformatted in local time. Stored ISO strings are now interpreted in local time, matching what the user sees.
+- **`Calendar.data-day` now uses ISO `yyyy-MM-dd`** instead of locale-formatted strings. Selectors `[data-day="2025-01-15"]` are now stable across locales.
+- **`InputOTP` defaults `pattern` to `REGEXP_ONLY_DIGITS`.** Non-digit characters are rejected by default. Pass an explicit `pattern` to opt into alphanumeric. `REGEXP_ONLY_DIGITS` is now re-exported from `@am-fernandes/ui`.
+- **`Sidebar` no longer persists state to a cookie by default.** Opt-in via `<SidebarProvider persistOpenState />`. When enabled, the cookie is written with `SameSite=Lax; Secure` and only in uncontrolled mode.
+- **`Sidebar` keyboard shortcut (`Ctrl/Cmd+B`) skips editable elements** and accepts a `keyboardShortcut?: string | null` prop (pass `null` to disable).
+- **`Label` no longer uses `cva`** — it had no variants. The `VariantProps<typeof labelVariants>` type is gone.
+- **`Typography.as` now restricted** to a curated union of intrinsic elements (`div | span | p | h1…h6 | label | small | blockquote`) instead of all `JSX.IntrinsicElements`.
+- **`MultiInput`** added `maxItems?: number` and `onReject?: (reason) => void` props.
+
+### Security
+- **`Chart`** — `ChartStyle` sanitizes config `color` values before interpolating into the inline `<style>` block. Previously a malicious string could inject arbitrary CSS.
+- **`Image` and `Video`** — added `allowedProtocols?: string[]` prop (default `["http:", "https:"]`). `src` values failing the allowlist (e.g. `javascript:`, `data:`) render the error fallback instead of issuing the network request.
+- **`FileUpload`** — JSDoc warning on `accept` documenting that MIME validation is browser-supplied and is NOT a security boundary. Always re-validate on the server with magic-byte sniffing.
+
+### Fixed — correctness
+- **`CurrencyInput`/`PercentageInput`** — input digits clamped to 15 chars to avoid `Number.parseInt` overflowing `MAX_SAFE_INTEGER`.
+- **`PercentageInput`** — values clamped to `[0, max]` (default `max=100`). Out-of-range pastes no longer pass silently.
+- **`TimePicker`** — eliminated the `useEffect` race that could wipe user input mid-typing. Modular arrow-key wrap. Out-of-range blur clears the field instead of silently clamping (typing `25` no longer becomes `23`).
+- **`Progress`** — value clamped to `[0, 100]`. Indeterminate state (when `value` is `undefined`) renders an animated indicator.
+- **`Breadcrumb`** — `aria-current="page"` only on the last item.
+- **`Sidebar.SidebarMenuSkeleton`** — replaced `Math.random()` with a deterministic hash of `useId()`. Fixes hydration mismatch in SSR.
+- **`Tree`** — added `maxDepth?: number` (default `64`) and cycle detection. Recursive structures and overly deep trees no longer crash the renderer.
+- **`Tree`** — implements the WAI-ARIA tree pattern: roving tabindex, arrow-key navigation, Home/End, Enter/Space activation, `aria-selected` on the focused row.
+- **`FileUpload.fileMatchesAccept`** — extension patterns require a non-empty stem (a file literally named `.pdf` no longer matches the `.pdf` filter).
+- **`FileUpload.openInNewTab`** — object URLs tracked in a ref and revoked on unmount; if `window.open` returns `null` (popup blocked) the URL is revoked immediately.
+
+### Fixed — accessibility
+- **`Button`/`Checkbox`/`Switch`/`Textarea`/`Tabs`** — restored `focus-visible` rings (`focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`). Previously `focus-visible:outline-none` was declared without a replacement — WCAG 2.4.7 violation.
+- **`Input`/`Textarea`** — added `aria-invalid` styling.
+- **`Checkbox`** — indeterminate state now renders a Minus icon.
+- **`CommandDialog`** — includes `sr-only` `<DialogTitle>` and `<DialogDescription>`. Customize via `title`/`description` props.
+- **`Combobox`** — added `aria-controls`/`aria-haspopup="listbox"`/`aria-autocomplete="list"` on the trigger. Replaced `__create__` string prefix with a cmdk internal action discriminator.
+- **`Skeleton`** — defaults `role="status"`, `aria-live="polite"`, `aria-busy="true"`.
+- **`DataTable`** — `aria-sort` on `<TableHead>`; sort button `aria-label` checks header type before stringifying.
+- **`ScrollArea`** — added `orientation?: "vertical" | "horizontal" | "both"` prop.
+- **`Calendar`** chevron icons — `aria-hidden="true"` set; SVGs no longer spread arbitrary props.
+
+### Fixed — design
+- **Overlay animation classes deduplicated.** `Dialog`/`AlertDialog`/`Sheet` now share `dialogContentBase` from `src/overlays/_internal/animations.ts`.
+- **`Alert`** — fixed ref/prop generics. `AlertTitle` typed as `HTMLHeadingElement`; `AlertDescription` typed as `HTMLDivElement`. Fixed `[&>svg+*]` selector so icon + title vertical alignment works.
+- **`Dialog`/`Sheet`** — `hideCloseButton?: boolean` and `closeLabel?: string` props (default `"Close"`).
+- **`DateInput`** — `disabled` no longer swaps the DOM element from `<Button>` to `<Input>`. Refs and identity are stable.
+- **`DateRangePicker`** — added `value`/`onChange` controlled API (object `{from, to}`) alongside the split props. Added `disabled` and `numberOfMonths` props.
+- **`DataTable`** — added controlled props: `sorting`/`onSortingChange`, `globalFilter`/`onGlobalFilterChange`, `pageIndex`/`onPaginationChange`/`pageCount`/`manualPagination`. Server-side data tables possible without a fork.
+- **`Sonner`** — extended `toastOptions.classNames` to cover `warning`, `info`, and `loading` variants.
+
+### Fixed — implementation
+- **`Accordion`** — replaced the blanket `as any` cast with a discriminated dispatch on `type`. Last item gets `last:border-b-0`.
+- **`Combobox`** — replaced `||` with `??` in `useComboboxOptions`. Replaced inline placeholder color with `text-muted-foreground`. Renamed `_value` parameter on `onValueChange` to `value`.
+- **`Calendar`** — memoized the `components` map; DayButton/Root/Chevron identities are stable across renders, preventing focus loss on keyboard nav.
+- **`FileUpload`** — added `ref?: React.Ref<HTMLInputElement>` forwarded to the hidden file input.
+- **`MultiInput`** — removed the dead `onKeyDown` handler on the non-focusable wrapper. Badge X-remove fires on `mousedown` (before input blur) to avoid the race where blur committed pending input while the user clicked a token X.
+
+### Tests
+- Coverage increased from 112 → 297 tests across 49 files.
+- Added test files for `lib/currency`, `hooks/use-is-mobile`, and `data/table`.
+- `vitest.setup.ts` stubs `URL.createObjectURL`/`revokeObjectURL` for `FileUpload` tests.
+
+### Internal
+- New file: `src/overlays/_internal/animations.ts` — shared overlay animation constants.
+
 ## [9.0.0] — 2026-05-18
 
 ### Breaking

@@ -5,13 +5,24 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+export type ScrollAreaOrientation = "vertical" | "horizontal" | "both"
+
+interface ScrollAreaProps extends React.ComponentProps<typeof ScrollAreaPrimitive.Root> {
+  /** Which scrollbar(s) to render. Default `"vertical"`. */
+  orientation?: ScrollAreaOrientation
+  ref?: React.Ref<React.ComponentRef<typeof ScrollAreaPrimitive.Root>>
+}
+
 function ScrollArea({
   className,
   children,
+  orientation = "vertical",
+  ref,
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+}: ScrollAreaProps) {
   return (
     <ScrollAreaPrimitive.Root
+      ref={ref}
       data-slot="scroll-area"
       className={cn("relative", className)}
       {...props}
@@ -22,19 +33,26 @@ function ScrollArea({
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar />
+      {(orientation === "vertical" || orientation === "both") && (
+        <ScrollBar orientation="vertical" />
+      )}
+      {(orientation === "horizontal" || orientation === "both") && (
+        <ScrollBar orientation="horizontal" />
+      )}
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )
 }
 
-function ScrollBar({
-  className,
-  orientation = "vertical",
-  ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) {
+interface ScrollBarProps
+  extends React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar> {
+  ref?: React.Ref<React.ComponentRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>>
+}
+
+function ScrollBar({ className, orientation = "vertical", ref, ...props }: ScrollBarProps) {
   return (
     <ScrollAreaPrimitive.ScrollAreaScrollbar
+      ref={ref}
       data-slot="scroll-area-scrollbar"
       orientation={orientation}
       className={cn(

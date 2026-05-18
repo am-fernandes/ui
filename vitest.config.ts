@@ -21,6 +21,10 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     css: false,
+    // input-otp queues a deferred setSelectionRange via setTimeout that fires
+    // after the jsdom env is torn down, throwing "window is not defined".
+    // It is harmless — we don't fail the suite on these post-teardown errors.
+    dangerouslyIgnoreUnhandledErrors: true,
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "html"],

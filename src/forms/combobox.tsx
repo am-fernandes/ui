@@ -17,6 +17,18 @@ import { Badge } from "../primitives/badge"
 import { Button } from "../primitives/button"
 
 /**
+ * Cmdk-internal sentinel used to mark the "Create…" option. Picked so it
+ * cannot collide with any legitimate user-supplied value.
+ */
+const CREATE_ACTION_VALUE = "__create_action__"
+
+/** Normalize unknown values into an array. */
+function toArray<T>(v: T | T[] | undefined | null): T[] {
+  if (v == null) return []
+  return Array.isArray(v) ? v : [v]
+}
+
+/**
  * Opção do Combobox
  */
 export interface ComboboxOption {
@@ -47,6 +59,8 @@ interface ComboboxBaseProps {
   popoverWidth?: string
   /** Permite criar valores que não estão na lista */
   creatable?: boolean
+  /** Ref encaminhada ao botão trigger. */
+  ref?: React.Ref<HTMLButtonElement>
 }
 
 /**
@@ -58,7 +72,7 @@ interface ComboboxSingleProps extends ComboboxBaseProps {
   /** Valor selecionado */
   value?: string
   /** Callback quando o valor muda */
-  onValueChange?: (_value: string) => void
+  onValueChange?: (value: string) => void
 }
 
 /**
@@ -70,7 +84,7 @@ interface ComboboxMultipleProps extends ComboboxBaseProps {
   /** Valores selecionados */
   value?: string[]
   /** Callback quando os valores mudam */
-  onValueChange?: (_value: string[]) => void
+  onValueChange?: (value: string[]) => void
   /** Máximo de badges visíveis antes de mostrar contador */
   maxBadges?: number
 }
@@ -109,8 +123,10 @@ export function Combobox(props: ComboboxProps) {
     className,
     popoverWidth,
     creatable = false,
+    ref,
   } = props
 
+  const listboxId = React.useId()
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
 
@@ -128,8 +144,7 @@ export function Combobox(props: ComboboxProps) {
   // Handler para seleção múltipla
   const handleMultipleSelect = (currentValue: string) => {
     if (isMultiple && props.onValueChange) {
-      const rawValue = props.value
-      const currentValues = Array.isArray(rawValue) ? rawValue : rawValue ? [rawValue] : []
+      const currentValues = toArray(props.value)
       const newValues = currentValues.includes(currentValue)
         ? currentValues.filter((v) => v !== currentValue)
         : [...currentValues, currentValue]
@@ -137,18 +152,35 @@ export function Combobox(props: ComboboxProps) {
     }
   }
 
+  // Handler para criar um valor custom (creatable)
+  const handleCreate = (createdValue: string) => {
+    const trimmed = createdValue.trim()
+    if (!trimmed) return
+    if (isMultiple) {
+      if (props.onValueChange) {
+        const currentValues = toArray(props.value)
+        if (!currentValues.includes(trimmed)) {
+          props.onValueChange([...currentValues, trimmed])
+        }
+      }
+    } else if (props.onValueChange) {
+      props.onValueChange(trimmed)
+    }
+    setOpen(false)
+    setSearch("")
+  }
+
   // Remove um valor da seleção múltipla
   const handleRemoveValue = (valueToRemove: string, e: React.SyntheticEvent) => {
     e.stopPropagation()
     if (isMultiple && props.onValueChange) {
-      const rawValue = props.value
-      const currentValues = Array.isArray(rawValue) ? rawValue : rawValue ? [rawValue] : []
+      const currentValues = toArray(props.value)
       props.onValueChange(currentValues.filter((v) => v !== valueToRemove))
     }
   }
 
   // Limpa todos os valores selecionados
-  const handleClearAll = (e: React.MouseEvent) => {
+  const handleClearAll = (e: React.SyntheticEvent) => {
     e.stopPropagation()
     if (isMultiple && props.onValueChange) {
       props.onValueChange([])
@@ -157,61 +189,17 @@ export function Combobox(props: ComboboxProps) {
     }
   }
 
-  // Renderiza o conteúdo do trigger
+  // Renderiza o conteúdo do trigger (badges agora ficam fora do botão).
   const renderTriggerContent = () => {
     if (isMultiple) {
-      // Garantir que values seja sempre um array
-      const rawValue = props.value
-      const values = Array.isArray(rawValue) ? rawValue : rawValue ? [rawValue] : []
-      const maxBadges = props.maxBadges ?? 2
-
+      const values = toArray(props.value)
       if (values.length === 0) {
-        return <span style={{ color: "hsl(var(--placeholder))" }}>{placeholder}</span>
+        return <span className="text-muted-foreground">{placeholder}</span>
       }
-
-      const visibleValues = values.slice(0, maxBadges)
-      const remainingCount = values.length - maxBadges
-
       return (
-        <div className="flex flex-wrap gap-1 items-center">
-          {visibleValues.map((val) => {
-            const option = options.find((o) => o.value === val)
-            const Icon = option?.icon
-            return (
-              <Badge
-                key={val}
-                variant="outline"
-                className="rounded-md px-1.5 py-0.5 font-normal bg-muted text-foreground border-border"
-              >
-                {Icon ? <Icon className="mr-1 size-3 shrink-0" /> : null}
-                {option?.label || val}
-                <span
-                  // biome-ignore lint/a11y/useSemanticElements: span inside Button to avoid nested button elements
-                  role="button"
-                  tabIndex={0}
-                  className="ml-1 rounded-full outline-none cursor-pointer"
-                  onClick={(e) => handleRemoveValue(val, e)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault()
-                      handleRemoveValue(val, e)
-                    }
-                  }}
-                >
-                  <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                </span>
-              </Badge>
-            )
-          })}
-          {remainingCount > 0 && (
-            <Badge
-              variant="outline"
-              className="rounded-md px-1.5 py-0.5 font-normal bg-muted text-foreground border-border"
-            >
-              +{remainingCount}
-            </Badge>
-          )}
-        </div>
+        <span className="text-foreground">
+          {values.length} {values.length === 1 ? "selecionado" : "selecionados"}
+        </span>
       )
     }
 
@@ -219,129 +207,190 @@ export function Combobox(props: ComboboxProps) {
     const selectedOption = options.find((o) => o.value === props.value)
     if (selectedOption) return selectedOption.label
     if (creatable && props.value) return props.value
-    return <span style={{ color: "hsl(var(--placeholder))" }}>{placeholder}</span>
+    return <span className="text-muted-foreground">{placeholder}</span>
   }
 
   // Verifica se deve mostrar a opção de criar valor custom
+  const trimmedSearch = search.trim()
   const showCreateOption =
     creatable &&
-    search.trim().length > 0 &&
-    !options.some((o) => o.value.toLowerCase() === search.trim().toLowerCase())
+    trimmedSearch.length > 0 &&
+    !options.some((o) => o.value.toLowerCase() === trimmedSearch.toLowerCase()) &&
+    !options.some((o) => o.label.toLowerCase() === trimmedSearch.toLowerCase())
 
   // Verifica se há valor selecionado
-  const hasValue = isMultiple ? (props.value || []).length > 0 : Boolean(props.value)
+  const hasValue = isMultiple ? toArray(props.value).length > 0 : Boolean(props.value)
+
+  // Multi-select badge list (rendered ABOVE/BESIDE the button, not inside it).
+  const multiBadges = (() => {
+    if (!isMultiple) return null
+    const values = toArray(props.value)
+    if (values.length === 0) return null
+    const maxBadges = (props as ComboboxMultipleProps).maxBadges ?? 2
+    const visibleValues = values.slice(0, maxBadges)
+    const remainingCount = values.length - maxBadges
+    return (
+      <div className="flex flex-wrap gap-1 items-center" data-slot="combobox-badges">
+        {visibleValues.map((val) => {
+          const option = options.find((o) => o.value === val)
+          const Icon = option?.icon
+          const label = option?.label || val
+          return (
+            <Badge
+              key={val}
+              variant="outline"
+              className="rounded-md px-1.5 py-0.5 font-normal bg-muted text-foreground border-border inline-flex items-center"
+              role="img"
+              aria-label={label}
+            >
+              {Icon ? <Icon className="mr-1 size-3 shrink-0" /> : null}
+              {label}
+              <button
+                type="button"
+                aria-label={`Remover ${label}`}
+                className="ml-1 rounded-full outline-none cursor-pointer hover:bg-background/50"
+                onClick={(e) => handleRemoveValue(val, e)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    handleRemoveValue(val, e)
+                  }
+                }}
+              >
+                <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+              </button>
+            </Badge>
+          )
+        })}
+        {remainingCount > 0 && (
+          <Badge
+            variant="outline"
+            className="rounded-md px-1.5 py-0.5 font-normal bg-muted text-foreground border-border"
+          >
+            +{remainingCount}
+          </Badge>
+        )}
+      </div>
+    )
+  })()
 
   return (
-    <Popover
-      open={open}
-      onOpenChange={(isOpen) => {
-        setOpen(isOpen)
-        if (!isOpen) setSearch("")
-      }}
-    >
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          // biome-ignore lint/a11y/useSemanticElements: combobox button pattern (WAI-ARIA listbox combobox)
-          role="combobox"
-          aria-expanded={open}
-          disabled={disabled}
-          className={cn(
-            "w-full justify-between min-h-10 h-auto overflow-hidden",
-            !hasValue && "text-muted-foreground",
-            className,
-          )}
-        >
-          <div className="flex-1 text-left truncate min-w-0">{renderTriggerContent()}</div>
-          <div className="flex items-center gap-1 ml-2">
-            {hasValue && (
-              <X
-                className="h-4 w-4 shrink-0 opacity-50 hover:opacity-100 cursor-pointer"
-                onClick={handleClearAll}
-              />
-            )}
-            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-          </div>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className={cn("p-0", popoverWidth || "w-[--radix-popover-trigger-width]")}
-        align="start"
+    <div className={cn("flex flex-col gap-2", className)} data-slot="combobox-wrapper">
+      {multiBadges}
+      <Popover
+        open={open}
+        onOpenChange={(isOpen) => {
+          if (disabled) return
+          setOpen(isOpen)
+          if (!isOpen) setSearch("")
+        }}
       >
-        <Command
-          filter={
-            creatable
-              ? (value, search) => {
-                  if (value.startsWith("__create__")) return 1
-                  return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
-                }
-              : undefined
-          }
-        >
-          <CommandInput placeholder={searchPlaceholder} onValueChange={setSearch} />
-          <CommandList>
-            {!showCreateOption && <CommandEmpty>{emptyMessage}</CommandEmpty>}
-            <CommandGroup>
-              {showCreateOption && (
-                <CommandItem
-                  value={`__create__${search.trim()}`}
-                  onSelect={() => {
-                    if (!isMultiple && props.onValueChange) {
-                      props.onValueChange(search.trim())
+        <PopoverTrigger asChild>
+          <Button
+            ref={ref}
+            variant="outline"
+            // biome-ignore lint/a11y/useSemanticElements: combobox button pattern (WAI-ARIA listbox combobox)
+            role="combobox"
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            aria-controls={listboxId}
+            aria-autocomplete="list"
+            disabled={disabled}
+            className={cn(
+              "w-full justify-between min-h-10 h-auto overflow-hidden",
+              !hasValue && "text-muted-foreground",
+            )}
+          >
+            <div className="flex-1 text-left truncate min-w-0">{renderTriggerContent()}</div>
+            <div className="flex items-center gap-1 ml-2">
+              {hasValue && (
+                <span
+                  // biome-ignore lint/a11y/useSemanticElements: keep as span to avoid nested-button inside trigger Button
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Limpar seleção"
+                  className="inline-flex"
+                  onClick={handleClearAll}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      handleClearAll(e)
                     }
-                    setOpen(false)
-                    setSearch("")
                   }}
                 >
-                  Usar: &ldquo;{search.trim()}&rdquo;
-                </CommandItem>
+                  <X className="h-4 w-4 shrink-0 opacity-50 hover:opacity-100" />
+                </span>
               )}
-              {options.map((option) => {
-                const rawValue = props.value
-                const valueArray = isMultiple
-                  ? Array.isArray(rawValue)
-                    ? rawValue
-                    : rawValue
-                      ? [rawValue]
-                      : []
-                  : null
-                const isSelected = isMultiple
-                  ? (valueArray || []).includes(option.value)
-                  : rawValue === option.value
-
-                return (
+              <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+            </div>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className={cn("p-0", popoverWidth || "w-[--radix-popover-trigger-width]")}
+          align="start"
+        >
+          <Command
+            filter={
+              creatable
+                ? (value, searchText) => {
+                    if (value === CREATE_ACTION_VALUE) return 1
+                    return value.toLowerCase().includes(searchText.toLowerCase()) ? 1 : 0
+                  }
+                : undefined
+            }
+          >
+            <CommandInput placeholder={searchPlaceholder} onValueChange={setSearch} />
+            <CommandList id={listboxId}>
+              {!showCreateOption && <CommandEmpty>{emptyMessage}</CommandEmpty>}
+              <CommandGroup>
+                {showCreateOption && (
                   <CommandItem
-                    key={option.value}
-                    value={option.value}
-                    disabled={option.disabled}
-                    onSelect={() => {
-                      if (isMultiple) {
-                        handleMultipleSelect(option.value)
-                      } else {
-                        handleSingleSelect(option.value)
-                      }
-                    }}
+                    value={CREATE_ACTION_VALUE}
+                    keywords={[trimmedSearch]}
+                    onSelect={() => handleCreate(trimmedSearch)}
                   >
-                    <div
-                      className={cn(
-                        "mr-2 flex h-4 w-4 items-center justify-center rounded-md border border-primary",
-                        isSelected
-                          ? "bg-primary text-primary-foreground"
-                          : "opacity-50 [&_svg]:invisible",
-                      )}
-                    >
-                      <Check className="h-3 w-3" />
-                    </div>
-                    {option.icon ? <option.icon className="mr-2 size-4 shrink-0" /> : null}
-                    {option.label}
+                    Usar: &ldquo;{trimmedSearch}&rdquo;
                   </CommandItem>
-                )
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                )}
+                {options.map((option) => {
+                  const isSelected = isMultiple
+                    ? toArray(props.value).includes(option.value)
+                    : props.value === option.value
+
+                  return (
+                    <CommandItem
+                      key={option.value}
+                      value={option.value}
+                      disabled={option.disabled}
+                      onSelect={() => {
+                        if (isMultiple) {
+                          handleMultipleSelect(option.value)
+                        } else {
+                          handleSingleSelect(option.value)
+                        }
+                      }}
+                    >
+                      <div
+                        className={cn(
+                          "mr-2 flex h-4 w-4 items-center justify-center rounded-md border border-primary",
+                          isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : "opacity-50 [&_svg]:invisible",
+                        )}
+                      >
+                        <Check className="h-3 w-3" />
+                      </div>
+                      {option.icon ? <option.icon className="mr-2 size-4 shrink-0" /> : null}
+                      {option.label}
+                    </CommandItem>
+                  )
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
   )
 }
 
@@ -355,7 +404,7 @@ export function useComboboxOptions<
     if (!data) return []
     return data.map((item) => ({
       value: String(item.id),
-      label: String(item[labelKey] || item.nome || item.id),
+      label: String(item[labelKey] ?? item.nome ?? item.id),
     }))
   }, [data, labelKey])
 }
