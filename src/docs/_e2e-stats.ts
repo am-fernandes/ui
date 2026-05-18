@@ -3,7 +3,7 @@
  * Run `bun run sync:e2e-stats` to refresh.
  *
  * Source: tests/e2e/*.spec.ts + src story files
- * Generated: 2026-05-18T22:47:32.455Z
+ * Generated: 2026-05-18T23:24:01.133Z
  */
 
 export interface E2ESpec {
@@ -12,52 +12,52 @@ export interface E2ESpec {
   describes: number
 }
 
-export const E2E_GENERATED_AT = "2026-05-18T22:47:32.455Z"
+export const E2E_GENERATED_AT = "2026-05-18T23:24:01.133Z"
 
 export const E2E_SPECS: readonly E2ESpec[] = [
   {
-    file: "domain.spec.ts",
-    tests: 5,
-    describes: 4,
+    "file": "domain.spec.ts",
+    "tests": 5,
+    "describes": 4
   },
   {
-    file: "forms.spec.ts",
-    tests: 5,
-    describes: 3,
+    "file": "forms.spec.ts",
+    "tests": 5,
+    "describes": 3
   },
   {
-    file: "mobile.spec.ts",
-    tests: 6,
-    describes: 4,
+    "file": "mobile.spec.ts",
+    "tests": 6,
+    "describes": 4
   },
   {
-    file: "navigation.spec.ts",
-    tests: 5,
-    describes: 3,
+    "file": "navigation.spec.ts",
+    "tests": 5,
+    "describes": 3
   },
   {
-    file: "overlays.spec.ts",
-    tests: 5,
-    describes: 3,
+    "file": "overlays.spec.ts",
+    "tests": 5,
+    "describes": 3
   },
   {
-    file: "primitives.spec.ts",
-    tests: 9,
-    describes: 3,
+    "file": "primitives.spec.ts",
+    "tests": 9,
+    "describes": 3
   },
   {
-    file: "tablet.spec.ts",
-    tests: 3,
-    describes: 3,
+    "file": "tablet.spec.ts",
+    "tests": 3,
+    "describes": 3
   },
   {
-    file: "visual.spec.ts",
-    tests: 58,
-    describes: 20,
-  },
+    "file": "visual.spec.ts",
+    "tests": 57,
+    "describes": 20
+  }
 ] as const
 
-export const E2E_TOTAL_TESTS = 96
+export const E2E_TOTAL_TESTS = 95
 
 export const STORYBOOK_STATS = {
   totalStoryFiles: 41,
