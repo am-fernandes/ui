@@ -175,12 +175,6 @@ export {
   type ComboboxOption,
   type ComboboxProps,
 } from "./forms/combobox"
-export {
-  MultiSelect,
-  useMultiSelectOptions,
-  type MultiSelectOption,
-  type MultiSelectProps,
-} from "./forms/multi-select"
 export { Calendar, CalendarDayButton } from "./forms/calendar"
 export { DateInput, type DateInputProps } from "./forms/date-input"
 export {
