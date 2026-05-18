@@ -3,17 +3,20 @@
 import {
   type ColumnDef,
   type ColumnFiltersState,
+  type PaginationState,
   type SortingState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./table"
 
@@ -28,6 +31,10 @@ export interface DataTableProps<TData> {
   emptyMessage?: React.ReactNode
   /** Additional class on the outer wrapper. */
   className?: string
+  /** Enable pagination. When set, footer shows previous/next + page indicator. Default: not paginated. */
+  pagination?: {
+    pageSize?: number
+  }
 }
 
 function DataTable<TData>({
@@ -37,10 +44,17 @@ function DataTable<TData>({
   searchPlaceholder = "Buscar...",
   emptyMessage = "Nenhum resultado.",
   className,
+  pagination,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [globalFilter, setGlobalFilter] = React.useState("")
+  const [paginationState, setPaginationState] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: pagination?.pageSize ?? 10,
+  })
+
+  const paginationEnabled = pagination != null
 
   const table = useReactTable({
     data,
@@ -49,13 +63,16 @@ function DataTable<TData>({
       sorting,
       columnFilters,
       globalFilter,
+      ...(paginationEnabled ? { pagination: paginationState } : {}),
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: paginationEnabled ? setPaginationState : undefined,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    ...(paginationEnabled ? { getPaginationRowModel: getPaginationRowModel() } : {}),
     globalFilterFn: (row, _columnId, filterValue) => {
       if (!searchableColumns || searchableColumns.length === 0) return true
       if (!filterValue) return true
@@ -144,6 +161,32 @@ function DataTable<TData>({
           </TableBody>
         </Table>
       </div>
+
+      {paginationEnabled ? (
+        <div className="flex items-center justify-end gap-2 px-2 py-3">
+          <span className="text-xs text-muted-foreground">
+            Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={!table.getCanPreviousPage()}
+            onClick={() => table.previousPage()}
+            aria-label="Página anterior"
+          >
+            <ChevronLeft className="size-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={!table.getCanNextPage()}
+            onClick={() => table.nextPage()}
+            aria-label="Próxima página"
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+        </div>
+      ) : null}
     </div>
   )
 }

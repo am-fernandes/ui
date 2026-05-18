@@ -62,6 +62,62 @@ const contratos: Contrato[] = [
     valor: 31000,
     status: "pendente",
   },
+  {
+    numero: "C-2026-008",
+    cliente: "Empresa H",
+    vencimento: "2026-08-20",
+    valor: 14200,
+    status: "aprovado",
+  },
+  {
+    numero: "C-2026-009",
+    cliente: "Empresa I",
+    vencimento: "2026-08-25",
+    valor: 7600,
+    status: "vencido",
+  },
+  {
+    numero: "C-2026-010",
+    cliente: "Empresa J",
+    vencimento: "2026-09-01",
+    valor: 19500,
+    status: "aprovado",
+  },
+  {
+    numero: "C-2026-011",
+    cliente: "Empresa K",
+    vencimento: "2026-09-05",
+    valor: 4800,
+    status: "pendente",
+  },
+  {
+    numero: "C-2026-012",
+    cliente: "Empresa L",
+    vencimento: "2026-09-10",
+    valor: 27300,
+    status: "aprovado",
+  },
+  {
+    numero: "C-2026-013",
+    cliente: "Empresa M",
+    vencimento: "2026-09-15",
+    valor: 11100,
+    status: "pendente",
+  },
+  {
+    numero: "C-2026-014",
+    cliente: "Empresa N",
+    vencimento: "2026-09-20",
+    valor: 6700,
+    status: "vencido",
+  },
+  {
+    numero: "C-2026-015",
+    cliente: "Empresa O",
+    vencimento: "2026-09-25",
+    valor: 23400,
+    status: "aprovado",
+  },
 ]
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
@@ -129,6 +185,19 @@ export const Searchable: Story = {
         data={contratos}
         searchableColumns={["numero", "cliente"]}
         searchPlaceholder="Buscar por número ou cliente..."
+      />
+    </div>
+  ),
+}
+
+export const WithPagination: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        columns={columns}
+        data={contratos}
+        searchableColumns={["numero", "cliente"]}
+        pagination={{ pageSize: 5 }}
       />
     </div>
   ),

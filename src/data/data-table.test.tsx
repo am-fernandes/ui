@@ -49,4 +49,23 @@ describe("DataTable", () => {
     expect(screen.getByText("Alpha")).toBeInTheDocument()
     expect(screen.queryByText("Bravo")).not.toBeInTheDocument()
   })
+
+  it("paginates rows and changes page on next click", async () => {
+    const many: Row[] = Array.from({ length: 12 }, (_, i) => ({
+      name: `Row ${i + 1}`,
+      age: 20 + i,
+    }))
+    render(<DataTable columns={columns} data={many} pagination={{ pageSize: 5 }} />)
+
+    expect(screen.getByText("Row 1")).toBeInTheDocument()
+    expect(screen.getByText("Row 5")).toBeInTheDocument()
+    expect(screen.queryByText("Row 6")).not.toBeInTheDocument()
+    expect(screen.getByText(/Página 1 de 3/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole("button", { name: "Próxima página" }))
+    expect(screen.getByText("Row 6")).toBeInTheDocument()
+    expect(screen.getByText("Row 10")).toBeInTheDocument()
+    expect(screen.queryByText("Row 1")).not.toBeInTheDocument()
+    expect(screen.getByText(/Página 2 de 3/)).toBeInTheDocument()
+  })
 })
