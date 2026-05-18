@@ -4,6 +4,14 @@ All notable changes to `@am-fernandes/ui` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.1.0] — 2026-05-18
+
+### Added
+- `DataTable` accepts a `showRowCount?: boolean` prop. When `true`, the footer renders the
+  total row count (`12 registros`) or `<filtrados> de <total> registros` when a search
+  filter is active. Composes with `pagination` — both appear side-by-side. New stories:
+  `WithRowCount`, `WithRowCountAndPagination`.
+
 ## [7.0.0] — 2026-05-18
 
 ### Added

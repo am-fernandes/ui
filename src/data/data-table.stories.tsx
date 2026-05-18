@@ -165,6 +165,7 @@ const meta = {
           "- `searchPlaceholder?: string` — placeholder do input de busca (default `Buscar...`).",
           "- `emptyMessage?: ReactNode` — conteúdo exibido quando `data` filtrado fica vazio (default `Nenhum resultado.`).",
           "- `pagination?: { pageSize?: number }` — habilita paginação; quando omitido, todas as linhas são renderizadas.",
+          "- `showRowCount?: boolean` — mostra a contagem de registros no footer (`12 registros` ou `5 de 12 registros` quando filtrado). Default `false`.",
           "- `className?: string` — classes extras no wrapper externo.",
           "",
           "### Como definir colunas",
@@ -246,6 +247,12 @@ const meta = {
         "Habilita paginação com tamanho de página configurável. Omita para listar todas as linhas.",
       table: { type: { summary: "{ pageSize?: number }" } },
     },
+    showRowCount: {
+      control: "boolean",
+      description:
+        "Mostra a contagem de registros no footer. Se houver filtro ativo, exibe `<filtrados> de <total> registros`.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
     className: {
       control: "text",
       description: "Classes extras no wrapper externo.",
@@ -269,6 +276,7 @@ export const Playground: Story = {
     searchPlaceholder: "Buscar por número ou cliente...",
     emptyMessage: "Nenhum resultado.",
     pagination: { pageSize: 5 },
+    showRowCount: true,
   },
   render: (args) => (
     <div className="p-6">
@@ -306,6 +314,33 @@ export const WithPagination: Story = {
         data={contratos}
         searchableColumns={["numero", "cliente"]}
         pagination={{ pageSize: 5 }}
+      />
+    </div>
+  ),
+}
+
+export const WithRowCount: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        columns={columns}
+        data={contratos}
+        searchableColumns={["numero", "cliente"]}
+        showRowCount
+      />
+    </div>
+  ),
+}
+
+export const WithRowCountAndPagination: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        columns={columns}
+        data={contratos}
+        searchableColumns={["numero", "cliente"]}
+        pagination={{ pageSize: 5 }}
+        showRowCount
       />
     </div>
   ),

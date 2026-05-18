@@ -35,6 +35,8 @@ export interface DataTableProps<TData> {
   pagination?: {
     pageSize?: number
   }
+  /** Show row count in the footer (e.g. `12 registros` or `5 de 12 registros` when filtered). Default `false`. */
+  showRowCount?: boolean
 }
 
 function DataTable<TData>({
@@ -45,6 +47,7 @@ function DataTable<TData>({
   emptyMessage = "Nenhum resultado.",
   className,
   pagination,
+  showRowCount = false,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -162,29 +165,42 @@ function DataTable<TData>({
         </Table>
       </div>
 
-      {paginationEnabled ? (
-        <div className="flex items-center justify-end gap-2 px-2 py-3">
-          <span className="text-xs text-muted-foreground">
-            Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={!table.getCanPreviousPage()}
-            onClick={() => table.previousPage()}
-            aria-label="Página anterior"
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={!table.getCanNextPage()}
-            onClick={() => table.nextPage()}
-            aria-label="Próxima página"
-          >
-            <ChevronRight className="size-4" />
-          </Button>
+      {paginationEnabled || showRowCount ? (
+        <div className="flex items-center justify-between gap-2 px-2 py-3">
+          {showRowCount ? (
+            <span className="text-xs text-muted-foreground">
+              {table.getFilteredRowModel().rows.length === data.length
+                ? `${data.length} registro${data.length === 1 ? "" : "s"}`
+                : `${table.getFilteredRowModel().rows.length} de ${data.length} registros`}
+            </span>
+          ) : (
+            <span />
+          )}
+          {paginationEnabled ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                disabled={!table.getCanPreviousPage()}
+                onClick={() => table.previousPage()}
+                aria-label="Página anterior"
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                disabled={!table.getCanNextPage()}
+                onClick={() => table.nextPage()}
+                aria-label="Próxima página"
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
