@@ -10,9 +10,9 @@ import {
   FormProvider,
   type Resolver,
   type SubmitHandler,
-  useForm,
   type UseFormProps,
   type UseFormReturn,
+  useForm,
 } from "react-hook-form"
 
 import { Checkbox } from "../primitives/checkbox"
@@ -94,9 +94,7 @@ function FormField<T extends FieldValues, N extends FieldPath<T> = FieldPath<T>>
           return (
             <div className="flex w-full flex-col gap-1.5">
               {children(field)}
-              {description ? (
-                <p className="text-xs text-muted-foreground">{description}</p>
-              ) : null}
+              {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
               {error ? (
                 <p role="alert" className="text-xs text-destructive">
                   {error}

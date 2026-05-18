@@ -10,6 +10,8 @@ export interface AccordionItemData {
   value: string
   title: React.ReactNode
   content: React.ReactNode
+  /** Optional element rendered on the right side of the header (e.g. delete button). */
+  action?: React.ReactNode
   disabled?: boolean
 }
 
@@ -58,7 +60,7 @@ function renderItems(items: AccordionItemData[]) {
         data-slot="accordion-item"
         className="border-b last:border-b-0"
       >
-        <AccordionPrimitive.Header data-slot="accordion-header" className="flex">
+        <AccordionPrimitive.Header data-slot="accordion-header" className="flex items-center">
           <AccordionPrimitive.Trigger
             data-slot="accordion-trigger"
             className={cn(
@@ -71,6 +73,11 @@ function renderItems(items: AccordionItemData[]) {
               className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200"
             />
           </AccordionPrimitive.Trigger>
+          {item.action ? (
+            <div data-slot="accordion-action" className="ml-2">
+              {item.action}
+            </div>
+          ) : null}
         </AccordionPrimitive.Header>
         <AccordionPrimitive.Content
           data-slot="accordion-content"

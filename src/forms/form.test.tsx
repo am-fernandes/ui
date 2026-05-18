@@ -23,9 +23,7 @@ describe("Form", () => {
       </Form>,
     )
     fireEvent.submit(screen.getByRole("button", { name: "go" }))
-    await waitFor(() =>
-      expect(onSubmit).toHaveBeenCalledWith({ x: "abc" }, expect.anything()),
-    )
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ x: "abc" }, expect.anything()))
   })
 
   it("FormField renders an Input with the correct name+type", () => {

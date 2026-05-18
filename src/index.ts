@@ -6,6 +6,27 @@
  * See: docs/superpowers/plans/2026-05-18-api-simplification.md
  */
 
+// Navigation
+export { Accordion, type AccordionItemData, type AccordionProps } from "./navigation/accordion"
+export {
+  Breadcrumb,
+  type BreadcrumbItemData,
+  type BreadcrumbProps,
+} from "./navigation/breadcrumb"
+export {
+  CommandPalette,
+  type CommandPaletteGroup,
+  type CommandPaletteItem,
+  type CommandPaletteProps,
+} from "./navigation/command-palette"
+export {
+  Sidebar,
+  type SidebarGroup,
+  type SidebarItem,
+  type SidebarProps,
+} from "./navigation/sidebar"
+export { Tabs, type TabsItemData, type TabsProps } from "./navigation/tabs"
+
 // Domain
 export { CurrencyInput, type CurrencyInputProps } from "./domain/currency-input"
 export {

@@ -18,6 +18,8 @@ export interface BreadcrumbProps extends React.ComponentPropsWithoutRef<"nav"> {
   separator?: React.ReactNode
   /** aria-label applied to the wrapping nav. Default: "Breadcrumb". */
   ariaLabel?: string
+  /** When set, collapses middle items into "..." to keep the trail under N items. */
+  maxItems?: number
   ref?: React.Ref<HTMLElement>
 }
 
@@ -26,10 +28,18 @@ function Breadcrumb({
   separator,
   className,
   ariaLabel = "Breadcrumb",
+  maxItems,
   ref,
   ...props
 }: BreadcrumbProps) {
   const sep = separator ?? <ChevronRight />
+  const renderedItems = React.useMemo(() => {
+    if (!maxItems || items.length <= maxItems) return items
+    const [first, ...rest] = items
+    if (!first) return items
+    const tail = rest.slice(rest.length - (maxItems - 1))
+    return [first, { label: "…", href: undefined } as BreadcrumbItemData, ...tail]
+  }, [items, maxItems])
   return (
     <nav ref={ref} data-slot="breadcrumb" aria-label={ariaLabel} className={className} {...props}>
       <ol
@@ -38,8 +48,8 @@ function Breadcrumb({
           "flex flex-wrap items-center gap-1.5 break-words text-sm text-muted-foreground sm:gap-2.5",
         )}
       >
-        {items.map((item, i) => {
-          const isLast = i === items.length - 1
+        {renderedItems.map((item, i) => {
+          const isLast = i === renderedItems.length - 1
           const isCurrent = isLast && (item.isCurrentPage ?? !item.href)
           const key = item.href ?? `${i}-${typeof item.label === "string" ? item.label : ""}`
           return (
