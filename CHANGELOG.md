@@ -4,6 +4,18 @@ All notable changes to `@am-fernandes/ui` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [9.0.0] — 2026-05-18
+
+### Breaking
+- Removed `DropdownMenu` (component, types, story, test). It was never imported by
+  any consumer app and would have been used for "menu de ações da linha" style UI
+  that we currently don't ship. Removed dep `@radix-ui/react-dropdown-menu`.
+- Removed the `Sheet*` public exports (`Sheet`, `SheetTrigger`, `SheetContent`,
+  `SheetHeader`, `SheetFooter`, `SheetTitle`, `SheetDescription`, `SheetClose`)
+  and the Storybook story/test. The `src/overlays/sheet.tsx` source file remains
+  in-tree because `Sidebar` uses it internally for the mobile drawer — it is no
+  longer part of the public API.
+
 ## [8.1.0] — 2026-05-18
 
 ### Changed

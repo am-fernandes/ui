@@ -44,16 +44,6 @@ export {
   DialogTrigger,
 } from "./overlays/dialog"
 export {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "./overlays/sheet"
-export {
   Popover,
   PopoverAnchor,
   PopoverContent,
@@ -96,11 +86,6 @@ export {
   CommandSeparator,
   CommandShortcut,
 } from "./navigation/command"
-export {
-  DropdownMenu,
-  type DropdownMenuItemData,
-  type DropdownMenuProps,
-} from "./navigation/dropdown-menu"
 export {
   Sidebar,
   SidebarContent,

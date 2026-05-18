@@ -104,7 +104,7 @@ type Story = StoryObj<typeof meta>
 export const Playground: Story = {
   args: {
     defaultValue: "conta",
-    orientation: "horizontal",
+    orientation: "vertical",
     className: "w-[400px]",
     items: sampleItems,
   },
