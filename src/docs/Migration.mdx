@@ -84,3 +84,69 @@ Prefira páginas com **poucos variants customizados** primeiro — telas de list
 - **Helpers de moeda.** As funções `toCents`, `fromCents`, `percentOfTotal`, `percentFromValue`, `centsToDisplay` e `formatBRL` agora são exportadas de `@am-fernandes/ui`. Apps que mantinham um `src/lib/currency.ts` próprio devem deletá-lo e importar do pacote — a aritmética sobre inteiros em centavos é idêntica.
 - **`cn` único.** O `cn` do pacote já combina `clsx` + `tailwind-merge`. Não mantenha um `lib/utils.ts` local exportando outro `cn` (causa divergência sutil em ordem de classes).
 - **Tokens, não hex.** Não hardcode cores no JSX (`bg-[#000]`). Use sempre o token (`bg-primary`, `text-muted-foreground`); senão a app fica fora de sincronia quando a paleta evoluir.
+
+## v3.0.0 — Select e MultiSelect removidos
+
+A partir do `@am-fernandes/ui@3.0.0` os componentes `Select` e `MultiSelect` foram **removidos** em favor de um único `Combobox` com a prop `multiple`. A busca passou a ser sempre habilitada — é minimalismo intencional, não há flag para desligar.
+
+### Migração de `<Select>` → `<Combobox>`
+
+Antes:
+
+```tsx
+<Select value={uf} onValueChange={setUf}>
+  <SelectTrigger>
+    <SelectValue placeholder="UF" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="SP">São Paulo</SelectItem>
+    <SelectItem value="RJ">Rio de Janeiro</SelectItem>
+  </SelectContent>
+</Select>
+```
+
+Depois:
+
+```tsx
+<Combobox
+  options={[
+    { value: "SP", label: "São Paulo" },
+    { value: "RJ", label: "Rio de Janeiro" },
+  ]}
+  value={uf}
+  onValueChange={setUf}
+  placeholder="UF"
+/>
+```
+
+### Migração de `<MultiSelect>` → `<Combobox multiple>`
+
+Antes:
+
+```tsx
+<MultiSelect
+  options={areas}
+  value={selecionadas}
+  onValueChange={setSelecionadas}
+  placeholder="Selecione áreas"
+/>
+```
+
+Depois:
+
+```tsx
+<Combobox
+  multiple
+  options={areas}
+  value={selecionadas}
+  onValueChange={setSelecionadas}
+  placeholder="Selecione áreas"
+/>
+```
+
+A prop `icon` por opção (`{ value, label, icon }`) continua suportada — paridade total com o `MultiSelect` antigo.
+
+### Notas
+
+- O `Select` antigo **não tinha busca**. Consumidores que querem um dropdown sem campo de busca terão que conviver com o `CommandInput` sempre visível — é o trade-off da unificação.
+- A dependência `@radix-ui/react-select` foi removida do pacote. **Não é necessário** reinstalá-la na app consumidora; o `Combobox` usa `cmdk` + `Popover`, ambos já transitivos.
