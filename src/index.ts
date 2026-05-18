@@ -170,18 +170,6 @@ export {
   useFormField,
 } from "./forms/form"
 export {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectScrollDownButton,
-  SelectScrollUpButton,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from "./forms/select"
-export {
   Combobox,
   useComboboxOptions,
   type ComboboxOption,
