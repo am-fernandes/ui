@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import * as React from "react"
+import { Briefcase, Building2, GraduationCap, Scale, Users } from "lucide-react"
+import { useState } from "react"
 
-import { Combobox, type ComboboxOption } from "./combobox"
+import { Combobox } from "./combobox"
 
 const meta = {
   title: "Forms/Combobox",
@@ -13,30 +14,54 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const clients: ComboboxOption[] = [
-  { value: "empresa-a", label: "Empresa A" },
-  { value: "empresa-b", label: "Empresa B" },
-  { value: "empresa-c", label: "Empresa C" },
-  { value: "empresa-d", label: "Empresa D" },
-  { value: "empresa-e", label: "Empresa E" },
+const options = [
+  { value: "advocacia", label: "Advocacia", icon: Scale },
+  { value: "consultoria", label: "Consultoria", icon: Briefcase },
+  { value: "academia", label: "Academia", icon: GraduationCap },
+  { value: "corporativo", label: "Corporativo", icon: Building2 },
+  { value: "rh", label: "Recursos Humanos", icon: Users },
 ]
 
 export const Default: Story = {
-  args: {
-    options: clients,
-    placeholder: "Selecione um cliente",
-  },
+  args: { options, placeholder: "Selecione uma área" },
   render: (args) => {
-    const [value, setValue] = React.useState<string>("")
+    const [value, setValue] = useState<string | undefined>()
     return (
       <div className="w-[320px]">
         <Combobox
           options={args.options}
-          placeholder={args.placeholder}
           value={value}
           onValueChange={setValue}
+          placeholder={args.placeholder}
         />
       </div>
     )
   },
+}
+
+export const Multiple: Story = {
+  args: { multiple: true, options, placeholder: "Selecione áreas" },
+  render: (args) => {
+    const [value, setValue] = useState<string[]>(["advocacia", "consultoria"])
+    return (
+      <div className="w-[320px]">
+        <Combobox
+          multiple
+          options={args.options}
+          value={value}
+          onValueChange={setValue}
+          placeholder={args.placeholder}
+        />
+      </div>
+    )
+  },
+}
+
+export const Disabled: Story = {
+  args: { options, disabled: true, placeholder: "Indisponível" },
+  render: (args) => (
+    <div className="w-[320px]">
+      <Combobox options={args.options} disabled placeholder={args.placeholder} />
+    </div>
+  ),
 }
