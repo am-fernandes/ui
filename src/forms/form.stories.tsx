@@ -188,7 +188,15 @@ const meta: Meta<typeof DemoForm> = {
   title: "Forms/Form",
   component: DemoForm,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Integração com react-hook-form via `Form` (= FormProvider), `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormDescription`, `FormMessage`.",
+      },
+    },
+  },
 }
 
 export default meta

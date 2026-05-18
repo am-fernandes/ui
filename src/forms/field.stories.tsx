@@ -8,7 +8,15 @@ const meta = {
   title: "Forms/Field",
   component: FieldSet,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Wrapper composicional para campos de formulário. `FieldSet` + `FieldLegend` + spacing automático entre Inputs.",
+      },
+    },
+  },
 } satisfies Meta<typeof FieldSet>
 
 export default meta

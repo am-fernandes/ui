@@ -8,7 +8,15 @@ const meta = {
   title: "Forms/TimePicker",
   component: TimePicker,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Picker de horário 24h dual-input (HH:MM). Não usa `<input type=time>` para garantir 24h em qualquer locale. ArrowUp/Down incrementa.",
+      },
+    },
+  },
 } satisfies Meta<typeof TimePicker>
 
 export default meta

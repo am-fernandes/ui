@@ -8,7 +8,15 @@ const meta = {
   title: "Forms/DateRangePicker",
   component: DateRangePicker,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Seletor de intervalo de datas. Retorna `{from, to}` com value pt-BR (DD/MM/AAAA).",
+      },
+    },
+  },
 } satisfies Meta<typeof DateRangePicker>
 
 export default meta

@@ -8,7 +8,15 @@ const meta = {
   title: "Forms/DateInput",
   component: DateInput,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Input de data com popover Calendar. Formato pt-BR (DD/MM/AAAA), value como string ISO.",
+      },
+    },
+  },
 } satisfies Meta<typeof DateInput>
 
 export default meta

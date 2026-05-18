@@ -7,7 +7,15 @@ const meta = {
   title: "Forms/Calendar",
   component: Calendar,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Calendário baseado em react-day-picker, locale pt-BR por default. Use standalone ou via `DateInput`/`DateRangePicker`.",
+      },
+    },
+  },
 } satisfies Meta<typeof Calendar>
 
 export default meta

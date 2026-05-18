@@ -8,7 +8,15 @@ const meta = {
   title: "Forms/Combobox",
   component: Combobox,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Select com busca built-in. Prop `multiple` alterna single → multi com badges removíveis. Suporta ícone por opção.",
+      },
+    },
+  },
 } satisfies Meta<typeof Combobox>
 
 export default meta
