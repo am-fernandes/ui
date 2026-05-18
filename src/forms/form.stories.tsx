@@ -192,15 +192,32 @@ const meta: Meta<typeof DemoForm> = {
     layout: "centered",
     docs: {
       description: {
-        component:
-          "Integração com react-hook-form via `Form` (= FormProvider), `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormDescription`, `FormMessage`.",
+        component: [
+          "Integração com **react-hook-form** via componentes composicionais. `Form` é alias direto de `FormProvider` — basta espalhar o retorno de `useForm()` nele.",
+          "",
+          "**Sub-componentes:**",
+          "- `Form` — alias de `FormProvider`. Recebe `{...form}` retornado por `useForm()`.",
+          "- `FormField` — wrapper de `Controller` que injeta contexto (`name`) para os demais sub-componentes. Props: `control`, `name`, `rules`, `render`.",
+          "- `FormItem` — `<div>` com `space-y-2` que cria escopo de `id` para casar Label/Control/Description/Message via ARIA.",
+          "- `FormLabel` — `<Label>` que aplica `text-destructive` automaticamente quando há erro e gera `htmlFor` correto.",
+          "- `FormControl` — `<Slot>` que liga `id`, `aria-describedby` e `aria-invalid` ao input filho. Use em volta de um Input/Textarea/etc.",
+          "- `FormDescription` — texto auxiliar (`text-muted-foreground`).",
+          "- `FormMessage` — exibe `error.message` automaticamente; some quando não há erro nem `children`.",
+          "",
+          "**Padrão recomendado:** envolva inputs nativos com `FormField` + `FormItem`. Para componentes custom que já gerenciam o próprio input (`Combobox`, `DateInput`), use `Controller` direto + `FormItem` (veja a story `MultiField`).",
+        ].join("\n"),
       },
     },
   },
+  argTypes: {},
 }
 
 export default meta
 type Story = StoryObj<typeof DemoForm>
+
+export const Playground: Story = {
+  render: () => <DemoForm />,
+}
 
 export const Default: Story = {
   render: () => <DemoForm />,
