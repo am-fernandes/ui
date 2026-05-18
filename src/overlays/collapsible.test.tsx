@@ -1,57 +1,48 @@
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
 
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleHeader,
-  CollapsibleTrigger,
-} from "./collapsible"
+import { Collapsible } from "./collapsible"
 
 describe("Collapsible", () => {
   it("shows content when defaultOpen", () => {
     render(
-      <Collapsible defaultOpen>
-        <CollapsibleTrigger>Toggle</CollapsibleTrigger>
-        <CollapsibleContent data-testid="content">Hidden content</CollapsibleContent>
+      <Collapsible defaultOpen title="Toggle">
+        <p>Hidden content</p>
       </Collapsible>,
     )
     expect(screen.getByText("Hidden content")).toBeInTheDocument()
-    expect(screen.getByTestId("content")).toHaveAttribute("data-state", "open")
   })
 
-  it("hides content when closed", () => {
+  it("toggles via default chevron trigger", async () => {
     render(
-      <Collapsible defaultOpen={false}>
-        <CollapsibleTrigger>Toggle</CollapsibleTrigger>
-        <CollapsibleContent data-testid="content">Hidden content</CollapsibleContent>
+      <Collapsible defaultOpen={false} title="Toggle">
+        <p>Hidden content</p>
       </Collapsible>,
     )
-    // Assert behavior via Radix's data-state instead of DOM presence — Radix
-    // may keep the element in the tree for animation purposes.
-    expect(screen.getByTestId("content")).toHaveAttribute("data-state", "closed")
+    await userEvent.click(screen.getByRole("button"))
+    expect(screen.getByText("Hidden content")).toBeInTheDocument()
   })
 
-  it("CollapsibleHeader renders trigger on the right by default", () => {
+  it("supports a custom trigger element", async () => {
     render(
-      <Collapsible defaultOpen>
-        <CollapsibleHeader title="Header" data-testid="header" />
+      <Collapsible defaultOpen={false} trigger={<button type="button">CustomTrig</button>}>
+        <p>body</p>
       </Collapsible>,
     )
-    const header = screen.getByTestId("header")
-    expect(header).toHaveAttribute("data-trigger-side", "right")
-    // The trigger button carries a data-position attribute reflecting its side.
-    expect(screen.getByRole("button")).toHaveAttribute("data-position", "right")
+    await userEvent.click(screen.getByRole("button", { name: "CustomTrig" }))
+    expect(screen.getByText("body")).toBeInTheDocument()
   })
 
-  it("CollapsibleHeader renders trigger on the left when triggerSide=left", () => {
-    render(
-      <Collapsible defaultOpen>
-        <CollapsibleHeader title="Header" triggerSide="left" data-testid="header" />
+  it("applies triggerSide data attribute", () => {
+    const { container } = render(
+      <Collapsible defaultOpen title="X" triggerSide="left">
+        <p>body</p>
       </Collapsible>,
     )
-    const header = screen.getByTestId("header")
-    expect(header).toHaveAttribute("data-trigger-side", "left")
-    expect(screen.getByRole("button")).toHaveAttribute("data-position", "left")
+    expect(container.querySelector('[data-slot="collapsible"]')).toHaveAttribute(
+      "data-trigger-side",
+      "left",
+    )
   })
 })

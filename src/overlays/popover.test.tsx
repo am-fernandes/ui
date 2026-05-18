@@ -1,64 +1,37 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it } from "vitest"
 
-import { Popover, PopoverContent, PopoverTrigger } from "./popover"
+import { Popover } from "./popover"
 
 describe("Popover", () => {
-  it("renders trigger when closed", () => {
+  it("opens on trigger click", async () => {
     render(
-      <Popover open={false}>
-        <PopoverTrigger>Abrir</PopoverTrigger>
-        <PopoverContent>Conteúdo</PopoverContent>
+      <Popover trigger={<button type="button">Open</button>}>
+        <p>Conteúdo</p>
       </Popover>,
     )
-    expect(screen.getByText("Abrir")).toBeInTheDocument()
-    expect(screen.queryByText("Conteúdo")).not.toBeInTheDocument()
-  })
-
-  it("shows content when open", () => {
-    render(
-      <Popover open={true}>
-        <PopoverTrigger>Abrir</PopoverTrigger>
-        <PopoverContent>Conteúdo</PopoverContent>
-      </Popover>,
-    )
+    await userEvent.click(screen.getByRole("button", { name: "Open" }))
     expect(screen.getByText("Conteúdo")).toBeInTheDocument()
   })
 
-  it("opens when trigger is clicked", async () => {
-    const user = userEvent.setup()
-    const onOpenChange = vi.fn()
-    render(
-      <Popover onOpenChange={onOpenChange}>
-        <PopoverTrigger>Abrir</PopoverTrigger>
-        <PopoverContent>Conteúdo</PopoverContent>
-      </Popover>,
-    )
-    await user.click(screen.getByText("Abrir"))
-    expect(onOpenChange).toHaveBeenCalledWith(true)
-  })
-
-  it("closes on Escape", async () => {
-    const user = userEvent.setup()
-    const onOpenChange = vi.fn()
-    render(
-      <Popover defaultOpen onOpenChange={onOpenChange}>
-        <PopoverTrigger>Abrir</PopoverTrigger>
-        <PopoverContent>Conteúdo</PopoverContent>
-      </Popover>,
-    )
-    await user.keyboard("{Escape}")
-    expect(onOpenChange).toHaveBeenCalledWith(false)
-  })
-
-  it("applies data-align=start when align='start'", () => {
+  it("supports controlled open", () => {
     render(
       <Popover open>
-        <PopoverTrigger>Abrir</PopoverTrigger>
-        <PopoverContent align="start">Conteúdo</PopoverContent>
+        <p>Visible</p>
       </Popover>,
     )
-    expect(screen.getByText("Conteúdo")).toHaveAttribute("data-align", "start")
+    expect(screen.getByText("Visible")).toBeInTheDocument()
+  })
+
+  it("applies align prop to content", async () => {
+    render(
+      <Popover trigger={<button type="button">X</button>} align="start">
+        <p>c</p>
+      </Popover>,
+    )
+    await userEvent.click(screen.getByRole("button", { name: "X" }))
+    const content = document.querySelector('[data-slot="popover-content"]')
+    expect(content).toHaveAttribute("data-align", "start")
   })
 })

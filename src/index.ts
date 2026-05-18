@@ -7,7 +7,15 @@
  */
 
 // Overlays
+export { Alert, alertVariants, type AlertProps } from "./overlays/alert"
+export { AlertDialog, type AlertDialogProps } from "./overlays/alert-dialog"
+export { Collapsible, type CollapsibleProps } from "./overlays/collapsible"
 export { Dialog, type DialogProps } from "./overlays/dialog"
+export { Popover, type PopoverProps } from "./overlays/popover"
+export { Progress } from "./overlays/progress"
+export { Sheet, type SheetProps } from "./overlays/sheet"
+export { Toaster, toast } from "./overlays/sonner"
+export { Tooltip, type TooltipProps } from "./overlays/tooltip"
 
 // Primitives
 export { Avatar, type AvatarProps } from "./primitives/avatar"

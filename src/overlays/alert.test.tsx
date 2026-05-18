@@ -1,45 +1,44 @@
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
-import { Alert, AlertDescription, AlertTitle } from "./alert"
+import { Alert } from "./alert"
 
 describe("Alert", () => {
   it("renders title and description", () => {
-    render(
-      <Alert variant="info">
-        <AlertTitle>Heads up</AlertTitle>
-        <AlertDescription>Something to note.</AlertDescription>
-      </Alert>,
-    )
-    expect(screen.getByRole("alert")).toBeInTheDocument()
-    expect(screen.getByText("Heads up")).toBeInTheDocument()
-    expect(screen.getByText("Something to note.")).toBeInTheDocument()
+    render(<Alert title="Aviso" description="Conteúdo" />)
+    expect(screen.getByText("Aviso")).toBeInTheDocument()
+    expect(screen.getByText("Conteúdo")).toBeInTheDocument()
   })
 
-  it("applies info variant classes", () => {
+  it("renders action slot", () => {
     render(
-      <Alert variant="info">
-        <AlertTitle>Info</AlertTitle>
-      </Alert>,
+      <Alert
+        title="X"
+        description="Y"
+        action={
+          <button type="button" data-testid="cta">
+            cta
+          </button>
+        }
+      />,
     )
-    expect(screen.getByRole("alert")).toHaveClass("bg-status-info-bg")
+    expect(screen.getByTestId("cta")).toBeInTheDocument()
   })
 
-  it("applies destructive variant classes", () => {
-    render(
-      <Alert variant="destructive">
-        <AlertTitle>Erro</AlertTitle>
-      </Alert>,
+  it("applies variant data-attribute", () => {
+    const { container } = render(<Alert variant="success" title="X" />)
+    expect(container.querySelector('[data-slot="alert"]')).toHaveAttribute(
+      "data-variant",
+      "success",
     )
-    expect(screen.getByRole("alert")).toHaveClass("bg-status-destructive-bg")
   })
 
-  it("applies success variant classes", () => {
+  it("accepts children as alternative body", () => {
     render(
-      <Alert variant="success">
-        <AlertTitle>OK</AlertTitle>
+      <Alert variant="info" title="X">
+        <p data-testid="body">complex body</p>
       </Alert>,
     )
-    expect(screen.getByRole("alert")).toHaveClass("bg-status-success-bg")
+    expect(screen.getByTestId("body")).toBeInTheDocument()
   })
 })

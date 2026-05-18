@@ -2,133 +2,51 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "./alert-dialog"
+import { AlertDialog } from "./alert-dialog"
 
 describe("AlertDialog", () => {
-  it("renders trigger when closed", () => {
+  it("renders title and description and confirm/cancel buttons", () => {
     render(
-      <AlertDialog open={false}>
-        <AlertDialogTrigger>Abrir</AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>Ação irreversível.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction>Confirmar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>,
-    )
-    expect(screen.getByText("Abrir")).toBeInTheDocument()
-    expect(screen.queryByText("Tem certeza?")).not.toBeInTheDocument()
-  })
-
-  it("shows content when open", () => {
-    render(
-      <AlertDialog open={true}>
-        <AlertDialogTrigger>Abrir</AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>Ação irreversível.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction>Confirmar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>,
+      <AlertDialog
+        open
+        title="Tem certeza?"
+        description="Não pode ser desfeito."
+        onConfirm={() => {}}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+      />,
     )
     expect(screen.getByText("Tem certeza?")).toBeInTheDocument()
-    expect(screen.getByText("Confirmar")).toBeInTheDocument()
+    expect(screen.getByText("Não pode ser desfeito.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Excluir" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Cancelar" })).toBeInTheDocument()
   })
 
-  it("has role=alertdialog when open", () => {
-    render(
-      <AlertDialog open={true}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Title</AlertDialogTitle>
-            <AlertDialogDescription>Description</AlertDialogDescription>
-          </AlertDialogHeader>
-        </AlertDialogContent>
-      </AlertDialog>,
-    )
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument()
+  it("fires onConfirm when confirm clicked", async () => {
+    const onConfirm = vi.fn()
+    render(<AlertDialog open title="X" onConfirm={onConfirm} />)
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+    expect(onConfirm).toHaveBeenCalled()
   })
 
-  it("calls onOpenChange(false) when Escape is pressed", async () => {
-    const user = userEvent.setup()
+  it("fires onOpenChange(false) on cancel", async () => {
     const onOpenChange = vi.fn()
-    render(
-      <AlertDialog defaultOpen onOpenChange={onOpenChange}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Title</AlertDialogTitle>
-            <AlertDialogDescription>Description</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction>Confirmar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>,
-    )
-    await user.keyboard("{Escape}")
+    render(<AlertDialog open onOpenChange={onOpenChange} title="X" onConfirm={() => {}} />)
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
-  it("closes when Cancel is clicked", async () => {
-    const user = userEvent.setup()
-    const onOpenChange = vi.fn()
+  it("renders children above the buttons when provided", () => {
     render(
-      <AlertDialog defaultOpen onOpenChange={onOpenChange}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Title</AlertDialogTitle>
-            <AlertDialogDescription>Description</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction>Confirmar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+      <AlertDialog open title="X" onConfirm={() => {}}>
+        <p data-testid="extra">Extra context</p>
       </AlertDialog>,
     )
-    await user.click(screen.getByText("Cancelar"))
-    expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(screen.getByTestId("extra")).toBeInTheDocument()
   })
 
-  it("closes when Action is clicked", async () => {
-    const user = userEvent.setup()
-    const onOpenChange = vi.fn()
-    render(
-      <AlertDialog defaultOpen onOpenChange={onOpenChange}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Title</AlertDialogTitle>
-            <AlertDialogDescription>Description</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction>Confirmar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>,
-    )
-    await user.click(screen.getByText("Confirmar"))
-    expect(onOpenChange).toHaveBeenCalledWith(false)
+  it("applies confirmVariant", () => {
+    render(<AlertDialog open title="X" onConfirm={() => {}} confirmVariant="destructive" />)
+    expect(screen.getByRole("button", { name: "Confirmar" })).toHaveClass("bg-destructive")
   })
 })

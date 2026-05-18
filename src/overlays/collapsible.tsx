@@ -5,55 +5,69 @@ import { ChevronsUpDown } from "lucide-react"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { Button } from "../primitives/button"
 
-const Collapsible = CollapsiblePrimitive.Root
-const CollapsibleTrigger = CollapsiblePrimitive.CollapsibleTrigger
-const CollapsibleContent = CollapsiblePrimitive.CollapsibleContent
-
-export interface CollapsibleHeaderProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
-  /** Title text or any node rendered as the header label. */
-  title: React.ReactNode
-  /** Position of the trigger button relative to the title. Defaults to `"right"`. */
-  triggerSide?: "left" | "right"
-  /** Optional custom trigger element. Defaults to a ghost icon button with `ChevronsUpDown`. */
+export interface CollapsibleProps {
+  /** Default trigger text (only used when `trigger` is not provided). */
+  title?: React.ReactNode
+  /** Replaces the default chevron button. Mutually exclusive with `title`. */
   trigger?: React.ReactNode
-  /** Accessible label for the default icon trigger. Ignored if `trigger` is provided. */
+  triggerSide?: "left" | "right"
   triggerLabel?: string
+  defaultOpen?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  className?: string
+  children: React.ReactNode
 }
 
-function CollapsibleHeader({
+function Collapsible({
   title,
-  triggerSide = "right",
   trigger,
+  triggerSide = "right",
   triggerLabel = "Alternar seção",
+  defaultOpen,
+  open,
+  onOpenChange,
   className,
-  ...rest
-}: CollapsibleHeaderProps) {
-  const triggerNode = trigger ?? (
-    <CollapsibleTrigger asChild>
-      <Button variant="ghost" size="icon" aria-label={triggerLabel} data-position={triggerSide}>
-        <ChevronsUpDown className="size-4" />
-      </Button>
-    </CollapsibleTrigger>
-  )
-
+  children,
+}: CollapsibleProps) {
   return (
-    <div
-      data-slot="collapsible-header"
+    <CollapsiblePrimitive.Root
+      data-slot="collapsible"
       data-trigger-side={triggerSide}
-      className={cn(
-        "flex items-center justify-between gap-4 rounded-md border px-4 py-2",
-        className,
-      )}
-      {...rest}
+      open={open}
+      defaultOpen={defaultOpen}
+      onOpenChange={onOpenChange}
+      className={cn("w-full", className)}
     >
-      {triggerSide === "left" ? triggerNode : null}
-      <div className="flex-1 text-sm font-semibold">{title}</div>
-      {triggerSide === "right" ? triggerNode : null}
-    </div>
+      {trigger ? (
+        <CollapsiblePrimitive.Trigger asChild data-slot="collapsible-trigger">
+          {trigger}
+        </CollapsiblePrimitive.Trigger>
+      ) : (
+        <CollapsiblePrimitive.Trigger
+          data-slot="collapsible-trigger"
+          className={cn(
+            "flex w-full items-center justify-between rounded-md py-2 text-sm font-medium",
+            "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            triggerSide === "left" && "flex-row-reverse",
+          )}
+          aria-label={title ? undefined : triggerLabel}
+        >
+          {title ? <span>{title}</span> : <span className="sr-only">{triggerLabel}</span>}
+          <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
+        </CollapsiblePrimitive.Trigger>
+      )}
+      <CollapsiblePrimitive.Content
+        data-slot="collapsible-content"
+        className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+      >
+        {children}
+      </CollapsiblePrimitive.Content>
+    </CollapsiblePrimitive.Root>
   )
 }
 
-export { Collapsible, CollapsibleContent, CollapsibleHeader, CollapsibleTrigger }
+Collapsible.displayName = "Collapsible"
+
+export { Collapsible }

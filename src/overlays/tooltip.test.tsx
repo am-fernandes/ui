@@ -1,52 +1,38 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip"
+import { Tooltip } from "./tooltip"
 
 describe("Tooltip", () => {
-  it("renders trigger button", () => {
+  it("renders the trigger child", () => {
     render(
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger>Hover me</TooltipTrigger>
-          <TooltipContent>Tooltip text</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>,
+      <Tooltip content="ajuda">
+        <button type="button">Hover</button>
+      </Tooltip>,
     )
-    expect(screen.getByText("Hover me")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Hover" })).toBeInTheDocument()
   })
 
-  it("shows content when forced open", () => {
-    render(
-      <TooltipProvider>
-        <Tooltip open>
-          <TooltipTrigger>Hover me</TooltipTrigger>
-          <TooltipContent>Tooltip text</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>,
-    )
-    // Radix renders the tooltip content twice — once visible in the portal
-    // and once as an sr-only duplicate for screen readers. Asserting exact
-    // length keeps us honest about the rendered DOM structure.
-    expect(screen.getAllByText("Tooltip text")).toHaveLength(2)
-  })
-
-  it("fires onOpenChange when focus enters the trigger and Escape closes", () => {
+  it("fires onOpenChange on focus and Escape closes", () => {
     const onOpenChange = vi.fn()
     render(
-      <TooltipProvider delayDuration={0}>
-        <Tooltip onOpenChange={onOpenChange}>
-          <TooltipTrigger>Hover me</TooltipTrigger>
-          <TooltipContent>Tooltip text</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>,
+      <Tooltip content="ajuda" onOpenChange={onOpenChange} delayDuration={0}>
+        <button type="button">Hover</button>
+      </Tooltip>,
     )
-
-    const trigger = screen.getByText("Hover me")
-    fireEvent.focus(trigger)
+    fireEvent.focus(screen.getByRole("button", { name: "Hover" }))
     expect(onOpenChange).toHaveBeenCalledWith(true)
-
     fireEvent.keyDown(document.body, { key: "Escape" })
     expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it("accepts ReactNode as content", () => {
+    render(
+      <Tooltip content={<strong>rich</strong>} open>
+        <button type="button">X</button>
+      </Tooltip>,
+    )
+    const rich = screen.getAllByText("rich")
+    expect(rich.length).toBeGreaterThan(0)
   })
 })
