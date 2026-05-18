@@ -2,15 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { LogOut, Settings, User } from "lucide-react"
 
 import { Button } from "../primitives/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuItems,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./dropdown-menu"
+import { DropdownMenu } from "./dropdown-menu"
 
 const meta = {
   title: "Navigation/DropdownMenu",
@@ -21,7 +13,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Menu contextual ancorado em um trigger. API composicional ou via helper `<DropdownMenuItems items={...} />` para listas declarativas.",
+          "Menu contextual ancorado em um `trigger` ReactNode. Itens passados por `items` (entries do tipo `item`, `label` ou `separator`).",
       },
     },
   },
@@ -31,47 +23,20 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  render: () => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline">Abrir menu</Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuLabel>Minha conta</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>Perfil</DropdownMenuItem>
-        <DropdownMenuItem>Configurações</DropdownMenuItem>
-        <DropdownMenuItem className="text-destructive focus:text-destructive">
-          Sair
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  ),
-}
-
-export const WithItemsAPI: Story = {
-  render: () => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline">Menu</Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuItems
-          items={[
-            { type: "label", label: "Minha conta" },
-            { type: "separator" },
-            { label: "Perfil", icon: User, onSelect: () => console.log("perfil") },
-            { label: "Configurações", icon: Settings, shortcut: "⌘," },
-            { type: "separator" },
-            {
-              label: "Sair",
-              icon: LogOut,
-              destructive: true,
-              onSelect: () => console.log("sair"),
-            },
-          ]}
-        />
-      </DropdownMenuContent>
-    </DropdownMenu>
-  ),
+  args: {
+    trigger: <Button variant="outline">Abrir menu</Button>,
+    items: [
+      { type: "label", label: "Minha conta" },
+      { type: "separator" },
+      { label: "Perfil", icon: User, onSelect: () => console.log("perfil") },
+      { label: "Configurações", icon: Settings, shortcut: "⌘," },
+      { type: "separator" },
+      {
+        label: "Sair",
+        icon: LogOut,
+        destructive: true,
+        onSelect: () => console.log("sair"),
+      },
+    ],
+  },
 }

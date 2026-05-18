@@ -98,22 +98,8 @@ export {
 } from "./navigation/command"
 export {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
   type DropdownMenuItemData,
-  DropdownMenuItems,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
+  type DropdownMenuProps,
 } from "./navigation/dropdown-menu"
 export {
   Sidebar,

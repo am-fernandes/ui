@@ -1,43 +1,41 @@
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItems,
-  DropdownMenuTrigger,
-} from "./dropdown-menu"
+import { DropdownMenu } from "./dropdown-menu"
 
 describe("DropdownMenu", () => {
-  it("renders items via DropdownMenuItems when open", () => {
+  it("renders the trigger", () => {
     render(
-      <DropdownMenu open>
-        <DropdownMenuTrigger>Open</DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItems
-            items={[
-              { type: "label", label: "Conta" },
-              { label: "Perfil" },
-              { type: "separator" },
-              { label: "Sair", destructive: true },
-            ]}
-          />
-        </DropdownMenuContent>
-      </DropdownMenu>,
+      <DropdownMenu trigger={<button type="button">Open</button>} items={[{ label: "Perfil" }]} />,
+    )
+    expect(screen.getByRole("button", { name: "Open" })).toBeInTheDocument()
+  })
+
+  it("renders items when controlled open", () => {
+    render(
+      <DropdownMenu
+        open
+        trigger={<button type="button">Open</button>}
+        items={[
+          { type: "label", label: "Conta" },
+          { label: "Perfil" },
+          { type: "separator" },
+          { label: "Sair", destructive: true },
+        ]}
+      />,
     )
     expect(screen.getByText("Conta")).toBeInTheDocument()
     expect(screen.getByText("Perfil")).toBeInTheDocument()
     expect(screen.getByText("Sair")).toBeInTheDocument()
   })
 
-  it("hides content when closed", () => {
+  it("hides items when closed", () => {
     render(
-      <DropdownMenu open={false}>
-        <DropdownMenuTrigger>Open</DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItems items={[{ label: "Perfil" }]} />
-        </DropdownMenuContent>
-      </DropdownMenu>,
+      <DropdownMenu
+        open={false}
+        trigger={<button type="button">Open</button>}
+        items={[{ label: "Perfil" }]}
+      />,
     )
     expect(screen.queryByText("Perfil")).not.toBeInTheDocument()
   })
