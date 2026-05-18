@@ -1,0 +1,45 @@
+import { Meta } from "@storybook/addon-docs/blocks"
+
+<Meta title="Quality" />
+
+# Qualidade & Testes
+
+`@am-fernandes/ui` é coberto por **vitest** + **@testing-library/react**. Cada componente tem um arquivo de smoke test que valida:
+
+- Renderização sem crash
+- Estrutura ARIA correta (roles, labels)
+- Pelo menos uma interação principal (click, type, toggle)
+
+## Comandos
+
+```bash
+bun run test            # roda tudo uma vez
+bun run test:watch      # modo watch
+bun run test:coverage   # gera relatório HTML em coverage/
+```
+
+## Estratégia
+
+| Categoria | O que testamos |
+|---|---|
+| **Primitives** | Renderização, variantes, eventos básicos (click, change) |
+| **Overlays** | Trigger + conteúdo via portal quando aberto |
+| **Navigation** | API composicional + API `items` simplificada |
+| **Forms** | Valor inicial, mudança via teclado, propagação RHF |
+| **Domain** | Formatação BRL/%, lista de tokens, validação |
+| **Data** | Render de dados, sort/filter no DataTable, lazy load no Image/Video |
+
+## Cobertura
+
+Após `bun run test:coverage`, abra `coverage/index.html` para o report navegável.
+
+CI alvo: **statements ≥ 80%**, **functions ≥ 80%**, **branches ≥ 70%**.
+
+## Limitações conhecidas
+
+- **Tooltip hover** não é testável em jsdom (não simula `:hover`).
+- **Recharts** precisa de DOM mensurável; testes de chart valida apenas o wrapper `ChartContainer`.
+- **Calendar** rendiriza dezenas de células; testes verificam só o cabeçalho do mês.
+- **Sonner** precisa de portal mock para verificar toasts; testes apenas montam o `Toaster`.
+
+Para validação E2E completa, use Storybook visual tests ou Playwright.

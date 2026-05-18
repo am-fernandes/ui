@@ -25,9 +25,7 @@ describe("Combobox", () => {
   })
 
   it("supports multiple mode", () => {
-    render(
-      <Combobox multiple options={options} value={["a", "b"]} placeholder="Pick many" />,
-    )
+    render(<Combobox multiple options={options} value={["a", "b"]} placeholder="Pick many" />)
     expect(screen.getByText("Alpha")).toBeInTheDocument()
     expect(screen.getByText("Bravo")).toBeInTheDocument()
   })

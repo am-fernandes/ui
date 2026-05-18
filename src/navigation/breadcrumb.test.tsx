@@ -12,14 +12,7 @@ import {
 
 describe("Breadcrumb", () => {
   it("renders via items API", () => {
-    render(
-      <Breadcrumb
-        items={[
-          { label: "Home", href: "/" },
-          { label: "Page" },
-        ]}
-      />,
-    )
+    render(<Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Page" }]} />)
     expect(screen.getByText("Home")).toBeInTheDocument()
     expect(screen.getByText("Page")).toBeInTheDocument()
     expect(screen.getByText("Home").tagName).toBe("A")
