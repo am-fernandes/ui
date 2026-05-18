@@ -5,12 +5,16 @@ import { X } from "lucide-react"
 import { type KeyboardEvent, useRef, useState } from "react"
 import { Badge } from "../primitives/badge"
 
-interface DaysInstallmentInputProps {
+interface MultiNumberInputProps {
   value: number[]
   onValueChange: (values: number[]) => void
   disabled?: boolean
   placeholder?: string
   error?: boolean
+  /** Optional prefix rendered before each number in its Badge (e.g. "R$ "). */
+  prefix?: string
+  /** Optional suffix rendered after each number in its Badge (e.g. " dias"). */
+  suffix?: string
 }
 
 function parseInput(raw: string): number[] {
@@ -20,13 +24,15 @@ function parseInput(raw: string): number[] {
     .filter((n) => Number.isInteger(n) && n > 0)
 }
 
-function DaysInstallmentInput({
+function MultiNumberInput({
   value,
   onValueChange,
   disabled = false,
-  placeholder = "Ex: 30 / 60 / 90",
+  placeholder = "Adicione um número",
   error = false,
-}: DaysInstallmentInputProps) {
+  prefix,
+  suffix,
+}: MultiNumberInputProps) {
   const [inputValue, setInputValue] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -63,7 +69,7 @@ function DaysInstallmentInput({
   const focusInput = () => inputRef.current?.focus()
 
   return (
-    <div data-slot="days-installment-input">
+    <div data-slot="multi-number-input" aria-label="Lista de números">
       <div
         className={cn(
           "flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-1.5 text-sm transition-colors",
@@ -78,10 +84,13 @@ function DaysInstallmentInput({
       >
         {sorted.map((num) => (
           <Badge key={num} variant="secondary" className="gap-1 pr-1">
-            {num} dias
+            {prefix ?? ""}
+            {num}
+            {suffix ?? ""}
             {!disabled && (
               <button
                 type="button"
+                aria-label={`Remover ${prefix ?? ""}${num}${suffix ?? ""}`}
                 className="ml-0.5 rounded-sm hover:bg-secondary-foreground/20"
                 onClick={(e) => {
                   e.stopPropagation()
@@ -97,6 +106,7 @@ function DaysInstallmentInput({
           ref={inputRef}
           type="text"
           inputMode="numeric"
+          aria-label="Adicione um número"
           className="flex-1 min-w-[60px] bg-transparent outline-none disabled:cursor-not-allowed"
           placeholder={sorted.length === 0 ? placeholder : ""}
           value={inputValue}
@@ -110,4 +120,6 @@ function DaysInstallmentInput({
   )
 }
 
-export { DaysInstallmentInput, type DaysInstallmentInputProps }
+MultiNumberInput.displayName = "MultiNumberInput"
+
+export { MultiNumberInput, type MultiNumberInputProps }

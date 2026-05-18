@@ -186,9 +186,9 @@ export {
   type CurrencyInputProps,
 } from "./domain/currency-input"
 export {
-  DaysInstallmentInput,
-  type DaysInstallmentInputProps,
-} from "./domain/days-installment-input"
+  MultiNumberInput,
+  type MultiNumberInputProps,
+} from "./domain/multi-number-input"
 export {
   InputOTP,
   InputOTPGroup,

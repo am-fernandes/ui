@@ -47,7 +47,7 @@ import { cn } from "@am-fernandes/ui"
 | Composed    | 1     | confirm-button |
 | Navigation  | 6     | accordion, breadcrumb, command, dropdown-menu, sidebar, tabs |
 | Forms       | 8     | calendar, combobox, date-input, date-range-picker, field, form, multi-select, select |
-| Domain      | 4     | currency-input, days-installment-input, input-otp, percentage-input |
+| Domain      | 4     | currency-input, multi-number-input, input-otp, percentage-input |
 | Data        | 4     | card, chart, scroll-area, table |
 
 Helpers adicionais expostos pelo barrel:
