@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import type { ColumnDef } from "@tanstack/react-table"
+import type { ColumnDef, PaginationState, SortingState } from "@tanstack/react-table"
+import { useState } from "react"
 
 import { Badge } from "../primitives/badge"
 import { DataTable } from "./data-table"
@@ -156,7 +157,7 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Tabela rica baseada em [`@tanstack/react-table`](https://tanstack.com/table/latest) e nos primitives `Table*` do DS. Suporta busca global escopada (`searchableColumns`), ordenação por coluna (toggle no header) e paginação opcional.",
+          "Tabela rica baseada em [`@tanstack/react-table`](https://tanstack.com/table/latest) e nos primitives `Table*` do DS. Suporta busca global escopada (`searchableColumns`), ordenação por coluna, paginação opcional e props controladas para uso server-side.",
           "",
           "**Props:**",
           "- `columns: ColumnDef<TData>[]` — definição das colunas (tipo do `@tanstack/react-table`).",
@@ -164,8 +165,12 @@ const meta = {
           "- `searchableColumns?: string[]` — `accessorKey`s das colunas incluídas na busca global. Sem isso, o campo de busca não aparece.",
           "- `searchPlaceholder?: string` — placeholder do input de busca (default `Buscar...`).",
           "- `emptyMessage?: ReactNode` — conteúdo exibido quando `data` filtrado fica vazio (default `Nenhum resultado.`).",
-          "- `pagination?: { pageSize?: number }` — habilita paginação; quando omitido, todas as linhas são renderizadas.",
-          "- `showRowCount?: boolean` — mostra a contagem de registros no footer (`12 registros` ou `5 de 12 registros` quando filtrado). Default `false`.",
+          "- `pagination?: { pageSize?: number }` — habilita paginação.",
+          "- `showRowCount?: boolean` — mostra a contagem de registros no footer.",
+          "- `sorting` / `onSortingChange` — sorting controlado.",
+          "- `globalFilter` / `onGlobalFilterChange` — filtro de busca controlado.",
+          "- `pageIndex` / `onPaginationChange` / `pageCount` / `manualPagination` — paginação server-side.",
+          "- `labels?: { search?, empty?, rowCount?(filtered, total) => string }` — sobrescreve os textos default.",
           "- `className?: string` — classes extras no wrapper externo.",
           "",
           "### Como definir colunas",
@@ -192,7 +197,6 @@ const meta = {
           "  },",
           "",
           "  // 3. Desabilitar ordenação em uma coluna específica.",
-          "  //    O header NÃO vira botão clicável e o ícone de sort some.",
           "  {",
           '    accessorKey: "status",',
           '    header: "Status",',
@@ -202,22 +206,19 @@ const meta = {
           "]",
           "```",
           "",
-          "Por padrão **todas as colunas são ordenáveis** — o usuário clica no header para alternar entre asc / desc / sem ordenação. Para travar uma coluna (ex.: ações, badges, colunas sem ordem natural), defina `enableSorting: false` na column def. Outros campos úteis do `ColumnDef`: `id`, `accessorFn`, `enableHiding`, `meta`. Consulte a [API do TanStack Table](https://tanstack.com/table/latest/docs/api/core/column-def) para a referência completa.",
-          "",
-          "**Exemplo de uso:**",
+          "**Exemplo:**",
           "",
           "```tsx",
           'import { DataTable } from "@am-fernandes/ui"',
           'import type { ColumnDef } from "@tanstack/react-table"',
           "",
-          "type Contrato = { numero: string; cliente: string }",
-          "",
-          "const columns: ColumnDef<Contrato>[] = [",
-          '  { accessorKey: "numero", header: "Número" },',
-          '  { accessorKey: "cliente", header: "Cliente" },',
-          "]",
-          "",
-          '<DataTable columns={columns} data={contratos} searchableColumns={["numero"]} showRowCount />',
+          "<DataTable",
+          "  columns={columns}",
+          "  data={contratos}",
+          '  searchableColumns={["numero", "cliente"]}',
+          "  pagination={{ pageSize: 10 }}",
+          "  showRowCount",
+          "/>",
           "```",
         ].join("\n"),
       },
@@ -269,6 +270,17 @@ const meta = {
         "Mostra a contagem de registros no footer. Se houver filtro ativo, exibe `<filtrados> de <total> registros`.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
+    manualPagination: {
+      control: "boolean",
+      description: "Pagina é controlada externamente (server-side). Exige `pageCount`.",
+      table: { type: { summary: "boolean" } },
+    },
+    labels: {
+      control: false,
+      description:
+        "Sobrescreve os textos default: `{ search?, empty?, rowCount?(filtered, total) => string }`.",
+      table: { type: { summary: "DataTableLabels" } },
+    },
     className: {
       control: "text",
       description: "Classes extras no wrapper externo.",
@@ -284,29 +296,19 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Playground: Story = {
-  args: {
-    columns: columns as ColumnDef<unknown>[],
-    data: contratos as unknown[],
-    searchableColumns: ["numero", "cliente"],
-    searchPlaceholder: "Buscar por número ou cliente...",
-    emptyMessage: "Nenhum resultado.",
-    pagination: { pageSize: 5 },
-    showRowCount: true,
-  },
-  render: (args) => (
-    <div className="p-6">
-      <DataTable {...args} />
-    </div>
-  ),
-}
-
 export const Default: Story = {
   render: () => (
     <div className="p-6">
-      <DataTable columns={columns} data={contratos} />
+      <DataTable columns={columns} data={contratos.slice(0, 10)} />
     </div>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: "10 linhas, sem busca, sem paginação. Cabeçalhos ordenáveis por padrão.",
+      },
+    },
+  },
 }
 
 export const Searchable: Story = {
@@ -320,46 +322,44 @@ export const Searchable: Story = {
       />
     </div>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: "Input de busca aparece automaticamente quando `searchableColumns` é definido.",
+      },
+    },
+  },
 }
 
-export const WithPagination: Story = {
+export const Paginated: Story = {
   render: () => (
     <div className="p-6">
-      <DataTable
-        columns={columns}
-        data={contratos}
-        searchableColumns={["numero", "cliente"]}
-        pagination={{ pageSize: 5 }}
-      />
+      <DataTable columns={columns} data={contratos} pagination={{ pageSize: 5 }} showRowCount />
     </div>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: "Paginação com 5 linhas por página + contagem no footer.",
+      },
+    },
+  },
 }
 
-export const WithRowCount: Story = {
+export const Sortable: Story = {
   render: () => (
     <div className="p-6">
-      <DataTable
-        columns={columns}
-        data={contratos}
-        searchableColumns={["numero", "cliente"]}
-        showRowCount
-      />
+      <DataTable columns={columns} data={contratos.slice(0, 8)} />
     </div>
   ),
-}
-
-export const WithRowCountAndPagination: Story = {
-  render: () => (
-    <div className="p-6">
-      <DataTable
-        columns={columns}
-        data={contratos}
-        searchableColumns={["numero", "cliente"]}
-        pagination={{ pageSize: 5 }}
-        showRowCount
-      />
-    </div>
-  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Clique no header para alternar entre `asc` / `desc` / sem ordenação. Status tem `enableSorting: false` na column def — header continua sendo texto puro.",
+      },
+    },
+  },
 }
 
 export const Empty: Story = {
@@ -373,4 +373,124 @@ export const Empty: Story = {
       />
     </div>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: "`emptyMessage` é exibido quando o data array vai a zero (ou após filtro).",
+      },
+    },
+  },
+}
+
+export const ServerSide: Story = {
+  render: () => {
+    function Wrapper() {
+      const pageSize = 5
+      const [pageIndex, setPageIndex] = useState(0)
+      const total = contratos.length
+      const pageCount = Math.ceil(total / pageSize)
+      const visible = contratos.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize)
+      return (
+        <div className="space-y-2 p-6">
+          <p className="text-muted-foreground text-xs">
+            Server-side: `manualPagination` ON, `pageCount={pageCount}` controla o total de páginas.
+            Página atual: <strong className="text-foreground">{pageIndex + 1}</strong> de{" "}
+            {pageCount}.
+          </p>
+          <DataTable
+            columns={columns}
+            data={visible}
+            manualPagination
+            pageIndex={pageIndex}
+            pageCount={pageCount}
+            pagination={{ pageSize }}
+            onPaginationChange={(updater) => {
+              const next =
+                typeof updater === "function"
+                  ? (updater as (old: PaginationState) => PaginationState)({
+                      pageIndex,
+                      pageSize,
+                    })
+                  : updater
+              setPageIndex(next.pageIndex)
+            }}
+            showRowCount
+            labels={{
+              rowCount: (_filtered, _t) => `${total} registros (server-side)`,
+            }}
+          />
+        </div>
+      )
+    }
+    return <Wrapper />
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Server-side: o backend devolve uma página por vez. Passe `manualPagination`, `pageIndex`, `pageCount` e `onPaginationChange` — o componente não tenta paginar localmente.",
+      },
+    },
+  },
+}
+
+export const CustomLabels: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        columns={columns}
+        data={contratos.slice(0, 6)}
+        searchableColumns={["numero", "cliente"]}
+        showRowCount
+        labels={{
+          search: "Procurar contrato...",
+          empty: "Sem contratos cadastrados.",
+          rowCount: (filtered, total) =>
+            filtered === total
+              ? `${total} contrato${total === 1 ? "" : "s"} no total`
+              : `Exibindo ${filtered} de ${total} contratos`,
+        }}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Sobrescreva os textos padrão via `labels`. `rowCount` recebe a quantidade filtrada e total, e retorna a string completa.",
+      },
+    },
+  },
+}
+
+export const ControlledSorting: Story = {
+  render: () => {
+    function Wrapper() {
+      const [sorting, setSorting] = useState<SortingState>([{ id: "valor", desc: true }])
+      return (
+        <div className="space-y-2 p-6">
+          <p className="text-muted-foreground text-xs">
+            Sorting controlado externamente — atualmente ordenando por{" "}
+            <code className="rounded bg-muted px-1">{sorting[0]?.id ?? "(nenhum)"}</code>{" "}
+            {sorting[0]?.desc ? "↓" : "↑"}.
+          </p>
+          <DataTable
+            columns={columns}
+            data={contratos.slice(0, 8)}
+            sorting={sorting}
+            onSortingChange={setSorting}
+          />
+        </div>
+      )
+    }
+    return <Wrapper />
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Passe `sorting` + `onSortingChange` para controlar a ordenação externamente — útil para sincronizar com a URL ou um estado global.",
+      },
+    },
+  },
 }
