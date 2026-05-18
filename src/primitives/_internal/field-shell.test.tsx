@@ -70,14 +70,7 @@ describe("FieldShell", () => {
 
   it("renders required asterisk on label", () => {
     render(
-      <FieldShell
-        controlId="c"
-        labelId="l"
-        descriptionId="d"
-        errorId="e"
-        label="Nome"
-        required
-      >
+      <FieldShell controlId="c" labelId="l" descriptionId="d" errorId="e" label="Nome" required>
         <input id="c" />
       </FieldShell>,
     )

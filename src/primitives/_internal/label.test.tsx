@@ -12,7 +12,11 @@ describe("Label (internal)", () => {
   })
 
   it("renders an asterisk when required", () => {
-    render(<Label htmlFor="x" required>Nome</Label>)
+    render(
+      <Label htmlFor="x" required>
+        Nome
+      </Label>,
+    )
     expect(screen.getByLabelText("obrigatório")).toBeInTheDocument()
   })
 

@@ -78,12 +78,7 @@ function FieldShell({
           </p>
         ) : null}
         {hasError ? (
-          <p
-            id={errorId}
-            data-slot="field-error"
-            role="alert"
-            className="text-xs text-destructive"
-          >
+          <p id={errorId} data-slot="field-error" role="alert" className="text-xs text-destructive">
             {error}
           </p>
         ) : null}

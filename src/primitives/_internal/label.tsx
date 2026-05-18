@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -11,6 +11,7 @@ interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
 
 function Label({ className, children, required, ref, ...props }: LabelProps) {
   return (
+    // biome-ignore lint/a11y/noLabelWithoutControl: consumers pass `htmlFor` to associate; the component cannot statically verify the control exists.
     <label
       ref={ref}
       data-slot="label"
