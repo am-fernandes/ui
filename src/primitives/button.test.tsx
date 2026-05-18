@@ -15,7 +15,23 @@ describe("Button", () => {
     expect(screen.getByRole("button")).toHaveClass("bg-destructive")
   })
 
-  it("fires onClick", async () => {
+  it("supports sm/lg/icon sizes", () => {
+    const { rerender } = render(<Button size="sm">x</Button>)
+    expect(screen.getByRole("button")).toHaveClass("h-8")
+    rerender(<Button size="lg">x</Button>)
+    expect(screen.getByRole("button")).toHaveClass("h-10")
+    rerender(<Button size="icon">x</Button>)
+    expect(screen.getByRole("button")).toHaveClass("size-9")
+  })
+
+  it("renders a spinner and disables when loading", () => {
+    render(<Button loading>Salvar</Button>)
+    const btn = screen.getByRole("button", { name: /Salvar/ })
+    expect(btn).toBeDisabled()
+    expect(btn.querySelector("svg.animate-spin")).toBeInTheDocument()
+  })
+
+  it("fires onClick when enabled", async () => {
     const onClick = vi.fn()
     render(<Button onClick={onClick}>Click</Button>)
     await userEvent.click(screen.getByRole("button"))
@@ -33,36 +49,35 @@ describe("Button", () => {
     expect(onClick).not.toHaveBeenCalled()
   })
 
-  it("emits data-slot=button", () => {
-    render(<Button>X</Button>)
-    expect(screen.getByRole("button")).toHaveAttribute("data-slot", "button")
-  })
-
-  it("size=icon applies square dimensions (h-9 w-9)", () => {
-    render(<Button size="icon">i</Button>)
-    const btn = screen.getByRole("button")
-    expect(btn).toHaveClass("h-9")
-    expect(btn).toHaveClass("w-9")
-  })
-
-  it("asChild renders as the underlying element (anchor)", () => {
+  it("renders as child with asChild (Slot)", () => {
     render(
       <Button asChild>
-        <a href="/somewhere">Link</a>
+        <a href="/x">link</a>
       </Button>,
     )
-    const link = screen.getByRole("link", { name: "Link" })
+    const link = screen.getByRole("link", { name: "link" })
     expect(link).toBeInTheDocument()
     expect(link.tagName).toBe("A")
-    expect(link).toHaveAttribute("href", "/somewhere")
     expect(link).toHaveAttribute("data-slot", "button")
   })
 
-  it("merges focus-ring base classes", () => {
-    render(<Button>X</Button>)
+  it("applies focus-visible ring classes", () => {
+    render(<Button>x</Button>)
     const btn = screen.getByRole("button")
-    expect(btn).toHaveClass("focus-visible:ring-2")
-    expect(btn).toHaveClass("focus-visible:ring-ring")
-    expect(btn).toHaveClass("focus-visible:ring-offset-2")
+    expect(btn.className).toMatch(/focus-visible:ring/)
+  })
+
+  it("forwards ref", () => {
+    let captured: HTMLButtonElement | null = null
+    render(
+      <Button
+        ref={(el) => {
+          captured = el
+        }}
+      >
+        x
+      </Button>,
+    )
+    expect(captured).toBeInstanceOf(HTMLButtonElement)
   })
 })

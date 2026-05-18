@@ -7,6 +7,9 @@
  */
 
 // Primitives
+export { Avatar, type AvatarProps } from "./primitives/avatar"
+export { Badge, badgeVariants, type BadgeProps } from "./primitives/badge"
+export { Button, buttonVariants, type ButtonProps } from "./primitives/button"
 export { Checkbox, type CheckboxProps } from "./primitives/checkbox"
 export { Input, type InputProps } from "./primitives/input"
 export {
@@ -14,5 +17,12 @@ export {
   type RadioGroupItemData,
   type RadioGroupProps,
 } from "./primitives/radio-group"
+export { Separator, type SeparatorProps } from "./primitives/separator"
+export { Skeleton } from "./primitives/skeleton"
 export { Switch, type SwitchProps } from "./primitives/switch"
 export { Textarea, type TextareaProps } from "./primitives/textarea"
+export {
+  Typography,
+  typographyVariants,
+  type TypographyProps,
+} from "./primitives/typography"

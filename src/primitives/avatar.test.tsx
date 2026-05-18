@@ -1,34 +1,51 @@
 import { render, screen, waitFor } from "@testing-library/react"
+import { UserIcon } from "lucide-react"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
-import { Avatar, AvatarFallback, AvatarImage } from "./avatar"
+import { Avatar } from "./avatar"
 
 describe("Avatar", () => {
-  it("renders fallback text", () => {
-    render(
-      <Avatar>
-        <AvatarFallback>AM</AvatarFallback>
-      </Avatar>,
-    )
+  it("renders fallback string when no src is provided", () => {
+    render(<Avatar alt="Me" fallback="AM" />)
     expect(screen.getByText("AM")).toBeInTheDocument()
   })
 
+  it("renders a ReactNode fallback (e.g. icon)", () => {
+    render(<Avatar alt="Anônimo" fallback={<UserIcon data-testid="icon" />} />)
+    expect(screen.getByTestId("icon")).toBeInTheDocument()
+  })
+
   it("emits data-slot on root and fallback", () => {
-    const { container } = render(
-      <Avatar>
-        <AvatarFallback>AM</AvatarFallback>
-      </Avatar>,
-    )
+    const { container } = render(<Avatar alt="Me" fallback="AM" />)
     expect(container.querySelector('[data-slot="avatar"]')).toBeInTheDocument()
     expect(container.querySelector('[data-slot="avatar-fallback"]')).toBeInTheDocument()
+  })
+
+  it("applies className override (rounded-none wins over rounded-full base)", () => {
+    const { container } = render(<Avatar alt="X" fallback="X" className="rounded-none" />)
+    const root = container.querySelector('[data-slot="avatar"]')
+    expect(root).toHaveClass("rounded-none")
+    expect(root).not.toHaveClass("rounded-full")
+  })
+
+  it("forwards ref to the root", () => {
+    let captured: HTMLSpanElement | null = null
+    render(
+      <Avatar
+        alt="X"
+        fallback="X"
+        ref={(el) => {
+          captured = el
+        }}
+      />,
+    )
+    expect(captured).toBeInstanceOf(HTMLSpanElement)
   })
 
   describe("with mocked Image", () => {
     const originalImage = globalThis.Image
 
     beforeEach(() => {
-      // jsdom doesn't load images from URLs; mock window.Image so that setting
-      // `.src` immediately triggers the `load` listener Radix has wired up.
       class MockImage {
         public complete = false
         public naturalWidth = 0
@@ -41,7 +58,6 @@ describe("Avatar", () => {
           this._src = value
           this.complete = true
           this.naturalWidth = 1
-          // Defer to next microtask so React effects have time to attach the listener
           queueMicrotask(() => {
             for (const cb of this.listeners.load ?? []) cb()
           })
@@ -62,12 +78,9 @@ describe("Avatar", () => {
       ;(globalThis as unknown as { Image: typeof Image }).Image = originalImage
     })
 
-    it("forwards alt + data-slot on AvatarImage once loaded", async () => {
+    it("renders <img> with alt + src once loaded", async () => {
       const { container } = render(
-        <Avatar>
-          <AvatarImage src="https://example.com/avatar.png" alt="User avatar" />
-          <AvatarFallback>AM</AvatarFallback>
-        </Avatar>,
+        <Avatar src="https://example.com/avatar.png" alt="User avatar" fallback="UA" />,
       )
       await waitFor(() => {
         const img = container.querySelector('[data-slot="avatar-image"]')
@@ -77,16 +90,5 @@ describe("Avatar", () => {
       expect(img).toHaveAttribute("alt", "User avatar")
       expect(img).toHaveAttribute("src", "https://example.com/avatar.png")
     })
-  })
-
-  it("merges consumer className over base classes (override wins via cn)", () => {
-    const { container } = render(
-      <Avatar className="rounded-none">
-        <AvatarFallback>AM</AvatarFallback>
-      </Avatar>,
-    )
-    const root = container.querySelector('[data-slot="avatar"]')
-    expect(root).toHaveClass("rounded-none")
-    expect(root).not.toHaveClass("rounded-full")
   })
 })

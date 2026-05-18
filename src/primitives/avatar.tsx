@@ -5,58 +5,40 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Avatar({
-  className,
-  ref,
-  ...props
-}: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root> & {
-  ref?: React.Ref<React.ComponentRef<typeof AvatarPrimitive.Root>>
-}) {
+export interface AvatarProps
+  extends Omit<React.ComponentProps<typeof AvatarPrimitive.Root>, "children"> {
+  src?: string
+  alt: string
+  fallback: React.ReactNode
+  ref?: React.Ref<HTMLSpanElement>
+}
+
+function Avatar({ src, alt, fallback, className, ref, ...props }: AvatarProps) {
   return (
     <AvatarPrimitive.Root
       ref={ref}
       data-slot="avatar"
-      className={cn("relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full", className)}
+      className={cn("relative flex size-10 shrink-0 overflow-hidden rounded-full", className)}
       {...props}
-    />
+    >
+      {src ? (
+        <AvatarPrimitive.Image
+          data-slot="avatar-image"
+          src={src}
+          alt={alt}
+          className="aspect-square h-full w-full"
+        />
+      ) : null}
+      <AvatarPrimitive.Fallback
+        data-slot="avatar-fallback"
+        className="flex h-full w-full items-center justify-center rounded-full bg-muted text-sm"
+      >
+        {fallback}
+      </AvatarPrimitive.Fallback>
+    </AvatarPrimitive.Root>
   )
 }
 
-function AvatarImage({
-  className,
-  ref,
-  ...props
-}: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> & {
-  ref?: React.Ref<React.ComponentRef<typeof AvatarPrimitive.Image>>
-}) {
-  return (
-    <AvatarPrimitive.Image
-      ref={ref}
-      data-slot="avatar-image"
-      className={cn("aspect-square h-full w-full", className)}
-      {...props}
-    />
-  )
-}
+Avatar.displayName = "Avatar"
 
-function AvatarFallback({
-  className,
-  ref,
-  ...props
-}: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback> & {
-  ref?: React.Ref<React.ComponentRef<typeof AvatarPrimitive.Fallback>>
-}) {
-  return (
-    <AvatarPrimitive.Fallback
-      ref={ref}
-      data-slot="avatar-fallback"
-      className={cn(
-        "flex h-full w-full items-center justify-center rounded-full bg-muted",
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-
-export { Avatar, AvatarImage, AvatarFallback }
+export { Avatar }

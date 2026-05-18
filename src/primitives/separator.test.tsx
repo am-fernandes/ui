@@ -4,30 +4,33 @@ import { describe, expect, it } from "vitest"
 import { Separator } from "./separator"
 
 describe("Separator", () => {
-  it("renders with data-orientation by default (decorative)", () => {
+  it("renders a horizontal separator by default", () => {
     const { container } = render(<Separator />)
-    const sep = container.querySelector("[data-orientation]")
+    const sep = container.querySelector('[data-slot="separator"]')
     expect(sep).toBeInTheDocument()
     expect(sep).toHaveAttribute("data-orientation", "horizontal")
-    expect(sep).toHaveAttribute("data-slot", "separator")
   })
 
-  it("decorative=true does not expose role=separator to AT", () => {
+  it("decorative=true does not expose role=separator", () => {
     render(<Separator />)
-    // When decorative, Radix renders role="none" (no separator semantics).
     expect(screen.queryByRole("separator")).not.toBeInTheDocument()
   })
 
-  it("renders with role=separator when not decorative", () => {
+  it("decorative=false exposes role=separator", () => {
     render(<Separator decorative={false} />)
     expect(screen.getByRole("separator")).toBeInTheDocument()
   })
 
-  it("vertical orientation applies w-[1px] h-full", () => {
+  it("vertical orientation applies w-px h-full", () => {
     const { container } = render(<Separator orientation="vertical" />)
     const sep = container.querySelector('[data-slot="separator"]')
     expect(sep).toHaveAttribute("data-orientation", "vertical")
-    expect(sep).toHaveClass("w-[1px]")
+    expect(sep).toHaveClass("w-px")
     expect(sep).toHaveClass("h-full")
+  })
+
+  it("renders label text in the middle when provided", () => {
+    render(<Separator label="ou" />)
+    expect(screen.getByText("ou")).toBeInTheDocument()
   })
 })
