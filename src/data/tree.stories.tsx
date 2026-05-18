@@ -12,9 +12,60 @@ const meta = {
     layout: "centered",
     docs: {
       description: {
-        component:
-          "Tree recursiva controlled/uncontrolled. Suporta single-select, ícones por nó e expansão lazy.",
+        component: [
+          'Árvore hierárquica recursiva (`role="tree"` com `role="treeitem"`/`role="group"`). Suporta single-select, ícones por nó e modo controlled ou uncontrolled para expansão.',
+          "",
+          "**Props:**",
+          "- `data: TreeNodeData[]` — nós raiz. Cada nó pode ter `children` (recursivo).",
+          "- `defaultExpanded?: string[]` — ids inicialmente expandidos (uncontrolled).",
+          "- `expanded?: Set<string>` — set controlado de ids expandidos. Quando passado, ativa modo controlled.",
+          "- `onExpandedChange?: (next: Set<string>) => void` — callback do modo controlled.",
+          "- `selected?: string` — id do nó selecionado (single-select).",
+          "- `onSelectedChange?: (id: string) => void` — disparado ao clicar em um nó (folha ou pasta).",
+          "",
+          "**Shape do nó (`TreeNodeData`):**",
+          "```ts",
+          "interface TreeNodeData {",
+          "  id: string                                            // único na árvore",
+          "  label: React.ReactNode                                 // texto/JSX renderizado",
+          "  icon?: React.ComponentType<{ className?: string }>     // ex.: ícones do lucide-react",
+          "  children?: TreeNodeData[]                              // ausente => nó folha",
+          "}",
+          "```",
+        ].join("\n"),
       },
+    },
+  },
+  argTypes: {
+    data: {
+      control: "object",
+      description: "Árvore de nós. Estrutura recursiva (`children` aninhados).",
+      table: { type: { summary: "TreeNodeData[]" } },
+    },
+    defaultExpanded: {
+      control: "object",
+      description: "Ids inicialmente expandidos (uncontrolled).",
+      table: { type: { summary: "string[]" } },
+    },
+    expanded: {
+      control: false,
+      description: "Set controlado de ids expandidos. Use junto com `onExpandedChange`.",
+      table: { type: { summary: "Set<string>" } },
+    },
+    selected: {
+      control: "text",
+      description: "Id do nó selecionado (single-select).",
+      table: { type: { summary: "string" } },
+    },
+    onSelectedChange: {
+      control: false,
+      description: "Disparado ao clicar em um nó.",
+      table: { type: { summary: "(id: string) => void" }, category: "Eventos" },
+    },
+    onExpandedChange: {
+      control: false,
+      description: "Disparado ao expandir/colapsar um nó (modo controlled).",
+      table: { type: { summary: "(next: Set<string>) => void" }, category: "Eventos" },
     },
   },
 } satisfies Meta<typeof Tree>

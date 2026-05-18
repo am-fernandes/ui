@@ -155,9 +155,101 @@ const meta = {
     layout: "fullscreen",
     docs: {
       description: {
-        component:
-          "Tabela rica baseada em `@tanstack/react-table` e nos primitives `Table*` do DS. Suporta busca global por colunas predefinidas (`searchableColumns`) e ordenação por coluna (toggle no header — `enableSorting: false` na column def para desligar).",
+        component: [
+          "Tabela rica baseada em [`@tanstack/react-table`](https://tanstack.com/table/latest) e nos primitives `Table*` do DS. Suporta busca global escopada (`searchableColumns`), ordenação por coluna (toggle no header) e paginação opcional.",
+          "",
+          "**Props:**",
+          "- `columns: ColumnDef<TData>[]` — definição das colunas (tipo do `@tanstack/react-table`).",
+          "- `data: TData[]` — array de linhas. `TData` é o seu tipo de domínio.",
+          "- `searchableColumns?: string[]` — `accessorKey`s das colunas incluídas na busca global. Sem isso, o campo de busca não aparece.",
+          "- `searchPlaceholder?: string` — placeholder do input de busca (default `Buscar...`).",
+          "- `emptyMessage?: ReactNode` — conteúdo exibido quando `data` filtrado fica vazio (default `Nenhum resultado.`).",
+          "- `pagination?: { pageSize?: number }` — habilita paginação; quando omitido, todas as linhas são renderizadas.",
+          "- `className?: string` — classes extras no wrapper externo.",
+          "",
+          "### Como definir colunas",
+          "",
+          "Cada item de `columns` é um `ColumnDef<TData>` do `@tanstack/react-table`. Os campos mais usados:",
+          "",
+          "```tsx",
+          'import type { ColumnDef } from "@tanstack/react-table"',
+          "",
+          "type Contrato = { numero: string; cliente: string; valor: number; status: string }",
+          "",
+          "const columns: ColumnDef<Contrato>[] = [",
+          "  // 1. Coluna básica — apenas mapeia a chave do objeto para o header.",
+          '  { accessorKey: "numero", header: "Número" },',
+          "",
+          "  // 2. Cell customizado — recebe `row.original` (a linha tipada) e retorna ReactNode.",
+          "  {",
+          '    accessorKey: "valor",',
+          '    header: "Valor",',
+          "    cell: ({ row }) =>",
+          '      new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(',
+          "        row.original.valor,",
+          "      ),",
+          "  },",
+          "",
+          "  // 3. Desabilitar ordenação em uma coluna específica.",
+          "  //    O header NÃO vira botão clicável e o ícone de sort some.",
+          "  {",
+          '    accessorKey: "status",',
+          '    header: "Status",',
+          "    enableSorting: false,",
+          "    cell: ({ row }) => <Badge>{row.original.status}</Badge>,",
+          "  },",
+          "]",
+          "```",
+          "",
+          "Por padrão **todas as colunas são ordenáveis** — o usuário clica no header para alternar entre asc / desc / sem ordenação. Para travar uma coluna (ex.: ações, badges, colunas sem ordem natural), defina `enableSorting: false` na column def. Outros campos úteis do `ColumnDef`: `id`, `accessorFn`, `enableHiding`, `meta`. Consulte a [API do TanStack Table](https://tanstack.com/table/latest/docs/api/core/column-def) para a referência completa.",
+        ].join("\n"),
       },
+    },
+  },
+  argTypes: {
+    columns: {
+      control: false,
+      description:
+        "Definições de coluna do `@tanstack/react-table`. Use `enableSorting: false` para travar a ordenação em colunas específicas.",
+      table: { type: { summary: "ColumnDef<TData>[]" } },
+    },
+    data: {
+      control: false,
+      description: "Array de linhas tipadas como `TData`.",
+      table: { type: { summary: "TData[]" } },
+    },
+    searchableColumns: {
+      control: "object",
+      description:
+        "`accessorKey`s das colunas incluídas na busca global. Quando omitido, o input de busca não é renderizado.",
+      table: { type: { summary: "string[]" } },
+    },
+    searchPlaceholder: {
+      control: "text",
+      description: "Placeholder do input de busca.",
+      table: {
+        type: { summary: "string" },
+        defaultValue: { summary: "'Buscar...'" },
+      },
+    },
+    emptyMessage: {
+      control: "text",
+      description: "Conteúdo exibido quando o resultado filtrado fica vazio.",
+      table: {
+        type: { summary: "ReactNode" },
+        defaultValue: { summary: "'Nenhum resultado.'" },
+      },
+    },
+    pagination: {
+      control: "object",
+      description:
+        "Habilita paginação com tamanho de página configurável. Omita para listar todas as linhas.",
+      table: { type: { summary: "{ pageSize?: number }" } },
+    },
+    className: {
+      control: "text",
+      description: "Classes extras no wrapper externo.",
+      table: { type: { summary: "string" } },
     },
   },
   args: {
@@ -168,6 +260,22 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const Playground: Story = {
+  args: {
+    columns: columns as ColumnDef<unknown>[],
+    data: contratos as unknown[],
+    searchableColumns: ["numero", "cliente"],
+    searchPlaceholder: "Buscar por número ou cliente...",
+    emptyMessage: "Nenhum resultado.",
+    pagination: { pageSize: 5 },
+  },
+  render: (args) => (
+    <div className="p-6">
+      <DataTable {...args} />
+    </div>
+  ),
+}
 
 export const Default: Story = {
   render: () => (

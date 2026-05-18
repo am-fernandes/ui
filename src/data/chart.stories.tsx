@@ -58,9 +58,36 @@ const meta = {
     layout: "centered",
     docs: {
       description: {
-        component:
-          "Wrapper de [recharts](https://recharts.org) que padroniza container, tooltip e legend ao DS. Compose qualquer chart de recharts (BarChart, LineChart, AreaChart, PieChart, RadialBarChart...) dentro do `<ChartContainer config={...}>`. Use `var(--chart-1)` a `var(--chart-5)` ou `var(--color-<dataKey>)` mapeado via `config` para cores.",
+        component: [
+          "Wrapper de [recharts](https://recharts.org) que padroniza container, tooltip e legend ao DS. Compose qualquer chart de recharts (BarChart, LineChart, AreaChart, PieChart, RadialBarChart, etc.) dentro do `<ChartContainer config={...}>`.",
+          "",
+          "**Composição:**",
+          "- `ChartContainer` — wrapper responsivo (`ResponsiveContainer` por dentro). Recebe `config: ChartConfig` que mapeia cada `dataKey` para `{ label, color, icon? }` e injeta as cores como CSS variables (`--color-<key>`) escopadas ao chart.",
+          "- `ChartTooltip` — re-export do `Tooltip` do recharts; passe `content={<ChartTooltipContent />}` para renderizar o tooltip do DS.",
+          "- `ChartTooltipContent` — tooltip padronizado com label, indicador colorido e formatação coerente ao tema.",
+          "- `ChartLegend` / `ChartLegendContent` — legenda integrada ao `config`.",
+          "",
+          "**Cores:** use `var(--chart-1)` a `var(--chart-5)` (tokens do DS) ou referencie via `var(--color-<dataKey>)` quando a chave estiver no `config`.",
+        ].join("\n"),
       },
+    },
+  },
+  argTypes: {
+    config: {
+      control: "object",
+      description:
+        "Mapa `dataKey -> { label, color, icon? }` que injeta `--color-<key>` no escopo do container.",
+      table: { type: { summary: "ChartConfig" } },
+    },
+    className: {
+      control: "text",
+      description: "Classes extras aplicadas ao wrapper.",
+      table: { type: { summary: "string" } },
+    },
+    id: {
+      control: "text",
+      description: "ID estável (usado para escopar as CSS variables). Default: gerado via `useId`.",
+      table: { type: { summary: "string" } },
     },
   },
   args: {

@@ -9,9 +9,46 @@ const meta = {
     layout: "centered",
     docs: {
       description: {
-        component:
-          "Container com scroll customizado e barras estilizadas. Use para listas longas em alturas fixas.",
+        component: [
+          "Container com scroll customizado e barras estilizadas. Wrapper sobre [`@radix-ui/react-scroll-area`](https://www.radix-ui.com/primitives/docs/components/scroll-area) — substitui a scrollbar nativa do browser por uma barra padronizada que respeita o tema.",
+          "",
+          "**Props principais (encaminhadas para `ScrollArea.Root` do Radix):**",
+          "- `className` — classes Tailwind do wrapper externo. Defina **altura/largura fixas aqui** (ex.: `h-[200px] w-[260px]`); o scroll só aparece quando o conteúdo excede o container.",
+          "- `type` — quando exibir a scrollbar: `'auto'` (default — só quando há overflow), `'always'`, `'scroll'` (durante interação) ou `'hover'`.",
+          "- `scrollHideDelay` — tempo (ms) até esconder a barra após interação. Default `600`.",
+          "- `dir` — direção de leitura (`'ltr'` / `'rtl'`).",
+          "",
+          'Para scroll horizontal, adicione `<ScrollBar orientation="horizontal" />` dentro do `ScrollArea`.',
+        ].join("\n"),
       },
+    },
+  },
+  argTypes: {
+    className: {
+      control: "text",
+      description: "Classes do wrapper externo. Use para definir altura/largura fixas.",
+      table: { type: { summary: "string" } },
+    },
+    type: {
+      control: "inline-radio",
+      options: ["auto", "always", "scroll", "hover"],
+      description: "Quando exibir a scrollbar.",
+      table: {
+        type: { summary: "'auto' | 'always' | 'scroll' | 'hover'" },
+        defaultValue: { summary: "'hover'" },
+      },
+    },
+    scrollHideDelay: {
+      control: { type: "number", min: 0, step: 50 },
+      description:
+        "Delay (ms) para esconder a barra após interação (válido com `type='scroll'` ou `'hover'`).",
+      table: { type: { summary: "number" }, defaultValue: { summary: "600" } },
+    },
+    dir: {
+      control: "inline-radio",
+      options: ["ltr", "rtl"],
+      description: "Direção de leitura.",
+      table: { type: { summary: "'ltr' | 'rtl'" } },
     },
   },
 } satisfies Meta<typeof ScrollArea>

@@ -10,9 +10,27 @@ const meta = {
     layout: "centered",
     docs: {
       description: {
-        component:
-          "Container modular: `Card` + `CardHeader` + `CardTitle` + `CardDescription` + `CardContent` + `CardFooter`.",
+        component: [
+          "Container composicional para agrupar informação relacionada. `Card` é só um wrapper estilizado com borda e fundo — toda a estrutura interna é montada pelos subcomponentes.",
+          "",
+          "**Subcomponentes:**",
+          "- `Card` — wrapper externo (`<div>`). Aplica `border`, `rounded-md`, `bg-card` e `text-card-foreground`.",
+          "- `CardHeader` — bloco superior com padding e `flex-col` + `space-y-1.5`. Use para agrupar `CardTitle` + `CardDescription`.",
+          "- `CardTitle` — título do card (`font-semibold leading-none tracking-tight`).",
+          "- `CardDescription` — texto secundário (`text-sm text-muted-foreground`).",
+          "- `CardContent` — corpo principal. Padding lateral/inferior, sem padding-top (encaixa direto abaixo do header).",
+          "- `CardFooter` — rodapé com `flex items-center`, ideal para botões de ação.",
+          "",
+          "Todos os subcomponentes são `<div>`s com `React.forwardRef` e aceitam `className` + qualquer `HTMLAttributes<HTMLDivElement>` para customização.",
+        ].join("\n"),
       },
+    },
+  },
+  argTypes: {
+    className: {
+      control: "text",
+      description: "Classes Tailwind extras aplicadas ao wrapper `Card`.",
+      table: { type: { summary: "string" } },
     },
   },
 } satisfies Meta<typeof Card>

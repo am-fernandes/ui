@@ -10,10 +10,76 @@ const meta = {
     layout: "centered",
     docs: {
       description: {
-        component:
-          "Componente de imagem otimizado: lazy load nativo, placeholder (skeleton/blur), aspect-ratio, fallback de erro, alt required.",
+        component: [
+          "Componente de imagem otimizado: lazy-load nativo, placeholder configurável, fallback de erro e `alt` obrigatório.",
+          "",
+          "**Props principais:**",
+          "- `src` — URL da imagem (obrigatório).",
+          "- `alt` — texto alternativo (obrigatório por acessibilidade).",
+          "- `aspectRatio` — razão `width / height` (ex.: `16/9`). Quando setado, o wrapper aplica `aspect-ratio` CSS e reserva o espaço evitando CLS.",
+          "- `placeholder` — `'skeleton'` (default, usa `<Skeleton>` do DS), `'blur'` (fundo `bg-muted` borrado) ou `'none'`.",
+          "- `objectFit` — como a imagem preenche o wrapper: `'cover'` (default), `'contain'`, `'fill'`, `'none'`, `'scale-down'`.",
+          "- `rounded` — borda arredondada: `'none'` (default), `'sm'`, `'md'`, `'lg'`, `'full'` (para avatares).",
+          "- `loading` — `'lazy'` (default) ou `'eager'`. Mapeia direto para o atributo nativo do `<img>`.",
+          "- Em erro de carregamento, renderiza um fallback `Falha ao carregar imagem` no lugar.",
+        ].join("\n"),
       },
     },
+  },
+  argTypes: {
+    src: {
+      control: "text",
+      description: "URL da imagem.",
+      table: { type: { summary: "string" } },
+    },
+    alt: {
+      control: "text",
+      description: "Texto alternativo. Obrigatório por acessibilidade.",
+      table: { type: { summary: "string" } },
+    },
+    aspectRatio: {
+      control: { type: "number", min: 0, step: 0.1 },
+      description: "Razão `width / height`. Reserva espaço e evita layout shift.",
+      table: { type: { summary: "number" } },
+    },
+    placeholder: {
+      control: "inline-radio",
+      options: ["skeleton", "blur", "none"],
+      description: "Placeholder exibido enquanto a imagem carrega.",
+      table: {
+        type: { summary: "'blur' | 'skeleton' | 'none'" },
+        defaultValue: { summary: "'skeleton'" },
+      },
+    },
+    objectFit: {
+      control: "inline-radio",
+      options: ["cover", "contain", "fill", "none", "scale-down"],
+      description: "Como a imagem preenche o wrapper.",
+      table: {
+        type: { summary: "'cover' | 'contain' | 'fill' | 'none' | 'scale-down'" },
+        defaultValue: { summary: "'cover'" },
+      },
+    },
+    rounded: {
+      control: "inline-radio",
+      options: ["none", "sm", "md", "lg", "full"],
+      description: "Borda arredondada. `'full'` para avatares circulares.",
+      table: {
+        type: { summary: "'none' | 'sm' | 'md' | 'lg' | 'full'" },
+        defaultValue: { summary: "'none'" },
+      },
+    },
+    loading: {
+      control: "inline-radio",
+      options: ["lazy", "eager"],
+      description: "Estratégia de carregamento nativa do `<img>`.",
+      table: {
+        type: { summary: "'lazy' | 'eager'" },
+        defaultValue: { summary: "'lazy'" },
+      },
+    },
+    onLoad: { control: false, table: { category: "Eventos" } },
+    onError: { control: false, table: { category: "Eventos" } },
   },
 } satisfies Meta<typeof Image>
 
