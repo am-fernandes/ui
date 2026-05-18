@@ -5,49 +5,117 @@ import { CircleIcon } from "lucide-react"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { Label } from "./_internal/label"
+import { useFieldIds } from "./_internal/use-field-ids"
 
-type RadioGroupProps = React.ComponentProps<typeof RadioGroupPrimitive.Root> & {
-  ref?: React.Ref<React.ComponentRef<typeof RadioGroupPrimitive.Root>>
+export interface RadioGroupItemData {
+  value: string
+  label: React.ReactNode
+  description?: React.ReactNode
+  disabled?: boolean
+  icon?: React.ComponentType<{ className?: string }>
 }
 
-function RadioGroup({ className, orientation = "vertical", ref, ...props }: RadioGroupProps) {
+export interface RadioGroupProps
+  extends Omit<React.ComponentProps<typeof RadioGroupPrimitive.Root>, "id" | "orientation"> {
+  label?: React.ReactNode
+  description?: React.ReactNode
+  error?: string
+  orientation?: "vertical" | "horizontal"
+  values: RadioGroupItemData[]
+  id?: string
+  ref?: React.Ref<HTMLDivElement>
+}
+
+function RadioGroup({
+  id,
+  label,
+  description,
+  error,
+  required,
+  disabled,
+  orientation = "vertical",
+  values,
+  className,
+  ref,
+  ...props
+}: RadioGroupProps) {
+  const ids = useFieldIds(id)
+  const hasError = error != null && error !== ""
+  const hasDescription = description != null && description !== ""
+  const hasLabel = label != null && label !== ""
+
   return (
-    <RadioGroupPrimitive.Root
-      ref={ref}
-      data-slot="radio-group"
-      orientation={orientation}
-      className={cn(
-        orientation === "horizontal" ? "flex flex-row flex-wrap gap-6" : "grid gap-3",
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-
-type RadioGroupItemProps = React.ComponentProps<typeof RadioGroupPrimitive.Item> & {
-  ref?: React.Ref<React.ComponentRef<typeof RadioGroupPrimitive.Item>>
-}
-
-function RadioGroupItem({ className, ref, ...props }: RadioGroupItemProps) {
-  return (
-    <RadioGroupPrimitive.Item
-      ref={ref}
-      data-slot="radio-group-item"
-      className={cn(
-        "border-input text-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive aspect-square size-4 shrink-0 rounded-full border shadow-xs transition-[color,box-shadow] outline-none cursor-pointer focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
-        className,
-      )}
-      {...props}
-    >
-      <RadioGroupPrimitive.Indicator
-        data-slot="radio-group-indicator"
-        className="relative flex items-center justify-center"
+    <div data-slot="radio-group-field" className="flex w-full flex-col gap-1.5">
+      {hasLabel ? (
+        <Label htmlFor={ids.controlId} required={required} id={ids.labelId}>
+          {label}
+        </Label>
+      ) : null}
+      {hasDescription ? (
+        <p id={ids.descriptionId} className="text-xs text-muted-foreground">
+          {description}
+        </p>
+      ) : null}
+      <RadioGroupPrimitive.Root
+        ref={ref}
+        id={ids.controlId}
+        data-slot="radio-group"
+        data-orientation={orientation}
+        disabled={disabled}
+        aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
+        aria-invalid={hasError ? true : undefined}
+        className={cn(
+          orientation === "horizontal" ? "flex flex-row flex-wrap gap-6" : "grid gap-3",
+          className,
+        )}
+        {...props}
       >
-        <CircleIcon className="fill-primary absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2" />
-      </RadioGroupPrimitive.Indicator>
-    </RadioGroupPrimitive.Item>
+        {values.map((item) => {
+          const itemId = `${ids.controlId}-${item.value}`
+          const Icon = item.icon
+          return (
+            <div key={item.value} className="flex items-start gap-2">
+              <RadioGroupPrimitive.Item
+                id={itemId}
+                value={item.value}
+                disabled={item.disabled}
+                data-slot="radio-group-item"
+                className={cn(
+                  "aspect-square size-4 shrink-0 rounded-full border border-primary text-primary shadow",
+                  "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                  "disabled:cursor-not-allowed disabled:opacity-50",
+                )}
+              >
+                <RadioGroupPrimitive.Indicator
+                  data-slot="radio-group-indicator"
+                  className="flex items-center justify-center"
+                >
+                  <CircleIcon className="size-2 fill-current text-current" />
+                </RadioGroupPrimitive.Indicator>
+              </RadioGroupPrimitive.Item>
+              <Label htmlFor={itemId} className="flex flex-col gap-0.5 font-normal">
+                <span className="inline-flex items-center gap-1.5">
+                  {Icon ? <Icon className="size-4" /> : null}
+                  {item.label}
+                </span>
+                {item.description ? (
+                  <span className="text-xs text-muted-foreground">{item.description}</span>
+                ) : null}
+              </Label>
+            </div>
+          )
+        })}
+      </RadioGroupPrimitive.Root>
+      {hasError ? (
+        <p id={ids.errorId} role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      ) : null}
+    </div>
   )
 }
 
-export { RadioGroup, RadioGroupItem }
+RadioGroup.displayName = "RadioGroup"
+
+export { RadioGroup }

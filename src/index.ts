@@ -7,5 +7,12 @@
  */
 
 // Primitives
+export { Checkbox, type CheckboxProps } from "./primitives/checkbox"
 export { Input, type InputProps } from "./primitives/input"
+export {
+  RadioGroup,
+  type RadioGroupItemData,
+  type RadioGroupProps,
+} from "./primitives/radio-group"
+export { Switch, type SwitchProps } from "./primitives/switch"
 export { Textarea, type TextareaProps } from "./primitives/textarea"

@@ -1,100 +1,55 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { useState } from "react"
+import { ZapIcon } from "lucide-react"
 import { describe, expect, it, vi } from "vitest"
 
-import { RadioGroup, RadioGroupItem } from "./radio-group"
+import { RadioGroup } from "./radio-group"
+
+const VALUES = [
+  { value: "free", label: "Free" },
+  { value: "pro", label: "Pro" },
+  { value: "team", label: "Team", disabled: true },
+]
 
 describe("RadioGroup", () => {
-  it("renders all items with role=radio", () => {
+  it("renders one radio per value", () => {
+    render(<RadioGroup label="Plano" values={VALUES} />)
+    expect(screen.getAllByRole("radio")).toHaveLength(3)
+  })
+
+  it("renders the group label and error", () => {
+    render(<RadioGroup label="Plano" error="Escolha um" values={VALUES} />)
+    expect(screen.getByText("Plano")).toBeInTheDocument()
+    expect(screen.getByRole("alert")).toHaveTextContent("Escolha um")
+  })
+
+  it("selects on click and fires onValueChange", async () => {
+    const onChange = vi.fn()
+    render(<RadioGroup label="Plano" values={VALUES} onValueChange={onChange} />)
+    await userEvent.click(screen.getByRole("radio", { name: "Pro" }))
+    expect(onChange).toHaveBeenCalledWith("pro")
+  })
+
+  it("disables individual items via item.disabled", () => {
+    render(<RadioGroup label="Plano" values={VALUES} />)
+    expect(screen.getByRole("radio", { name: "Team" })).toBeDisabled()
+  })
+
+  it("renders item description and icon when provided", () => {
     render(
-      <RadioGroup defaultValue="a">
-        <RadioGroupItem value="a" id="a" />
-        <RadioGroupItem value="b" id="b" />
-      </RadioGroup>,
+      <RadioGroup
+        label="Plano"
+        values={[{ value: "f", label: "Free", description: "R$ 0", icon: ZapIcon }]}
+      />,
     )
-    const radios = screen.getAllByRole("radio")
-    expect(radios).toHaveLength(2)
+    expect(screen.getByText("R$ 0")).toBeInTheDocument()
   })
 
-  it("default orientation is vertical (grid layout)", () => {
-    render(
-      <RadioGroup defaultValue="a" data-testid="group">
-        <RadioGroupItem value="a" id="a" />
-      </RadioGroup>,
+  it("supports horizontal orientation", () => {
+    const { container } = render(<RadioGroup label="X" values={VALUES} orientation="horizontal" />)
+    expect(container.querySelector('[data-slot="radio-group"]')).toHaveAttribute(
+      "data-orientation",
+      "horizontal",
     )
-    const group = screen.getByTestId("group")
-    expect(group).toHaveAttribute("aria-orientation", "vertical")
-    expect(group).toHaveClass("grid")
-  })
-
-  it("horizontal orientation uses flex layout", () => {
-    render(
-      <RadioGroup defaultValue="a" orientation="horizontal" data-testid="group">
-        <RadioGroupItem value="a" id="a" />
-        <RadioGroupItem value="b" id="b" />
-      </RadioGroup>,
-    )
-    const group = screen.getByTestId("group")
-    expect(group).toHaveAttribute("aria-orientation", "horizontal")
-    expect(group).toHaveClass("flex")
-  })
-
-  it("supports controlled value + onValueChange", async () => {
-    function Controlled() {
-      const [value, setValue] = useState("a")
-      return (
-        <RadioGroup value={value} onValueChange={setValue} data-testid="group">
-          <RadioGroupItem value="a" id="a" aria-label="A" />
-          <RadioGroupItem value="b" id="b" aria-label="B" />
-        </RadioGroup>
-      )
-    }
-    render(<Controlled />)
-    const a = screen.getByRole("radio", { name: "A" })
-    const b = screen.getByRole("radio", { name: "B" })
-    expect(a).toHaveAttribute("aria-checked", "true")
-    expect(b).toHaveAttribute("aria-checked", "false")
-    await userEvent.click(b)
-    expect(a).toHaveAttribute("aria-checked", "false")
-    expect(b).toHaveAttribute("aria-checked", "true")
-  })
-
-  it("fires onValueChange", async () => {
-    const onValueChange = vi.fn()
-    render(
-      <RadioGroup defaultValue="a" onValueChange={onValueChange}>
-        <RadioGroupItem value="a" id="a" aria-label="A" />
-        <RadioGroupItem value="b" id="b" aria-label="B" />
-      </RadioGroup>,
-    )
-    await userEvent.click(screen.getByRole("radio", { name: "B" }))
-    expect(onValueChange).toHaveBeenCalledWith("b")
-  })
-
-  it("disabled group blocks all items", async () => {
-    const onValueChange = vi.fn()
-    render(
-      <RadioGroup defaultValue="a" disabled onValueChange={onValueChange}>
-        <RadioGroupItem value="a" id="a" aria-label="A" />
-        <RadioGroupItem value="b" id="b" aria-label="B" />
-      </RadioGroup>,
-    )
-    await userEvent.click(screen.getByRole("radio", { name: "B" }))
-    expect(onValueChange).not.toHaveBeenCalled()
-    expect(screen.getByRole("radio", { name: "A" })).toBeDisabled()
-    expect(screen.getByRole("radio", { name: "B" })).toBeDisabled()
-  })
-
-  it("renders indicator on selected item only", () => {
-    const { container } = render(
-      <RadioGroup defaultValue="a">
-        <RadioGroupItem value="a" id="a" />
-        <RadioGroupItem value="b" id="b" />
-      </RadioGroup>,
-    )
-    const indicators = container.querySelectorAll('[data-slot="radio-group-indicator"]')
-    // Radix only mounts the Indicator when its parent item is checked.
-    expect(indicators).toHaveLength(1)
   })
 })

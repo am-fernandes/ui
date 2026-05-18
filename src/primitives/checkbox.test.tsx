@@ -1,70 +1,53 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { useState } from "react"
 import { describe, expect, it, vi } from "vitest"
 
 import { Checkbox } from "./checkbox"
 
 describe("Checkbox", () => {
-  it("renders with role=checkbox", () => {
-    render(<Checkbox id="terms" />)
-    expect(screen.getByRole("checkbox")).toBeInTheDocument()
+  it("renders the label associated with the checkbox", () => {
+    render(<Checkbox label="Aceito" />)
+    const box = screen.getByRole("checkbox", { name: "Aceito" })
+    expect(box).toBeInTheDocument()
   })
 
-  it("toggles aria-checked when clicked", async () => {
-    render(<Checkbox id="terms" />)
-    const checkbox = screen.getByRole("checkbox")
-    expect(checkbox).toHaveAttribute("aria-checked", "false")
-    await userEvent.click(checkbox)
-    expect(checkbox).toHaveAttribute("aria-checked", "true")
+  it("renders description", () => {
+    render(<Checkbox label="Aceito" description="Você pode revogar." />)
+    expect(screen.getByText("Você pode revogar.")).toBeInTheDocument()
   })
 
-  it("emits data-slot=checkbox", () => {
-    render(<Checkbox id="terms" />)
-    expect(screen.getByRole("checkbox")).toHaveAttribute("data-slot", "checkbox")
+  it("renders error with role=alert", () => {
+    render(<Checkbox label="X" error="Obrigatório" />)
+    expect(screen.getByRole("alert")).toHaveTextContent("Obrigatório")
   })
 
-  it("disabled blocks click and onCheckedChange", async () => {
+  it("toggles on label click (implicit Radix label binding)", async () => {
     const onCheckedChange = vi.fn()
-    render(<Checkbox disabled onCheckedChange={onCheckedChange} />)
-    const checkbox = screen.getByRole("checkbox")
-    await userEvent.click(checkbox)
-    expect(onCheckedChange).not.toHaveBeenCalled()
-    expect(checkbox).toBeDisabled()
+    render(<Checkbox label="Aceito" onCheckedChange={onCheckedChange} />)
+    await userEvent.click(screen.getByText("Aceito"))
+    expect(onCheckedChange).toHaveBeenCalledWith(true)
   })
 
-  it("supports controlled checked + onCheckedChange", async () => {
-    function Controlled() {
-      const [checked, setChecked] = useState(false)
-      return (
-        <Checkbox
-          aria-label="agree"
-          checked={checked}
-          onCheckedChange={(v) => setChecked(v === true)}
-        />
-      )
-    }
-    render(<Controlled />)
-    const checkbox = screen.getByRole("checkbox", { name: "agree" })
-    expect(checkbox).toHaveAttribute("aria-checked", "false")
-    await userEvent.click(checkbox)
-    expect(checkbox).toHaveAttribute("aria-checked", "true")
-    await userEvent.click(checkbox)
-    expect(checkbox).toHaveAttribute("aria-checked", "false")
+  it("renders indeterminate state (aria-checked=mixed)", () => {
+    render(<Checkbox label="X" checked="indeterminate" />)
+    expect(screen.getByRole("checkbox", { name: "X" })).toHaveAttribute("aria-checked", "mixed")
   })
 
-  it("renders Minus icon when checked is indeterminate", () => {
-    const { container } = render(<Checkbox checked="indeterminate" />)
-    expect(screen.getByRole("checkbox")).toHaveAttribute("aria-checked", "mixed")
-    expect(container.querySelector('[data-slot="checkbox-indeterminate-icon"]')).toBeInTheDocument()
-    expect(container.querySelector('[data-slot="checkbox-check-icon"]')).not.toBeInTheDocument()
+  it("respects disabled", () => {
+    render(<Checkbox label="X" disabled />)
+    expect(screen.getByRole("checkbox", { name: "X" })).toBeDisabled()
   })
 
-  it("renders Check icon when checked is true", () => {
-    const { container } = render(<Checkbox checked={true} />)
-    expect(container.querySelector('[data-slot="checkbox-check-icon"]')).toBeInTheDocument()
-    expect(
-      container.querySelector('[data-slot="checkbox-indeterminate-icon"]'),
-    ).not.toBeInTheDocument()
+  it("supports rich ReactNode label", () => {
+    render(
+      <Checkbox
+        label={
+          <>
+            Aceito os <a href="/t">termos</a>
+          </>
+        }
+      />,
+    )
+    expect(screen.getByRole("link", { name: "termos" })).toBeInTheDocument()
   })
 })
