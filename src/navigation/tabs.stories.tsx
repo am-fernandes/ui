@@ -6,7 +6,15 @@ const meta = {
   title: "Navigation/Tabs",
   component: Tabs,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Tabs horizontais. API composicional ou `items={[{value, label, content}]}` para casos simples.",
+      },
+    },
+  },
 } satisfies Meta<typeof Tabs>
 
 export default meta

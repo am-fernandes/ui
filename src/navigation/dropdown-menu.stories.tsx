@@ -16,7 +16,15 @@ const meta = {
   title: "Navigation/DropdownMenu",
   component: DropdownMenu,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Menu contextual ancorado em um trigger. API composicional ou via helper `<DropdownMenuItems items={...} />` para listas declarativas.",
+      },
+    },
+  },
 } satisfies Meta<typeof DropdownMenu>
 
 export default meta

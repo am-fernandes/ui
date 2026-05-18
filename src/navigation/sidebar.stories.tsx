@@ -20,7 +20,15 @@ const meta = {
   title: "Navigation/Sidebar",
   component: Sidebar,
   tags: ["autodocs"],
-  parameters: { layout: "fullscreen" },
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        component:
+          "Navegação lateral persistente com suporte a expandir/colapsar e modo mobile. 23 sub-componentes para flexibilidade total.",
+      },
+    },
+  },
 } satisfies Meta<typeof Sidebar>
 
 export default meta

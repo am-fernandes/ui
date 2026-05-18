@@ -13,7 +13,15 @@ const meta = {
   title: "Navigation/Breadcrumb",
   component: Breadcrumb,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Trilha de navegação hierárquica. API composicional ou simplificada via `items={[{label, href, isCurrentPage?}]}`.",
+      },
+    },
+  },
 } satisfies Meta<typeof Breadcrumb>
 
 export default meta

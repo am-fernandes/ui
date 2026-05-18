@@ -6,7 +6,15 @@ const meta = {
   title: "Navigation/Accordion",
   component: Accordion,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Lista expansível de painéis. Modo `single` (um aberto por vez) ou `multiple`. API composicional ou `items` array.",
+      },
+    },
+  },
 } satisfies Meta<typeof Accordion>
 
 export default meta

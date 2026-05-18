@@ -14,7 +14,15 @@ const meta = {
   title: "Navigation/Command",
   component: Command,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Command palette com busca fuzzy. Use para spotlight de ações ou listas grandes com filtro instantâneo. Base do `Combobox`.",
+      },
+    },
+  },
 } satisfies Meta<typeof Command>
 
 export default meta
