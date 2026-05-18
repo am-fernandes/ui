@@ -1,9 +1,17 @@
 "use client"
 
-import { File as FileIcon, ImageIcon, UploadCloud, X } from "lucide-react"
+import { Camera, File as FileIcon, ImageIcon, UploadCloud, X } from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../overlays/dialog"
 import { Button } from "../primitives/button"
 
 export type FileUploadRejectionReason = "type" | "size" | "max-files"
@@ -18,12 +26,14 @@ export interface FileUploadProps {
   accept?: string | string[]
   /** Allow selecting more than one file. Default `false`. */
   multiple?: boolean
-  /** Maximum bytes per file. Files larger than this are rejected. */
+  /** Maximum bytes per file. Files larger than this are rejected. Compose with the `kb()` / `mb()` / `gb()` helpers from `@am-fernandes/ui`. */
   maxSize?: number
   /** Maximum number of files when `multiple`. Extra files are rejected. */
   maxFiles?: number
-  /** How to display selected files. `"thumbnail"` renders image previews; `"list"` shows a textual list; `"none"` hides previews. Default `"thumbnail"`. */
-  preview?: "thumbnail" | "list" | "none"
+  /** How to display selected files. `"thumbnail"` (default) shows an image preview tile (clickable: image opens fullscreen, document opens in a new tab). `"none"` hides previews. */
+  preview?: "thumbnail" | "none"
+  /** Show an extra "Capturar foto" button that opens the device camera and snapshots a photo as `image/jpeg`. Requires HTTPS or localhost (`getUserMedia`). */
+  camera?: boolean
   /** Controlled list of files. Pair with `onValueChange`. If omitted, the component manages its own state. */
   value?: File[]
   /** Called whenever the accepted file list changes. */
@@ -89,6 +99,7 @@ function FileUpload({
   maxSize,
   maxFiles,
   preview = "thumbnail",
+  camera = false,
   value,
   onValueChange,
   onReject,
@@ -104,6 +115,8 @@ function FileUpload({
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [internal, setInternal] = React.useState<File[]>([])
   const [isDragging, setDragging] = React.useState(false)
+  const [cameraOpen, setCameraOpen] = React.useState(false)
+  const [lightboxFile, setLightboxFile] = React.useState<File | null>(null)
 
   const isControlled = value !== undefined
   const files = isControlled ? value : internal
@@ -171,38 +184,52 @@ function FileUpload({
 
   return (
     <div className={cn("space-y-3", className)} data-slot="file-upload">
-      <button
-        type="button"
-        onClick={openPicker}
-        onDragOver={(e) => {
-          e.preventDefault()
-          if (!disabled) setDragging(true)
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault()
-          setDragging(false)
-          if (disabled) return
-          ingest(e.dataTransfer.files)
-        }}
-        disabled={disabled}
-        aria-label={typeof label === "string" ? label : "Selecionar arquivos"}
-        className={cn(
-          "flex w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
-          "hover:bg-accent/40",
-          "focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring",
-          isDragging && "border-primary bg-accent/60",
-          error && "border-destructive",
-          disabled && "cursor-not-allowed opacity-50",
-          dropzoneClassName,
-        )}
-      >
-        <UploadCloud className="size-6 text-muted-foreground" aria-hidden />
-        <span className="font-medium">{label}</span>
-        {renderedDescription ? (
-          <span className="text-xs text-muted-foreground">{renderedDescription}</span>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+        <button
+          type="button"
+          onClick={openPicker}
+          onDragOver={(e) => {
+            e.preventDefault()
+            if (!disabled) setDragging(true)
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault()
+            setDragging(false)
+            if (disabled) return
+            ingest(e.dataTransfer.files)
+          }}
+          disabled={disabled}
+          aria-label={typeof label === "string" ? label : "Selecionar arquivos"}
+          className={cn(
+            "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
+            "hover:bg-accent/40",
+            "focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring",
+            isDragging && "border-primary bg-accent/60",
+            error && "border-destructive",
+            disabled && "cursor-not-allowed opacity-50",
+            dropzoneClassName,
+          )}
+        >
+          <UploadCloud className="size-6 text-muted-foreground" aria-hidden />
+          <span className="font-medium">{label}</span>
+          {renderedDescription ? (
+            <span className="text-xs text-muted-foreground">{renderedDescription}</span>
+          ) : null}
+        </button>
+        {camera ? (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={disabled}
+            onClick={() => setCameraOpen(true)}
+            className="sm:h-auto sm:min-h-[6.5rem] sm:flex-col sm:gap-2 sm:px-6"
+          >
+            <Camera className="size-5" aria-hidden />
+            <span>Capturar foto</span>
+          </Button>
         ) : null}
-      </button>
+      </div>
       <input
         ref={inputRef}
         type="file"
@@ -215,49 +242,70 @@ function FileUpload({
           e.target.value = ""
         }}
       />
-      {preview !== "none" && files.length > 0 ? (
+      {preview === "thumbnail" && files.length > 0 ? (
         <ul className="space-y-2" aria-label="Arquivos selecionados">
           {files.map((file, index) => (
             <FileRow
               key={`${file.name}-${file.lastModified}-${index}`}
               file={file}
-              preview={preview}
               disabled={disabled}
               onRemove={() => removeAt(index)}
+              onOpenImage={() => setLightboxFile(file)}
             />
           ))}
         </ul>
       ) : null}
+      {camera ? (
+        <CameraDialog
+          open={cameraOpen}
+          onOpenChange={setCameraOpen}
+          onCapture={(file) => ingest([file])}
+        />
+      ) : null}
+      <ImageLightbox file={lightboxFile} onOpenChange={() => setLightboxFile(null)} />
     </div>
   )
 }
 
 function FileRow({
   file,
-  preview,
   disabled,
   onRemove,
+  onOpenImage,
 }: {
   file: File
-  preview: "thumbnail" | "list"
   disabled: boolean
   onRemove: () => void
+  onOpenImage: () => void
 }) {
   const isImage = file.type.startsWith("image/")
   const [thumb, setThumb] = React.useState<string | null>(null)
 
   React.useEffect(() => {
-    if (preview !== "thumbnail" || !isImage) return
+    if (!isImage) return
     const url = URL.createObjectURL(file)
     setThumb(url)
     return () => URL.revokeObjectURL(url)
-  }, [file, isImage, preview])
+  }, [file, isImage])
+
+  function openInNewTab() {
+    const url = URL.createObjectURL(file)
+    window.open(url, "_blank", "noopener,noreferrer")
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  }
 
   return (
     <li className="flex items-center gap-3 rounded-md border bg-background px-3 py-2 text-sm">
-      <span
-        className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-muted-foreground"
-        aria-hidden
+      <button
+        type="button"
+        onClick={isImage ? onOpenImage : openInNewTab}
+        disabled={disabled}
+        aria-label={isImage ? `Ampliar ${file.name}` : `Abrir ${file.name} em nova aba`}
+        className={cn(
+          "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-muted-foreground cursor-pointer transition-opacity",
+          "hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          disabled && "cursor-not-allowed opacity-50",
+        )}
       >
         {thumb ? (
           <img src={thumb} alt={file.name} className="size-full object-cover" />
@@ -266,7 +314,7 @@ function FileRow({
         ) : (
           <FileIcon className="size-4" />
         )}
-      </span>
+      </button>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-medium">{file.name}</span>
         <span className="text-xs text-muted-foreground">{formatBytes(file.size)}</span>
@@ -282,6 +330,141 @@ function FileRow({
         <X className="size-4" />
       </Button>
     </li>
+  )
+}
+
+function ImageLightbox({
+  file,
+  onOpenChange,
+}: {
+  file: File | null
+  onOpenChange: (open: boolean) => void
+}) {
+  const [url, setUrl] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (!file) {
+      setUrl(null)
+      return
+    }
+    const u = URL.createObjectURL(file)
+    setUrl(u)
+    return () => URL.revokeObjectURL(u)
+  }, [file])
+
+  return (
+    <Dialog open={file != null} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl border-0 bg-transparent p-0 shadow-none">
+        <DialogTitle className="sr-only">{file?.name ?? "Imagem"}</DialogTitle>
+        {url ? (
+          <img
+            src={url}
+            alt={file?.name ?? ""}
+            className="h-auto max-h-[85vh] w-full rounded-md object-contain"
+          />
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function CameraDialog({
+  open,
+  onOpenChange,
+  onCapture,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onCapture: (file: File) => void
+}) {
+  const videoRef = React.useRef<HTMLVideoElement>(null)
+  const streamRef = React.useRef<MediaStream | null>(null)
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    setErrorMsg(null)
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setErrorMsg("Câmera não disponível neste navegador.")
+      return
+    }
+
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: "environment" } })
+      .then((stream) => {
+        if (cancelled) {
+          for (const t of stream.getTracks()) t.stop()
+          return
+        }
+        streamRef.current = stream
+        if (videoRef.current) videoRef.current.srcObject = stream
+      })
+      .catch(() => {
+        setErrorMsg("Não foi possível acessar a câmera. Verifique as permissões do navegador.")
+      })
+
+    return () => {
+      cancelled = true
+      if (streamRef.current) {
+        for (const t of streamRef.current.getTracks()) t.stop()
+        streamRef.current = null
+      }
+    }
+  }, [open])
+
+  function takePhoto() {
+    const v = videoRef.current
+    if (!v || !v.videoWidth) return
+    const canvas = document.createElement("canvas")
+    canvas.width = v.videoWidth
+    canvas.height = v.videoHeight
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    ctx.drawImage(v, 0, 0)
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return
+        const file = new File([blob], `foto-${Date.now()}.jpg`, {
+          type: "image/jpeg",
+        })
+        onCapture(file)
+        onOpenChange(false)
+      },
+      "image/jpeg",
+      0.92,
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Capturar foto</DialogTitle>
+          <DialogDescription>
+            Posicione o documento ou objeto na câmera e toque em "Tirar foto".
+          </DialogDescription>
+        </DialogHeader>
+        {errorMsg ? (
+          <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            {errorMsg}
+          </p>
+        ) : (
+          <video ref={videoRef} autoPlay playsInline muted className="w-full rounded-md bg-muted">
+            <track kind="captions" />
+          </video>
+        )}
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button type="button" onClick={takePhoto} disabled={errorMsg != null}>
+            Tirar foto
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { useState } from "react"
 
+import { mb } from "../lib/size"
 import { toast } from "../overlays/sonner"
 import { FileUpload, type FileUploadRejection } from "./file-upload"
 
@@ -13,17 +14,32 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Campo de upload de arquivos com **drag-and-drop**, clique para abrir o seletor nativo e validação configurável.",
+          "Campo de upload de arquivos com **drag-and-drop**, clique para abrir o seletor nativo, **captura por câmera** opcional e validação configurável.",
+          "",
+          '**Comportamento do preview (`preview="thumbnail"`):**',
+          "- Imagens: clicar na miniatura abre a foto em **tela cheia** (lightbox).",
+          "- Documentos (PDF, etc.): clicar abre o arquivo em uma **nova aba** via blob URL.",
           "",
           "**Props principais:**",
           "- `accept` — string ou array de padrões (`'image/*'`, `['image/png', 'application/pdf']`, `.csv`).",
           "- `multiple` — permite selecionar mais de um arquivo (default `false`).",
-          "- `maxSize` — tamanho máximo por arquivo em bytes (excedente vai para `onReject`).",
+          "- `maxSize` — tamanho máximo por arquivo em bytes. Use os helpers `kb(500)`, `mb(2)`, `gb(1)` para legibilidade.",
           "- `maxFiles` — limite total quando `multiple` (excedente vai para `onReject`).",
-          "- `preview` — `'thumbnail'` (default, mostra preview de imagens), `'list'` (só nome/tamanho), `'none'`.",
+          "- `preview` — `'thumbnail'` (default) ou `'none'`.",
+          "- `camera` — adiciona o botão **Capturar foto** que abre a câmera (`getUserMedia`) e salva a foto como `image/jpeg`.",
           "- `value` / `onValueChange` — modo controlado. Sem `value`, o componente gerencia o próprio estado.",
           "- `onReject` — recebe `{file, reason}` para tipos inválidos (`'type'`), arquivos grandes (`'size'`) ou excesso (`'max-files'`).",
           "- `label`, `description` — textos do dropzone (defaults derivam de `accept`/`maxSize`).",
+          "",
+          "**Helpers de tamanho (`@am-fernandes/ui`):**",
+          "",
+          "```tsx",
+          'import { FileUpload, kb, mb, gb } from "@am-fernandes/ui"',
+          "",
+          "<FileUpload maxSize={mb(2)} />     // 2 MiB",
+          "<FileUpload maxSize={kb(500)} />   // 500 KiB",
+          "<FileUpload maxSize={gb(1)} />     // 1 GiB",
+          "```",
         ].join("\n"),
       },
     },
@@ -42,7 +58,7 @@ const meta = {
     },
     maxSize: {
       control: { type: "number", min: 0, step: 1024 },
-      description: "Tamanho máximo por arquivo em **bytes**.",
+      description: "Tamanho máximo por arquivo em **bytes**. Use `kb(n)` / `mb(n)` / `gb(n)`.",
       table: { type: { summary: "number" } },
     },
     maxFiles: {
@@ -52,12 +68,19 @@ const meta = {
     },
     preview: {
       control: "inline-radio",
-      options: ["thumbnail", "list", "none"],
-      description: "Como renderizar arquivos selecionados.",
+      options: ["thumbnail", "none"],
+      description:
+        "`thumbnail` exibe a miniatura clicável (imagem → tela cheia, doc → nova aba). `none` esconde a lista.",
       table: {
-        type: { summary: "'thumbnail' | 'list' | 'none'" },
+        type: { summary: "'thumbnail' | 'none'" },
         defaultValue: { summary: "'thumbnail'" },
       },
+    },
+    camera: {
+      control: "boolean",
+      description:
+        "Adiciona o botão **Capturar foto** que abre a câmera do dispositivo via `getUserMedia` e salva a foto como `image/jpeg`. Requer HTTPS ou localhost.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     disabled: { control: "boolean", description: "Desabilita o dropzone e o seletor." },
     error: { control: "boolean", description: "Aplica borda destrutiva (use junto com `Field`)." },
@@ -66,6 +89,8 @@ const meta = {
       control: "text",
       description: "Texto secundário. Default deriva de `accept`/`maxSize`.",
     },
+    onValueChange: { control: false, table: { category: "Eventos" } },
+    onReject: { control: false, table: { category: "Eventos" } },
   },
 } satisfies Meta<typeof FileUpload>
 
@@ -77,6 +102,7 @@ export const Playground: Story = {
     accept: "image/*,application/pdf",
     multiple: false,
     preview: "thumbnail",
+    camera: false,
     disabled: false,
     error: false,
   },
@@ -90,16 +116,37 @@ export const ImagensComPreview: Story = {
   render: () => <FileUpload accept="image/*" multiple maxFiles={4} preview="thumbnail" />,
 }
 
-export const PDFsListView: Story = {
+export const ComCamera: Story = {
+  name: "Com câmera + upload",
   render: () => (
     <FileUpload
-      accept="application/pdf"
+      accept="image/*,application/pdf"
       multiple
       maxFiles={5}
-      maxSize={2 * 1024 * 1024}
-      preview="list"
-      label="Anexar PDFs"
+      maxSize={mb(5)}
+      camera
+      description="Envie arquivos ou tire uma foto. Imagens/PDF até 5 MB."
     />
+  ),
+}
+
+export const HelpersDeTamanho: Story = {
+  name: "Helpers kb/mb/gb",
+  render: () => (
+    <div className="space-y-6">
+      <div>
+        <p className="mb-1 text-xs text-muted-foreground">
+          <code>maxSize=&#123;kb(500)&#125;</code>
+        </p>
+        <FileUpload accept="image/*" maxSize={500 * 1024} />
+      </div>
+      <div>
+        <p className="mb-1 text-xs text-muted-foreground">
+          <code>maxSize=&#123;mb(2)&#125;</code>
+        </p>
+        <FileUpload accept="application/pdf" maxSize={mb(2)} />
+      </div>
+    </div>
   ),
 }
 

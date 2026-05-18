@@ -4,6 +4,27 @@ All notable changes to `@am-fernandes/ui` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [8.0.0] — 2026-05-18
+
+### Breaking
+- `FileUpload` `preview` is now `"thumbnail" | "none"` (the `"list"` mode was removed —
+  it was strictly inferior to `"thumbnail"` since the thumbnail row already shows the
+  filename and size).
+
+### Added
+- **Size helpers** `bytes`, `kb`, `mb`, `gb` exported from `@am-fernandes/ui` (`src/lib/size.ts`).
+  Express byte sizes ergonomically: `<FileUpload maxSize={mb(2)} />` instead of
+  `<FileUpload maxSize={2 * 1024 * 1024} />`. Binary units (KiB/MiB/GiB).
+- `FileUpload` **clickable previews**:
+  - Images: clicking the thumbnail opens the photo in a full-screen lightbox (Dialog).
+  - Documents (PDF, etc.): clicking opens the file in a new tab via `URL.createObjectURL`.
+- `FileUpload` **`camera?: boolean`** prop. When `true`, an extra "Capturar foto" button
+  appears next to the dropzone. Clicking opens a `getUserMedia` video stream in a Dialog
+  with a "Tirar foto" action that snapshots a `image/jpeg` file (uses `facingMode: "environment"`).
+  Falls back with a friendly error message if `getUserMedia` is unavailable or denied.
+  Requires HTTPS or localhost.
+- New Storybook stories on `Domain/FileUpload`: `ComCamera`, `HelpersDeTamanho`.
+
 ## [7.1.0] — 2026-05-18
 
 ### Added

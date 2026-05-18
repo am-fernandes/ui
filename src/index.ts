@@ -232,3 +232,4 @@ export {
   percentOfTotal,
   toCents,
 } from "./lib/currency"
+export { bytes, gb, kb, mb } from "./lib/size"

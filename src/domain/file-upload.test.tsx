@@ -69,11 +69,33 @@ describe("FileUpload", () => {
     expect(onValueChange).toHaveBeenCalledWith([a])
   })
 
-  it("preview='list' renders filename and size", () => {
-    render(<FileUpload preview="list" multiple />)
+  it("preview='thumbnail' renders filename, size and a clickable preview tile", () => {
+    render(<FileUpload multiple />)
     const input = document.querySelector("input[type=file]") as HTMLInputElement
-    fireEvent.change(input, { target: { files: [makeFile("alpha.txt", "text/plain", 2048)] } })
-    expect(screen.getByText("alpha.txt")).toBeInTheDocument()
+    fireEvent.change(input, {
+      target: { files: [makeFile("notes.pdf", "application/pdf", 2048)] },
+    })
+    expect(screen.getByText("notes.pdf")).toBeInTheDocument()
     expect(screen.getByText("2.0 KB")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Abrir notes\.pdf em nova aba/ })).toBeInTheDocument()
+  })
+
+  it("preview='none' hides the file list", () => {
+    render(<FileUpload preview="none" multiple />)
+    const input = document.querySelector("input[type=file]") as HTMLInputElement
+    fireEvent.change(input, {
+      target: { files: [makeFile("hidden.txt", "text/plain", 10)] },
+    })
+    expect(screen.queryByText("hidden.txt")).not.toBeInTheDocument()
+  })
+
+  it("camera=true renders the 'Capturar foto' button", () => {
+    render(<FileUpload camera />)
+    expect(screen.getByRole("button", { name: /Capturar foto/ })).toBeInTheDocument()
+  })
+
+  it("camera=false (default) does not render the camera button", () => {
+    render(<FileUpload />)
+    expect(screen.queryByRole("button", { name: /Capturar foto/ })).not.toBeInTheDocument()
   })
 })
