@@ -6,6 +6,23 @@
  * See: docs/superpowers/plans/2026-05-18-api-simplification.md
  */
 
+// Forms
+export { Calendar } from "./forms/calendar"
+export {
+  Combobox,
+  useComboboxOptions,
+  type ComboboxOption,
+  type ComboboxProps,
+} from "./forms/combobox"
+export { DateInput, type DateInputProps } from "./forms/date-input"
+export {
+  DateRangePicker,
+  type DateRangePickerProps,
+  type DateRangeValue,
+} from "./forms/date-range-picker"
+export { Field, FieldGroup, type FieldGroupProps, type FieldProps } from "./forms/field"
+export { TimePicker, type TimePickerProps } from "./forms/time-picker"
+
 // Overlays
 export { Alert, alertVariants, type AlertProps } from "./overlays/alert"
 export { AlertDialog, type AlertDialogProps } from "./overlays/alert-dialog"

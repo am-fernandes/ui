@@ -3,12 +3,13 @@
 import { format, isValid, parse } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { CalendarIcon } from "lucide-react"
-import type * as React from "react"
-import { useState } from "react"
+import * as React from "react"
 import type { Locale } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
-import { Popover, PopoverContent, PopoverTrigger } from "../overlays/popover"
+import { Popover } from "../overlays/popover"
+import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
+import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Button } from "../primitives/button"
 import { Calendar } from "./calendar"
 
@@ -21,26 +22,23 @@ function parseIsoDate(value: string): Date | undefined {
 function formatBrDate(isoDate: string): string {
   if (!isoDate) return ""
   const parsed = parseIsoDate(isoDate)
-  if (!parsed) {
-    if (process.env.NODE_ENV !== "production") {
-      // eslint-disable-next-line no-console
-      console.warn(`[DateInput] Invalid ISO date received: ${isoDate}`)
-    }
-    return ""
-  }
+  if (!parsed) return ""
   return format(parsed, "dd/MM/yyyy")
 }
 
-interface DateInputProps {
+export interface DateInputProps {
   id?: string
   value: string
   onChange?: (value: string) => void
   disabled?: boolean
   className?: string
   placeholder?: string
-  /** Accessible label for the trigger button. */
+  label?: React.ReactNode
+  description?: React.ReactNode
+  error?: string
+  labelPosition?: LabelPosition
+  required?: boolean
   "aria-label"?: string
-  /** Locale used by the Calendar popover. Defaults to ptBR. */
   locale?: Locale
   ref?: React.Ref<HTMLButtonElement>
 }
@@ -52,38 +50,68 @@ function DateInput({
   disabled,
   className,
   placeholder = "dd/mm/aaaa",
-  "aria-label": ariaLabel = "Selecionar data",
+  label,
+  description,
+  error,
+  labelPosition,
+  required,
+  "aria-label": ariaLabel,
   locale = ptBR,
   ref,
 }: DateInputProps) {
-  const [open, setOpen] = useState(false)
+  const ids = useFieldIds(id)
+  const [open, setOpen] = React.useState(false)
+  const hasError = error != null && error !== ""
 
   const selected = parseIsoDate(value)
   const display = value ? formatBrDate(value) : ""
   const hasValidValue = display.length > 0
 
+  const trigger = (
+    <Button
+      ref={ref}
+      id={ids.controlId}
+      data-slot="date-input"
+      variant="outline"
+      aria-label={ariaLabel ?? (typeof label === "string" ? label : "Selecionar data")}
+      aria-invalid={hasError ? true : undefined}
+      aria-describedby={ids.describedBy({
+        description: description != null && description !== "",
+        error: hasError,
+      })}
+      disabled={disabled}
+      className={cn(
+        "w-full justify-start text-left font-normal h-9",
+        !hasValidValue && "text-muted-foreground",
+        disabled && "bg-muted",
+        className,
+      )}
+    >
+      <CalendarIcon className="mr-2 h-4 w-4" />
+      {hasValidValue ? display : placeholder}
+    </Button>
+  )
+
   return (
-    <Popover open={open} onOpenChange={(next) => !disabled && setOpen(next)}>
-      <PopoverTrigger asChild>
-        <Button
-          ref={ref}
-          id={id}
-          data-slot="date-input"
-          variant="outline"
-          aria-label={ariaLabel}
-          disabled={disabled}
-          className={cn(
-            "w-full justify-start text-left font-normal h-9",
-            !hasValidValue && "text-muted-foreground",
-            disabled && "bg-muted",
-            className,
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {hasValidValue ? display : placeholder}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+    <FieldShell
+      controlId={ids.controlId}
+      labelId={ids.labelId}
+      descriptionId={ids.descriptionId}
+      errorId={ids.errorId}
+      label={label}
+      description={description}
+      error={error}
+      labelPosition={labelPosition}
+      required={required}
+      disabled={disabled}
+    >
+      <Popover
+        open={open}
+        onOpenChange={(next) => !disabled && setOpen(next)}
+        align="start"
+        trigger={trigger}
+        className="w-auto p-0"
+      >
         <Calendar
           mode="single"
           selected={selected}
@@ -94,10 +122,10 @@ function DateInput({
           locale={locale}
           defaultMonth={selected}
         />
-      </PopoverContent>
-    </Popover>
+      </Popover>
+    </FieldShell>
   )
 }
 DateInput.displayName = "DateInput"
 
-export { DateInput, type DateInputProps }
+export { DateInput }

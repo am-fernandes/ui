@@ -1,118 +1,63 @@
 "use client"
 
-import { Check, ChevronsUpDown, X } from "lucide-react"
+import { Command as CommandPrimitive } from "cmdk"
+import { Check, ChevronsUpDown, SearchIcon, X } from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "../navigation/command"
-import { Popover, PopoverContent, PopoverTrigger } from "../overlays/popover"
+import { Popover } from "../overlays/popover"
+import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
+import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Badge } from "../primitives/badge"
 import { Button } from "../primitives/button"
 
-/**
- * Cmdk-internal sentinel used to mark the "Create…" option. Picked so it
- * cannot collide with any legitimate user-supplied value.
- */
 const CREATE_ACTION_VALUE = "__create_action__"
 
-/** Normalize unknown values into an array. */
 function toArray<T>(v: T | T[] | undefined | null): T[] {
   if (v == null) return []
   return Array.isArray(v) ? v : [v]
 }
 
-/**
- * Opção do Combobox
- */
 export interface ComboboxOption {
   value: string
   label: string
   disabled?: boolean
-  /** Optional leading icon component (e.g. a lucide-react icon). */
   icon?: React.ComponentType<{ className?: string }>
 }
 
-/**
- * Props base compartilhadas entre single e multi select
- */
 interface ComboboxBaseProps {
-  /** Lista de opções disponíveis */
   options: ComboboxOption[]
-  /** Placeholder quando nenhuma opção está selecionada */
   placeholder?: string
-  /** Placeholder do campo de busca */
   searchPlaceholder?: string
-  /** Mensagem quando nenhuma opção é encontrada */
   emptyMessage?: string
-  /** Desabilita o combobox */
   disabled?: boolean
-  /** Classes CSS adicionais para o trigger */
   className?: string
-  /** Largura do popover (padrão: mesma do trigger) */
   popoverWidth?: string
-  /** Permite criar valores que não estão na lista */
   creatable?: boolean
-  /** Ref encaminhada ao botão trigger. */
+  label?: React.ReactNode
+  description?: React.ReactNode
+  error?: string
+  labelPosition?: LabelPosition
+  required?: boolean
+  id?: string
   ref?: React.Ref<HTMLButtonElement>
 }
 
-/**
- * Props para seleção única
- */
 interface ComboboxSingleProps extends ComboboxBaseProps {
-  /** Modo de seleção única */
   multiple?: false
-  /** Valor selecionado */
   value?: string
-  /** Callback quando o valor muda */
   onValueChange?: (value: string) => void
 }
 
-/**
- * Props para seleção múltipla
- */
 interface ComboboxMultipleProps extends ComboboxBaseProps {
-  /** Modo de seleção múltipla */
   multiple: true
-  /** Valores selecionados */
   value?: string[]
-  /** Callback quando os valores mudam */
   onValueChange?: (value: string[]) => void
-  /** Máximo de badges visíveis antes de mostrar contador */
   maxBadges?: number
 }
 
 export type ComboboxProps = ComboboxSingleProps | ComboboxMultipleProps
 
-/**
- * Combobox - Select com busca e suporte a seleção múltipla
- *
- * @example
- * // Single select
- * <Combobox
- *   options={[{ value: "1", label: "Opção 1" }]}
- *   value={selected}
- *   onValueChange={setSelected}
- *   placeholder="Selecione..."
- * />
- *
- * @example
- * // Multi select
- * <Combobox
- *   multiple
- *   options={[{ value: "1", label: "Opção 1" }]}
- *   value={selectedList}
- *   onValueChange={setSelectedList}
- *   placeholder="Selecione..."
- * />
- */
 export function Combobox(props: ComboboxProps) {
   const {
     options,
@@ -123,17 +68,24 @@ export function Combobox(props: ComboboxProps) {
     className,
     popoverWidth,
     creatable = false,
+    label,
+    description,
+    error,
+    labelPosition,
+    required,
+    id,
     ref,
   } = props
 
-  const listboxId = React.useId()
+  const ids = useFieldIds(id)
+  const listboxId = `${ids.controlId}-listbox`
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
+  const hasError = error != null && error !== ""
+  const hasDescription = description != null && description !== ""
 
-  // Verifica se é multi-select
   const isMultiple = props.multiple === true
 
-  // Handler para seleção única
   const handleSingleSelect = (currentValue: string) => {
     if (!isMultiple && props.onValueChange) {
       props.onValueChange(currentValue === props.value ? "" : currentValue)
@@ -141,7 +93,6 @@ export function Combobox(props: ComboboxProps) {
     setOpen(false)
   }
 
-  // Handler para seleção múltipla
   const handleMultipleSelect = (currentValue: string) => {
     if (isMultiple && props.onValueChange) {
       const currentValues = toArray(props.value)
@@ -152,7 +103,6 @@ export function Combobox(props: ComboboxProps) {
     }
   }
 
-  // Handler para criar um valor custom (creatable)
   const handleCreate = (createdValue: string) => {
     const trimmed = createdValue.trim()
     if (!trimmed) return
@@ -170,7 +120,6 @@ export function Combobox(props: ComboboxProps) {
     setSearch("")
   }
 
-  // Remove um valor da seleção múltipla
   const handleRemoveValue = (valueToRemove: string, e: React.SyntheticEvent) => {
     e.stopPropagation()
     if (isMultiple && props.onValueChange) {
@@ -179,7 +128,6 @@ export function Combobox(props: ComboboxProps) {
     }
   }
 
-  // Limpa todos os valores selecionados
   const handleClearAll = (e: React.SyntheticEvent) => {
     e.stopPropagation()
     if (isMultiple && props.onValueChange) {
@@ -189,7 +137,6 @@ export function Combobox(props: ComboboxProps) {
     }
   }
 
-  // Renderiza o conteúdo do trigger (badges agora ficam fora do botão).
   const renderTriggerContent = () => {
     if (isMultiple) {
       const values = toArray(props.value)
@@ -202,15 +149,12 @@ export function Combobox(props: ComboboxProps) {
         </span>
       )
     }
-
-    // Single select
     const selectedOption = options.find((o) => o.value === props.value)
     if (selectedOption) return selectedOption.label
     if (creatable && props.value) return props.value
     return <span className="text-muted-foreground">{placeholder}</span>
   }
 
-  // Verifica se deve mostrar a opção de criar valor custom
   const trimmedSearch = search.trim()
   const showCreateOption =
     creatable &&
@@ -218,10 +162,8 @@ export function Combobox(props: ComboboxProps) {
     !options.some((o) => o.value.toLowerCase() === trimmedSearch.toLowerCase()) &&
     !options.some((o) => o.label.toLowerCase() === trimmedSearch.toLowerCase())
 
-  // Verifica se há valor selecionado
   const hasValue = isMultiple ? toArray(props.value).length > 0 : Boolean(props.value)
 
-  // Multi-select badge list (rendered ABOVE/BESIDE the button, not inside it).
   const multiBadges = (() => {
     if (!isMultiple) return null
     const values = toArray(props.value)
@@ -234,102 +176,111 @@ export function Combobox(props: ComboboxProps) {
         {visibleValues.map((val) => {
           const option = options.find((o) => o.value === val)
           const Icon = option?.icon
-          const label = option?.label || val
+          const labelText = option?.label || val
           return (
             <Badge
               key={val}
               variant="outline"
               className="rounded-md px-1.5 py-0.5 font-normal bg-muted text-foreground border-border inline-flex items-center"
-              role="img"
-              aria-label={label}
+              aria-label={labelText}
             >
               {Icon ? <Icon className="mr-1 size-3 shrink-0" /> : null}
-              {label}
+              {labelText}
               <button
                 type="button"
-                aria-label={`Remover ${label}`}
+                aria-label={`Remover ${labelText}`}
                 className="ml-1 rounded-full outline-none cursor-pointer hover:bg-background/50"
                 onClick={(e) => handleRemoveValue(val, e)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault()
-                    handleRemoveValue(val, e)
-                  }
-                }}
               >
                 <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
               </button>
             </Badge>
           )
         })}
-        {remainingCount > 0 && (
+        {remainingCount > 0 ? (
           <Badge
             variant="outline"
             className="rounded-md px-1.5 py-0.5 font-normal bg-muted text-foreground border-border"
           >
             +{remainingCount}
           </Badge>
-        )}
+        ) : null}
       </div>
     )
   })()
 
-  return (
-    <div className={cn("flex flex-col gap-2", className)} data-slot="combobox-wrapper">
-      {multiBadges}
-      <Popover
-        open={open}
-        onOpenChange={(isOpen) => {
-          if (disabled) return
-          setOpen(isOpen)
-          if (!isOpen) setSearch("")
-        }}
-      >
-        <PopoverTrigger asChild>
-          <Button
-            ref={ref}
-            variant="outline"
-            // biome-ignore lint/a11y/useSemanticElements: combobox button pattern (WAI-ARIA listbox combobox)
-            role="combobox"
-            aria-expanded={open}
-            aria-haspopup="listbox"
-            aria-controls={listboxId}
-            aria-autocomplete="list"
-            disabled={disabled}
-            className={cn(
-              "w-full justify-between min-h-10 h-auto overflow-hidden",
-              !hasValue && "text-muted-foreground",
-            )}
+  const trigger = (
+    <Button
+      ref={ref}
+      id={ids.controlId}
+      variant="outline"
+      // biome-ignore lint/a11y/useSemanticElements: combobox button pattern (WAI-ARIA listbox combobox)
+      role="combobox"
+      aria-expanded={open}
+      aria-haspopup="listbox"
+      aria-controls={listboxId}
+      aria-autocomplete="list"
+      aria-invalid={hasError ? true : undefined}
+      aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
+      disabled={disabled}
+      className={cn(
+        "w-full justify-between min-h-10 h-auto overflow-hidden",
+        !hasValue && "text-muted-foreground",
+        className,
+      )}
+    >
+      <div className="flex-1 text-left truncate min-w-0">{renderTriggerContent()}</div>
+      <div className="flex items-center gap-1 ml-2">
+        {hasValue ? (
+          <span
+            // biome-ignore lint/a11y/useSemanticElements: avoid nested button inside Button
+            role="button"
+            tabIndex={0}
+            aria-label="Limpar seleção"
+            className="inline-flex"
+            onClick={handleClearAll}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault()
+                handleClearAll(e)
+              }
+            }}
           >
-            <div className="flex-1 text-left truncate min-w-0">{renderTriggerContent()}</div>
-            <div className="flex items-center gap-1 ml-2">
-              {hasValue && (
-                <span
-                  // biome-ignore lint/a11y/useSemanticElements: keep as span to avoid nested-button inside trigger Button
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Limpar seleção"
-                  className="inline-flex"
-                  onClick={handleClearAll}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault()
-                      handleClearAll(e)
-                    }
-                  }}
-                >
-                  <X className="h-4 w-4 shrink-0 opacity-50 hover:opacity-100" />
-                </span>
-              )}
-              <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-            </div>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className={cn("p-0", popoverWidth || "w-[--radix-popover-trigger-width]")}
+            <X className="h-4 w-4 shrink-0 opacity-50 hover:opacity-100" />
+          </span>
+        ) : null}
+        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+      </div>
+    </Button>
+  )
+
+  return (
+    <FieldShell
+      controlId={ids.controlId}
+      labelId={ids.labelId}
+      descriptionId={ids.descriptionId}
+      errorId={ids.errorId}
+      label={label}
+      description={description}
+      error={error}
+      labelPosition={labelPosition}
+      required={required}
+      disabled={disabled}
+    >
+      <div className="flex flex-col gap-2" data-slot="combobox">
+        {multiBadges}
+        <Popover
+          open={open}
+          onOpenChange={(isOpen) => {
+            if (disabled) return
+            setOpen(isOpen)
+            if (!isOpen) setSearch("")
+          }}
           align="start"
+          trigger={trigger}
+          className={cn("p-0", popoverWidth || "w-[--radix-popover-trigger-width]")}
         >
-          <Command
+          <CommandPrimitive
             filter={
               creatable
                 ? (value, searchText) => {
@@ -338,37 +289,51 @@ export function Combobox(props: ComboboxProps) {
                   }
                 : undefined
             }
+            className="flex h-full w-full flex-col"
           >
-            <CommandInput placeholder={searchPlaceholder} onValueChange={setSearch} />
-            <CommandList id={listboxId}>
-              {!showCreateOption && <CommandEmpty>{emptyMessage}</CommandEmpty>}
-              <CommandGroup>
-                {showCreateOption && (
-                  <CommandItem
+            <div className="flex items-center border-b px-3" cmdk-input-wrapper="">
+              <SearchIcon className="mr-2 size-4 shrink-0 opacity-50" aria-hidden="true" />
+              <CommandPrimitive.Input
+                placeholder={searchPlaceholder}
+                onValueChange={setSearch}
+                className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+            <CommandPrimitive.List
+              id={listboxId}
+              className="max-h-[300px] overflow-y-auto overflow-x-hidden p-1"
+            >
+              {!showCreateOption ? (
+                <CommandPrimitive.Empty className="py-6 text-center text-sm text-muted-foreground">
+                  {emptyMessage}
+                </CommandPrimitive.Empty>
+              ) : null}
+              <CommandPrimitive.Group>
+                {showCreateOption ? (
+                  <CommandPrimitive.Item
                     value={CREATE_ACTION_VALUE}
                     keywords={[trimmedSearch]}
                     onSelect={() => handleCreate(trimmedSearch)}
+                    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground"
                   >
                     Usar: &ldquo;{trimmedSearch}&rdquo;
-                  </CommandItem>
-                )}
+                  </CommandPrimitive.Item>
+                ) : null}
                 {options.map((option) => {
                   const isSelected = isMultiple
                     ? toArray(props.value).includes(option.value)
                     : props.value === option.value
 
                   return (
-                    <CommandItem
+                    <CommandPrimitive.Item
                       key={option.value}
                       value={option.value}
                       disabled={option.disabled}
                       onSelect={() => {
-                        if (isMultiple) {
-                          handleMultipleSelect(option.value)
-                        } else {
-                          handleSingleSelect(option.value)
-                        }
+                        if (isMultiple) handleMultipleSelect(option.value)
+                        else handleSingleSelect(option.value)
                       }}
+                      className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
                     >
                       <div
                         className={cn(
@@ -382,21 +347,18 @@ export function Combobox(props: ComboboxProps) {
                       </div>
                       {option.icon ? <option.icon className="mr-2 size-4 shrink-0" /> : null}
                       {option.label}
-                    </CommandItem>
+                    </CommandPrimitive.Item>
                   )
                 })}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
+              </CommandPrimitive.Group>
+            </CommandPrimitive.List>
+          </CommandPrimitive>
+        </Popover>
+      </div>
+    </FieldShell>
   )
 }
 
-/**
- * Hook para facilitar o uso do Combobox com react-hook-form
- */
 export function useComboboxOptions<
   T extends { id: number | string; nome?: string; label?: string },
 >(data: T[] | undefined, labelKey: keyof T = "nome" as keyof T): ComboboxOption[] {

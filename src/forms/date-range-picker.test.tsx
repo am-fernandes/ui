@@ -1,32 +1,46 @@
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it } from "vitest"
 
 import { DateRangePicker } from "./date-range-picker"
 
 describe("DateRangePicker", () => {
-  it("renders placeholder when both empty", () => {
+  it("renders the placeholder when value is empty range", () => {
     render(
       <DateRangePicker
-        from=""
-        to=""
-        onFromChange={vi.fn()}
-        onToChange={vi.fn()}
-        placeholder="Período"
+        label="Período"
+        value={{ from: "", to: "" }}
+        onChange={() => {}}
+        placeholder="Selecione"
       />,
     )
-    expect(screen.getByText("Período")).toBeInTheDocument()
+    expect(screen.getByText("Selecione")).toBeInTheDocument()
   })
 
-  it("renders the formatted range when values are set", () => {
+  it("renders the formatted range when both dates are set", () => {
     render(
       <DateRangePicker
-        from="2025-03-01"
-        to="2025-03-10"
-        onFromChange={vi.fn()}
-        onToChange={vi.fn()}
+        label="Período"
+        value={{ from: "2025-01-01", to: "2025-01-31" }}
+        onChange={() => {}}
       />,
     )
-    expect(screen.getByText(/01\/03\/2025/)).toBeInTheDocument()
-    expect(screen.getByText(/10\/03\/2025/)).toBeInTheDocument()
+    expect(screen.getByText(/01\/01\/2025.*31\/01\/2025/)).toBeInTheDocument()
+  })
+
+  it("renders the error", () => {
+    render(
+      <DateRangePicker
+        label="X"
+        value={{ from: "", to: "" }}
+        onChange={() => {}}
+        error="obrigatório"
+      />,
+    )
+    expect(screen.getByRole("alert")).toHaveTextContent("obrigatório")
+  })
+
+  it("respects disabled", () => {
+    render(<DateRangePicker label="X" value={{ from: "", to: "" }} onChange={() => {}} disabled />)
+    expect(screen.getByRole("button")).toBeDisabled()
   })
 })

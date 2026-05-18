@@ -3,6 +3,8 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
+import { useFieldIds } from "../primitives/_internal/use-field-ids"
 
 const MIN_HOUR = 0
 const MAX_HOUR = 23
@@ -22,6 +24,11 @@ export interface TimePickerProps {
   id?: string
   className?: string
   "aria-label"?: string
+  label?: React.ReactNode
+  description?: React.ReactNode
+  error?: string
+  labelPosition?: LabelPosition
+  required?: boolean
   /** Forwarded to the hour input. */
   ref?: React.Ref<HTMLInputElement>
 }
@@ -92,9 +99,15 @@ function TimePicker({
   disabled,
   id,
   className,
-  "aria-label": ariaLabel = "Horário",
+  "aria-label": ariaLabel,
+  label,
+  description,
+  error,
+  labelPosition,
+  required,
   ref,
 }: TimePickerProps) {
+  const ids = useFieldIds(id)
   const minuteRef = React.useRef<HTMLInputElement>(null)
 
   // Derive the committed values directly from the prop.
@@ -230,41 +243,54 @@ function TimePicker({
   }
 
   return (
-    <div
-      // biome-ignore lint/a11y/useSemanticElements: a <fieldset> would force a <legend>, breaking the inline flex layout intended.
-      role="group"
-      aria-label={ariaLabel}
-      data-slot="time-picker"
-      data-disabled={disabled ? "true" : undefined}
-      className={cn(containerClasses, disabled && "cursor-not-allowed opacity-50", className)}
+    <FieldShell
+      controlId={ids.controlId}
+      labelId={ids.labelId}
+      descriptionId={ids.descriptionId}
+      errorId={ids.errorId}
+      label={label}
+      description={description}
+      error={error}
+      labelPosition={labelPosition}
+      required={required}
+      disabled={disabled}
     >
-      <TimeField
-        ref={ref}
-        id={id}
-        value={hour}
-        ariaLabel="Horas"
-        min={MIN_HOUR}
-        max={MAX_HOUR}
-        onChange={handleHourChange}
-        onBlur={handleHourBlur}
-        onKeyDown={handleHourKeyDown}
-        disabled={disabled}
-      />
-      <span aria-hidden className="text-muted-foreground">
-        :
-      </span>
-      <TimeField
-        ref={minuteRef}
-        value={minute}
-        ariaLabel="Minutos"
-        min={MIN_MINUTE}
-        max={MAX_MINUTE}
-        onChange={handleMinuteChange}
-        onBlur={handleMinuteBlur}
-        onKeyDown={handleMinuteKeyDown}
-        disabled={disabled}
-      />
-    </div>
+      <div
+        // biome-ignore lint/a11y/useSemanticElements: a <fieldset> would force a <legend>, breaking the inline flex layout intended.
+        role="group"
+        aria-label={ariaLabel ?? (typeof label === "string" ? label : "Horário")}
+        data-slot="time-picker"
+        data-disabled={disabled ? "true" : undefined}
+        className={cn(containerClasses, disabled && "cursor-not-allowed opacity-50", className)}
+      >
+        <TimeField
+          ref={ref}
+          id={ids.controlId}
+          value={hour}
+          ariaLabel="Horas"
+          min={MIN_HOUR}
+          max={MAX_HOUR}
+          onChange={handleHourChange}
+          onBlur={handleHourBlur}
+          onKeyDown={handleHourKeyDown}
+          disabled={disabled}
+        />
+        <span aria-hidden className="text-muted-foreground">
+          :
+        </span>
+        <TimeField
+          ref={minuteRef}
+          value={minute}
+          ariaLabel="Minutos"
+          min={MIN_MINUTE}
+          max={MAX_MINUTE}
+          onChange={handleMinuteChange}
+          onBlur={handleMinuteBlur}
+          onKeyDown={handleMinuteKeyDown}
+          disabled={disabled}
+        />
+      </div>
+    </FieldShell>
   )
 }
 TimePicker.displayName = "TimePicker"

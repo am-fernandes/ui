@@ -193,4 +193,4 @@ function CalendarDayButton({
 }
 CalendarDayButton.displayName = "CalendarDayButton"
 
-export { Calendar, CalendarDayButton }
+export { Calendar }
