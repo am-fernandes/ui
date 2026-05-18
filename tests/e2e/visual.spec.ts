@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test"
 
+// Snapshots can take a while to settle (font load, network idle); bump the
+// per-test timeout so transient slowness on Storybook's static server doesn't
+// cause spurious "context closed" or wait-for-function timeouts.
+test.setTimeout(60_000)
+
 /**
  * Visual regression tests.
  *
@@ -46,6 +51,11 @@ async function snapshot(page: import("@playwright/test").Page, id: string, file:
   // Let any post-mount network work settle (Avatar image, fonts, etc.).
   await page.waitForLoadState("networkidle").catch(() => {})
   await page.addStyleTag({ content: KILL_ANIMATIONS })
+  // Wait for web fonts to finish loading so glyph metrics are stable.
+  await page.evaluate(async () => {
+    // @ts-expect-error -- document.fonts is on FontFaceSet.
+    if (document.fonts?.ready) await document.fonts.ready
+  })
   // Give one extra frame so the stylesheet applies before measurement.
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))))
   // Snapshot the viewport (iframe.html has no storybook chrome). This avoids

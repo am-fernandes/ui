@@ -21,9 +21,20 @@ const config: TestRunnerConfig = {
 
     if (storyContext.parameters?.a11y?.disable) return
 
-    await configureAxe(page, {
-      rules: storyContext.parameters?.a11y?.config?.rules ?? [],
-    })
+    const storyRules = storyContext.parameters?.a11y?.config?.rules ?? []
+
+    // Pass story-level rule overrides to axe-core via configure (registers the rule id),
+    // and ALSO map them into the run-time `rules` option which is what actually disables
+    // a rule during evaluation. The `configure` call alone is not enough.
+    await configureAxe(page, { rules: storyRules })
+
+    const ruleOverrides = storyRules.reduce<Record<string, { enabled: boolean }>>(
+      (acc, rule) => {
+        if (rule?.id) acc[rule.id] = { enabled: rule.enabled !== false }
+        return acc
+      },
+      {},
+    )
 
     await checkA11y(page, "#storybook-root", {
       detailedReport: true,
@@ -33,6 +44,7 @@ const config: TestRunnerConfig = {
           type: "tag",
           values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
         },
+        rules: ruleOverrides,
       },
     })
   },

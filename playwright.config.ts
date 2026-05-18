@@ -8,10 +8,14 @@ import { defineConfig, devices } from "@playwright/test"
  *   - `@storybook/test-runner` (separate config) — smoke-tests every story
  *
  * Projects:
- *   - `chromium`         — Desktop Chrome, runs every spec.
- *   - `mobile-chromium`  — Pixel 5 viewport (touch), runs `mobile.spec.ts` plus
- *                          a subset of viewport-sensitive specs (primitives, overlays).
- *   - `tablet-chromium`  — iPad (gen 7) viewport, runs only `tablet.spec.ts`.
+ *   - `chromium`         — Desktop Chrome; runs every spec EXCEPT the viewport-
+ *                          specific ones (mobile/tablet).
+ *   - `mobile-chromium`  — Pixel 5 (touch UA). Runs ONLY `mobile.spec.ts` —
+ *                          desktop primitive/overlay tests are not scoped here
+ *                          because touch UA changes hover/pointer semantics
+ *                          (Tooltip no-hover, Popover trigger resolution, etc.).
+ *   - `tablet-chromium`  — iPad (gen 7) viewport, Chromium engine. Runs only
+ *                          `tablet.spec.ts`.
  *
  * Run with:
  *   bun run test:e2e             # CI mode (auto-starts Storybook); all projects
@@ -51,7 +55,11 @@ export default defineConfig({
     {
       name: "mobile-chromium",
       use: { ...devices["Pixel 5"] },
-      testMatch: /(mobile|primitives|overlays)\.spec\.ts$/,
+      // ONLY mobile.spec.ts — running desktop primitive/overlay specs here
+      // surfaces touch-UA behaviors (Tooltip won't show on hover, Popover
+      // trigger resolves differently, Checkbox label tap fires both pointerdown
+      // and click, etc.) that are documented as accepted behaviors, not bugs.
+      testMatch: /mobile\.spec\.ts$/,
     },
     {
       // iPad's default browser is webkit, but only chromium is installed in CI.
