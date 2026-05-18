@@ -26,6 +26,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:storybook": "test-storybook --url http://localhost:6006",
+    "test:storybook:ci": "concurrently -k -s first -n SB,TR \"http-server storybook-static --port 6006 --silent\" \"wait-on tcp:6006 && test-storybook --url http://localhost:6006\"",
     "sync:coverage": "vitest run --coverage && bun scripts/sync-coverage.ts"
   },
   "dependencies": {
@@ -61,10 +66,13 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@playwright/test": "^1.60.0",
     "@storybook/addon-a11y": "^10.2.9",
     "@storybook/addon-docs": "^10.2.9",
     "@storybook/addon-themes": "^10.2.9",
     "@storybook/react-vite": "^10.2.9",
+    "@storybook/test": "^8.6.15",
+    "@storybook/test-runner": "^0.24.4",
     "@tailwindcss/vite": "^4.2.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
@@ -74,6 +82,8 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.1",
     "@vitest/coverage-v8": "^3.0.0",
+    "concurrently": "^9.2.1",
+    "http-server": "^14.1.1",
     "jsdom": "^25.0.1",
     "react": "^19",
     "react-dom": "^19",
@@ -83,7 +93,8 @@
     "tsup": "^8.3.5",
     "typescript": "^5.9.3",
     "vite": "^8.0.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "wait-on": "^9.0.10"
   },
   "peerDependencies": {
     "react": "^19",
