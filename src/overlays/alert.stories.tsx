@@ -2,6 +2,20 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { CheckCircle2, Info, OctagonAlert, TriangleAlert } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "./alert"
 
+const VARIANT_ICON = {
+  default: Info,
+  info: Info,
+  success: CheckCircle2,
+  warning: TriangleAlert,
+  destructive: OctagonAlert,
+} as const
+
+type PlaygroundArgs = {
+  variant: keyof typeof VARIANT_ICON
+  title: string
+  description: string
+}
+
 const meta = {
   title: "Overlays/Alert",
   component: Alert,
@@ -10,15 +24,76 @@ const meta = {
     layout: "centered",
     docs: {
       description: {
-        component:
-          "Mensagem inline para feedback ou destaque. 5 variantes (default + info/success/warning/destructive) usando paletas WCAG AA.",
+        component: [
+          "Mensagem inline para feedback ou destaque visual. API composicional: combine `Alert` + `AlertTitle` + `AlertDescription`.",
+          "",
+          "**Props principais (`Alert`):**",
+          "- `variant` — `'default' | 'info' | 'success' | 'warning' | 'destructive'`. Controla a paleta (todas WCAG AA).",
+          "- Aceita todas as props HTML de `div` (ex.: `className`, `role`, `id`).",
+          "",
+          "**Subcomponentes:**",
+          "- `AlertTitle` — heading (`<h5>`) com peso medium e tracking ajustado.",
+          "- `AlertDescription` — corpo do alerta, texto secundário.",
+          "",
+          "Inclua um ícone (ex.: `lucide-react`) como primeiro filho para ganhar o slot lateral automaticamente.",
+        ].join("\n"),
+      },
+    },
+  },
+  argTypes: {
+    variant: {
+      control: "inline-radio",
+      options: ["default", "info", "success", "warning", "destructive"],
+      description: "Paleta semântica do alerta.",
+      table: {
+        type: { summary: "'default' | 'info' | 'success' | 'warning' | 'destructive'" },
+        defaultValue: { summary: "'default'" },
       },
     },
   },
 } satisfies Meta<typeof Alert>
 
 export default meta
-type Story = StoryObj<typeof meta>
+type Story = StoryObj<PlaygroundArgs>
+
+export const Playground: Story = {
+  args: {
+    variant: "info",
+    title: "Atenção",
+    description: "Mensagem informativa para o usuário sobre uma ação ou estado do sistema.",
+  },
+  argTypes: {
+    variant: {
+      control: "inline-radio",
+      options: ["default", "info", "success", "warning", "destructive"],
+      description: "Paleta semântica do alerta.",
+      table: {
+        type: { summary: "'default' | 'info' | 'success' | 'warning' | 'destructive'" },
+        defaultValue: { summary: "'default'" },
+      },
+    },
+    title: {
+      control: "text",
+      description: "Texto do `AlertTitle`.",
+      table: { type: { summary: "string" } },
+    },
+    description: {
+      control: "text",
+      description: "Texto do `AlertDescription`.",
+      table: { type: { summary: "string" } },
+    },
+  },
+  render: ({ variant, title, description }) => {
+    const Icon = VARIANT_ICON[variant]
+    return (
+      <Alert variant={variant} className="max-w-md">
+        <Icon className="size-4" />
+        <AlertTitle>{title}</AlertTitle>
+        <AlertDescription>{description}</AlertDescription>
+      </Alert>
+    )
+  },
+}
 
 export const Default: Story = {
   render: () => (

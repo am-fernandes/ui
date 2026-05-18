@@ -10,9 +10,22 @@ const meta: Meta<typeof Progress> = {
     layout: "centered",
     docs: {
       description: {
-        component:
-          "Barra de progresso linear. Aceita `value` (0-100) ou nenhum valor (indeterminate).",
+        component: [
+          "Barra de progresso linear. Use para indicar avanço de upload, processamento ou wizards.",
+          "",
+          "**Props principais:**",
+          "- `value: number` — progresso atual de 0 a 100. Omita (ou passe `undefined`) para estado indeterminado.",
+          "- `max: number` — valor máximo. Default `100`.",
+          "- Aceita demais props do `Radix Progress.Root` e do `<div>` nativo (`className`, `aria-label`, etc.).",
+        ].join("\n"),
       },
+    },
+  },
+  argTypes: {
+    value: {
+      control: { type: "number", min: 0, max: 100, step: 1 },
+      description: "Progresso atual (0–100). Omita para estado indeterminado.",
+      table: { type: { summary: "number" } },
     },
   },
   decorators: [
@@ -27,6 +40,10 @@ const meta: Meta<typeof Progress> = {
 export default meta
 
 type Story = StoryObj<typeof Progress>
+
+export const Playground: Story = {
+  args: { value: 60 },
+}
 
 export const Default: Story = {
   args: { value: 60 },
