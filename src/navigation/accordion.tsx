@@ -6,7 +6,45 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Accordion = AccordionPrimitive.Root
+export interface AccordionItemData {
+  value: string
+  title: React.ReactNode
+  content: React.ReactNode
+  disabled?: boolean
+}
+
+type AccordionRootProps = React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Root> & {
+  /**
+   * Optional simplified API: pass an array of items and the component renders
+   * the AccordionItem/Trigger/Content trio per entry. When `children` is
+   * provided it always wins, so the compositional API remains untouched.
+   */
+  items?: AccordionItemData[]
+}
+
+const Accordion = React.forwardRef<
+  React.ComponentRef<typeof AccordionPrimitive.Root>,
+  AccordionRootProps
+>(({ items, children, ...props }, ref) => {
+  const content =
+    children ??
+    (items
+      ? items.map((item) => (
+          <AccordionItem key={item.value} value={item.value} disabled={item.disabled}>
+            <AccordionTrigger>{item.title}</AccordionTrigger>
+            <AccordionContent>{item.content}</AccordionContent>
+          </AccordionItem>
+        ))
+      : null)
+
+  return (
+    // biome-ignore lint/suspicious/noExplicitAny: Radix Root has a discriminated union over `type`; forwarding props requires bypassing the narrowing here.
+    <AccordionPrimitive.Root ref={ref} data-slot="accordion" {...(props as any)}>
+      {content}
+    </AccordionPrimitive.Root>
+  )
+})
+Accordion.displayName = "Accordion"
 
 const AccordionItem = React.forwardRef<
   React.ComponentRef<typeof AccordionPrimitive.Item>,

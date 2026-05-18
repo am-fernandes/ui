@@ -76,6 +76,7 @@ export {
   Accordion,
   AccordionContent,
   AccordionItem,
+  type AccordionItemData,
   AccordionTrigger,
 } from "./navigation/accordion"
 export {
