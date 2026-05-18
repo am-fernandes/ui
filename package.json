@@ -85,5 +85,9 @@
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/am-fernandes/ui.git"
+  },
+  "engines": {
+    "node": ">=20",
+    "bun": ">=1.1"
   }
 }
