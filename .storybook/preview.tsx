@@ -13,7 +13,6 @@ const preview: Preview = {
           ["Colors", "Typography", "Iconography", "Spacing"],
           "Primitives",
           "Overlays",
-          "Composed",
           "Navigation",
           "Forms",
           "Domain",
