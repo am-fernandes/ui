@@ -12,7 +12,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const COPY = "A AM Fernandes constrói software jurídico."
+const COPY = "AM Fernandes Incorporadora."
 
 export const AllVariants: Story = {
   render: () => (
