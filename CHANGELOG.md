@@ -4,6 +4,20 @@ All notable changes to `@am-fernandes/ui` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] — 2026-05-17
+
+### Changed (BREAKING)
+- Removed `Select` and `MultiSelect` components. Use `Combobox` with the
+  new `multiple` prop instead. Search is always enabled.
+- Removed `@radix-ui/react-select` dependency.
+
+### Added
+- `Combobox` accepts an `icon` per option (feature parity with the old
+  `MultiSelect`).
+
+### Migration
+- See `src/docs/Migration.mdx` v3.0.0 section.
+
 ## [2.0.1] — 2026-05-17
 
 ### Fixed
