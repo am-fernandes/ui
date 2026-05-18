@@ -2,17 +2,19 @@ import { Meta } from "@storybook/addon-docs/blocks"
 
 <Meta title="Getting Started" />
 
-# AM Fernandes UI
+# @am-fernandes/ui
 
-Design system de componentes React da AM Fernandes. Esta documentação cobre os fundamentos visuais (cores, tipografia, espaçamento, raios, ícones) e — nas próximas releases — a biblioteca completa de componentes.
+Design system oficial da AM Fernandes — 40+ componentes React acessíveis, theming em OKLCH, fonte Google Sans Flex, light-only.
+
+## Pré-requisitos
+
+- **Node ≥ 20** ou **Bun ≥ 1.1**
+- **React 19**
+- **Tailwind CSS v4**
 
 ## Instalação
 
-```bash
-bun add @am-fernandes/ui
-```
-
-Configure o registro privado (uma vez por máquina):
+1. **Configure o registro privado** (uma vez por máquina):
 
 ```bash
 # ~/.npmrc
@@ -20,42 +22,88 @@ Configure o registro privado (uma vez por máquina):
 //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
 
-## Setup na sua app
+2. **Adicione o package:**
 
-1. Importe os tokens e a fonte no CSS de entrada da app:
+```bash
+bun add @am-fernandes/ui
+# ou
+npm install @am-fernandes/ui
+```
+
+## Setup
+
+No CSS de entrada da app:
 
 ```css
-/* src/index.css */
+/* src/index.css ou app/globals.css */
 @import "@am-fernandes/ui/fonts";
 @import "@am-fernandes/ui/styles";
 ```
 
-2. Garanta que a app usa Tailwind v4 e React 19 (peer-deps).
+Pronto. Tokens, paleta e fonte ficam ativos globalmente.
 
-3. Use a helper `cn` ao combinar classes:
+## Primeiro componente
 
 ```tsx
-import { cn } from "@am-fernandes/ui"
+import { Button, Typography } from "@am-fernandes/ui"
 
-<div className={cn("p-4 rounded-md", isActive && "bg-primary")} />
+export function Demo() {
+  return (
+    <div className="space-y-4">
+      <Typography variant="title">Olá, AM</Typography>
+      <Button onClick={() => alert("Funcionou")}>Salvar</Button>
+    </div>
+  )
+}
 ```
 
-## Princípios
+## Conceitos
 
-- **Light only** — apps internas; sem dark mode por escolha de produto.
-- **Tokens são a API** — não hardcode cores ou raios em apps; consuma sempre via classe Tailwind (`bg-primary`, `rounded-md`).
-- **Acessibilidade ≥ AA** — status badges, contraste e ARIA validados via `addon-a11y`.
+- **Light only.** Sem dark mode por escolha de produto.
+- **Tokens são a API.** Consuma cor/raio/espaço via classe Tailwind (`bg-primary`, `rounded-md`), nunca hardcoded.
+- **Acessibilidade ≥ AA.** Componentes seguem padrões ARIA; status badges, contraste e foco validados.
+- **Composição sobre configuração.** Componentes verbosos (Dialog/Sheet/Popover) ficam compositionais para máxima flexibilidade. Componentes onde uma API plana faz sentido (Breadcrumb, Tabs simples) também expõem `items`.
 
-## Status atual
+## Categorias
 
-Release `1.0.0` — feature-complete. As 7 categorias estão disponíveis com 42 componentes no total:
+| Categoria | Conteúdo |
+|---|---|
+| **Primitives** | Inputs, botões, badges, separadores — building blocks |
+| **Overlays** | Dialog, Sheet, Popover, Tooltip, Sonner, Alert, Progress |
+| **Navigation** | Tabs, Breadcrumb, DropdownMenu, Command, Accordion, Sidebar |
+| **Forms** | Form (RHF), Field, Combobox, Calendar, DateInput, DateRangePicker, TimePicker |
+| **Domain** | Inputs específicos AM: CurrencyInput, PercentageInput, MultiNumberInput, InputOTP |
+| **Data** | Card, DataTable, Chart, ScrollArea, Tree |
+| **Foundations** | Cores, tipografia, ícones |
 
-- **Primitives** (11) — avatar, badge, button, checkbox, input, label, radio-group, separator, skeleton, switch, textarea.
-- **Overlays** (8) — alert, alert-dialog, dialog, popover, progress, sheet, sonner, tooltip.
-- **Composed** (1) — confirm-button.
-- **Navigation** (6) — accordion, breadcrumb, command, dropdown-menu, sidebar, tabs.
-- **Forms** (8) — calendar, combobox, date-input, date-range-picker, field, form, multi-select, select.
-- **Domain** (4) — currency-input, days-installment-input, input-otp, percentage-input.
-- **Data** (4) — card, chart, scroll-area, table.
+Navegue pela sidebar à esquerda para ver cada componente, suas props e variantes.
 
-Para migrar uma app interna (ex.: `requerimento-contratos-pf`, `assistencia-tecnica`) das cópias locais de shadcn/ui para o pacote, consulte a página [Migration](?path=/docs/migration--docs).
+## Migração de apps existentes
+
+Para apps internas que já usam cópias shadcn locais:
+
+1. Adicione a dep + os imports CSS (passos acima).
+2. Substitua um import por vez:
+   ```diff
+   - import { Button } from "@/components/ui/button"
+   + import { Button } from "@am-fernandes/ui"
+   ```
+3. Para acelerar, use sed em uma página piloto antes de aplicar globalmente:
+   ```bash
+   find src -type f -name '*.tsx' -exec \
+     sed -i 's|from "@/components/ui/\([a-z-]*\)"|from "@am-fernandes/ui"|g' {} +
+   ```
+4. Smoke-test a página, então delete `src/components/ui/*.tsx`.
+
+**Gotchas conhecidas:**
+- `Button` não tem mais flow de confirmação embutido — use `AlertDialog` quando precisar confirmar.
+- Sem dark mode. Remova qualquer toggle de classe `.dark` que ainda exista.
+- Helpers `toCents`, `fromCents`, `centsToDisplay`, `percentOfTotal`, `percentFromValue`, `formatBRL` são exportados — delete `lib/currency.ts` locais.
+
+## FAQ
+
+**Posso usar com Vite ou Next.js?** Sim. O package é ESM puro; qualquer bundler com React 19 + Tailwind v4 funciona.
+
+**Posso adicionar variantes a um componente existente?** Use `className` (passa pelo `cn()` com tailwind-merge). Para variantes de marca, abra uma issue.
+
+**Como contribuir?** Veja `CONTRIBUTING.md` (em breve). Para mudanças urgentes, contate o time interno.
