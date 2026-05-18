@@ -34,3 +34,39 @@ export const Default: Story = {
     </Tabs>
   ),
 }
+
+export const WithItemsAPI: Story = {
+  render: () => (
+    <Tabs
+      defaultValue="conta"
+      className="w-[400px]"
+      items={[
+        {
+          value: "conta",
+          label: "Conta",
+          content: (
+            <p className="text-sm text-muted-foreground">Gerencie as informações da sua conta.</p>
+          ),
+        },
+        {
+          value: "senha",
+          label: "Senha",
+          content: (
+            <p className="text-sm text-muted-foreground">
+              Altere sua senha e configurações de segurança.
+            </p>
+          ),
+        },
+        {
+          value: "notificacoes",
+          label: "Notificações",
+          content: (
+            <p className="text-sm text-muted-foreground">
+              Defina suas preferências de notificação.
+            </p>
+          ),
+        },
+      ]}
+    />
+  ),
+}

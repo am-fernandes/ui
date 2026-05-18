@@ -5,7 +5,51 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Tabs = TabsPrimitive.Root
+export interface TabsItemData {
+  value: string
+  label: React.ReactNode
+  content: React.ReactNode
+  disabled?: boolean
+}
+
+type TabsRootProps = React.ComponentPropsWithoutRef<typeof TabsPrimitive.Root> & {
+  /**
+   * Optional simplified API: pass an array of items and the component renders
+   * the TabsList + TabsContent structure for you. When `children` is provided
+   * it always wins so consumers can fall back to the compositional API.
+   */
+  items?: TabsItemData[]
+}
+
+const Tabs = React.forwardRef<React.ComponentRef<typeof TabsPrimitive.Root>, TabsRootProps>(
+  ({ items, children, ...props }, ref) => {
+    const content =
+      children ??
+      (items ? (
+        <>
+          <TabsList>
+            {items.map((item) => (
+              <TabsTrigger key={item.value} value={item.value} disabled={item.disabled}>
+                {item.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {items.map((item) => (
+            <TabsContent key={item.value} value={item.value}>
+              {item.content}
+            </TabsContent>
+          ))}
+        </>
+      ) : null)
+
+    return (
+      <TabsPrimitive.Root ref={ref} data-slot="tabs" {...props}>
+        {content}
+      </TabsPrimitive.Root>
+    )
+  },
+)
+Tabs.displayName = "Tabs"
 
 const TabsList = React.forwardRef<
   React.ComponentRef<typeof TabsPrimitive.List>,
