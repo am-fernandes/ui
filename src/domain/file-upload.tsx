@@ -260,8 +260,7 @@ function FileRow({
         aria-hidden
       >
         {thumb ? (
-          // biome-ignore lint/a11y/useAltText: decorative thumbnail; filename is rendered next to it.
-          <img src={thumb} alt="" className="size-full object-cover" />
+          <img src={thumb} alt={file.name} className="size-full object-cover" />
         ) : isImage ? (
           <ImageIcon className="size-4" />
         ) : (

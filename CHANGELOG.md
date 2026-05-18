@@ -4,6 +4,32 @@ All notable changes to `@am-fernandes/ui` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.0] — 2026-05-18
+
+### Added
+- **`FileUpload`** component (`src/domain/file-upload.tsx`) — drag-and-drop + click-to-pick
+  with controlled and uncontrolled modes. Props: `accept` (MIME pattern string or array),
+  `multiple`, `maxSize`, `maxFiles`, `preview` (`"thumbnail" | "list" | "none"`),
+  `value`/`onValueChange`, `onReject` (typed rejection reasons: `"type" | "size" | "max-files"`),
+  `disabled`, `error`, `label`, `description`. Thumbnail preview for images via
+  `URL.createObjectURL`. Default `label` and `description` derive from `accept`/`maxSize`.
+- 7 unit tests covering accept/size/maxFiles paths.
+- Storybook stories: `Playground` (live Controls), `Default`, `ImagensComPreview`,
+  `PDFsListView`, `Controlled`, `ComRejeicaoEToast`, `Disabled`, `ErrorState`.
+
+### Changed
+- **Storybook docs overhaul** — every story across the 7 categories now ships rich
+  autodocs:
+  - `parameters.docs.description.component` paragraph + bulleted prop list (PT-BR).
+  - `argTypes` per documented prop with explicit `control` (radio/select/object/number/text),
+    `description`, and `table.type.summary` / `defaultValue.summary` so the Storybook
+    args table shows the real TypeScript shape.
+  - A `Playground` story driven by `args` so users can tweak props live via the Controls
+    panel (covers Primitives, Overlays, Navigation, Forms, Domain, Data).
+  - **DataTable**: prose now includes an explicit "Como definir colunas" code example
+    showing basic / custom `cell` / `enableSorting: false` patterns and a pointer to
+    the `@tanstack/react-table` `ColumnDef` reference.
+
 ## [6.0.0] — 2026-05-18
 
 ### Breaking
