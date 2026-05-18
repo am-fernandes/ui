@@ -48,21 +48,37 @@ async function snapshot(page: import("@playwright/test").Page, id: string, file:
     null,
     { timeout: 30_000 },
   )
-  // Let any post-mount network work settle (Avatar image, fonts, etc.).
+  // Let any post-mount network work settle (images, etc.). Note that the
+  // route block above prevents Google Fonts from ever loading, so we don't
+  // need to wait for the web font swap — every run renders with the system
+  // fallback and is deterministic.
   await page.waitForLoadState("networkidle").catch(() => {})
   await page.addStyleTag({ content: KILL_ANIMATIONS })
-  // Wait for web fonts to finish loading so glyph metrics are stable.
+  // Wait for any remaining (local) fonts to be ready.
   await page.evaluate(async () => {
-    // @ts-expect-error -- document.fonts is on FontFaceSet.
     if (document.fonts?.ready) await document.fonts.ready
   })
-  // Give one extra frame so the stylesheet applies before measurement.
-  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))))
+  // Two animation frames lets the browser paint before we screenshot.
+  await page.evaluate(
+    () =>
+      new Promise<void>((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => r())),
+      ),
+  )
   // Snapshot the viewport (iframe.html has no storybook chrome). This avoids
   // visibility auto-wait failures when the rendered story is smaller than the
   // body / storybook-root element.
   await expect(page).toHaveScreenshot(file, { fullPage: false })
 }
+
+// Block remote font CDNs (Google Fonts, etc.) before each test. This keeps the
+// snapshot deterministic across machines/networks: every render uses the local
+// fallback font instead of racing against Google Fonts' CDN.
+test.beforeEach(async ({ page }) => {
+  await page.route(/(fonts\.googleapis\.com|fonts\.gstatic\.com)/, (route) =>
+    route.abort(),
+  )
+})
 
 test.describe("Visual: Primitives — Button", () => {
   test("default", async ({ page }) => {
@@ -170,9 +186,9 @@ test.describe("Visual: Primitives — Textarea", () => {
 })
 
 test.describe("Visual: Primitives — Avatar", () => {
-  test("default (image)", async ({ page }) => {
-    await snapshot(page, "primitives-avatar--default", "avatar-default.png")
-  })
+  // NOTE: `primitives-avatar--default` uses a remote image (github.com/shadcn.png)
+  // which is unreliable for visual regression — load timing varies and CDN may
+  // serve different-quality variants. We snapshot the fallback states instead.
   test("fallback", async ({ page }) => {
     await snapshot(page, "primitives-avatar--fallback", "avatar-fallback.png")
   })
