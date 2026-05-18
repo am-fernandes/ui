@@ -11,15 +11,78 @@ const meta = {
     layout: "centered",
     docs: {
       description: {
-        component:
-          "Input de percentual. Display com % no sufixo; valor interno como número decimal (0-100).",
+        component: [
+          "Input controlado para **percentuais**. Display em pt-BR com sufixo `%` (ex.: `33,33`) enquanto o valor interno é mantido como **número decimal** (0–100 tipicamente), ex.: `33.33`.",
+          "",
+          "**Props principais:**",
+          "- `value` — valor atual em percentual (float). Internamente é convertido para centésimos inteiros para evitar erros de ponto flutuante.",
+          "- `onValueChange` — callback `(value: number) => void` disparado a cada edição com o novo decimal.",
+          "- `disabled` — desabilita a edição.",
+          "- `placeholder` — texto exibido quando vazio (repassado ao `<input>`).",
+          "- Demais props do `<input>` nativo (exceto `value`, `onChange`, `type`) são repassadas (`id`, `name`, `aria-*`, `className`).",
+        ].join("\n"),
       },
+    },
+  },
+  argTypes: {
+    value: {
+      control: "number",
+      description: "Valor percentual atual como decimal (ex.: `33.33`). Display exibe `33,33 %`.",
+      table: { type: { summary: "number" } },
+    },
+    onValueChange: {
+      control: false,
+      description: "Callback disparado a cada edição com o novo decimal.",
+      table: {
+        type: { summary: "(value: number) => void" },
+        category: "Eventos",
+      },
+    },
+    disabled: {
+      control: "boolean",
+      description: "Desabilita o campo.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
+    placeholder: {
+      control: "text",
+      description: "Placeholder repassado ao `<input>` nativo.",
+      table: { type: { summary: "string" } },
     },
   },
 } satisfies Meta<typeof PercentageInput>
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const Playground: Story = {
+  args: {
+    value: 0,
+    onValueChange: () => {},
+    disabled: false,
+    placeholder: "",
+  },
+  render: (args) => {
+    const [value, setValue] = React.useState<number>(args.value ?? 0)
+    React.useEffect(() => {
+      setValue(args.value ?? 0)
+    }, [args.value])
+    return (
+      <div className="flex flex-col gap-2 w-80">
+        <Label htmlFor="commission">Comissão (%)</Label>
+        <PercentageInput
+          {...args}
+          id="commission"
+          value={value}
+          onValueChange={(next) => {
+            setValue(next)
+            args.onValueChange?.(next)
+          }}
+        />
+        <p className="text-xs text-muted-foreground">Valor interno: {value}</p>
+      </div>
+    )
+  },
+}
 
 export const Default: Story = {
   args: {
