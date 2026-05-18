@@ -9,15 +9,67 @@ const meta = {
     layout: "centered",
     docs: {
       description: {
-        component:
+        component: [
           'Linha divisória horizontal ou vertical. Use `orientation="vertical"` em containers com altura definida.',
+          "",
+          "**Props principais:**",
+          "- `orientation` — `'horizontal'` (default) ou `'vertical'`.",
+          "- `decorative` — quando `true` (default), o separador é puramente visual; quando `false`, expõe role semântica para tecnologias assistivas.",
+          "- `className` — para ajustar cor, espessura ou margens.",
+        ].join("\n"),
       },
+    },
+  },
+  argTypes: {
+    orientation: {
+      control: "inline-radio",
+      options: ["horizontal", "vertical"],
+      description: "Direção da linha.",
+      table: {
+        type: { summary: "'horizontal' | 'vertical'" },
+        defaultValue: { summary: "'horizontal'" },
+      },
+    },
+    decorative: {
+      control: "boolean",
+      description: "Se `true`, o separador é apenas visual (sem role semântica).",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "true" } },
+    },
+    className: {
+      control: "text",
+      description: "Classes Tailwind extras (cor, espessura, margens).",
+      table: { type: { summary: "string" } },
     },
   },
 } satisfies Meta<typeof Separator>
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const Playground: Story = {
+  args: {
+    orientation: "horizontal",
+    decorative: true,
+    className: "my-4",
+  },
+  render: (args) => (
+    <div className={args.orientation === "horizontal" ? "w-64" : "flex h-12 items-center gap-4"}>
+      {args.orientation === "horizontal" ? (
+        <>
+          <p className="text-sm">Acima</p>
+          <Separator {...args} />
+          <p className="text-sm">Abaixo</p>
+        </>
+      ) : (
+        <>
+          <span className="text-sm">Esquerda</span>
+          <Separator {...args} />
+          <span className="text-sm">Direita</span>
+        </>
+      )}
+    </div>
+  ),
+}
 
 export const Horizontal: Story = {
   render: () => (

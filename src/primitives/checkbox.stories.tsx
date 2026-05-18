@@ -10,8 +10,56 @@ const meta = {
     layout: "centered",
     docs: {
       description: {
-        component:
+        component: [
           "Checkbox controlado/não-controlado baseado em Radix. Pareie com `Label` via `htmlFor`/`id`.",
+          "",
+          "**Props principais:**",
+          "- `checked` / `onCheckedChange` — modo controlado (`boolean | 'indeterminate'`).",
+          "- `defaultChecked` — estado inicial em modo não-controlado.",
+          "- `disabled` — desabilita interação.",
+          "- `required` — marca como obrigatório em forms nativos.",
+          "- `id` — para parear com `Label htmlFor`.",
+        ].join("\n"),
+      },
+    },
+  },
+  argTypes: {
+    checked: {
+      control: "boolean",
+      description: "Estado controlado.",
+      table: { type: { summary: "boolean | 'indeterminate'" } },
+    },
+    defaultChecked: {
+      control: "boolean",
+      description: "Estado inicial em modo não-controlado.",
+      table: { type: { summary: "boolean" } },
+    },
+    disabled: {
+      control: "boolean",
+      description: "Desabilita o checkbox.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
+    required: {
+      control: "boolean",
+      description: "Marca como obrigatório.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
+    id: {
+      control: "text",
+      description: "ID HTML — use junto com `Label htmlFor`.",
+      table: { type: { summary: "string" } },
+    },
+    className: {
+      control: "text",
+      description: "Classes Tailwind extras.",
+      table: { type: { summary: "string" } },
+    },
+    onCheckedChange: {
+      control: false,
+      description: "Disparado quando o estado muda.",
+      table: {
+        category: "Eventos",
+        type: { summary: "(checked: boolean | 'indeterminate') => void" },
       },
     },
   },
@@ -19,6 +67,15 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const Playground: Story = {
+  args: {
+    defaultChecked: false,
+    disabled: false,
+    required: false,
+    id: "playground",
+  },
+}
 
 export const Default: Story = {}
 

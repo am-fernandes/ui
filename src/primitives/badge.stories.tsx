@@ -9,15 +9,49 @@ const meta = {
     layout: "centered",
     docs: {
       description: {
-        component:
+        component: [
           "Etiqueta compacta para status, tags ou contadores. 4 variantes (default, secondary, destructive, outline) com cores semânticas.",
+          "",
+          "**Props principais:**",
+          "- `variant` — controla a cor: `default` (primary), `secondary`, `destructive`, `outline`.",
+          "- `className` — para ajustes pontuais (raio, padding, cores).",
+          "- Aceita todos os atributos HTML de `<div>` (clique, role, etc.).",
+        ].join("\n"),
       },
+    },
+  },
+  argTypes: {
+    variant: {
+      control: "inline-radio",
+      options: ["default", "secondary", "destructive", "outline"],
+      description: "Cor/estilo do badge.",
+      table: {
+        type: { summary: "'default' | 'secondary' | 'destructive' | 'outline'" },
+        defaultValue: { summary: "'default'" },
+      },
+    },
+    children: {
+      control: "text",
+      description: "Conteúdo do badge (texto ou ícone).",
+      table: { type: { summary: "ReactNode" } },
+    },
+    className: {
+      control: "text",
+      description: "Classes Tailwind extras.",
+      table: { type: { summary: "string" } },
     },
   },
 } satisfies Meta<typeof Badge>
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const Playground: Story = {
+  args: {
+    variant: "default",
+    children: "Badge",
+  },
+}
 
 export const Default: Story = {
   args: { children: "Badge" },

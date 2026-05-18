@@ -10,15 +10,45 @@ const meta = {
     layout: "centered",
     docs: {
       description: {
-        component:
+        component: [
           "Label associado a controles de formulário via `htmlFor`. Aplica estilos consistentes e respeita `peer-disabled`.",
+          "",
+          "**Props principais:**",
+          "- `htmlFor` — id do controle associado (input, checkbox, switch, etc.).",
+          "- `children` — texto da label.",
+          "- `className` — classes Tailwind extras (espaçamento, cor).",
+        ].join("\n"),
       },
+    },
+  },
+  argTypes: {
+    htmlFor: {
+      control: "text",
+      description: "ID do controle associado (corresponde ao `id` do input).",
+      table: { type: { summary: "string" } },
+    },
+    children: {
+      control: "text",
+      description: "Texto da label.",
+      table: { type: { summary: "ReactNode" } },
+    },
+    className: {
+      control: "text",
+      description: "Classes Tailwind extras.",
+      table: { type: { summary: "string" } },
     },
   },
 } satisfies Meta<typeof Label>
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const Playground: Story = {
+  args: {
+    children: "Email",
+    htmlFor: "email-playground",
+  },
+}
 
 export const Default: Story = {
   args: { children: "Email", htmlFor: "email-default" },
