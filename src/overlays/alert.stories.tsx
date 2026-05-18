@@ -6,7 +6,15 @@ const meta = {
   title: "Overlays/Alert",
   component: Alert,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Mensagem inline para feedback ou destaque. 5 variantes (default + info/success/warning/destructive) usando paletas WCAG AA.",
+      },
+    },
+  },
 } satisfies Meta<typeof Alert>
 
 export default meta

@@ -8,6 +8,12 @@ const meta: Meta<typeof Progress> = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Barra de progresso linear. Aceita `value` (0-100) ou nenhum valor (indeterminate).",
+      },
+    },
   },
   decorators: [
     (Story) => (

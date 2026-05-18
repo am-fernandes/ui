@@ -16,7 +16,15 @@ const meta = {
   title: "Overlays/AlertDialog",
   component: AlertDialog,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Diálogo modal de confirmação. Bloqueia interação até o usuário escolher Action ou Cancel. Use para ações destrutivas ou irreversíveis.",
+      },
+    },
+  },
 } satisfies Meta<typeof AlertDialog>
 
 export default meta

@@ -16,7 +16,15 @@ const meta = {
   title: "Overlays/Dialog",
   component: Dialog,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Diálogo modal genérico. Use para formulários, confirmações não-destrutivas ou conteúdo focal. Para confirmação destrutiva prefira `AlertDialog`.",
+      },
+    },
+  },
 } satisfies Meta<typeof Dialog>
 
 export default meta

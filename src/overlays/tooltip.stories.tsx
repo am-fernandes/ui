@@ -9,6 +9,12 @@ const meta: Meta<typeof Tooltip> = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Dica contextual em hover/focus. Envolva o trigger em `TooltipTrigger asChild` e o conteúdo em `TooltipContent`.",
+      },
+    },
   },
 }
 

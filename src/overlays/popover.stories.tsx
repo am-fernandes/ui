@@ -9,6 +9,12 @@ const meta: Meta<typeof Popover> = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Painel flutuante ancorado em um trigger. Use para conteúdo contextual leve (filtros, ações secundárias).",
+      },
+    },
   },
 }
 

@@ -13,7 +13,15 @@ const meta = {
   title: "Overlays/Sheet",
   component: Sheet,
   tags: ["autodocs"],
-  parameters: { layout: "fullscreen" },
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        component:
+          "Painel lateral que desliza da borda. 4 lados (top/right/bottom/left). Use para navegação mobile ou drawers de detalhe.",
+      },
+    },
+  },
 } satisfies Meta<typeof Sheet>
 
 export default meta

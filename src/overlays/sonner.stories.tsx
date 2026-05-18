@@ -9,6 +9,12 @@ const meta: Meta<typeof Toaster> = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Container de toasts. Coloque um `<Toaster />` no root da app; dispare via `toast.success(\"...\")` em qualquer lugar.",
+      },
+    },
   },
 }
 

@@ -9,7 +9,15 @@ const meta = {
   title: "Overlays/Collapsible",
   component: Collapsible,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Toggle simples de mostrar/esconder conteúdo. Use `CollapsibleTrigger` no header e `CollapsibleContent` no painel.",
+      },
+    },
+  },
 } satisfies Meta<typeof Collapsible>
 
 export default meta
