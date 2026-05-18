@@ -6,7 +6,15 @@ const meta = {
   title: "Data/Card",
   component: Card,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Container modular: `Card` + `CardHeader` + `CardTitle` + `CardDescription` + `CardContent` + `CardFooter`.",
+      },
+    },
+  },
 } satisfies Meta<typeof Card>
 
 export default meta

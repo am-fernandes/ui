@@ -8,7 +8,15 @@ const meta = {
   title: "Data/Tree",
   component: Tree,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Tree recursiva controlled/uncontrolled. Suporta single-select, ícones por nó e expansão lazy.",
+      },
+    },
+  },
 } satisfies Meta<typeof Tree>
 
 export default meta

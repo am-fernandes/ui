@@ -6,7 +6,15 @@ const meta = {
   title: "Data/Image",
   component: Image,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Componente de imagem otimizado: lazy load nativo, placeholder (skeleton/blur), aspect-ratio, fallback de erro, alt required.",
+      },
+    },
+  },
 } satisfies Meta<typeof Image>
 
 export default meta

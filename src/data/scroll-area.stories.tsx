@@ -5,7 +5,15 @@ const meta = {
   title: "Data/ScrollArea",
   component: ScrollArea,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Container com scroll customizado e barras estilizadas. Use para listas longas em alturas fixas.",
+      },
+    },
+  },
 } satisfies Meta<typeof ScrollArea>
 
 export default meta

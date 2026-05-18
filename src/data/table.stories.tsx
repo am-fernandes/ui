@@ -5,7 +5,15 @@ const meta = {
   title: "Data/Table",
   component: Table,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Primitives de tabela (`Table`, `TableHeader`, `TableRow`, `TableCell`, etc.) para uso direto. Para tabelas com sort/search, prefira `DataTable`.",
+      },
+    },
+  },
 } satisfies Meta<typeof Table>
 
 export default meta

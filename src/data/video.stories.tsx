@@ -6,7 +6,15 @@ const meta = {
   title: "Data/Video",
   component: Video,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Componente de vídeo lazy via IntersectionObserver. Suporta captions, autoPlay-mute pattern, posters, aspect-ratio. Required aria-label.",
+      },
+    },
+  },
 } satisfies Meta<typeof Video>
 
 export default meta
