@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, fn, userEvent, within } from "@storybook/test"
 import { ArrowRightIcon, DownloadIcon, PlusIcon, SearchIcon, Trash2Icon } from "lucide-react"
 import { useState } from "react"
 
@@ -95,7 +96,14 @@ export default meta
 type Story = StoryObj<typeof Button>
 
 export const Default: Story = {
-  args: { children: "Button" },
+  args: { children: "Button", onClick: fn() },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const button = canvas.getByRole("button", { name: "Button" })
+    await expect(button).toBeEnabled()
+    await userEvent.click(button)
+    await expect(args.onClick).toHaveBeenCalledOnce()
+  },
 }
 
 export const Destructive: Story = {
@@ -190,7 +198,7 @@ export const WithIcons: Story = {
 }
 
 export const Loading: Story = {
-  args: { loading: true, children: "Salvando..." },
+  args: { loading: true, children: "Salvando...", onClick: fn() },
   parameters: {
     docs: {
       description: {
@@ -198,6 +206,15 @@ export const Loading: Story = {
           "Com `loading=true` o botão renderiza um spinner antes do conteúdo e fica `disabled` + `aria-busy=true`.",
       },
     },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const button = canvas.getByRole("button", { name: /Salvando/ })
+    await expect(button).toBeDisabled()
+    await expect(button).toHaveAttribute("aria-busy", "true")
+    // Click on a loading/disabled button must not fire onClick
+    await userEvent.click(button, { pointerEventsCheck: 0 })
+    await expect(args.onClick).not.toHaveBeenCalled()
   },
 }
 
@@ -225,7 +242,14 @@ export const LoadingVariants: Story = {
 }
 
 export const Disabled: Story = {
-  args: { disabled: true, children: "Indisponível" },
+  args: { disabled: true, children: "Indisponível", onClick: fn() },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const button = canvas.getByRole("button", { name: "Indisponível" })
+    await expect(button).toBeDisabled()
+    await userEvent.click(button, { pointerEventsCheck: 0 })
+    await expect(args.onClick).not.toHaveBeenCalled()
+  },
 }
 
 export const AllStates: Story = {

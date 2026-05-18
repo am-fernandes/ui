@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, userEvent, waitFor, within } from "@storybook/test"
 import { useState } from "react"
 
 import { Button } from "../primitives/button"
@@ -70,6 +71,18 @@ export const Default: Story = {
         <Input label="E-mail" type="email" placeholder="joao@exemplo.com" />
       </div>
     ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const trigger = canvas.getByRole("button", { name: "Abrir dialog" })
+    await userEvent.click(trigger)
+    // Dialog renders in a portal, query the whole document
+    const body = within(document.body)
+    await waitFor(() => expect(body.getByRole("dialog")).toBeInTheDocument())
+    await expect(body.getByText("Editar perfil")).toBeInTheDocument()
+    // Escape closes
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() => expect(body.queryByRole("dialog")).not.toBeInTheDocument())
   },
 }
 
