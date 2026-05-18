@@ -4,6 +4,20 @@ All notable changes to `@am-fernandes/ui` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] — 2026-05-18
+
+### Breaking
+- `MultiNumberInput` renamed to `MultiInput` with a discriminated `type` prop:
+  - `type="string"` (default): free-text tokens, preserves insertion order, deduped.
+  - `type="number"`: positive-integer tokens (sorted asc, deduped) — previous behavior.
+  - Migration: existing `<MultiNumberInput value={[30, 60]}>` becomes `<MultiInput type="number" value={[30, 60]}>`. The string-mode tokenizer splits on commas/newlines only (numbers also accept slashes and whitespace).
+
+### Added
+- `RadioGroup` accepts `orientation="horizontal"` (default `"vertical"`). Passed through to Radix Root so keyboard arrows respect the visual axis and `aria-orientation` is set.
+
+### Fixed
+- MDX tables (Getting Started "Categorias", Typography font comparison) now render correctly. Added `remark-gfm` to `@storybook/addon-docs` so GFM table syntax produces `<table>` instead of literal text.
+
 ## [4.0.0] — 2026-05-18
 
 ### Breaking
