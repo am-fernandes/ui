@@ -25,7 +25,8 @@
     "lint": "biome check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "sync:coverage": "vitest run --coverage && bun scripts/sync-coverage.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

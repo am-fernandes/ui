@@ -1,45 +1,191 @@
 import { Meta } from "@storybook/addon-docs/blocks"
+import { TOTAL_COVERAGE, COVERAGE_ROWS, COVERAGE_GENERATED_AT } from "./_coverage"
 
 <Meta title="Quality" />
 
 # Qualidade & Testes
 
-`@am-fernandes/ui` é coberto por **vitest** + **@testing-library/react**. Cada componente tem um arquivo de smoke test que valida:
+Esta página é gerada a partir do relatório real de cobertura
+(`coverage/coverage-summary.json`, produzido pelo vitest com o provider v8).
 
-- Renderização sem crash
-- Estrutura ARIA correta (roles, labels)
-- Pelo menos uma interação principal (click, type, toggle)
+Para atualizar:
+
+```bash
+bun run sync:coverage     # roda test:coverage + reescreve _coverage.ts
+```
+
+Última sincronização: <code>{COVERAGE_GENERATED_AT}</code>
+
+---
+
+## Resumo global
+
+export const Stat = ({ label, pct, covered, total }) => {
+  const color = pct >= 90 ? "#16a34a" : pct >= 75 ? "#d97706" : "#dc2626"
+  return (
+    <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "1rem" }}>
+      <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#6b7280" }}>{label}</div>
+      <div style={{ fontSize: "1.75rem", fontWeight: 600, color }}>{pct.toFixed(2)}%</div>
+      <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>{covered}/{total}</div>
+    </div>
+  )
+}
+
+<div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: "0.75rem", marginTop: "1rem" }}>
+  <Stat label="Linhas" pct={TOTAL_COVERAGE.lines.pct} covered={TOTAL_COVERAGE.lines.covered} total={TOTAL_COVERAGE.lines.total} />
+  <Stat label="Statements" pct={TOTAL_COVERAGE.statements.pct} covered={TOTAL_COVERAGE.statements.covered} total={TOTAL_COVERAGE.statements.total} />
+  <Stat label="Funções" pct={TOTAL_COVERAGE.functions.pct} covered={TOTAL_COVERAGE.functions.covered} total={TOTAL_COVERAGE.functions.total} />
+  <Stat label="Branches" pct={TOTAL_COVERAGE.branches.pct} covered={TOTAL_COVERAGE.branches.covered} total={TOTAL_COVERAGE.branches.total} />
+</div>
+
+---
+
+## Cobertura por componente
+
+A tabela abaixo mostra **linhas, statements, funções e branches** por arquivo da lib (helpers `_internal/` somam ao total mas ficam fora da tabela).
+Verde = ≥ 90%, laranja = ≥ 75%, vermelho = < 75%.
+
+export const CoverageTable = () => {
+  const grouped = COVERAGE_ROWS.reduce((acc, row) => {
+    if (!acc[row.group]) acc[row.group] = []
+    acc[row.group].push(row)
+    return acc
+  }, {})
+  const cell = (pct) => {
+    const color = pct >= 90 ? "#16a34a" : pct >= 75 ? "#d97706" : "#dc2626"
+    return <td style={{ padding: "0.4rem 0.6rem", textAlign: "right", color, fontVariantNumeric: "tabular-nums" }}>{pct.toFixed(0)}%</td>
+  }
+  return (
+    <>
+      {Object.entries(grouped).map(([group, rows]) => (
+        <div key={group} style={{ marginTop: "1.5rem" }}>
+          <h4 style={{ margin: 0, marginBottom: "0.5rem" }}>{group}</h4>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid #e5e7eb", color: "#6b7280" }}>
+                <th style={{ padding: "0.4rem 0.6rem", textAlign: "left" }}>Arquivo</th>
+                <th style={{ padding: "0.4rem 0.6rem", textAlign: "right" }}>Lines</th>
+                <th style={{ padding: "0.4rem 0.6rem", textAlign: "right" }}>Stmts</th>
+                <th style={{ padding: "0.4rem 0.6rem", textAlign: "right" }}>Funcs</th>
+                <th style={{ padding: "0.4rem 0.6rem", textAlign: "right" }}>Branches</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.file} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                  <td style={{ padding: "0.4rem 0.6rem", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: "0.8rem" }}>{row.file}</td>
+                  {cell(row.lines)}
+                  {cell(row.statements)}
+                  {cell(row.functions)}
+                  {cell(row.branches)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </>
+  )
+}
+
+<CoverageTable />
+
+---
+
+## Como medimos
+
+### Stack de teste
+
+| Camada | Ferramenta | Versão |
+|---|---|---|
+| Runner | [`vitest`](https://vitest.dev) | ^3 |
+| Ambiente DOM | [`jsdom`](https://github.com/jsdom/jsdom) | ^25 |
+| Render & query | [`@testing-library/react`](https://testing-library.com/react) + `@testing-library/jest-dom` | 16.x / 6.x |
+| Eventos do usuário | [`@testing-library/user-event`](https://testing-library.com/docs/user-event/intro/) | 14.x |
+| Cobertura | `@vitest/coverage-v8` (provider `v8` nativo do Node) | ^3 |
+
+A configuração vive em `vitest.config.ts` e o setup global em `vitest.setup.ts`.
+
+### Provider de cobertura
+
+Usamos **v8 coverage** (não Istanbul) porque ele instrumenta diretamente o motor JS — sem transformação extra do código, sem mismatch entre o que roda em produção e o que é medido. As métricas são:
+
+- **Lines** — linhas executadas / linhas executáveis
+- **Statements** — sentenças JS distintas executadas
+- **Functions** — declarações de função executadas pelo menos uma vez
+- **Branches** — ramos lógicos (`if`/`else`, `&&`, `||`, ternário, `switch`, `??`) percorridos
+
+Arquivos excluídos da cobertura (em `vitest.config.ts`):
+
+```ts
+exclude: ["src/**/*.stories.tsx", "src/**/*.test.tsx", "src/docs/**", "src/index.ts"]
+```
+
+### Princípios (F.I.R.S.T.)
+
+Os testes seguem F.I.R.S.T.:
+
+- **Fast** — cada `*.test.tsx` roda em milissegundos. Total abaixo de 1 minuto mesmo com 346 testes.
+- **Independent** — sem ordem implícita; cada `it()` é isolado via Testing Library `cleanup()`.
+- **Repeatable** — sem `Date.now()` real, sem rede, sem timers vazando. `vitest.config.ts` define `dangerouslyIgnoreUnhandledErrors: true` apenas para absorver o vazamento conhecido do `input-otp` (timer pós-teardown da lib externa).
+- **Self-validating** — passa ou falha, sem inspeção manual de logs.
+- **Timely** — testes são commitados junto com o componente. Quando o componente é reescrito, o teste é reescrito também.
+
+### Classes de teste cobertas
+
+Cada componente recebe ao menos cinco classes:
+
+| Classe | Pergunta que responde | Exemplos |
+|---|---|---|
+| **Renderização** | "Monta sem crash com props mínimas?" | `expect(getByRole(...)).toBeInTheDocument()` |
+| **API pública** | "Cada prop documentada produz efeito observável?" | `aria-invalid` aparece com `error` setado; `disabled` bloqueia clique |
+| **Interação** | "Eventos do usuário disparam os callbacks corretos?" | `userEvent.click` → `expect(onClick).toHaveBeenCalled()` |
+| **Acessibilidade** | "Roles, labels e estados ARIA estão corretos?" | `aria-checked="mixed"` em indeterminate; `role="alert"` em error |
+| **Edge cases** | "Empty / disabled / long-content / controlled ↔ uncontrolled quebram?" | empty arrays, max-length pasteado, indeterminate state |
+
+### O que NÃO testamos (e por quê)
+
+- **CSS visual / pixel-perfect** — Storybook + revisão humana cobrem isso melhor.
+- **Layout responsivo** — jsdom não calcula layout. Visual regression em browser real fica para uma futura camada com Playwright.
+- **Implementação interna** — testes asseram comportamento observável, não tipos de hook, não classes intermediárias.
+
+### Strict mode & double-render
+
+`React.StrictMode` está **desligado nos testes** para evitar duplo-render acidental no jsdom. Componentes que dependem de hidratação SSR são testados separadamente quando aplicável.
+
+### Stubs do jsdom
+
+Em `vitest.setup.ts` polyfilamos APIs que o jsdom não implementa nativamente:
+
+- `window.matchMedia` — usado por `useIsMobile` e Sidebar
+- `ResizeObserver` — usado por cmdk, recharts
+- `IntersectionObserver` — usado por Image/Video lazy loading
+- `Element.prototype.scrollIntoView` — usado por cmdk
+- `URL.createObjectURL` / `revokeObjectURL` — usado por FileUpload thumbnails
+
+---
 
 ## Comandos
 
 ```bash
-bun run test            # roda tudo uma vez
-bun run test:watch      # modo watch
-bun run test:coverage   # gera relatório HTML em coverage/
+bun run test              # roda tudo uma vez
+bun run test:watch        # modo watch
+bun run test:coverage     # gera coverage/ + lcov + html
+bun run sync:coverage     # test:coverage + atualiza src/docs/_coverage.ts
 ```
 
-## Estratégia
+Após `test:coverage`, abra `coverage/index.html` no navegador para drilldown linha-a-linha.
 
-| Categoria | O que testamos |
-|---|---|
-| **Primitives** | Renderização, variantes, eventos básicos (click, change) |
-| **Overlays** | Trigger + conteúdo via portal quando aberto |
-| **Navigation** | API composicional + API `items` simplificada |
-| **Forms** | Valor inicial, mudança via teclado, propagação RHF |
-| **Domain** | Formatação BRL/%, lista de tokens, validação |
-| **Data** | Render de dados, sort/filter no DataTable, lazy load no Image/Video |
+---
 
-## Cobertura
+## Próximos focos
 
-Após `bun run test:coverage`, abra `coverage/index.html` para o report navegável.
+A tabela acima destaca em vermelho/laranja onde investir esforço:
 
-CI alvo: **statements ≥ 80%**, **functions ≥ 80%**, **branches ≥ 70%**.
+- **Chart** (`data/chart.tsx`) — apenas ~23% de linhas porque o `ChartTooltipContent` interno só é exercitado em runtime via recharts. Precisa de unit tests passando `payload` mockado direto.
+- **Combobox** (`forms/combobox.tsx`) — ~72% de linhas; faltam testes para `creatable`, multi-select remove via X click, e empty state.
+- **TimePicker** (`forms/time-picker.tsx`) — ~72% de linhas; arrow keys, blur clamp e wrap modular ainda não cobertos.
+- **Sidebar** (`navigation/sidebar.tsx`) — ~76% de linhas; falta cobertura do branch mobile (Sheet) e do submenu nested.
+- **FileUpload** (`domain/file-upload.tsx`) — ~79% de linhas; o fluxo da câmera (`getUserMedia`) e o lightbox não são exercitados.
 
-## Limitações conhecidas
-
-- **Tooltip hover** não é testável em jsdom (não simula `:hover`).
-- **Recharts** precisa de DOM mensurável; testes de chart valida apenas o wrapper `ChartContainer`.
-- **Calendar** rendiriza dezenas de células; testes verificam só o cabeçalho do mês.
-- **Sonner** precisa de portal mock para verificar toasts; testes apenas montam o `Toaster`.
-
-Para validação E2E completa, use Storybook visual tests ou Playwright.
+Estes percentuais se atualizam automaticamente quando você rodar `bun run sync:coverage` antes de buildar o Storybook.
