@@ -23,6 +23,8 @@ export interface ComboboxOption {
   value: string
   label: string
   disabled?: boolean
+  /** Optional leading icon component (e.g. a lucide-react icon). */
+  icon?: React.ComponentType<{ className?: string }>
 }
 
 /**
@@ -174,12 +176,14 @@ export function Combobox(props: ComboboxProps) {
         <div className="flex flex-wrap gap-1 items-center">
           {visibleValues.map((val) => {
             const option = options.find((o) => o.value === val)
+            const Icon = option?.icon
             return (
               <Badge
                 key={val}
                 variant="outline"
                 className="rounded-md px-1.5 py-0.5 font-normal bg-muted text-foreground border-border"
               >
+                {Icon ? <Icon className="mr-1 size-3 shrink-0" /> : null}
                 {option?.label || val}
                 <span
                   // biome-ignore lint/a11y/useSemanticElements: span inside Button to avoid nested button elements
@@ -328,6 +332,7 @@ export function Combobox(props: ComboboxProps) {
                     >
                       <Check className="h-3 w-3" />
                     </div>
+                    {option.icon ? <option.icon className="mr-2 size-4 shrink-0" /> : null}
                     {option.label}
                   </CommandItem>
                 )
