@@ -20,6 +20,12 @@ export interface DialogProps {
   open?: boolean
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
+  /**
+   * When `false`, prevents Escape key and overlay click from closing the dialog,
+   * and hides the X close button. Useful for required confirmations or step flows.
+   * Default `true`.
+   */
+  dismissible?: boolean
   hideCloseButton?: boolean
   closeLabel?: string
   /** Visual size of the modal. */
@@ -44,11 +50,14 @@ function Dialog({
   open,
   defaultOpen,
   onOpenChange,
+  dismissible = true,
   hideCloseButton = false,
   closeLabel = "Close",
   size = "md",
   className,
 }: DialogProps) {
+  const showCloseButton = dismissible && !hideCloseButton
+
   return (
     <DialogPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
       {trigger ? (
@@ -61,6 +70,15 @@ function Dialog({
         <DialogPrimitive.Content
           data-slot="dialog-content"
           className={cn(dialogContentBase, SIZE_CLASSES[size], className)}
+          onEscapeKeyDown={(e) => {
+            if (!dismissible) e.preventDefault()
+          }}
+          onPointerDownOutside={(e) => {
+            if (!dismissible) e.preventDefault()
+          }}
+          onInteractOutside={(e) => {
+            if (!dismissible) e.preventDefault()
+          }}
         >
           <DialogPrimitive.Title
             data-slot="dialog-title"
@@ -82,7 +100,7 @@ function Dialog({
               {footer}
             </div>
           ) : null}
-          {!hideCloseButton ? (
+          {showCloseButton ? (
             <DialogPrimitive.Close
               data-slot="dialog-close"
               aria-label={closeLabel}

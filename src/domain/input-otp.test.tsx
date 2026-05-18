@@ -8,27 +8,6 @@ afterEach(() => {
   cleanup()
 })
 
-function Controlled({
-  length = 6,
-  onComplete,
-  pattern,
-}: {
-  length?: number
-  onComplete?: (v: string) => void
-  pattern?: string
-}) {
-  const [v, setV] = React.useState("")
-  return (
-    <InputOTP
-      length={length}
-      value={v}
-      onValueChange={setV}
-      onComplete={onComplete}
-      pattern={pattern}
-    />
-  )
-}
-
 describe("InputOTP", () => {
   it("renders the requested number of slots", () => {
     const { container } = render(<InputOTP length={4} value="" onValueChange={() => {}} />)
@@ -43,20 +22,17 @@ describe("InputOTP", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("inválido")
   })
 
-  it("inserts a separator every N slots when separatorEvery is set", () => {
-    const { container } = render(
-      <InputOTP length={6} separatorEvery={3} separator="-" value="" onValueChange={() => {}} />,
-    )
-    expect(container.querySelectorAll('[data-slot="input-otp-separator"]')).toHaveLength(1)
-  })
-
   it("re-exports REGEXP_ONLY_DIGITS", () => {
     expect(REGEXP_ONLY_DIGITS).toBe("^\\d+$")
   })
 
   it("fires onComplete when length reached", () => {
     const onComplete = vi.fn()
-    render(<Controlled onComplete={onComplete} />)
+    function Wrapper() {
+      const [v, setV] = React.useState("")
+      return <InputOTP length={6} value={v} onValueChange={setV} onComplete={onComplete} />
+    }
+    render(<Wrapper />)
     const input = screen.getByRole("textbox") as HTMLInputElement
     fireEvent.change(input, { target: { value: "123456" } })
     expect(onComplete).toHaveBeenCalledWith("123456")

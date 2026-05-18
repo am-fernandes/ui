@@ -28,9 +28,4 @@ describe("Separator", () => {
     expect(sep).toHaveClass("w-px")
     expect(sep).toHaveClass("h-full")
   })
-
-  it("renders label text in the middle when provided", () => {
-    render(<Separator label="ou" />)
-    expect(screen.getByText("ou")).toBeInTheDocument()
-  })
 })

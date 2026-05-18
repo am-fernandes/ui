@@ -1,7 +1,6 @@
 "use client"
 
 import { OTPInput, OTPInputContext, REGEXP_ONLY_DIGITS } from "input-otp"
-import { Dot } from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -14,10 +13,6 @@ export interface InputOTPProps {
   onValueChange: (value: string) => void
   onComplete?: (value: string) => void
   pattern?: string
-  /** Insert a separator every N slots. */
-  separatorEvery?: number
-  /** Separator content. Defaults to a dot. */
-  separator?: React.ReactNode
   label?: React.ReactNode
   description?: React.ReactNode
   error?: string
@@ -56,22 +51,12 @@ function Slot({ index }: { index: number }) {
   )
 }
 
-function Separator({ children }: { children: React.ReactNode }) {
-  return (
-    <div data-slot="input-otp-separator" aria-hidden="true">
-      {children ?? <Dot className="size-3" />}
-    </div>
-  )
-}
-
 function InputOTP({
   length,
   value,
   onValueChange,
   onComplete,
   pattern = REGEXP_ONLY_DIGITS,
-  separatorEvery,
-  separator,
   label,
   description,
   error,
@@ -108,19 +93,12 @@ function InputOTP({
         onComplete={onComplete}
         pattern={pattern}
         disabled={disabled}
-        containerClassName={cn("flex items-center gap-2 has-disabled:opacity-50", className)}
+        containerClassName={cn("flex items-center has-disabled:opacity-50", className)}
         render={() => (
           <div className="flex items-center">
-            {slots.map((i) => {
-              const showSeparator =
-                separatorEvery && i > 0 && i < length && i % separatorEvery === 0
-              return (
-                <React.Fragment key={i}>
-                  {showSeparator ? <Separator>{separator}</Separator> : null}
-                  <Slot index={i} />
-                </React.Fragment>
-              )
-            })}
+            {slots.map((i) => (
+              <Slot key={i} index={i} />
+            ))}
           </div>
         )}
       />
