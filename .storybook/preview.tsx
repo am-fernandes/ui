@@ -9,9 +9,8 @@ const preview: Preview = {
       storySort: {
         order: [
           "Getting Started",
-          "Migration",
           "Foundations",
-          ["Colors", "Typography", "Spacing", "Radius", "Iconography"],
+          ["Colors", "Typography", "Iconography"],
           "Primitives",
           "Overlays",
           "Composed",
