@@ -88,13 +88,8 @@ export {
 } from "./navigation/accordion"
 export {
   Breadcrumb,
-  BreadcrumbEllipsis,
-  BreadcrumbItem,
   type BreadcrumbItemData,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
+  type BreadcrumbProps,
 } from "./navigation/breadcrumb"
 export {
   Command,
