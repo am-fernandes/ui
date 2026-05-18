@@ -196,10 +196,7 @@ export {
   CurrencyInput,
   type CurrencyInputProps,
 } from "./domain/currency-input"
-export {
-  MultiNumberInput,
-  type MultiNumberInputProps,
-} from "./domain/multi-number-input"
+export { MultiInput, type MultiInputProps } from "./domain/multi-input"
 export {
   InputOTP,
   InputOTPGroup,
