@@ -173,6 +173,12 @@ export {
 } from "./domain/currency-input"
 export { MultiInput, type MultiInputProps } from "./domain/multi-input"
 export {
+  FileUpload,
+  type FileUploadProps,
+  type FileUploadRejection,
+  type FileUploadRejectionReason,
+} from "./domain/file-upload"
+export {
   InputOTP,
   InputOTPGroup,
   InputOTPSeparator,
