@@ -9,8 +9,7 @@ const meta = {
     layout: "centered",
     docs: {
       description: {
-        component:
-          "Campo de texto multilinha. Aceita `rows` e os atributos HTML nativos.",
+        component: "Campo de texto multilinha. Aceita `rows` e os atributos HTML nativos.",
       },
     },
   },

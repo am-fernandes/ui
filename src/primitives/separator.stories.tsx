@@ -10,7 +10,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Linha divisória horizontal ou vertical. Use `orientation=\"vertical\"` em containers com altura definida.",
+          'Linha divisória horizontal ou vertical. Use `orientation="vertical"` em containers com altura definida.',
       },
     },
   },
