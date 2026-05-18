@@ -229,6 +229,7 @@ export {
   ChartTooltip,
   ChartTooltipContent,
 } from "./data/chart"
+export { DataTable, type DataTableProps } from "./data/data-table"
 export { Image, type ImageProps } from "./data/image"
 export { ScrollArea, ScrollBar } from "./data/scroll-area"
 export { Tree, type TreeNodeData, type TreeProps } from "./data/tree"
