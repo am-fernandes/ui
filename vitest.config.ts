@@ -13,6 +13,9 @@ export default defineConfig({
       "@": path.resolve(projectRoot, "src"),
     },
   },
+  esbuild: {
+    jsx: "automatic",
+  },
   test: {
     environment: "jsdom",
     globals: true,
