@@ -9,6 +9,12 @@ const meta = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Input de percentual. Display com % no sufixo; valor interno como número decimal (0-100).",
+      },
+    },
   },
 } satisfies Meta<typeof PercentageInput>
 

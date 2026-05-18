@@ -7,6 +7,12 @@ const meta = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Input segmentado para OTP/PIN. Cada slot aceita um caractere; navegação automática entre slots.",
+      },
+    },
   },
 } satisfies Meta<typeof InputOTP>
 

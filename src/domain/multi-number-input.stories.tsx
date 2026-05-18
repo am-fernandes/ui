@@ -9,6 +9,12 @@ const meta = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Input de múltiplos números (badges removíveis). Use `prefix`/`suffix` para tokens semânticos (R$, dias, %).",
+      },
+    },
   },
 } satisfies Meta<typeof MultiNumberInput>
 

@@ -9,6 +9,12 @@ const meta = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Input para valores em centavos (BRL). Display formatado (R$ 1.234,56), valor interno como integer. Use com helpers `toCents`/`fromCents`.",
+      },
+    },
   },
 } satisfies Meta<typeof CurrencyInput>
 
