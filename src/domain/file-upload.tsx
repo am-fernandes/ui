@@ -1,6 +1,6 @@
 "use client"
 
-import { Camera, File as FileIcon, ImageIcon, UploadCloud, X } from "lucide-react"
+import { Camera, File as FileIcon, ImageIcon, Loader2, UploadCloud, X } from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -380,11 +380,16 @@ function CameraDialog({
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const streamRef = React.useRef<MediaStream | null>(null)
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
+  const [isReady, setReady] = React.useState(false)
 
   React.useEffect(() => {
-    if (!open) return
+    if (!open) {
+      setReady(false)
+      return
+    }
     let cancelled = false
     setErrorMsg(null)
+    setReady(false)
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setErrorMsg("Câmera não disponível neste navegador.")
@@ -399,7 +404,15 @@ function CameraDialog({
           return
         }
         streamRef.current = stream
-        if (videoRef.current) videoRef.current.srcObject = stream
+        const v = videoRef.current
+        if (v) {
+          v.srcObject = stream
+          const markReady = () => {
+            if (!cancelled) setReady(true)
+          }
+          if (v.readyState >= 2) markReady()
+          else v.addEventListener("loadeddata", markReady, { once: true })
+        }
       })
       .catch(() => {
         setErrorMsg("Não foi possível acessar a câmera. Verifique as permissões do navegador.")
@@ -451,15 +464,32 @@ function CameraDialog({
             {errorMsg}
           </p>
         ) : (
-          <video ref={videoRef} autoPlay playsInline muted className="w-full rounded-md bg-muted">
-            <track kind="captions" />
-          </video>
+          <div className="relative aspect-video w-full overflow-hidden rounded-md bg-muted">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={cn(
+                "absolute inset-0 size-full object-cover transition-opacity duration-200",
+                isReady ? "opacity-100" : "opacity-0",
+              )}
+            >
+              <track kind="captions" />
+            </video>
+            {!isReady ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="size-6 animate-spin" aria-hidden />
+                <span>Iniciando câmera…</span>
+              </div>
+            ) : null}
+          </div>
         )}
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button type="button" onClick={takePhoto} disabled={errorMsg != null}>
+          <Button type="button" onClick={takePhoto} disabled={errorMsg != null || !isReady}>
             Tirar foto
           </Button>
         </DialogFooter>

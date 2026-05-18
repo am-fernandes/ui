@@ -4,6 +4,15 @@ All notable changes to `@am-fernandes/ui` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [8.0.1] — 2026-05-18
+
+### Fixed
+- `FileUpload` camera dialog now shows a "Iniciando câmera…" spinner while
+  `getUserMedia` resolves and the first frame loads (waits for the `<video>`'s
+  `loadeddata` event). The "Tirar foto" button is disabled until the stream is
+  ready, so users can't snapshot a black frame. Improves perceived latency on
+  the inevitable browser-permission + hardware-warmup delay.
+
 ## [8.0.0] — 2026-05-18
 
 ### Breaking
