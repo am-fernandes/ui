@@ -6,7 +6,15 @@ const meta = {
   title: "Primitives/Label",
   component: Label,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Label associado a controles de formulário via `htmlFor`. Aplica estilos consistentes e respeita `peer-disabled`.",
+      },
+    },
+  },
 } satisfies Meta<typeof Label>
 
 export default meta

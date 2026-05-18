@@ -6,7 +6,15 @@ const meta = {
   title: "Primitives/Switch",
   component: Switch,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Toggle on/off para preferências binárias. Pareie com `Label` para acessibilidade.",
+      },
+    },
+  },
 } satisfies Meta<typeof Switch>
 
 export default meta

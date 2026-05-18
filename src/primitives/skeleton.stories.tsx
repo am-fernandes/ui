@@ -5,7 +5,15 @@ const meta = {
   title: "Primitives/Skeleton",
   component: Skeleton,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Placeholder pulsante para conteúdo em carregamento. Componha múltiplos para simular layouts.",
+      },
+    },
+  },
 } satisfies Meta<typeof Skeleton>
 
 export default meta

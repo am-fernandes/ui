@@ -6,7 +6,15 @@ const meta = {
   title: "Primitives/Typography",
   component: Typography,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Componente polimórfico com 5 variantes semânticas (display, title, subtitle, body, caption). Mapeia para elemento HTML padrão por variante; override com `as`.",
+      },
+    },
+  },
 } satisfies Meta<typeof Typography>
 
 export default meta

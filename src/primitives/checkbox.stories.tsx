@@ -6,7 +6,15 @@ const meta = {
   title: "Primitives/Checkbox",
   component: Checkbox,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Checkbox controlado/não-controlado baseado em Radix. Pareie com `Label` via `htmlFor`/`id`.",
+      },
+    },
+  },
 } satisfies Meta<typeof Checkbox>
 
 export default meta

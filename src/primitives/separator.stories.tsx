@@ -5,7 +5,15 @@ const meta = {
   title: "Primitives/Separator",
   component: Separator,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Linha divisória horizontal ou vertical. Use `orientation=\"vertical\"` em containers com altura definida.",
+      },
+    },
+  },
 } satisfies Meta<typeof Separator>
 
 export default meta

@@ -5,7 +5,15 @@ const meta = {
   title: "Primitives/Badge",
   component: Badge,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Etiqueta compacta para status, tags ou contadores. 4 variantes (default, secondary, destructive, outline) com cores semânticas.",
+      },
+    },
+  },
 } satisfies Meta<typeof Badge>
 
 export default meta

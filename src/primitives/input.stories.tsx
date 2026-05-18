@@ -5,7 +5,15 @@ const meta = {
   title: "Primitives/Input",
   component: Input,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Input de texto base. Aceita todos os atributos HTML nativos (`type`, `placeholder`, `disabled`, etc.). Pareie com `Label` para acessibilidade.",
+      },
+    },
+  },
 } satisfies Meta<typeof Input>
 
 export default meta

@@ -6,7 +6,15 @@ const meta = {
   title: "Primitives/Button",
   component: Button,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Botão base do design system. 6 variantes (default, destructive, outline, secondary, ghost, link) + sizes `default` e `icon`. Suporta `asChild` para renderizar como link.",
+      },
+    },
+  },
 } satisfies Meta<typeof Button>
 
 export default meta

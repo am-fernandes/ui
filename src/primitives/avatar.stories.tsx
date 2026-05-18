@@ -5,7 +5,15 @@ const meta = {
   title: "Primitives/Avatar",
   component: Avatar,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Avatar circular para representar usuário ou entidade. Use `AvatarImage` + `AvatarFallback`; o fallback aparece quando a imagem falha ou enquanto carrega.",
+      },
+    },
+  },
 } satisfies Meta<typeof Avatar>
 
 export default meta

@@ -6,7 +6,15 @@ const meta = {
   title: "Primitives/RadioGroup",
   component: RadioGroup,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Grupo de radios para escolha única. Use `RadioGroup` como wrapper e `RadioGroupItem` para cada opção.",
+      },
+    },
+  },
 } satisfies Meta<typeof RadioGroup>
 
 export default meta

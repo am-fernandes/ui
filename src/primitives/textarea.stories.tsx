@@ -5,7 +5,15 @@ const meta = {
   title: "Primitives/Textarea",
   component: Textarea,
   tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Campo de texto multilinha. Aceita `rows` e os atributos HTML nativos.",
+      },
+    },
+  },
 } satisfies Meta<typeof Textarea>
 
 export default meta
