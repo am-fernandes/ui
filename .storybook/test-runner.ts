@@ -28,13 +28,10 @@ const config: TestRunnerConfig = {
     // a rule during evaluation. The `configure` call alone is not enough.
     await configureAxe(page, { rules: storyRules })
 
-    const ruleOverrides = storyRules.reduce<Record<string, { enabled: boolean }>>(
-      (acc, rule) => {
-        if (rule?.id) acc[rule.id] = { enabled: rule.enabled !== false }
-        return acc
-      },
-      {},
-    )
+    const ruleOverrides = storyRules.reduce<Record<string, { enabled: boolean }>>((acc, rule) => {
+      if (rule?.id) acc[rule.id] = { enabled: rule.enabled !== false }
+      return acc
+    }, {})
 
     await checkA11y(page, "#storybook-root", {
       detailedReport: true,
