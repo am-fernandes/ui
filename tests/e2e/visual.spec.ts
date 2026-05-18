@@ -49,9 +49,9 @@ async function snapshot(page: import("@playwright/test").Page, id: string, file:
     { timeout: 30_000 },
   )
   // Let any post-mount network work settle (images, etc.). Note that the
-  // route block above prevents Google Fonts from ever loading, so we don't
-  // need to wait for the web font swap — every run renders with the system
-  // fallback and is deterministic.
+  // `test.beforeEach` route blocks Google Fonts entirely, so we don't need to
+  // wait for the web font swap — every run renders with the local system
+  // fallback and is deterministic across machines.
   await page.waitForLoadState("networkidle").catch(() => {})
   await page.addStyleTag({ content: KILL_ANIMATIONS })
   // Wait for any remaining (local) fonts to be ready.
@@ -60,10 +60,7 @@ async function snapshot(page: import("@playwright/test").Page, id: string, file:
   })
   // Two animation frames lets the browser paint before we screenshot.
   await page.evaluate(
-    () =>
-      new Promise<void>((r) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => r())),
-      ),
+    () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))),
   )
   // Snapshot the viewport (iframe.html has no storybook chrome). This avoids
   // visibility auto-wait failures when the rendered story is smaller than the
@@ -75,9 +72,7 @@ async function snapshot(page: import("@playwright/test").Page, id: string, file:
 // snapshot deterministic across machines/networks: every render uses the local
 // fallback font instead of racing against Google Fonts' CDN.
 test.beforeEach(async ({ page }) => {
-  await page.route(/(fonts\.googleapis\.com|fonts\.gstatic\.com)/, (route) =>
-    route.abort(),
-  )
+  await page.route(/(fonts\.googleapis\.com|fonts\.gstatic\.com)/, (route) => route.abort())
 })
 
 test.describe("Visual: Primitives — Button", () => {
