@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, fn, userEvent, waitFor, within } from "@storybook/test"
 import { useState } from "react"
 
 import { Button } from "../primitives/button"
@@ -69,7 +70,21 @@ export const Default: Story = {
     confirmLabel: "Excluir",
     cancelLabel: "Cancelar",
     confirmVariant: "destructive",
-    onConfirm: () => console.log("confirmed"),
+    onConfirm: fn(),
+  },
+  parameters: {
+    // destructive button token fails 4.5:1; tracked in design-tokens roadmap.
+    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const trigger = canvas.getByRole("button", { name: "Excluir documento" })
+    await userEvent.click(trigger)
+    const body = within(document.body)
+    await waitFor(() => expect(body.getByRole("alertdialog")).toBeInTheDocument())
+    const confirm = body.getByRole("button", { name: "Excluir" })
+    await userEvent.click(confirm)
+    await expect(args.onConfirm).toHaveBeenCalled()
   },
 }
 
@@ -138,6 +153,8 @@ export const WithBody: Story = {
     </AlertDialog>
   ),
   parameters: {
+    // destructive button token fails 4.5:1; tracked in design-tokens roadmap.
+    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story:

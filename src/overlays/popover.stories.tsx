@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, userEvent, waitFor, within } from "@storybook/test"
 import { SettingsIcon } from "lucide-react"
 import { useState } from "react"
 
@@ -61,6 +62,14 @@ export const Default: Story = {
         </p>
       </div>
     ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const trigger = canvas.getByRole("button", { name: "Abrir popover" })
+    await userEvent.click(trigger)
+    const body = within(document.body)
+    await waitFor(() => expect(body.getByText("Olá!")).toBeInTheDocument())
+    await expect(trigger).toHaveAttribute("aria-expanded", "true")
   },
 }
 

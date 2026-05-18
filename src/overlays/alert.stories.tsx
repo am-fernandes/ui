@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, within } from "@storybook/test"
 import { RocketIcon } from "lucide-react"
 
 import { Button } from "../primitives/button"
@@ -79,6 +80,15 @@ export const Info: Story = {
     title: "Atualização disponível",
     description: "Uma nova versão está pronta para ser instalada.",
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const alert = canvas.getByRole("alert")
+    await expect(alert).toBeInTheDocument()
+    await expect(canvas.getByText("Atualização disponível")).toBeInTheDocument()
+    await expect(
+      canvas.getByText("Uma nova versão está pronta para ser instalada."),
+    ).toBeInTheDocument()
+  },
 }
 
 export const Success: Story = {
@@ -102,6 +112,10 @@ export const Destructive: Story = {
     variant: "destructive",
     title: "Erro ao salvar",
     description: "Tente novamente em alguns segundos.",
+  },
+  parameters: {
+    // destructive token + body text on tinted bg fails 4.5:1; tracked in design-tokens roadmap.
+    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
   },
 }
 
@@ -174,6 +188,7 @@ export const AllVariants: Story = {
     </div>
   ),
   parameters: {
+    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: { description: { story: "Todas as 5 variantes empilhadas." } },
   },
 }

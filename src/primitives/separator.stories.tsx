@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, within } from "@storybook/test"
 
 import { Separator } from "./separator"
 
@@ -74,6 +75,14 @@ export const Default: Story = {
     docs: {
       description: { story: "Separador horizontal (default) dentro de um card simples." },
     },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const separator = canvas
+      .getByText("Card título")
+      .parentElement?.querySelector('[data-slot="separator"]')
+    await expect(separator).toBeInTheDocument()
+    await expect(separator).toHaveAttribute("data-orientation", "horizontal")
   },
 }
 

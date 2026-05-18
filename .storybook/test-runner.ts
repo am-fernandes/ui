@@ -1,4 +1,5 @@
-import type { TestRunnerConfig } from "@storybook/test-runner"
+import { type TestRunnerConfig, getStoryContext } from "@storybook/test-runner"
+import { checkA11y, configureAxe, injectAxe } from "axe-playwright"
 
 /**
  * Storybook test-runner config.
@@ -6,17 +7,35 @@ import type { TestRunnerConfig } from "@storybook/test-runner"
  * Runs every story in Chromium and asserts:
  *   - the story renders without console errors
  *   - any `play` function defined in the story passes
+ *   - axe-core has zero WCAG 2.1 AA violations (severity serious/critical)
  *
- * Smoke test by default: any `play` fn provides deeper interaction coverage.
+ * Stories may opt-out per-story via `parameters.a11y.disable: true` or tune
+ * the rule set via `parameters.a11y.config.rules`.
  */
 const config: TestRunnerConfig = {
-  // Reasonable defaults; hooks below can be uncommented for custom assertions.
-  // async preVisit(page) {
-  //   // example: inject axe-core, set color-scheme
-  // },
-  // async postVisit(page, context) {
-  //   // example: assert no console errors
-  // },
+  async preVisit(page) {
+    await injectAxe(page)
+  },
+  async postVisit(page, context) {
+    const storyContext = await getStoryContext(page, context)
+
+    if (storyContext.parameters?.a11y?.disable) return
+
+    await configureAxe(page, {
+      rules: storyContext.parameters?.a11y?.config?.rules ?? [],
+    })
+
+    await checkA11y(page, "#storybook-root", {
+      detailedReport: true,
+      detailedReportOptions: { html: true },
+      axeOptions: {
+        runOnly: {
+          type: "tag",
+          values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
+        },
+      },
+    })
+  },
 }
 
 export default config

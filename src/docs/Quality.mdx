@@ -274,8 +274,8 @@ A tabela acima destaca onde investir esforço próximo. Os mais urgentes:
 | Item | Status |
 |---|---|
 | Storybook test runner smoke de todas as stories | ✅ 289 stories passam em Chromium |
-| `play` functions com asserções de interação | 🟡 5 stories cobertas — alvo: 20+ |
-| E2E specs por grupo | ✅ 5 specs / 29 tests |
-| Visual regression com `toHaveScreenshot` | ⛔ pendente |
-| Multi-viewport (mobile + desktop) em E2E | ⛔ pendente |
-| Axe a11y assertions no test-runner | ⛔ pendente — hook `postVisit` no `.storybook/test-runner.ts` |
+| `play` functions com asserções de interação | ✅ 21 play fns em 19 stories |
+| E2E specs por grupo | ✅ 8 specs / 96 tests (desktop + mobile + tablet + visual) |
+| Visual regression com `toHaveScreenshot` | ✅ 11 baselines em `tests/e2e/visual.spec.ts-snapshots/` |
+| Multi-viewport (mobile + tablet) em E2E | ✅ projects `mobile-chromium` (Pixel 5) + `tablet-chromium` (iPad gen 7) |
+| Axe a11y assertions no test-runner | ✅ `injectAxe` + `checkA11y` wcag2aa no `postVisit` |

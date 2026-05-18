@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, userEvent, within } from "@storybook/test"
 import { useEffect, useRef, useState } from "react"
 
 import { Tabs } from "./tabs"
@@ -114,6 +115,13 @@ export const Default: Story = {
       <Tabs {...args} />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const tabs = canvas.getAllByRole("tab")
+    await expect(tabs[0]).toHaveAttribute("aria-selected", "true")
+    await userEvent.click(tabs[1]!)
+    await expect(tabs[1]).toHaveAttribute("aria-selected", "true")
+  },
 }
 
 export const WithBadge: Story = {

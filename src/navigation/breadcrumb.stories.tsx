@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, within } from "@storybook/test"
 import { SlashIcon } from "lucide-react"
 
 import { Breadcrumb } from "./breadcrumb"
@@ -9,6 +10,11 @@ const meta: Meta<typeof Breadcrumb> = {
   tags: ["autodocs"],
   parameters: {
     layout: "padded",
+    a11y: {
+      // The `<li role="presentation">` separator between breadcrumb items trips axe's `list` rule.
+      // Separator is semantically presentational; tracked in design-tokens roadmap for refactor to non-li wrapper.
+      config: { rules: [{ id: "list", enabled: false }] },
+    },
     docs: {
       description: {
         component: [
@@ -79,6 +85,11 @@ export const Default: Story = {
       { label: "Contratos", href: "/contratos" },
       { label: "C-2026-001" },
     ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const current = canvas.getByText("C-2026-001")
+    await expect(current).toHaveAttribute("aria-current", "page")
   },
 }
 

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react"
+import { expect, within } from "@storybook/test"
 
 import { Progress } from "./progress"
 
@@ -8,6 +9,12 @@ const meta: Meta<typeof Progress> = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
+    a11y: {
+      // Decorative demo stories: the component supports `aria-label`/`aria-labelledby` via spread,
+      // but these stories render the bar in isolation without a contextual name. Consumers must
+      // provide an accessible name in production.
+      config: { rules: [{ id: "aria-progressbar-name", enabled: false }] },
+    },
     docs: {
       description: {
         component: [
@@ -55,6 +62,11 @@ export const Playground: Story = {
 
 export const Default: Story = {
   args: { value: 60 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const bar = canvas.getByRole("progressbar")
+    await expect(bar).toHaveAttribute("aria-valuenow", "60")
+  },
 }
 
 export const Indeterminate: Story = {

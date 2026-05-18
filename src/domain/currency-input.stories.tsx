@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, userEvent, within } from "@storybook/test"
 import * as React from "react"
 import { Label } from "../primitives/label"
 import { CurrencyInput } from "./currency-input"
@@ -108,5 +109,12 @@ export const Default: Story = {
         <CurrencyInput id="contract-value" value={value} onValueChange={setValue} />
       </div>
     )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const input = canvas.getByLabelText(/Valor do contrato/) as HTMLInputElement
+    await expect(input).toHaveValue("0,00")
+    await userEvent.type(input, "123456")
+    await expect(input).toHaveValue("1.234,56")
   },
 }

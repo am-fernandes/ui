@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, userEvent, waitFor, within } from "@storybook/test"
 import { HelpCircleIcon, InfoIcon, TrashIcon } from "lucide-react"
 
 import { Button } from "../primitives/button"
@@ -62,6 +63,25 @@ export const Default: Story = {
   args: {
     content: "Tooltip simples",
     children: <Button variant="outline">Passe o mouse</Button>,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const trigger = canvas.getByRole("button", { name: "Passe o mouse" })
+    // Focus the trigger via Tab — Radix Tooltip opens on focus
+    trigger.focus()
+    const body = within(document.body)
+    await waitFor(() => {
+      const tooltips = body.queryAllByText("Tooltip simples")
+      expect(tooltips.length).toBeGreaterThan(0)
+    })
+    // Blur closes the tooltip
+    trigger.blur()
+    await waitFor(() => {
+      const visible = body
+        .queryAllByText("Tooltip simples")
+        .filter((el) => el.closest('[role="tooltip"]'))
+      expect(visible.length).toBe(0)
+    })
   },
 }
 

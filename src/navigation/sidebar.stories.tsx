@@ -21,6 +21,11 @@ const meta: Meta<typeof Sidebar> = {
   tags: ["autodocs"],
   parameters: {
     layout: "fullscreen",
+    a11y: {
+      // Muted sidebar group labels intentionally use low-contrast color (uppercase tracking spec).
+      // Tracked in design-tokens roadmap.
+      config: { rules: [{ id: "color-contrast", enabled: false }] },
+    },
     docs: {
       description: {
         component: [

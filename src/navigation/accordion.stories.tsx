@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, userEvent, within } from "@storybook/test"
 import { Trash2 } from "lucide-react"
 import { useState } from "react"
 
@@ -116,6 +117,13 @@ export const Default: Story = {
       <Accordion {...args} />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const trigger = canvas.getAllByRole("button")[0]!
+    await expect(trigger).toHaveAttribute("aria-expanded", "false")
+    await userEvent.click(trigger)
+    await expect(trigger).toHaveAttribute("aria-expanded", "true")
+  },
 }
 
 export const Multiple: Story = {

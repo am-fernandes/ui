@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, userEvent, waitFor, within } from "@storybook/test"
 
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
@@ -67,6 +68,16 @@ export const Right: Story = {
         <p>Conteúdo do painel lateral.</p>
       </div>
     ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const trigger = canvas.getByRole("button", { name: "Abrir (right)" })
+    await userEvent.click(trigger)
+    const body = within(document.body)
+    await waitFor(() => expect(body.getByRole("dialog")).toBeInTheDocument())
+    await expect(body.getByText("Detalhes do item")).toBeInTheDocument()
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() => expect(body.queryByRole("dialog")).not.toBeInTheDocument())
   },
 }
 
