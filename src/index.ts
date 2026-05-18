@@ -229,6 +229,7 @@ export {
   ChartTooltip,
   ChartTooltipContent,
 } from "./data/chart"
+export { Image, type ImageProps } from "./data/image"
 export { ScrollArea, ScrollBar } from "./data/scroll-area"
 export {
   Table,
