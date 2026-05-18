@@ -4,6 +4,15 @@ All notable changes to `@am-fernandes/ui` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.0] — 2026-05-18
+
+### Breaking
+- `Breadcrumb`, `Tabs`, `Accordion`, `DropdownMenu` are now **items-only**. All composicional sub-component exports were removed (`BreadcrumbList`/`Item`/`Link`/`Page`/`Separator`/`Ellipsis`, `TabsList`/`Trigger`/`Content`, `AccordionItem`/`Trigger`/`Content`, `DropdownMenuTrigger`/`Content`/`Item`/`CheckboxItem`/`RadioItem`/`Label`/`Separator`/`Shortcut`/`Group`/`Sub`/`SubContent`/`SubTrigger`/`RadioGroup`/`Portal`, and the `DropdownMenuItems` helper).
+- Migration: use the `items` prop. For DropdownMenu, also pass a `trigger` ReactNode. See stories for current API.
+
+### Added
+- `DataTable` supports pagination via `pagination={{ pageSize: 5 }}` prop.
+
 ## [5.0.0] — 2026-05-18
 
 ### Breaking
