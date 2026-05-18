@@ -106,6 +106,8 @@ export {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  type DropdownMenuItemData,
+  DropdownMenuItems,
   DropdownMenuLabel,
   DropdownMenuPortal,
   DropdownMenuRadioGroup,

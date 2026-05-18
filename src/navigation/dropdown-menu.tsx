@@ -181,12 +181,78 @@ const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTML
 }
 DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
 
+export type DropdownMenuItemData =
+  | {
+      /** Renders an actionable item. Default when `type` is omitted. */
+      type?: "item"
+      label: React.ReactNode
+      icon?: React.ComponentType<{ className?: string }>
+      onSelect?: () => void
+      disabled?: boolean
+      destructive?: boolean
+      shortcut?: string
+    }
+  | {
+      /** Renders a visual separator between groups. */
+      type: "separator"
+    }
+  | {
+      /** Renders a non-interactive section label. */
+      type: "label"
+      label: React.ReactNode
+    }
+
+/**
+ * Declarative helper for building a list of dropdown items from data.
+ * Place inside `<DropdownMenuContent>` instead of composing each child
+ * by hand. The compositional primitives keep working when you need
+ * checkboxes, sub-menus, custom layouts, etc.
+ */
+function DropdownMenuItems({ items }: { items: DropdownMenuItemData[] }) {
+  return (
+    <>
+      {items.map((item, i) => {
+        if (item.type === "separator") {
+          // biome-ignore lint/suspicious/noArrayIndexKey: items are stable positional entries; no other reliable key exists.
+          return <DropdownMenuSeparator key={`sep-${i}`} />
+        }
+        if (item.type === "label") {
+          return (
+            // biome-ignore lint/suspicious/noArrayIndexKey: items are stable positional entries; no other reliable key exists.
+            <DropdownMenuLabel key={`label-${i}`}>{item.label}</DropdownMenuLabel>
+          )
+        }
+        const Icon = item.icon
+        return (
+          <DropdownMenuItem
+            // biome-ignore lint/suspicious/noArrayIndexKey: items are stable positional entries; no other reliable key exists.
+            key={`item-${i}`}
+            disabled={item.disabled}
+            onSelect={item.onSelect}
+            className={
+              item.destructive
+                ? "text-destructive focus:bg-destructive/10 focus:text-destructive"
+                : undefined
+            }
+          >
+            {Icon ? <Icon className="mr-2 size-4" /> : null}
+            {item.label}
+            {item.shortcut ? <DropdownMenuShortcut>{item.shortcut}</DropdownMenuShortcut> : null}
+          </DropdownMenuItem>
+        )
+      })}
+    </>
+  )
+}
+DropdownMenuItems.displayName = "DropdownMenuItems"
+
 export {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuItems,
   DropdownMenuLabel,
   DropdownMenuPortal,
   DropdownMenuRadioGroup,
