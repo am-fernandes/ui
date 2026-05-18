@@ -67,7 +67,13 @@ export {
 } from "./overlays/tooltip"
 export { Toaster, toast } from "./overlays/sonner"
 export { Progress } from "./overlays/progress"
-export { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./overlays/collapsible"
+export {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleHeader,
+  type CollapsibleHeaderProps,
+  CollapsibleTrigger,
+} from "./overlays/collapsible"
 
 // Hooks
 export { useIsMobile } from "./hooks/use-is-mobile"

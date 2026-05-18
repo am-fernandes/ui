@@ -1067,7 +1067,7 @@ export const Specimen = ({ size, weight = 400, label }) => (
       {label} · {size}px · weight {weight}
     </div>
     <div style={{ fontFamily: "var(--font-sans)", fontSize: size, fontWeight: weight }}>
-      A AM Fernandes constrói software jurídico.
+      A AM Fernandes constrói software.
     </div>
   </div>
 )
