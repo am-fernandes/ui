@@ -79,13 +79,7 @@ export {
 export { useIsMobile } from "./hooks/use-is-mobile"
 
 // Navigation
-export {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  type AccordionItemData,
-  AccordionTrigger,
-} from "./navigation/accordion"
+export { Accordion, type AccordionItemData } from "./navigation/accordion"
 export {
   Breadcrumb,
   type BreadcrumbItemData,

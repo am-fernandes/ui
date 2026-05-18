@@ -1,10 +1,11 @@
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./accordion"
+import { Accordion } from "./accordion"
 
 describe("Accordion", () => {
-  it("renders via items API", () => {
+  it("renders titles and expands content on click", async () => {
     render(
       <Accordion
         type="single"
@@ -19,17 +20,8 @@ describe("Accordion", () => {
     expect(screen.getByText("Pergunta 1")).toBeInTheDocument()
     expect(screen.getByText("Pergunta 2")).toBeInTheDocument()
     expect(screen.getByText("Pergunta 3")).toBeInTheDocument()
-  })
 
-  it("renders via composicional API", () => {
-    render(
-      <Accordion type="single" collapsible>
-        <AccordionItem value="a">
-          <AccordionTrigger>Trigger</AccordionTrigger>
-          <AccordionContent>Content</AccordionContent>
-        </AccordionItem>
-      </Accordion>,
-    )
-    expect(screen.getByText("Trigger")).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Pergunta 2" }))
+    expect(screen.getByText("Resposta 2")).toBeVisible()
   })
 })
