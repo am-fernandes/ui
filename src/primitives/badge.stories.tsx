@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { BellIcon, CheckCircle2Icon, ClockIcon, XCircleIcon } from "lucide-react"
+
 import { Badge } from "./badge"
 
-const meta = {
+const meta: Meta<typeof Badge> = {
   title: "Primitives/Badge",
   component: Badge,
   tags: ["autodocs"],
@@ -10,14 +12,15 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Etiqueta compacta para status, tags ou contadores. 4 variantes (default, secondary, destructive, outline) com cores semânticas.",
+          "Etiqueta compacta para status, tags ou contadores.",
           "",
-          "**Props principais:**",
+          "**API:**",
           "- `variant` — controla a cor: `default` (primary), `secondary`, `destructive`, `outline`.",
+          "- `children` — texto, número ou JSX (incluindo ícones).",
           "- `className` — para ajustes pontuais (raio, padding, cores).",
-          "- Aceita todos os atributos HTML de `<div>` (clique, role, etc.).",
+          "- Aceita todos os atributos HTML de `<div>` (`onClick`, `role`, etc.).",
           "",
-          "**Exemplo de uso:**",
+          "**Exemplo:**",
           "",
           "```tsx",
           'import { Badge } from "@am-fernandes/ui"',
@@ -43,7 +46,7 @@ const meta = {
     },
     children: {
       control: "text",
-      description: "Conteúdo do badge (texto ou ícone).",
+      description: "Conteúdo do badge (texto, número ou JSX).",
       table: { type: { summary: "ReactNode" } },
     },
     className: {
@@ -52,29 +55,133 @@ const meta = {
       table: { type: { summary: "string" } },
     },
   },
-} satisfies Meta<typeof Badge>
-
-export default meta
-type Story = StoryObj<typeof meta>
-
-export const Playground: Story = {
-  args: {
-    variant: "default",
-    children: "Badge",
-  },
 }
+export default meta
+type Story = StoryObj<typeof Badge>
 
 export const Default: Story = {
   args: { children: "Badge" },
 }
 
-export const Variants: Story = {
+export const Secondary: Story = {
+  args: { variant: "secondary", children: "Rascunho" },
+}
+
+export const Destructive: Story = {
+  args: { variant: "destructive", children: "Erro" },
+}
+
+export const Outline: Story = {
+  args: { variant: "outline", children: "Beta" },
+}
+
+export const AllVariants: Story = {
   render: () => (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Badge variant="default">default</Badge>
       <Badge variant="secondary">secondary</Badge>
       <Badge variant="destructive">destructive</Badge>
       <Badge variant="outline">outline</Badge>
     </div>
   ),
+  parameters: {
+    docs: {
+      description: { story: "Galeria com as 4 variantes lado a lado para comparação visual." },
+    },
+  },
+}
+
+export const WithIcon: Story = {
+  render: () => (
+    <div className="flex flex-wrap items-center gap-2">
+      <Badge>
+        <CheckCircle2Icon className="mr-1 size-3" />
+        Aprovado
+      </Badge>
+      <Badge variant="secondary">
+        <ClockIcon className="mr-1 size-3" />
+        Pendente
+      </Badge>
+      <Badge variant="destructive">
+        <XCircleIcon className="mr-1 size-3" />
+        Rejeitado
+      </Badge>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: "Badges com ícone do `lucide-react` para reforçar a semântica visual de status.",
+      },
+    },
+  },
+}
+
+export const AsCounter: Story = {
+  render: () => (
+    <div className="flex items-center gap-4">
+      <div className="relative inline-flex">
+        <BellIcon className="size-6 text-muted-foreground" />
+        <Badge
+          variant="destructive"
+          className="-right-2 -top-2 absolute h-5 min-w-5 justify-center rounded-full px-1 text-[10px]"
+        >
+          3
+        </Badge>
+      </div>
+      <div className="relative inline-flex">
+        <BellIcon className="size-6 text-muted-foreground" />
+        <Badge
+          variant="destructive"
+          className="-right-2 -top-2 absolute h-5 min-w-5 justify-center rounded-full px-1 text-[10px]"
+        >
+          99+
+        </Badge>
+      </div>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Pattern de contador sobreposto a um ícone — útil para notificações, mensagens, carrinho.",
+      },
+    },
+  },
+}
+
+export const InText: Story = {
+  render: () => (
+    <p className="max-w-md text-sm">
+      A versão atual é <Badge variant="outline">v10.0.0</Badge> e ainda está em{" "}
+      <Badge variant="secondary">beta</Badge>. Reporte bugs no canal <Badge>#design-system</Badge>.
+    </p>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: "Badges inline em parágrafos de texto, marcando termos de destaque.",
+      },
+    },
+  },
+}
+
+export const CustomClassName: Story = {
+  render: () => (
+    <div className="flex flex-wrap items-center gap-2">
+      <Badge className="rounded-full">pill</Badge>
+      <Badge className="px-3 py-1 text-sm">grande</Badge>
+      <Badge variant="outline" className="border-amber-500 text-amber-700">
+        custom color
+      </Badge>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`className` permite ajustar shape, padding ou cores específicas sem perder a base de estilo.",
+      },
+    },
+  },
 }

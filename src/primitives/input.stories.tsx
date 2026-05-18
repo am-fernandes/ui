@@ -27,7 +27,10 @@ const meta: Meta<typeof Input> = {
     description: { control: "text" },
     error: { control: "text" },
     required: { control: "boolean" },
-    type: { control: "select", options: ["text", "email", "password", "number", "tel", "url", "search", "date"] },
+    type: {
+      control: "select",
+      options: ["text", "email", "password", "number", "tel", "url", "search", "date"],
+    },
     placeholder: { control: "text" },
     disabled: { control: "boolean" },
     readOnly: { control: "boolean" },
@@ -62,7 +65,9 @@ export const LabelLeft: Story = {
 export const LabelHidden: Story = {
   args: { label: "Buscar", labelPosition: "hidden", placeholder: "Buscar..." },
   parameters: {
-    docs: { description: { story: "Label sr-only para leitores de tela mas escondido visualmente." } },
+    docs: {
+      description: { story: "Label sr-only para leitores de tela mas escondido visualmente." },
+    },
   },
 }
 
@@ -151,12 +156,7 @@ export const FormExample: Story = {
     <form className="flex w-80 flex-col gap-4">
       <Input label="Nome completo" required placeholder="João da Silva" />
       <Input label="E-mail" type="email" required placeholder="joao@exemplo.com" />
-      <Input
-        label="Telefone"
-        type="tel"
-        description="Com DDD"
-        placeholder="(11) 99999-9999"
-      />
+      <Input label="Telefone" type="tel" description="Com DDD" placeholder="(11) 99999-9999" />
     </form>
   ),
 }

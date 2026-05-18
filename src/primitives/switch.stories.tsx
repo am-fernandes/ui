@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { Label } from "./label"
+import { useState } from "react"
+
 import { Switch } from "./switch"
 
-const meta = {
+const meta: Meta<typeof Switch> = {
   title: "Primitives/Switch",
   component: Switch,
   tags: ["autodocs"],
@@ -11,30 +12,41 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Toggle on/off para preferências binárias. Pareie com `Label` para acessibilidade.",
+          "Toggle on/off para preferências binárias. Baseado em Radix Switch com `label`, `description` e `error` embutidos.",
           "",
-          "**Props principais:**",
-          "- `checked` / `onCheckedChange` — modo controlado.",
-          "- `defaultChecked` — estado inicial em modo não-controlado.",
-          "- `disabled` — desabilita interação.",
-          "- `required` — marca como obrigatório.",
-          "- `id` / `name` — integração com `Label` e forms nativos.",
+          "**API:**",
+          "- `label` — texto ou JSX exibido junto ao switch.",
+          "- `labelPosition` — `'right'` (default) ou `'left'`.",
+          "- `description` — texto auxiliar abaixo do label.",
+          '- `error` — mensagem de erro com `role="alert"`.',
+          "- `checked` / `defaultChecked` — `boolean`.",
+          "- `onCheckedChange` — `(checked: boolean) => void`.",
+          "- `disabled`, `required` — comportamentos padrão.",
           "",
-          "**Exemplo de uso:**",
+          "**Exemplo:**",
           "",
           "```tsx",
-          'import { Label, Switch } from "@am-fernandes/ui"',
+          'import { Switch } from "@am-fernandes/ui"',
           "",
-          '<div className="flex items-center gap-2">',
-          '  <Switch id="notifications" />',
-          '  <Label htmlFor="notifications">Notificações por email</Label>',
-          "</div>",
+          '<Switch label="Notificações por e-mail" defaultChecked />',
           "```",
         ].join("\n"),
       },
     },
   },
   argTypes: {
+    label: { control: "text", description: "Texto do label." },
+    description: { control: "text", description: "Texto auxiliar abaixo do label." },
+    error: { control: "text", description: "Mensagem de erro." },
+    labelPosition: {
+      control: "inline-radio",
+      options: ["right", "left"],
+      description: "Posição do label em relação ao switch.",
+      table: {
+        type: { summary: "'left' | 'right'" },
+        defaultValue: { summary: "'right'" },
+      },
+    },
     checked: {
       control: "boolean",
       description: "Estado controlado.",
@@ -55,56 +67,141 @@ const meta = {
       description: "Marca como obrigatório.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
-    id: {
-      control: "text",
-      description: "ID HTML — use junto com `Label htmlFor`.",
-      table: { type: { summary: "string" } },
-    },
-    name: {
-      control: "text",
-      description: "Atributo `name` para forms nativos.",
-      table: { type: { summary: "string" } },
-    },
-    className: {
-      control: "text",
-      description: "Classes Tailwind extras.",
-      table: { type: { summary: "string" } },
-    },
+    id: { control: "text", description: "ID HTML (auto-gerado se omitido)." },
+    name: { control: "text", description: "Atributo `name` para forms nativos." },
+    className: { control: "text", description: "Classes Tailwind extras." },
     onCheckedChange: {
       control: false,
       description: "Disparado quando o estado muda.",
       table: { category: "Eventos", type: { summary: "(checked: boolean) => void" } },
     },
   },
-} satisfies Meta<typeof Switch>
-
+}
 export default meta
-type Story = StoryObj<typeof meta>
+type Story = StoryObj<typeof Switch>
 
-export const Playground: Story = {
+export const Default: Story = {
+  args: { label: "Modo escuro" },
+}
+
+export const WithDescription: Story = {
   args: {
-    defaultChecked: false,
-    disabled: false,
-    required: false,
-    id: "switch-playground",
+    label: "Notificações por e-mail",
+    description: "Receba um resumo diário no seu inbox.",
   },
 }
 
-export const Default: Story = {}
+export const WithError: Story = {
+  args: {
+    label: "Aceitar contrato",
+    error: "Você precisa aceitar para continuar.",
+    required: true,
+  },
+}
 
-export const Checked: Story = {
-  args: { defaultChecked: true },
+export const LabelLeft: Story = {
+  args: { label: "Ativo", labelPosition: "left" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Com `labelPosition="left"` o label aparece antes do controle — útil em listas de configurações alinhadas à direita.',
+      },
+    },
+  },
 }
 
 export const Disabled: Story = {
-  args: { disabled: true },
+  args: { label: "Indisponível", disabled: true },
 }
 
-export const WithLabel: Story = {
-  render: () => (
-    <div className="flex items-center gap-2">
-      <Switch id="notifications" />
-      <Label htmlFor="notifications">Notificações por email</Label>
-    </div>
-  ),
+export const DisabledChecked: Story = {
+  args: { label: "Bloqueado (ativo)", disabled: true, defaultChecked: true },
+}
+
+export const Required: Story = {
+  args: { label: "Aceitar termos", required: true },
+}
+
+export const Controlled: Story = {
+  render: () => {
+    const [on, setOn] = useState(false)
+    return (
+      <div className="flex flex-col gap-3">
+        <Switch
+          label="Receber e-mails"
+          description="Atualizações de produto e novidades."
+          checked={on}
+          onCheckedChange={setOn}
+        />
+        <p className="text-xs text-muted-foreground">
+          Estado atual: <strong>{on ? "ativado" : "desativado"}</strong>
+        </p>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: { story: "Switch em modo controlado refletindo o estado em texto vivo." },
+    },
+  },
+}
+
+interface SettingsState {
+  notifications: boolean
+  newsletter: boolean
+  marketing: boolean
+}
+
+export const SettingsList: Story = {
+  render: () => {
+    const [settings, setSettings] = useState<SettingsState>({
+      notifications: true,
+      newsletter: false,
+      marketing: false,
+    })
+
+    const update = (key: keyof SettingsState) => (next: boolean) =>
+      setSettings((prev) => ({ ...prev, [key]: next }))
+
+    return (
+      <div className="flex w-96 flex-col gap-4 rounded-lg border p-5">
+        <header>
+          <h3 className="font-semibold text-base">Notificações</h3>
+          <p className="text-xs text-muted-foreground">Escolha quais alertas você quer receber.</p>
+        </header>
+        <div className="flex flex-col gap-4">
+          <Switch
+            label="Notificações no app"
+            description="Alertas em tempo real dentro do produto."
+            labelPosition="left"
+            checked={settings.notifications}
+            onCheckedChange={update("notifications")}
+          />
+          <Switch
+            label="Newsletter semanal"
+            description="Resumo das principais novidades toda segunda."
+            labelPosition="left"
+            checked={settings.newsletter}
+            onCheckedChange={update("newsletter")}
+          />
+          <Switch
+            label="Comunicações de marketing"
+            description="Promoções, descontos e lançamentos."
+            labelPosition="left"
+            checked={settings.marketing}
+            onCheckedChange={update("marketing")}
+          />
+        </div>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Pattern de configurações com 3 switches, label à esquerda, controle alinhado à direita.",
+      },
+    },
+  },
 }
