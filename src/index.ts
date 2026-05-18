@@ -147,13 +147,7 @@ export {
   SidebarTrigger,
   useSidebar,
 } from "./navigation/sidebar"
-export {
-  Tabs,
-  TabsContent,
-  type TabsItemData,
-  TabsList,
-  TabsTrigger,
-} from "./navigation/tabs"
+export { Tabs, type TabsItemData, type TabsProps } from "./navigation/tabs"
 
 // Forms
 export {
