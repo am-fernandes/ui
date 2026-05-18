@@ -6,6 +6,9 @@
  * See: docs/superpowers/plans/2026-05-18-api-simplification.md
  */
 
+// Overlays
+export { Dialog, type DialogProps } from "./overlays/dialog"
+
 // Primitives
 export { Avatar, type AvatarProps } from "./primitives/avatar"
 export { Badge, badgeVariants, type BadgeProps } from "./primitives/badge"

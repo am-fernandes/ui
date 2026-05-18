@@ -2,107 +2,74 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./dialog"
+import { Dialog } from "./dialog"
 
 describe("Dialog", () => {
-  it("renders trigger when closed", () => {
+  it("opens via trigger and renders title/description/children", async () => {
     render(
-      <Dialog open={false}>
-        <DialogTrigger>Abrir</DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Título</DialogTitle>
-            <DialogDescription>Descrição</DialogDescription>
-          </DialogHeader>
-        </DialogContent>
+      <Dialog trigger={<button type="button">Abrir</button>} title="Editar" description="Atualize">
+        <p>Body content</p>
       </Dialog>,
     )
-    expect(screen.getByText("Abrir")).toBeInTheDocument()
-    expect(screen.queryByText("Título")).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Abrir" }))
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
+    expect(screen.getByText("Editar")).toBeInTheDocument()
+    expect(screen.getByText("Atualize")).toBeInTheDocument()
+    expect(screen.getByText("Body content")).toBeInTheDocument()
   })
 
-  it("shows content when open", () => {
+  it("renders the footer slot when provided", async () => {
     render(
-      <Dialog open={true}>
-        <DialogTrigger>Abrir</DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Título</DialogTitle>
-            <DialogDescription>Descrição</DialogDescription>
-          </DialogHeader>
-        </DialogContent>
+      <Dialog
+        trigger={<button type="button">Abrir</button>}
+        title="X"
+        footer={
+          <button type="button" data-testid="save">
+            Salvar
+          </button>
+        }
+      >
+        <p>body</p>
       </Dialog>,
     )
-    expect(screen.getByText("Título")).toBeInTheDocument()
-    expect(screen.getByText("Descrição")).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Abrir" }))
+    expect(screen.getByTestId("save")).toBeInTheDocument()
   })
 
-  it("calls onOpenChange(false) when Escape is pressed", async () => {
-    const user = userEvent.setup()
+  it("controlled open via props renders content", () => {
     const onOpenChange = vi.fn()
     render(
-      <Dialog defaultOpen onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Título</DialogTitle>
-            <DialogDescription>Descrição</DialogDescription>
-          </DialogHeader>
-        </DialogContent>
+      <Dialog open onOpenChange={onOpenChange} title="X">
+        body
       </Dialog>,
     )
-    await user.keyboard("{Escape}")
-    expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
   })
 
-  it("renders close (X) button and closes on click", async () => {
-    const user = userEvent.setup()
+  it("closes on Escape", async () => {
     const onOpenChange = vi.fn()
     render(
-      <Dialog defaultOpen onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Título</DialogTitle>
-            <DialogDescription>Descrição</DialogDescription>
-          </DialogHeader>
-        </DialogContent>
+      <Dialog open onOpenChange={onOpenChange} title="X">
+        body
       </Dialog>,
     )
-    const closeButton = screen.getByRole("button", { name: "Close" })
-    expect(closeButton).toBeInTheDocument()
-    await user.click(closeButton)
+    await userEvent.keyboard("{Escape}")
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
   it("hides the close button when hideCloseButton is set", () => {
     render(
-      <Dialog defaultOpen>
-        <DialogContent hideCloseButton>
-          <DialogHeader>
-            <DialogTitle>Título</DialogTitle>
-            <DialogDescription>Descrição</DialogDescription>
-          </DialogHeader>
-        </DialogContent>
+      <Dialog open title="X" hideCloseButton>
+        body
       </Dialog>,
     )
-    expect(screen.queryByRole("button", { name: "Close" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Close/ })).not.toBeInTheDocument()
   })
 
-  it("uses a custom closeLabel for sr-only text and aria-label", () => {
+  it("uses custom closeLabel", () => {
     render(
-      <Dialog defaultOpen>
-        <DialogContent closeLabel="Fechar">
-          <DialogHeader>
-            <DialogTitle>Título</DialogTitle>
-            <DialogDescription>Descrição</DialogDescription>
-          </DialogHeader>
-        </DialogContent>
+      <Dialog open title="X" closeLabel="Fechar">
+        body
       </Dialog>,
     )
     expect(screen.getByRole("button", { name: "Fechar" })).toBeInTheDocument()
