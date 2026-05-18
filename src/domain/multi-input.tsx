@@ -1,6 +1,7 @@
 "use client"
 
 import { X } from "lucide-react"
+import type * as React from "react"
 import {
   type ClipboardEvent,
   type FocusEvent,
@@ -11,12 +12,20 @@ import {
 } from "react"
 
 import { cn } from "@/lib/utils"
+import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
+import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Badge } from "../primitives/badge"
 
 interface MultiInputBaseProps {
   disabled?: boolean
   placeholder?: string
-  error?: boolean
+  /** Validation message — when set, the wrapper turns red and the message renders below. */
+  error?: string
+  label?: React.ReactNode
+  description?: React.ReactNode
+  labelPosition?: LabelPosition
+  required?: boolean
+  id?: string
   /** Optional prefix rendered before each token in its Badge (e.g. "R$ ", "#"). */
   prefix?: string
   /** Optional suffix rendered after each token in its Badge (e.g. " dias", " %"). */
@@ -71,12 +80,19 @@ function MultiInput(props: MultiInputProps) {
   const {
     disabled = false,
     placeholder = props.type === "number" ? "Adicione um número" : "Adicione um item",
-    error = false,
+    error,
+    label,
+    description,
+    labelPosition,
+    required,
+    id,
     prefix,
     suffix,
     maxItems,
     onReject,
   } = props
+  const ids = useFieldIds(id)
+  const hasError = error != null && error !== ""
   const [inputValue, setInputValue] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -153,61 +169,77 @@ function MultiInput(props: MultiInputProps) {
   const renderToken = (token: string | number) => `${prefix ?? ""}${token}${suffix ?? ""}`
 
   return (
-    // The wrapper proxies click → focus the inner input. Keyboard users reach the input
-    // directly via Tab, so a useKeyWithClickEvents handler would be a no-op.
-    // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard focus reaches the input natively via Tab.
-    // biome-ignore lint/a11y/useSemanticElements: intentional div wrapper; <fieldset> defaults fight the flex layout. The role="group"+aria-label preserves ARIA semantics.
-    <div
-      ref={wrapperRef}
-      data-slot="multi-input"
-      data-type={props.type === "number" ? "number" : "string"}
-      onClick={focusInput}
-      className={cn(
-        "flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-1.5 text-sm transition-colors",
-        "focus-within:border-primary cursor-text",
-        disabled && "cursor-not-allowed opacity-50",
-        error && "border-destructive",
-      )}
-      // biome-ignore lint/a11y/useSemanticElements: <fieldset> would force a <legend> and conflict with the flex chip layout. Group semantics preserved via role+aria-label.
-      role="group"
-      aria-label={props.type === "number" ? "Lista de números" : "Lista de itens"}
+    <FieldShell
+      controlId={ids.controlId}
+      labelId={ids.labelId}
+      descriptionId={ids.descriptionId}
+      errorId={ids.errorId}
+      label={label}
+      description={description}
+      error={error}
+      labelPosition={labelPosition}
+      required={required}
+      disabled={disabled}
     >
-      {tokens.map((token) => (
-        <Badge key={`${token}`} variant="secondary" className="gap-1 pr-1">
-          {renderToken(token)}
-          {!disabled && (
-            <button
-              type="button"
-              aria-label={`Remover ${renderToken(token)}`}
-              className="ml-0.5 rounded-sm hover:bg-secondary-foreground/20 cursor-pointer"
-              onMouseDown={(e) => {
-                // Run on mousedown so we fire BEFORE the input's blur — avoids the race
-                // where blur commits the pending input and then we remove a different token.
-                e.preventDefault()
-                e.stopPropagation()
-                removeToken(token)
-              }}
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </Badge>
-      ))}
-      <input
-        ref={inputRef}
-        type="text"
-        inputMode={props.type === "number" ? "numeric" : "text"}
-        aria-label={placeholder}
-        className="flex-1 min-w-[60px] bg-transparent outline-none disabled:cursor-not-allowed"
-        placeholder={tokens.length === 0 ? placeholder : undefined}
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onPaste={handlePaste}
-        onBlur={handleBlur}
-        disabled={disabled}
-      />
-    </div>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard focus reaches the input natively via Tab. */}
+      {/* biome-ignore lint/a11y/useSemanticElements: <fieldset> would force a <legend> and conflict with the flex chip layout. */}
+      <div
+        ref={wrapperRef}
+        data-slot="multi-input"
+        data-type={props.type === "number" ? "number" : "string"}
+        onClick={focusInput}
+        className={cn(
+          "flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-1.5 text-sm transition-colors",
+          "focus-within:border-primary cursor-text",
+          disabled && "cursor-not-allowed opacity-50",
+          hasError && "border-destructive",
+        )}
+        role="group"
+        aria-label={props.type === "number" ? "Lista de números" : "Lista de itens"}
+      >
+        {tokens.map((token) => (
+          <Badge key={`${token}`} variant="secondary" className="gap-1 pr-1">
+            {renderToken(token)}
+            {!disabled && (
+              <button
+                type="button"
+                aria-label={`Remover ${renderToken(token)}`}
+                className="ml-0.5 rounded-sm hover:bg-secondary-foreground/20 cursor-pointer"
+                onMouseDown={(e) => {
+                  // Run on mousedown so we fire BEFORE the input's blur — avoids the race
+                  // where blur commits the pending input and then we remove a different token.
+                  e.preventDefault()
+                  e.stopPropagation()
+                  removeToken(token)
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </Badge>
+        ))}
+        <input
+          ref={inputRef}
+          id={ids.controlId}
+          type="text"
+          inputMode={props.type === "number" ? "numeric" : "text"}
+          aria-label={placeholder}
+          aria-invalid={hasError ? true : undefined}
+          aria-describedby={ids.describedBy({
+            description: description != null && description !== "",
+            error: hasError,
+          })}
+          className="flex-1 min-w-[60px] bg-transparent outline-none disabled:cursor-not-allowed"
+          placeholder={tokens.length === 0 ? placeholder : undefined}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
+          onBlur={handleBlur}
+          disabled={disabled}
+        />
+      </div>
+    </FieldShell>
   )
 }
 

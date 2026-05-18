@@ -6,6 +6,18 @@
  * See: docs/superpowers/plans/2026-05-18-api-simplification.md
  */
 
+// Domain
+export { CurrencyInput, type CurrencyInputProps } from "./domain/currency-input"
+export {
+  FileUpload,
+  type FileUploadProps,
+  type FileUploadRejection,
+  type FileUploadRejectionReason,
+} from "./domain/file-upload"
+export { InputOTP, REGEXP_ONLY_DIGITS, type InputOTPProps } from "./domain/input-otp"
+export { MultiInput, type MultiInputProps } from "./domain/multi-input"
+export { PercentageInput, type PercentageInputProps } from "./domain/percentage-input"
+
 // Forms
 export { Calendar } from "./forms/calendar"
 export {

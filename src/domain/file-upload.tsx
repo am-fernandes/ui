@@ -4,14 +4,7 @@ import { Camera, File as FileIcon, ImageIcon, Loader2, UploadCloud, X } from "lu
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../overlays/dialog"
+import { Dialog } from "../overlays/dialog"
 import { Button } from "../primitives/button"
 
 export type FileUploadRejectionReason = "type" | "size" | "max-files"
@@ -42,8 +35,8 @@ export interface FileUploadProps {
   onReject?: (rejections: FileUploadRejection[]) => void
   /** Disable user interaction. */
   disabled?: boolean
-  /** Show error styling on the dropzone border. */
-  error?: boolean
+  /** Validation message — when set, the dropzone border turns red and the message renders below. */
+  error?: string
   /** Main label inside the dropzone. */
   label?: React.ReactNode
   /** Secondary helper text below the label. Defaults to a hint derived from `accept` / `maxSize`. */
@@ -107,7 +100,7 @@ function FileUpload({
   onValueChange,
   onReject,
   disabled = false,
-  error = false,
+  error,
   label = multiple
     ? "Arraste arquivos ou clique para selecionar"
     : "Arraste um arquivo ou clique para selecionar",
@@ -185,6 +178,8 @@ function FileUpload({
   const renderedDescription =
     description !== undefined ? description : defaultDescription(accept, maxSize)
 
+  const hasError = error != null && error !== ""
+
   return (
     <div className={cn("space-y-3", className)} data-slot="file-upload">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
@@ -209,7 +204,7 @@ function FileUpload({
             "hover:bg-accent/40",
             "focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring",
             isDragging && "border-primary bg-accent/60",
-            error && "border-destructive",
+            hasError && "border-destructive",
             disabled && "cursor-not-allowed opacity-50",
             dropzoneClassName,
           )}
@@ -233,6 +228,11 @@ function FileUpload({
           </Button>
         ) : null}
       </div>
+      {hasError ? (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      ) : null}
       <input
         ref={inputRef}
         type="file"
@@ -356,17 +356,21 @@ function ImageLightbox({
   }, [file])
 
   return (
-    <Dialog open={file != null} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl border-0 bg-transparent p-0 shadow-none">
-        <DialogTitle className="sr-only">{file?.name ?? "Imagem"}</DialogTitle>
-        {url ? (
-          <img
-            src={url}
-            alt={file?.name ?? ""}
-            className="h-auto max-h-[85vh] w-full rounded-md object-contain"
-          />
-        ) : null}
-      </DialogContent>
+    <Dialog
+      open={file != null}
+      onOpenChange={onOpenChange}
+      title={<span className="sr-only">{file?.name ?? "Imagem"}</span>}
+      size="xl"
+      className="border-0 bg-transparent p-0 shadow-none"
+      hideCloseButton
+    >
+      {url ? (
+        <img
+          src={url}
+          alt={file?.name ?? ""}
+          className="h-auto max-h-[85vh] w-full rounded-md object-contain"
+        />
+      ) : null}
     </Dialog>
   )
 }
@@ -454,49 +458,49 @@ function CameraDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Capturar foto</DialogTitle>
-          <DialogDescription>
-            Posicione o documento ou objeto na câmera e toque em "Tirar foto".
-          </DialogDescription>
-        </DialogHeader>
-        {errorMsg ? (
-          <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-            {errorMsg}
-          </p>
-        ) : (
-          <div className="relative aspect-video w-full overflow-hidden rounded-md bg-muted">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className={cn(
-                "absolute inset-0 size-full object-cover transition-opacity duration-200",
-                isReady ? "opacity-100" : "opacity-0",
-              )}
-            >
-              <track kind="captions" />
-            </video>
-            {!isReady ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="size-6 animate-spin" aria-hidden />
-                <span>Iniciando câmera…</span>
-              </div>
-            ) : null}
-          </div>
-        )}
-        <DialogFooter>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Capturar foto"
+      description="Posicione o documento ou objeto na câmera e toque em &quot;Tirar foto&quot;."
+      size="lg"
+      footer={
+        <>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
           <Button type="button" onClick={takePhoto} disabled={errorMsg != null || !isReady}>
             Tirar foto
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </>
+      }
+    >
+      {errorMsg ? (
+        <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {errorMsg}
+        </p>
+      ) : (
+        <div className="relative aspect-video w-full overflow-hidden rounded-md bg-muted">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className={cn(
+              "absolute inset-0 size-full object-cover transition-opacity duration-200",
+              isReady ? "opacity-100" : "opacity-0",
+            )}
+          >
+            <track kind="captions" />
+          </video>
+          {!isReady ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-6 animate-spin" aria-hidden />
+              <span>Iniciando câmera…</span>
+            </div>
+          ) : null}
+        </div>
+      )}
     </Dialog>
   )
 }
