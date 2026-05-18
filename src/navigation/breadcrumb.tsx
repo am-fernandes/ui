@@ -4,14 +4,57 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+export interface BreadcrumbItemData {
+  /** Display text. */
+  label: string
+  /** Navigation URL. Omit for the current page. */
+  href?: string
+  /** Mark this as the current page (renders <BreadcrumbPage> instead of <BreadcrumbLink>). Auto-detected as true when href is omitted. */
+  isCurrentPage?: boolean
+}
+
 const Breadcrumb = React.forwardRef<
   HTMLElement,
   React.ComponentPropsWithoutRef<"nav"> & {
     separator?: React.ReactNode
+    /**
+     * Optional simplified API: pass an array of items and the component renders
+     * the full BreadcrumbList/Item/Link/Separator structure for you. When both
+     * `items` and `children` are provided, `children` wins so consumers can
+     * always override.
+     */
+    items?: BreadcrumbItemData[]
   }
->(({ ...props }, ref) => (
-  <nav ref={ref} data-slot="breadcrumb" aria-label="breadcrumb" {...props} />
-))
+>(({ items, children, ...props }, ref) => {
+  const content =
+    children ??
+    (items ? (
+      <BreadcrumbList>
+        {items.map((item, i) => {
+          const isLast = i === items.length - 1
+          const isCurrent = item.isCurrentPage ?? !item.href
+          return (
+            <React.Fragment key={`${item.label}-${i}`}>
+              <BreadcrumbItem>
+                {isCurrent ? (
+                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+              {!isLast ? <BreadcrumbSeparator /> : null}
+            </React.Fragment>
+          )
+        })}
+      </BreadcrumbList>
+    ) : null)
+
+  return (
+    <nav ref={ref} data-slot="breadcrumb" aria-label="breadcrumb" {...props}>
+      {content}
+    </nav>
+  )
+})
 Breadcrumb.displayName = "Breadcrumb"
 
 const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWithoutRef<"ol">>(

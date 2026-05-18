@@ -82,6 +82,7 @@ export {
   Breadcrumb,
   BreadcrumbEllipsis,
   BreadcrumbItem,
+  type BreadcrumbItemData,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,

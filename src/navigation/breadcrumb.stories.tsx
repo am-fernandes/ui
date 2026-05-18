@@ -38,3 +38,15 @@ export const Default: Story = {
     </Breadcrumb>
   ),
 }
+
+export const WithItemsAPI: Story = {
+  render: () => (
+    <Breadcrumb
+      items={[
+        { label: "Home", href: "/" },
+        { label: "Contratos", href: "/contratos" },
+        { label: "Detalhes" },
+      ]}
+    />
+  ),
+}
