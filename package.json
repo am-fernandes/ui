@@ -31,7 +31,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:storybook": "test-storybook --url http://localhost:6006",
     "test:storybook:ci": "concurrently -k -s first -n SB,TR \"http-server storybook-static --port 6006 --silent\" \"wait-on tcp:6006 && test-storybook --url http://localhost:6006\"",
-    "sync:coverage": "vitest run --coverage && bun scripts/sync-coverage.ts"
+    "sync:coverage": "vitest run --coverage && bun scripts/sync-coverage.ts",
+    "sync:e2e-stats": "bun scripts/sync-e2e-stats.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

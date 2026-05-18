@@ -1,24 +1,32 @@
 import { Meta } from "@storybook/addon-docs/blocks"
 import { TOTAL_COVERAGE, COVERAGE_ROWS, COVERAGE_GENERATED_AT } from "./_coverage"
+import { E2E_SPECS, E2E_TOTAL_TESTS, E2E_GENERATED_AT, STORYBOOK_STATS } from "./_e2e-stats"
 
 <Meta title="Quality" />
 
 # Qualidade & Testes
 
-Esta página é gerada a partir do relatório real de cobertura
-(`coverage/coverage-summary.json`, produzido pelo vitest com o provider v8).
+A lib é coberta por **três camadas complementares** de teste, cada uma exercitando o código em um nível diferente:
 
-Para atualizar:
+1. **Unit + integration tests** — `vitest` + `jsdom` + `@testing-library/react`. Foco em lógica, ARIA, eventos sintéticos.
+2. **Storybook test runner** — Playwright/Chromium roda **todas as stories** em browser real para smoke-test de renderização + `play` functions com asserções.
+3. **End-to-end specs** — Playwright em browser real contra a Storybook viva. Foco em flows que precisam de viewport, portais, hover real, focus trap.
+
+Esta página agrega métricas dessas três camadas. Os números são auto-sincronizados de:
+- `coverage/coverage-summary.json` (vitest com provider v8) → `src/docs/_coverage.ts`
+- `tests/e2e/*.spec.ts` + `src/**/*.stories.tsx` → `src/docs/_e2e-stats.ts`
 
 ```bash
-bun run sync:coverage     # roda test:coverage + reescreve _coverage.ts
+bun run sync:coverage     # roda test:coverage + atualiza _coverage.ts
+bun run sync:e2e-stats    # recalcula _e2e-stats.ts
 ```
 
-Última sincronização: <code>{COVERAGE_GENERATED_AT}</code>
+Última sincronização vitest: <code>{COVERAGE_GENERATED_AT}</code><br/>
+Última sincronização E2E: <code>{E2E_GENERATED_AT}</code>
 
 ---
 
-## Resumo global
+## Resumo global (vitest)
 
 export const Stat = ({ label, pct, covered, total }) => {
   const color = pct >= 90 ? "#16a34a" : pct >= 75 ? "#d97706" : "#dc2626"
@@ -40,10 +48,54 @@ export const Stat = ({ label, pct, covered, total }) => {
 
 ---
 
-## Cobertura por componente
+## Resumo Playwright
 
-A tabela abaixo mostra **linhas, statements, funções e branches** por arquivo da lib (helpers `_internal/` somam ao total mas ficam fora da tabela).
-Verde = ≥ 90%, laranja = ≥ 75%, vermelho = < 75%.
+export const PlaywrightStat = ({ label, value, sub }) => (
+  <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "1rem" }}>
+    <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#6b7280" }}>{label}</div>
+    <div style={{ fontSize: "1.75rem", fontWeight: 600, color: "#0f172a" }}>{value}</div>
+    <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>{sub}</div>
+  </div>
+)
+
+<div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: "0.75rem", marginTop: "1rem" }}>
+  <PlaywrightStat label="E2E specs" value={E2E_SPECS.length} sub="arquivos *.spec.ts" />
+  <PlaywrightStat label="E2E tests" value={E2E_TOTAL_TESTS} sub="tests em Chromium real" />
+  <PlaywrightStat label="Storybook stories" value={STORYBOOK_STATS.totalStoryFiles} sub="files de story" />
+  <PlaywrightStat label="play functions" value={STORYBOOK_STATS.playFunctionsTotal} sub={`em ${STORYBOOK_STATS.playFunctionFiles} stories`} />
+</div>
+
+### Specs E2E
+
+export const SpecsTable = () => (
+  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem", marginTop: "1rem" }}>
+    <thead>
+      <tr style={{ borderBottom: "1px solid #e5e7eb", color: "#6b7280" }}>
+        <th style={{ padding: "0.4rem 0.6rem", textAlign: "left" }}>Spec</th>
+        <th style={{ padding: "0.4rem 0.6rem", textAlign: "right" }}>describe</th>
+        <th style={{ padding: "0.4rem 0.6rem", textAlign: "right" }}>tests</th>
+      </tr>
+    </thead>
+    <tbody>
+      {E2E_SPECS.map((s) => (
+        <tr key={s.file} style={{ borderBottom: "1px solid #f3f4f6" }}>
+          <td style={{ padding: "0.4rem 0.6rem", fontFamily: "ui-monospace, Menlo, monospace", fontSize: "0.8rem" }}>{s.file}</td>
+          <td style={{ padding: "0.4rem 0.6rem", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{s.describes}</td>
+          <td style={{ padding: "0.4rem 0.6rem", textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{s.tests}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+)
+
+<SpecsTable />
+
+---
+
+## Cobertura por componente (vitest)
+
+A tabela abaixo mostra **lines / statements / functions / branches** por arquivo. Helpers `_internal/` somam ao total mas ficam fora da tabela.
+Verde ≥ 90 %, laranja ≥ 75 %, vermelho menor que 75 %.
 
 export const CoverageTable = () => {
   const grouped = COVERAGE_ROWS.reduce((acc, row) => {
@@ -73,7 +125,7 @@ export const CoverageTable = () => {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.file} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                  <td style={{ padding: "0.4rem 0.6rem", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: "0.8rem" }}>{row.file}</td>
+                  <td style={{ padding: "0.4rem 0.6rem", fontFamily: "ui-monospace, Menlo, monospace", fontSize: "0.8rem" }}>{row.file}</td>
                   {cell(row.lines)}
                   {cell(row.statements)}
                   {cell(row.functions)}
@@ -92,28 +144,43 @@ export const CoverageTable = () => {
 
 ---
 
-## Como medimos
+## Como medimos — visão geral
 
-### Stack de teste
+### Camadas de teste
+
+| Camada | Ferramenta | Roda em | O que cobre |
+|---|---|---|---|
+| **Unit** | vitest + jsdom + @testing-library/react | DOM simulado | Lógica, ARIA, eventos sintéticos, controlled state, validação de props |
+| **Storybook test runner** | @storybook/test-runner (Playwright internamente) | Chromium real, headless | Smoke render de todas as stories + `play` functions com asserções |
+| **E2E** | @playwright/test | Chromium real | Focus trap, hover, drag-and-drop, layout responsivo, atalho de teclado em browser |
+
+### Stack detalhada
 
 | Camada | Ferramenta | Versão |
 |---|---|---|
-| Runner | [`vitest`](https://vitest.dev) | ^3 |
+| Runner unit | [`vitest`](https://vitest.dev) | ^3 |
 | Ambiente DOM | [`jsdom`](https://github.com/jsdom/jsdom) | ^25 |
-| Render & query | [`@testing-library/react`](https://testing-library.com/react) + `@testing-library/jest-dom` | 16.x / 6.x |
-| Eventos do usuário | [`@testing-library/user-event`](https://testing-library.com/docs/user-event/intro/) | 14.x |
-| Cobertura | `@vitest/coverage-v8` (provider `v8` nativo do Node) | ^3 |
+| Render & query | [`@testing-library/react`](https://testing-library.com/react) | 16.x |
+| Cobertura | `@vitest/coverage-v8` | ^3 |
+| E2E runner | [`@playwright/test`](https://playwright.dev) | ^1.60 |
+| Storybook runner | [`@storybook/test-runner`](https://storybook.js.org/docs/writing-tests/test-runner) | ^0.24 |
+| Asserções em play fn | [`@storybook/test`](https://storybook.js.org/docs/writing-tests/component-testing) | ^8.6 |
+| Browser | Chromium 1223 (bundled) | — |
 
-A configuração vive em `vitest.config.ts` e o setup global em `vitest.setup.ts`.
+Configs:
+- `vitest.config.ts` — runner unit + coverage exclude
+- `vitest.setup.ts` — polyfills do jsdom (matchMedia, ResizeObserver, IntersectionObserver, scrollIntoView, URL.createObjectURL)
+- `playwright.config.ts` — projeto Chromium + webServer auto-start do storybook em modo dev
+- `.storybook/test-runner.ts` — hooks placeholder para futuras checagens a11y/visuais
 
-### Provider de cobertura
+### Provider de cobertura (v8 vs Istanbul)
 
-Usamos **v8 coverage** (não Istanbul) porque ele instrumenta diretamente o motor JS — sem transformação extra do código, sem mismatch entre o que roda em produção e o que é medido. As métricas são:
+Usamos **v8** porque ele instrumenta diretamente o motor JS — sem transformação extra do código, sem mismatch entre o que roda em produção e o que é medido. As métricas:
 
 - **Lines** — linhas executadas / linhas executáveis
 - **Statements** — sentenças JS distintas executadas
 - **Functions** — declarações de função executadas pelo menos uma vez
-- **Branches** — ramos lógicos (`if`/`else`, `&&`, `||`, ternário, `switch`, `??`) percorridos
+- **Branches** — ramos lógicos (`if/else`, `&&`, `||`, ternário, `switch`, `??`) percorridos
 
 Arquivos excluídos da cobertura (em `vitest.config.ts`):
 
@@ -121,37 +188,34 @@ Arquivos excluídos da cobertura (em `vitest.config.ts`):
 exclude: ["src/**/*.stories.tsx", "src/**/*.test.tsx", "src/docs/**", "src/index.ts"]
 ```
 
+> **Importante:** o Playwright E2E **não contribui para a porcentagem de coverage** acima. v8 instrumenta apenas o processo do vitest. Os E2E garantem que a UI compõe corretamente em Chromium real, mas o número de coverage cobre só a parte exercitada por unit/integration tests.
+
 ### Princípios (F.I.R.S.T.)
 
-Os testes seguem F.I.R.S.T.:
-
-- **Fast** — cada `*.test.tsx` roda em milissegundos. Total abaixo de 1 minuto mesmo com 346 testes.
-- **Independent** — sem ordem implícita; cada `it()` é isolado via Testing Library `cleanup()`.
-- **Repeatable** — sem `Date.now()` real, sem rede, sem timers vazando. `vitest.config.ts` define `dangerouslyIgnoreUnhandledErrors: true` apenas para absorver o vazamento conhecido do `input-otp` (timer pós-teardown da lib externa).
+- **Fast** — vitest abaixo de 1 min com 346 testes; Storybook test runner ~ 42 s para 289 stories; E2E ~30 s para 29 specs em paralelo.
+- **Independent** — sem ordem implícita; cada `it()` / `test()` é isolado.
+- **Repeatable** — sem `Date.now()` real, sem rede, sem timers vazando entre testes.
 - **Self-validating** — passa ou falha, sem inspeção manual de logs.
-- **Timely** — testes são commitados junto com o componente. Quando o componente é reescrito, o teste é reescrito também.
+- **Timely** — testes commitados junto com o componente.
 
 ### Classes de teste cobertas
 
-Cada componente recebe ao menos cinco classes:
-
-| Classe | Pergunta que responde | Exemplos |
+| Classe | Pergunta que responde | Onde mora |
 |---|---|---|
-| **Renderização** | "Monta sem crash com props mínimas?" | `expect(getByRole(...)).toBeInTheDocument()` |
-| **API pública** | "Cada prop documentada produz efeito observável?" | `aria-invalid` aparece com `error` setado; `disabled` bloqueia clique |
-| **Interação** | "Eventos do usuário disparam os callbacks corretos?" | `userEvent.click` → `expect(onClick).toHaveBeenCalled()` |
-| **Acessibilidade** | "Roles, labels e estados ARIA estão corretos?" | `aria-checked="mixed"` em indeterminate; `role="alert"` em error |
-| **Edge cases** | "Empty / disabled / long-content / controlled ↔ uncontrolled quebram?" | empty arrays, max-length pasteado, indeterminate state |
+| **Renderização** | "Monta sem crash com props mínimas?" | vitest unit / storybook smoke |
+| **API pública** | "Cada prop documentada produz efeito observável?" | vitest unit |
+| **Interação** | "Eventos do usuário disparam os callbacks corretos?" | vitest unit + storybook `play` |
+| **Acessibilidade** | "Roles, labels e estados ARIA corretos?" | vitest unit |
+| **Edge cases** | "Empty / disabled / long-content / controlled ↔ uncontrolled quebram?" | vitest unit |
+| **Focus trap** | "Tab cicla só dentro do modal?" | Playwright E2E |
+| **Hover real** | "Tooltip aparece com hover + delay e some no mouse-leave?" | Playwright E2E |
+| **Portal interaction** | "Conteúdo portaled acessível via roles globais?" | Playwright E2E |
 
-### O que NÃO testamos (e por quê)
+### O que NÃO testamos
 
-- **CSS visual / pixel-perfect** — Storybook + revisão humana cobrem isso melhor.
-- **Layout responsivo** — jsdom não calcula layout. Visual regression em browser real fica para uma futura camada com Playwright.
-- **Implementação interna** — testes asseram comportamento observável, não tipos de hook, não classes intermediárias.
-
-### Strict mode & double-render
-
-`React.StrictMode` está **desligado nos testes** para evitar duplo-render acidental no jsdom. Componentes que dependem de hidratação SSR são testados separadamente quando aplicável.
+- **Pixel-perfect / regressão visual** — fica para uma próxima camada de visual regression (screenshots Playwright + `toHaveScreenshot`).
+- **Layout responsivo** — jsdom não tem layout; nem todo E2E é testado em viewports múltiplos. Adicionar viewports em `playwright.config.ts` quando necessário.
+- **Implementação interna** — testes asseram comportamento, não tipo de hook, não classes intermediárias.
 
 ### Stubs do jsdom
 
@@ -163,29 +227,55 @@ Em `vitest.setup.ts` polyfilamos APIs que o jsdom não implementa nativamente:
 - `Element.prototype.scrollIntoView` — usado por cmdk
 - `URL.createObjectURL` / `revokeObjectURL` — usado por FileUpload thumbnails
 
+> Em browser real (Storybook/Playwright) essas APIs existem nativas, então **alguns bugs só pegam em uma das camadas**.
+
 ---
 
 ## Comandos
 
 ```bash
-bun run test              # roda tudo uma vez
-bun run test:watch        # modo watch
-bun run test:coverage     # gera coverage/ + lcov + html
-bun run sync:coverage     # test:coverage + atualiza src/docs/_coverage.ts
+# Unit (vitest)
+bun run test                # roda tudo uma vez
+bun run test:watch          # modo watch
+bun run test:coverage       # gera coverage/ + lcov + html
+
+# Storybook test runner (precisa do storybook rodando em :6006)
+bun run storybook           # em outro terminal
+bun run test:storybook      # roda todas as stories como Playwright tests
+bun run test:storybook:ci   # constrói storybook estático + serve + roda — para CI
+
+# E2E (Playwright)
+bun run test:e2e            # CI mode (auto-starts Storybook dev)
+bun run test:e2e:headed     # mostra o browser
+bun run test:e2e:ui         # Playwright UI mode
+
+# Sync de stats para a página Quality
+bun run sync:coverage       # roda test:coverage + atualiza _coverage.ts
+bun run sync:e2e-stats      # recalcula _e2e-stats.ts
 ```
 
-Após `test:coverage`, abra `coverage/index.html` no navegador para drilldown linha-a-linha.
+Após `test:coverage`, abra `coverage/index.html` para drilldown linha-a-linha.
+Após `test:e2e`, abra `playwright-report/index.html` para o relatório HTML com traces/screenshots.
 
 ---
 
 ## Próximos focos
 
-A tabela acima destaca em vermelho/laranja onde investir esforço:
+A tabela acima destaca onde investir esforço próximo. Os mais urgentes:
 
-- **Chart** (`data/chart.tsx`) — apenas ~23% de linhas porque o `ChartTooltipContent` interno só é exercitado em runtime via recharts. Precisa de unit tests passando `payload` mockado direto.
-- **Combobox** (`forms/combobox.tsx`) — ~72% de linhas; faltam testes para `creatable`, multi-select remove via X click, e empty state.
-- **TimePicker** (`forms/time-picker.tsx`) — ~72% de linhas; arrow keys, blur clamp e wrap modular ainda não cobertos.
-- **Sidebar** (`navigation/sidebar.tsx`) — ~76% de linhas; falta cobertura do branch mobile (Sheet) e do submenu nested.
-- **FileUpload** (`domain/file-upload.tsx`) — ~79% de linhas; o fluxo da câmera (`getUserMedia`) e o lightbox não são exercitados.
+- **Chart** (`data/chart.tsx`) — apenas ~23 % de linhas porque o `ChartTooltipContent` interno só é exercitado em runtime via recharts. Precisa de unit tests passando `payload` mockado direto.
+- **Combobox** (`forms/combobox.tsx`) — ~72 % de linhas; faltam testes para `creatable`, multi-select remove via X click, e empty state.
+- **TimePicker** (`forms/time-picker.tsx`) — ~72 %; arrow keys, blur clamp e wrap modular ainda não cobertos.
+- **Sidebar** (`navigation/sidebar.tsx`) — ~76 %; falta cobertura do branch mobile (Sheet) e do submenu nested.
+- **FileUpload** (`domain/file-upload.tsx`) — ~79 %; o fluxo da câmera (`getUserMedia`) e o lightbox não são exercitados.
 
-Estes percentuais se atualizam automaticamente quando você rodar `bun run sync:coverage` antes de buildar o Storybook.
+### Roadmap das camadas Playwright
+
+| Item | Status |
+|---|---|
+| Storybook test runner smoke de todas as stories | ✅ 289 stories passam em Chromium |
+| `play` functions com asserções de interação | 🟡 5 stories cobertas — alvo: 20+ |
+| E2E specs por grupo | ✅ 5 specs / 29 tests |
+| Visual regression com `toHaveScreenshot` | ⛔ pendente |
+| Multi-viewport (mobile + desktop) em E2E | ⛔ pendente |
+| Axe a11y assertions no test-runner | ⛔ pendente — hook `postVisit` no `.storybook/test-runner.ts` |
