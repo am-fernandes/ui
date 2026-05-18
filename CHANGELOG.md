@@ -4,6 +4,32 @@ All notable changes to `@am-fernandes/ui` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] — 2026-05-18
+
+### Breaking
+- `ConfirmButton` removed. Use `AlertDialog` directly when a confirmation flow is needed.
+- `DaysInstallmentInput` renamed to `MultiNumberInput`, now with optional `prefix` and `suffix` per token (generalized beyond the original "days" use case).
+
+### Added
+- `cursor-pointer` + `disabled:cursor-not-allowed` on interactive primitives (Button, Checkbox, RadioGroup, Switch, Tabs, Accordion, Command items, DropdownMenu items, Dialog/Sheet close X).
+- `engines: { node: ">=20", bun: ">=1.1" }` in `package.json` — Node compatibility verified, no Bun-only APIs in published code.
+- Convenience `items` API on **Breadcrumb**, **Tabs**, **Accordion**; new `<DropdownMenuItems items={...}>` helper on **DropdownMenu**. Verbose composicional APIs preserved.
+- **Form** story expanded with multi-field example using `Combobox` via RHF `Controller`.
+- **Chart** stories: Bar, Line, Area, Pie, RadialBar variants + recharts-wrapper description.
+- **DataTable** component: sortable headers + global search filter via `@tanstack/react-table`. Primitive `Table` exports remain available for raw control.
+- Per-component description (`parameters.docs.description.component`) on every story (46 files).
+- **vitest** + **@testing-library/react** + **@vitest/coverage-v8** + **jsdom** infrastructure. 95 smoke tests across 46 files. Scripts: `test`, `test:watch`, `test:coverage`.
+- Storybook **Quality** MDX page documenting testing strategy + coverage commands.
+
+### Changed
+- **Getting Started** rewritten in best-in-market style (install, setup, conceitos, FAQ); absorbs former Migration content.
+- **Typography** foundations page rewritten — variants-only display + rationale for Google Sans Flex vs Inter/Roboto/Nunito Sans.
+- **Colors** foundations page now displays live oklch values next to each swatch name.
+
+### Removed
+- `Migration.mdx` (content folded into Getting Started).
+- `Radius.mdx` foundation page (default radius is baked into components).
+
 ## [3.1.0] — 2026-05-18
 
 ### Added
