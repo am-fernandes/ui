@@ -6,7 +6,54 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [10.0.0] — 2026-05-18
 
-Comprehensive review pass. Every component in `primitives`, `overlays`, `navigation`, `forms`, `domain`, and `data` was audited against Google Engineering Practices, OWASP Top 10:2025, and Clean Code. This release lands the resulting fixes — critical correctness, accessibility, and security bugs first; then conventions; then nits.
+**First public release.** This is the inaugural published API of `@am-fernandes/ui` on npm.
+
+The library was iterated privately to ~145 exports (v9.x), then audited (Google Engineering Practices, OWASP Top 10:2025, Clean Code) and simplified to ~49 public exports before publication. The release represents the final API decisions: data-driven where it fits, `label`/`description`/`error` on every form control, `title`/`description`/`children` on every overlay, single-export for every flat component, `ReactNode` slots (`footer`, `headerAction`, `action`, `trigger`) for the common edge cases.
+
+### Public API surface (49 exports)
+
+**Primitives (11):** `Avatar`, `Badge`, `Button` (+`buttonVariants`), `Checkbox`, `Input`, `RadioGroup`, `Separator`, `Skeleton`, `Switch`, `Textarea`, `Typography` (+`typographyVariants`)
+
+**Overlays (9):** `Alert` (+`alertVariants`), `AlertDialog`, `Collapsible`, `Dialog`, `Popover`, `Progress`, `Sheet`, `Toaster`/`toast` (sonner), `Tooltip`
+
+**Forms (8):** `Calendar`, `Combobox` (+`useComboboxOptions`), `DateInput`, `DateRangePicker`, `Field`, `FieldGroup`, `Form`, `FormField` (+`useForm` from RHF), `TimePicker`
+
+**Navigation (5):** `Accordion`, `Breadcrumb`, `CommandPalette`, `Sidebar`, `Tabs`
+
+**Data (8):** `Card`, `ChartContainer`/`ChartTooltip`/`ChartLegend`/`ChartStyle`, `DataTable`, `Image`, `ScrollArea`, `Tree`, `Video`
+
+**Domain (5):** `CurrencyInput`, `FileUpload`, `InputOTP` (+`REGEXP_ONLY_DIGITS`), `MultiInput`, `PercentageInput`
+
+**Hooks (1):** `useIsMobile`
+
+**Lib (10):** `cn`, `tableStyles`, `toCents`, `fromCents`, `centsToDisplay`, `formatBRL`, `percentFromValue`, `percentOfTotal`, `bytes`/`kb`/`mb`/`gb`
+
+### Quality posture
+
+- 304 tests pass (jsdom + @testing-library/react via vitest)
+- typecheck clean
+- lint clean (biome)
+- React 19 native `ref` prop pattern across all components (no `forwardRef`)
+- `data-slot` attribute on every primary element
+- WCAG 2.4.7 focus rings on every interactive primitive
+- Radix Dialog title always present (CommandPalette uses sr-only defaults)
+- Image/Video validate src against allowed protocols
+- Chart sanitizes config color before CSS interpolation
+- Sidebar cookie persistence is opt-in (`persistOpenState`)
+- FileUpload documents MIME validation as browser-supplied (server must re-validate)
+- Tree implements full WAI-ARIA tree pattern (roving tabindex, arrow keys, Home/End)
+
+### Previous private iterations
+
+Versions 1.0–9.0 were never published to npm — they were in-repo iterations. The audit pass that produced this release is documented in `docs/superpowers/specs/2026-05-18-api-simplification-design.md` and `docs/superpowers/plans/2026-05-18-api-simplification.md`.
+
+---
+
+## Internal history (pre-public)
+
+> Versions below were in-repo only — never published.
+
+### [v9.0.0 private] — 2026-05-18
 
 ### Breaking
 - **`React.forwardRef` removed across the library.** All components now use the React 19 native `ref` prop pattern (function components accepting `ref?: React.Ref<...>`). Consumers wrapping these in `forwardRef`-aware HOCs may see slightly different types. The ref behavior is preserved.
