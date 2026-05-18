@@ -1,66 +1,72 @@
 import { Meta } from "@storybook/addon-docs/blocks"
+import { Typography } from "../primitives/typography"
 
 <Meta title="Foundations/Typography" />
 
 # Typography
 
-Fonte do design system: **Google Sans Flex** (variável, opsz 6–144, wght 1–1000). Disponível via `--font-sans` e na classe Tailwind `font-sans`.
+A AM Fernandes adota **Google Sans Flex** como fonte oficial — uma variable font otimizada para interfaces, com escala fluida de tamanhos (`opsz 6–144`) e pesos (`wght 1–1000`).
 
-A fonte é importada via `@am-fernandes/ui/fonts` (Google Fonts CDN). Para apps offline ou com restrição de CDN, baixar e self-hostear é o próximo passo (fora do escopo desta fase).
+## Por que Google Sans Flex?
 
-export const Specimen = ({ size, weight = 400, label }) => (
-  <div style={{ padding: "12px 0", borderBottom: "1px solid var(--border)" }}>
-    <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 4 }}>
-      {label} · {size}px · weight {weight}
+| Critério | Google Sans Flex | Inter | Roboto | Nunito Sans |
+|---|---|---|---|---|
+| Variable font | ✅ opsz + wght fluidos | ✅ apenas wght | ❌ pesos discretos | ✅ apenas wght |
+| Optical sizing (opsz) | ✅ corpos pequenos legíveis sem reflow | ❌ | ❌ | ❌ |
+| Latin Extended (pt-BR) | ✅ | ✅ | ✅ | ✅ |
+| Métricas otimizadas para UI | ✅ desenhada pelo Google Material UX | ⚠️ aceitável | ⚠️ datada (2011) | ⚠️ display-oriented |
+| Peso final no bundle | 1 arquivo variável | 1 arquivo | 5+ arquivos | 2+ arquivos |
+
+**Conclusão:** Roboto e Nunito Sans foram desenhadas antes do amadurecimento das variable fonts (overhead em rede e cache). Inter é tecnicamente competente mas não tem optical sizing — textos pequenos parecem "apertados". Google Sans Flex resolve ambos.
+
+Disponível via `--font-sans` (CSS) e na classe Tailwind `font-sans`.
+
+## Variantes
+
+O componente `Typography` é a API recomendada — cinco variantes que cobrem a hierarquia editorial padrão de uma app:
+
+<div style={{ display: "flex", flexDirection: "column", gap: 24, padding: 16 }}>
+  <div>
+    <div style={{ fontSize: 11, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+      display · text-4xl · font-bold · h1
     </div>
-    <div style={{ fontFamily: "var(--font-sans)", fontSize: size, fontWeight: weight }}>
-      A AM Fernandes constrói software jurídico.
-    </div>
+    <Typography variant="display">A AM Fernandes constrói software jurídico.</Typography>
   </div>
-)
+  <div>
+    <div style={{ fontSize: 11, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+      title · text-2xl · font-semibold · h2
+    </div>
+    <Typography variant="title">A AM Fernandes constrói software jurídico.</Typography>
+  </div>
+  <div>
+    <div style={{ fontSize: 11, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+      subtitle · text-lg · font-medium · h3
+    </div>
+    <Typography variant="subtitle">A AM Fernandes constrói software jurídico.</Typography>
+  </div>
+  <div>
+    <div style={{ fontSize: 11, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+      body · text-sm · regular · p
+    </div>
+    <Typography variant="body">A AM Fernandes constrói software jurídico.</Typography>
+  </div>
+  <div>
+    <div style={{ fontSize: 11, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+      caption · text-xs · muted · span
+    </div>
+    <Typography variant="caption">A AM Fernandes constrói software jurídico.</Typography>
+  </div>
+</div>
 
-## Escala (Tailwind defaults aplicados ao font-sans)
-
-<Specimen size={36} weight={700} label="text-4xl / bold" />
-<Specimen size={30} weight={700} label="text-3xl / bold" />
-<Specimen size={24} weight={600} label="text-2xl / semibold" />
-<Specimen size={20} weight={600} label="text-xl / semibold" />
-<Specimen size={18} weight={500} label="text-lg / medium" />
-<Specimen size={16} weight={400} label="text-base / regular" />
-<Specimen size={14} weight={400} label="text-sm / regular" />
-<Specimen size={12} weight={400} label="text-xs / regular" />
-
-## Uso recomendado
-
-| Contexto | Classe Tailwind |
-|---|---|
-| Page title (H1) | `text-3xl font-bold tracking-tight` |
-| Section title (H2) | `text-2xl font-semibold` |
-| Subsection (H3) | `text-xl font-semibold` |
-| Body | `text-sm` ou `text-base` |
-| Caption / metadata | `text-xs text-muted-foreground` |
-
-## Componente Typography
-
-A escala Tailwind documentada acima continua disponível para estilização pontual. Para garantir consistência entre páginas e produtos, prefira o primitivo `Typography` sempre que possível:
+## Uso
 
 ```tsx
 import { Typography } from "@am-fernandes/ui"
 
-<Typography variant="title">Página de contratos</Typography>
-<Typography variant="subtitle">Filtros aplicados</Typography>
-<Typography variant="body">Lista paginada de 50 registros.</Typography>
+<Typography variant="display">Página de contratos</Typography>
+<Typography variant="title">Filtros aplicados</Typography>
+<Typography variant="body">Conteúdo paginado.</Typography>
 <Typography variant="caption">Atualizado em 17/05/2026</Typography>
 ```
 
-Elemento padrão por variante:
-
-| Variante | Elemento default |
-|---|---|
-| `display` | `h1` |
-| `title` | `h2` |
-| `subtitle` | `h3` |
-| `body` | `p` |
-| `caption` | `span` |
-
-Use a prop `as` para sobrescrever o elemento semântico quando o outline do documento exigir (ex.: `<Typography variant="title" as="h1">` em uma página onde o título é o H1 principal).
+Cada variante mapeia para um elemento semântico padrão (display→h1, title→h2, subtitle→h3, body→p, caption→span). Use o prop `as` quando o outline do documento exigir um nível diferente.
