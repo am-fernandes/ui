@@ -4,6 +4,17 @@ All notable changes to `@am-fernandes/ui` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] — 2026-05-17
+
+### Fixed
+- `Alert` semantic variants (`info`, `success`, `warning`, `destructive`) now
+  use the `--status-*-{bg,text,border}` token family designed for tinted-bg
+  containers (Phase 1) instead of `text-{semantic}-foreground` which was
+  white and invisible against the 10% tinted backgrounds. All 4 semantic
+  alerts now meet WCAG AA contrast.
+- `Alert` `Variants` story now renders all 5 variants (default + 4 semantic)
+  instead of only 2. Surface coverage matches the `cva` definition.
+
 ## [3.0.0] — 2026-05-17
 
 ### Changed (BREAKING)
