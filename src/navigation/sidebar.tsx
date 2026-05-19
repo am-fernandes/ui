@@ -257,7 +257,7 @@ function SidebarItemRender({
   )
 
   const baseClass = cn(
-    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
     "hover:bg-accent hover:text-accent-foreground",
     "disabled:pointer-events-none disabled:opacity-50",
     active && "bg-accent text-accent-foreground",
@@ -285,7 +285,7 @@ function SidebarItemRender({
           <ChevronDown
             aria-hidden
             className={cn(
-              "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+              "size-4 shrink-0 text-muted-foreground transition-transform",
               expanded ? "rotate-0" : "-rotate-90",
             )}
           />

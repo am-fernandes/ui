@@ -398,7 +398,7 @@ function DataTable<TData>({
             type="button"
             role="menuitem"
             data-slot="data-table-download-filtered"
-            className="rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
             onClick={() => {
               void handleExport("filtered")
             }}
@@ -409,7 +409,7 @@ function DataTable<TData>({
             type="button"
             role="menuitem"
             data-slot="data-table-download-page"
-            className="rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
             onClick={() => {
               void handleExport("page")
             }}
@@ -420,7 +420,7 @@ function DataTable<TData>({
             type="button"
             role="menuitem"
             data-slot="data-table-download-all"
-            className="rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
             onClick={() => {
               void handleExport("all")
             }}

@@ -345,7 +345,7 @@ const TreeNode = React.memo(function TreeNode({ node, depth, visited }: TreeNode
     >
       <div
         className={cn(
-          "flex cursor-pointer select-none items-center gap-1 rounded-sm px-2 py-1.5 hover:bg-accent",
+          "flex cursor-pointer select-none items-center gap-1 rounded-sm px-2 py-1.5 transition-colors hover:bg-accent",
           isSelected && "bg-accent text-accent-foreground",
         )}
         style={{ paddingInlineStart: `${depth * indentSize + 8}px` }}

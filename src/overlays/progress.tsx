@@ -25,7 +25,7 @@ function Progress({ className, value, ref, ...props }: ProgressProps) {
         data-slot="progress-indicator"
         data-state={isIndeterminate ? "indeterminate" : "determinate"}
         className={cn(
-          "h-full w-full flex-1 bg-primary transition-all",
+          "h-full w-full flex-1 bg-primary transition-[width]",
           isIndeterminate && "w-1/3 animate-pulse",
         )}
         style={

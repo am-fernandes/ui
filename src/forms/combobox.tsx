@@ -314,7 +314,7 @@ export function Combobox(props: ComboboxProps) {
                     value={CREATE_ACTION_VALUE}
                     keywords={[trimmedSearch]}
                     onSelect={() => handleCreate(trimmedSearch)}
-                    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground"
+                    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors aria-selected:bg-accent aria-selected:text-accent-foreground"
                   >
                     Usar: &ldquo;{trimmedSearch}&rdquo;
                   </CommandPrimitive.Item>
@@ -333,7 +333,7 @@ export function Combobox(props: ComboboxProps) {
                         if (isMultiple) handleMultipleSelect(option.value)
                         else handleSingleSelect(option.value)
                       }}
-                      className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
+                      className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
                     >
                       <div
                         className={cn(
