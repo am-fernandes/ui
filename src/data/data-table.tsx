@@ -540,7 +540,7 @@ function DataTable<TData>({
                   <TableRow
                     key={row.id}
                     className={cn(
-                      interactive && "cursor-pointer focus-visible:outline-none focus-visible:bg-muted/60",
+                      interactive && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset focus-visible:bg-muted/60",
                       rowClassName?.(row.original, index),
                     )}
                     role={interactive ? "button" : undefined}
