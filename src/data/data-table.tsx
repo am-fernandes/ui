@@ -73,7 +73,7 @@ function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCell
     <th
       data-slot="table-head"
       className={cn(
-        "px-4 py-4 text-left align-middle font-medium text-muted-foreground",
+        "px-3 py-2.5 text-left align-middle font-medium text-muted-foreground",
         className,
       )}
       {...props}
@@ -82,7 +82,7 @@ function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCell
 }
 function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td data-slot="table-cell" className={cn("px-4 py-4 align-middle", className)} {...props} />
+    <td data-slot="table-cell" className={cn("px-3 py-2.5 align-middle", className)} {...props} />
   )
 }
 
@@ -583,7 +583,7 @@ function DataTable<TData>({
       </div>
 
       {paginationEnabled || showRowCount ? (
-        <div className="flex items-center justify-between gap-2 px-2 py-3">
+        <div className="flex items-center justify-between gap-2 px-3 py-3">
           {showRowCount ? (
             loading ? (
               <div className="h-3 w-32 animate-pulse rounded-md bg-primary/10" />
