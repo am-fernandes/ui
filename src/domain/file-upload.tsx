@@ -306,7 +306,7 @@ function FileRow({
         aria-label={isImage ? `Ampliar ${file.name}` : `Abrir ${file.name} em nova aba`}
         className={cn(
           "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-muted-foreground cursor-pointer transition-opacity",
-          "hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           disabled && "cursor-not-allowed opacity-50",
         )}
       >

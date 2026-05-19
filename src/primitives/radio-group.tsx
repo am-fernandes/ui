@@ -83,7 +83,7 @@ function RadioGroup({
                 data-slot="radio-group-item"
                 className={cn(
                   "aspect-square size-4 shrink-0 rounded-full border border-primary text-primary",
-                  "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   "disabled:cursor-not-allowed disabled:opacity-50",
                 )}
               >
