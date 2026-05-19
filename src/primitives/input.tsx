@@ -39,7 +39,7 @@ function Input({
     <div
       data-slot="input-wrapper"
       className={cn(
-        "relative flex h-9 w-full items-center rounded-md border border-input bg-transparent text-sm transition-colors",
+        "relative flex w-full items-center rounded-md border border-input bg-transparent text-sm transition-colors",
         "focus-within:border-primary focus-within:ring-1 focus-within:ring-ring",
         hasError && "border-destructive ring-1 ring-destructive/20",
         disabled && "cursor-not-allowed opacity-50",
@@ -59,7 +59,7 @@ function Input({
         disabled={disabled}
         required={required}
         className={cn(
-          "h-full w-full bg-transparent px-3 py-3 placeholder:text-input outline-none disabled:cursor-not-allowed",
+          "w-full bg-transparent px-3 py-3 placeholder:text-input outline-none disabled:cursor-not-allowed",
           leadingIcon && "pl-2",
           trailingIcon && "pr-2",
           className,
