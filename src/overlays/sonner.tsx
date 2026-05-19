@@ -41,6 +41,8 @@ const Toaster = (props: ToasterProps) => {
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
           "--border-radius": "var(--radius)",
+          // Override Sonner's default 999999999 to keep toasts inside the system scale.
+          zIndex: "var(--z-toast)",
         } as React.CSSProperties
       }
       {...props}

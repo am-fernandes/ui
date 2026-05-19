@@ -10,8 +10,8 @@ import { overlayBase } from "./_internal/animations"
 
 const sheetVariants = cva(
   cn(
-    "fixed z-50 gap-4 bg-background p-6 transition ease-in-out",
-    "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
+    "fixed z-[var(--z-modal)] gap-4 bg-background p-6 transition",
+    "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-[var(--motion-slowest)] data-[state=open]:duration-[var(--motion-slowest)]",
   ),
   {
     variants: {
