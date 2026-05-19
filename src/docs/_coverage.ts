@@ -3,7 +3,7 @@
  * Run `bun run sync:coverage` to refresh.
  *
  * Source: coverage/coverage-summary.json (vitest + v8 provider)
- * Generated: 2026-05-19T02:10:48.302Z
+ * Generated: 2026-05-19T03:19:07.132Z
  */
 
 export interface CoverageMetric {
@@ -28,28 +28,28 @@ export interface CoverageRow {
   branches: number
 }
 
-export const COVERAGE_GENERATED_AT = "2026-05-19T02:10:48.302Z"
+export const COVERAGE_GENERATED_AT = "2026-05-19T03:19:07.132Z"
 
 export const TOTAL_COVERAGE: CoverageFile = {
   "lines": {
     "total": 4412,
-    "covered": 4064,
-    "pct": 92.11
+    "covered": 4326,
+    "pct": 98.05
   },
   "statements": {
     "total": 4412,
-    "covered": 4064,
-    "pct": 92.11
+    "covered": 4326,
+    "pct": 98.05
   },
   "functions": {
     "total": 178,
-    "covered": 150,
-    "pct": 84.26
+    "covered": 171,
+    "pct": 96.06
   },
   "branches": {
-    "total": 960,
-    "covered": 791,
-    "pct": 82.39
+    "total": 1154,
+    "covered": 1079,
+    "pct": 93.5
   }
 } as const
 
@@ -65,10 +65,10 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     "file": "data/data-table.tsx",
     "group": "Data",
-    "lines": 93.72,
-    "statements": 93.72,
-    "functions": 81.81,
-    "branches": 78.82
+    "lines": 99.33,
+    "statements": 99.33,
+    "functions": 90.9,
+    "branches": 92.15
   },
   {
     "file": "data/image.tsx",
@@ -97,18 +97,18 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     "file": "data/tree.tsx",
     "group": "Data",
-    "lines": 89.83,
-    "statements": 89.83,
+    "lines": 98.03,
+    "statements": 98.03,
     "functions": 90.9,
-    "branches": 78.94
+    "branches": 91.17
   },
   {
     "file": "data/video.tsx",
     "group": "Data",
-    "lines": 84.16,
-    "statements": 84.16,
-    "functions": 66.66,
-    "branches": 73.52
+    "lines": 100,
+    "statements": 100,
+    "functions": 100,
+    "branches": 90.24
   },
   {
     "file": "domain/currency-input.tsx",
@@ -121,26 +121,26 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     "file": "domain/file-upload.tsx",
     "group": "Domain",
-    "lines": 79.25,
-    "statements": 79.25,
-    "functions": 54.54,
-    "branches": 74.75
+    "lines": 85.43,
+    "statements": 85.43,
+    "functions": 77.27,
+    "branches": 91.4
   },
   {
     "file": "domain/input-otp.tsx",
     "group": "Domain",
-    "lines": 96.25,
-    "statements": 96.25,
+    "lines": 100,
+    "statements": 100,
     "functions": 100,
-    "branches": 71.42
+    "branches": 100
   },
   {
     "file": "domain/multi-input.tsx",
     "group": "Domain",
-    "lines": 95.34,
-    "statements": 95.34,
-    "functions": 92.3,
-    "branches": 79.1
+    "lines": 100,
+    "statements": 100,
+    "functions": 100,
+    "branches": 96
   },
   {
     "file": "domain/percentage-input.tsx",
@@ -148,15 +148,15 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     "lines": 100,
     "statements": 100,
     "functions": 100,
-    "branches": 55.55
+    "branches": 100
   },
   {
     "file": "forms/calendar.tsx",
     "group": "Forms",
-    "lines": 81.3,
-    "statements": 81.3,
-    "functions": 63.63,
-    "branches": 57.89
+    "lines": 99.53,
+    "statements": 99.53,
+    "functions": 100,
+    "branches": 92.15
   },
   {
     "file": "forms/combobox.tsx",
@@ -169,10 +169,10 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     "file": "forms/date-input.tsx",
     "group": "Forms",
-    "lines": 96.9,
-    "statements": 96.9,
-    "functions": 60,
-    "branches": 61.11
+    "lines": 100,
+    "statements": 100,
+    "functions": 100,
+    "branches": 92.3
   },
   {
     "file": "forms/date-range-picker.tsx",
@@ -185,10 +185,10 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     "file": "forms/time-picker.tsx",
     "group": "Forms",
-    "lines": 71.55,
-    "statements": 71.55,
-    "functions": 76.92,
-    "branches": 64.28
+    "lines": 98.27,
+    "statements": 98.27,
+    "functions": 100,
+    "branches": 98.55
   },
   {
     "file": "hooks/use-is-mobile.ts",
@@ -241,18 +241,18 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     "file": "navigation/command-palette.tsx",
     "group": "Navigation",
-    "lines": 97.75,
-    "statements": 97.75,
+    "lines": 100,
+    "statements": 100,
     "functions": 100,
-    "branches": 76.92
+    "branches": 100
   },
   {
     "file": "navigation/sidebar.tsx",
     "group": "Navigation",
-    "lines": 75.67,
-    "statements": 75.67,
-    "functions": 60,
-    "branches": 72.91
+    "lines": 99.54,
+    "statements": 99.54,
+    "functions": 100,
+    "branches": 91.25
   },
   {
     "file": "navigation/tabs.tsx",
@@ -284,15 +284,15 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     "lines": 100,
     "statements": 100,
     "functions": 100,
-    "branches": 66.66
+    "branches": 100
   },
   {
     "file": "overlays/dialog.tsx",
     "group": "Overlays",
-    "lines": 94.93,
-    "statements": 94.93,
-    "functions": 50,
-    "branches": 92.3
+    "lines": 100,
+    "statements": 100,
+    "functions": 100,
+    "branches": 100
   },
   {
     "file": "overlays/popover.tsx",
@@ -417,10 +417,10 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     "file": "primitives/textarea.tsx",
     "group": "Primitives",
-    "lines": 97.77,
-    "statements": 97.77,
+    "lines": 100,
+    "statements": 100,
     "functions": 100,
-    "branches": 71.42
+    "branches": 95.83
   },
   {
     "file": "primitives/typography.tsx",
@@ -428,6 +428,6 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     "lines": 100,
     "statements": 100,
     "functions": 100,
-    "branches": 66.66
+    "branches": 100
   }
 ] as const

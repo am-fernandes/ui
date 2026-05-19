@@ -120,4 +120,120 @@ describe("MultiInput", () => {
     fireEvent.keyDown(input, { key: "Backspace" })
     expect(onValueChange).toHaveBeenLastCalledWith(["a"])
   })
+
+  // -- Additional coverage tests below --------------------------------------
+
+  it("maxItems=undefined allows unlimited tokens", () => {
+    const onValueChange = vi.fn()
+    const onReject = vi.fn()
+    render(<MultiInput value={[]} onValueChange={onValueChange} onReject={onReject} />)
+    const input = screen.getByRole("textbox") as HTMLInputElement
+    fireEvent.change(input, { target: { value: "a,b,c,d,e,f,g,h,i,j" } })
+    fireEvent.keyDown(input, { key: "Enter" })
+    expect(onValueChange).toHaveBeenLastCalledWith([
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h",
+      "i",
+      "j",
+    ])
+    expect(onReject).not.toHaveBeenCalled()
+  })
+
+  it("maxItems caps numeric tokens and fires 'max-items' rejection", () => {
+    const onValueChange = vi.fn()
+    const onReject = vi.fn()
+    render(
+      <MultiInput
+        type="number"
+        value={[]}
+        onValueChange={onValueChange}
+        onReject={onReject}
+        maxItems={2}
+      />,
+    )
+    const input = screen.getByRole("textbox") as HTMLInputElement
+    fireEvent.change(input, { target: { value: "1,2,3,4" } })
+    fireEvent.keyDown(input, { key: "Enter" })
+    expect(onValueChange).toHaveBeenLastCalledWith([1, 2])
+    expect(onReject).toHaveBeenCalledWith("max-items")
+  })
+
+  it("renders prefix and suffix around each token", () => {
+    render(
+      <MultiInput type="number" value={[5]} onValueChange={vi.fn()} prefix="R$ " suffix=" dias" />,
+    )
+    expect(screen.getByText("R$ 5 dias")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Remover R\$ 5 dias/ })).toBeInTheDocument()
+  })
+
+  it("error state applies the destructive border class", () => {
+    const { container } = render(<MultiInput value={["a"]} onValueChange={vi.fn()} error="erro" />)
+    const wrapper = container.querySelector("[data-slot='multi-input']")
+    expect(wrapper?.className).toMatch(/border-destructive/)
+    expect(screen.getByRole("alert")).toHaveTextContent("erro")
+  })
+
+  it("removing a token via mousedown does not bubble to the wrapper / blur the input", () => {
+    const onValueChange = vi.fn()
+    render(<MultiInput value={["alpha", "beta"]} onValueChange={onValueChange} />)
+    const removeBtn = screen.getByRole("button", { name: /Remover beta/ })
+    fireEvent.mouseDown(removeBtn)
+    expect(onValueChange).toHaveBeenLastCalledWith(["alpha"])
+  })
+
+  it("paste without separators leaves the input untouched (default text insertion)", () => {
+    const onValueChange = vi.fn()
+    render(<MultiInput value={[]} onValueChange={onValueChange} />)
+    const input = screen.getByRole("textbox") as HTMLInputElement
+    fireEvent.paste(input, {
+      clipboardData: { getData: () => "uma palavra" },
+    })
+    // No commit triggered — preventDefault was NOT called, browser pastes natively
+    expect(onValueChange).not.toHaveBeenCalled()
+  })
+
+  it("Backspace on a non-empty input does NOT remove tokens", () => {
+    const onValueChange = vi.fn()
+    render(<MultiInput value={["a"]} onValueChange={onValueChange} />)
+    const input = screen.getByRole("textbox") as HTMLInputElement
+    fireEvent.change(input, { target: { value: "x" } })
+    fireEvent.keyDown(input, { key: "Backspace" })
+    expect(onValueChange).not.toHaveBeenCalled()
+  })
+
+  it("disabled prevents the remove button from rendering", () => {
+    render(<MultiInput value={["a"]} onValueChange={vi.fn()} disabled />)
+    expect(screen.queryByRole("button", { name: /Remover a/ })).not.toBeInTheDocument()
+  })
+
+  it("number-mode dedupes tokens against existing value", () => {
+    const onValueChange = vi.fn()
+    render(<MultiInput type="number" value={[1, 2]} onValueChange={onValueChange} />)
+    const input = screen.getByRole("textbox") as HTMLInputElement
+    fireEvent.change(input, { target: { value: "2,3,3" } })
+    fireEvent.keyDown(input, { key: "Enter" })
+    expect(onValueChange).toHaveBeenLastCalledWith([1, 2, 3])
+  })
+
+  it("removing a token in number mode filters the numeric array", () => {
+    const onValueChange = vi.fn()
+    render(<MultiInput type="number" value={[1, 2, 3]} onValueChange={onValueChange} />)
+    const removeBtn = screen.getByRole("button", { name: /Remover 2/ })
+    fireEvent.mouseDown(removeBtn)
+    expect(onValueChange).toHaveBeenLastCalledWith([1, 3])
+  })
+
+  it("empty-string parse on Enter is a no-op", () => {
+    const onValueChange = vi.fn()
+    render(<MultiInput value={["a"]} onValueChange={onValueChange} />)
+    const input = screen.getByRole("textbox") as HTMLInputElement
+    fireEvent.keyDown(input, { key: "Enter" })
+    expect(onValueChange).not.toHaveBeenCalled()
+  })
 })

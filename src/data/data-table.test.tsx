@@ -2,7 +2,7 @@ import type { ColumnDef, PaginationState, SortingState } from "@tanstack/react-t
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 import { DataTable } from "./data-table"
 
@@ -178,5 +178,120 @@ describe("DataTable", () => {
     )
     expect(screen.getByText("Bravo")).toBeInTheDocument()
     expect(screen.queryByText("Alpha")).not.toBeInTheDocument()
+  })
+
+  it("uses TanStack's default `includesString` when no searchableColumns are given", () => {
+    // Controlled globalFilter without `searchableColumns` exercises the default
+    // matcher branch (no global filter input rendered, but filter still applies).
+    render(<DataTable columns={columns} data={data} globalFilter="alp" />)
+    expect(screen.getByText("Alpha")).toBeInTheDocument()
+    expect(screen.queryByText("Bravo")).not.toBeInTheDocument()
+  })
+
+  it("shows row count via the default rowCount formatter when showRowCount=true", async () => {
+    render(<DataTable columns={columns} data={data} showRowCount searchableColumns={["name"]} />)
+    expect(screen.getByText("3 registros")).toBeInTheDocument()
+    // Apply filter so filtered != total -> hits the alternate branch.
+    await userEvent.type(screen.getByPlaceholderText("Buscar..."), "alp")
+    expect(screen.getByText("1 de 3 registros")).toBeInTheDocument()
+  })
+
+  it("singularizes the row count when total == 1", () => {
+    render(<DataTable columns={columns} data={[data[0]!]} showRowCount />)
+    expect(screen.getByText("1 registro")).toBeInTheDocument()
+  })
+
+  it("uses custom labels.search / labels.empty / labels.rowCount", async () => {
+    render(
+      <DataTable
+        columns={columns}
+        data={data}
+        searchableColumns={["name"]}
+        showRowCount
+        labels={{
+          search: "Pesquisar pessoas",
+          empty: "Nenhum cadastro",
+          rowCount: (f, t) => `Mostrando ${f}/${t}`,
+        }}
+      />,
+    )
+    expect(screen.getByPlaceholderText("Pesquisar pessoas")).toBeInTheDocument()
+    expect(screen.getByText("Mostrando 3/3")).toBeInTheDocument()
+    await userEvent.type(screen.getByPlaceholderText("Pesquisar pessoas"), "zzzz")
+    expect(screen.getByText("Nenhum cadastro")).toBeInTheDocument()
+    expect(screen.getByText("Mostrando 0/3")).toBeInTheDocument()
+  })
+
+  it("manualPagination respects pageCount and skips client-side pagination", async () => {
+    // 12 rows but only the first page is materialized — manualPagination delegates
+    // slicing to the consumer, so all rows passed in remain visible.
+    const many: Row[] = Array.from({ length: 12 }, (_, i) => ({
+      name: `Row ${i + 1}`,
+      age: 20 + i,
+    }))
+    render(
+      <DataTable
+        columns={columns}
+        data={many}
+        manualPagination
+        pageCount={4}
+        pagination={{ pageSize: 5 }}
+      />,
+    )
+    expect(screen.getByText(/Página 1 de 4/)).toBeInTheDocument()
+    // With manualPagination, the rows array is rendered verbatim.
+    expect(screen.getByText("Row 12")).toBeInTheDocument()
+  })
+
+  it("invokes onSortingChange when sort is controlled (handler short-circuit branch)", async () => {
+    const onSortingChange = vi.fn()
+    render(
+      <DataTable columns={columns} data={data} sorting={[]} onSortingChange={onSortingChange} />,
+    )
+    await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
+    expect(onSortingChange).toHaveBeenCalled()
+  })
+
+  it("invokes onGlobalFilterChange when globalFilter is controlled (short-circuit branch)", async () => {
+    const onGlobalFilterChange = vi.fn()
+    render(
+      <DataTable
+        columns={columns}
+        data={data}
+        searchableColumns={["name"]}
+        globalFilter=""
+        onGlobalFilterChange={onGlobalFilterChange}
+      />,
+    )
+    await userEvent.type(screen.getByPlaceholderText("Buscar..."), "a")
+    expect(onGlobalFilterChange).toHaveBeenCalled()
+  })
+
+  it("renders a non-sortable column header (canSort=false branch)", () => {
+    const noSortCols: ColumnDef<Row>[] = [
+      { accessorKey: "name", header: "Name", enableSorting: false },
+      { accessorKey: "age", header: "Age", enableSorting: false },
+    ]
+    render(<DataTable columns={noSortCols} data={data} />)
+    // No sort button when sorting is disabled — header text is rendered directly.
+    expect(screen.queryByRole("button", { name: /Ordenar por/i })).not.toBeInTheDocument()
+    expect(screen.getByText("Name")).toBeInTheDocument()
+  })
+
+  it("renders an element-typed header (non-string header branch)", async () => {
+    const cols: ColumnDef<Row>[] = [
+      {
+        accessorKey: "name",
+        header: () => <span data-testid="hdr-name">Custom</span>,
+      },
+      { accessorKey: "age", header: "Age" },
+    ]
+    render(<DataTable columns={cols} data={data} />)
+    expect(screen.getByTestId("hdr-name")).toBeInTheDocument()
+    // Sort button still rendered but its aria-label uses column id, not the JSX.
+    const btn = screen
+      .getAllByRole("button")
+      .find((b) => /Ordenar por name/i.test(b.getAttribute("aria-label") ?? ""))
+    expect(btn).toBeTruthy()
   })
 })

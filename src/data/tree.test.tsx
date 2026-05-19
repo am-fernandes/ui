@@ -149,4 +149,125 @@ describe("Tree", () => {
     expect(warn).toHaveBeenCalled()
     warn.mockRestore()
   })
+
+  it("invokes onExpandedChange when expansion is controlled and a node is clicked", async () => {
+    const onExpandedChange = vi.fn()
+    render(<Tree data={data} expanded={new Set<string>()} onExpandedChange={onExpandedChange} />)
+    await userEvent.click(screen.getByText("Root"))
+    expect(onExpandedChange).toHaveBeenCalled()
+    // Should be expanded set with `root` in it.
+    const [arg] = onExpandedChange.mock.calls[0]!
+    expect(arg.has("root")).toBe(true)
+  })
+
+  it("keyboard nav: ArrowUp moves focus to the previous item", () => {
+    render(<Tree data={data} defaultExpanded={["root"]} />)
+    const items = screen.getAllByRole("treeitem")
+    // items: Root, Child 1, Child 2, Sibling
+    const child2 = items[2] as HTMLElement
+    child2.focus()
+    fireEvent.keyDown(child2, { key: "ArrowUp" })
+    // After ArrowUp, Child 1 (index 1) is focused.
+    const updated = screen.getAllByRole("treeitem")
+    expect(updated[1]?.getAttribute("tabindex")).toBe("0")
+  })
+
+  it("keyboard nav: ArrowRight on expanded parent moves focus to first child", () => {
+    render(<Tree data={data} defaultExpanded={["root"]} />)
+    const items = screen.getAllByRole("treeitem")
+    const root = items[0] as HTMLElement
+    root.focus()
+    fireEvent.keyDown(root, { key: "ArrowRight" })
+    const updated = screen.getAllByRole("treeitem")
+    // First child becomes focused.
+    expect(updated[1]?.getAttribute("tabindex")).toBe("0")
+  })
+
+  it("keyboard nav: ArrowLeft on a child moves focus to the parent", () => {
+    render(<Tree data={data} defaultExpanded={["root"]} />)
+    const items = screen.getAllByRole("treeitem")
+    const child1 = items[1] as HTMLElement
+    child1.focus()
+    fireEvent.keyDown(child1, { key: "ArrowLeft" })
+    const updated = screen.getAllByRole("treeitem")
+    // Parent (Root) is focused.
+    expect(updated[0]?.getAttribute("tabindex")).toBe("0")
+  })
+
+  it("keyboard nav: Home focuses the first visible item", () => {
+    render(<Tree data={data} defaultExpanded={["root"]} />)
+    const items = screen.getAllByRole("treeitem")
+    const last = items[items.length - 1] as HTMLElement
+    last.focus()
+    fireEvent.keyDown(last, { key: "Home" })
+    const updated = screen.getAllByRole("treeitem")
+    expect(updated[0]?.getAttribute("tabindex")).toBe("0")
+  })
+
+  it("keyboard nav: End focuses the last visible item", () => {
+    render(<Tree data={data} defaultExpanded={["root"]} />)
+    const items = screen.getAllByRole("treeitem")
+    const root = items[0] as HTMLElement
+    root.focus()
+    fireEvent.keyDown(root, { key: "End" })
+    const updated = screen.getAllByRole("treeitem")
+    expect(updated[updated.length - 1]?.getAttribute("tabindex")).toBe("0")
+  })
+
+  it("keyboard nav: Enter on a leaf calls onSelectedChange", () => {
+    const onSelectedChange = vi.fn()
+    render(<Tree data={data} onSelectedChange={onSelectedChange} />)
+    const items = screen.getAllByRole("treeitem")
+    // Sibling is the second top-level (leaf) item.
+    const sibling = items[1] as HTMLElement
+    sibling.focus()
+    fireEvent.keyDown(sibling, { key: "Enter" })
+    expect(onSelectedChange).toHaveBeenCalledWith("sibling")
+  })
+
+  it("keyboard nav: Space on a parent toggles expansion and fires onSelectedChange", () => {
+    const onSelectedChange = vi.fn()
+    render(<Tree data={data} onSelectedChange={onSelectedChange} />)
+    const items = screen.getAllByRole("treeitem")
+    const root = items[0] as HTMLElement
+    root.focus()
+    fireEvent.keyDown(root, { key: " " })
+    expect(onSelectedChange).toHaveBeenCalledWith("root")
+    // Children become visible because Space toggled expansion.
+    expect(screen.getByText("Child 1")).toBeInTheDocument()
+  })
+
+  it("keyboard nav: ArrowRight on a collapsed leaf is a no-op", () => {
+    const onSelectedChange = vi.fn()
+    render(<Tree data={data} onSelectedChange={onSelectedChange} />)
+    const items = screen.getAllByRole("treeitem")
+    // Sibling is a leaf at index 1.
+    const sibling = items[1] as HTMLElement
+    sibling.focus()
+    fireEvent.keyDown(sibling, { key: "ArrowRight" })
+    // No children should appear; sibling stays focused.
+    const updated = screen.getAllByRole("treeitem")
+    expect(updated.length).toBe(2)
+  })
+
+  it("keyboard nav: ArrowLeft on a top-level leaf with no parent does not change focus", () => {
+    // Initial focused id is "root" (first visible). Dispatch ArrowLeft on the
+    // Sibling treeitem — since Sibling has no parent and no children to
+    // collapse, the handler is a no-op. Root keeps the roving tabindex.
+    render(<Tree data={data} />)
+    const items = screen.getAllByRole("treeitem")
+    const sibling = items[1] as HTMLElement
+    fireEvent.keyDown(sibling, { key: "ArrowLeft" })
+    const updated = screen.getAllByRole("treeitem")
+    expect(updated[0]?.getAttribute("tabindex")).toBe("0")
+    expect(updated[1]?.getAttribute("tabindex")).toBe("-1")
+  })
+
+  it("sets initial focusedId from the `selected` prop when present", () => {
+    render(<Tree data={data} selected="sibling" />)
+    const items = screen.getAllByRole("treeitem")
+    // Sibling (index 1) should have tabindex=0 because it's the initial focus.
+    expect(items[1]?.getAttribute("tabindex")).toBe("0")
+    expect(items[1]?.getAttribute("aria-selected")).toBe("true")
+  })
 })

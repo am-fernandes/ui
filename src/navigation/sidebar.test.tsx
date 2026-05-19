@@ -1,6 +1,8 @@
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { LayoutDashboard, Users } from "lucide-react"
-import { describe, expect, it } from "vitest"
+import * as React from "react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { Sidebar, type SidebarItem } from "./sidebar"
 
@@ -70,5 +72,187 @@ describe("Sidebar (data-driven)", () => {
     expect(screen.getByText("Relatórios")).toBeInTheDocument()
     expect(screen.getByText("Financeiro")).toBeInTheDocument()
     expect(screen.getByText("Operacional")).toBeInTheDocument()
+  })
+
+  it("applies right-side border classes when side=right", () => {
+    const { container } = render(<Sidebar items={items} side="right" />)
+    const aside = container.querySelector("aside[data-slot='sidebar']") as HTMLElement
+    expect(aside).toBeTruthy()
+    expect(aside.getAttribute("data-side")).toBe("right")
+    expect(aside.className).toContain("border-l")
+    expect(aside.className).toContain("border-r-0")
+  })
+
+  it("collapsible=icon collapsed hides labels but keeps icon", () => {
+    const { container } = render(
+      <Sidebar
+        items={items}
+        collapsible="icon"
+        defaultOpen={false}
+        groups={[{ label: "Geral", items }]}
+      />,
+    )
+    // Label "Geral" is hidden when collapsed-to-icon.
+    expect(screen.queryByText("Geral")).not.toBeInTheDocument()
+    // The labels "Dashboard"/"Usuários" should not be in the document either.
+    expect(screen.queryByText("Dashboard")).not.toBeInTheDocument()
+    // The aside should report collapsed state.
+    const aside = container.querySelector("aside[data-slot='sidebar']") as HTMLElement
+    expect(aside.getAttribute("data-state")).toBe("collapsed")
+  })
+
+  it("renders an item without href as a button (and fires onClick)", async () => {
+    const onClick = vi.fn()
+    render(
+      <Sidebar
+        items={[{ id: "btn", label: "Configurações", onClick, icon: undefined as never }]}
+      />,
+    )
+    const btn = screen.getByRole("button", { name: /Configurações/i })
+    expect(btn.tagName).toBe("BUTTON")
+    await userEvent.click(btn)
+    expect(onClick).toHaveBeenCalled()
+  })
+
+  it("renders disabled item with aria-disabled when it's an anchor", () => {
+    render(<Sidebar items={[{ id: "a", label: "Diz", href: "/x", disabled: true }]} />)
+    const link = screen.getByText("Diz").closest("a") as HTMLAnchorElement
+    expect(link.getAttribute("aria-disabled")).toBe("true")
+  })
+
+  it("supports controlled open/onOpenChange via keyboard shortcut Ctrl+B", () => {
+    const onOpenChange = vi.fn()
+    render(<Sidebar items={items} open={true} onOpenChange={onOpenChange} />)
+    fireEvent.keyDown(window, { key: "b", ctrlKey: true })
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it("ignores keyboard shortcut when focus is in an input", () => {
+    const onOpenChange = vi.fn()
+    render(
+      <>
+        <input data-testid="text" />
+        <Sidebar items={items} open={true} onOpenChange={onOpenChange} />
+      </>,
+    )
+    const input = screen.getByTestId("text") as HTMLInputElement
+    input.focus()
+    fireEvent.keyDown(input, { key: "b", ctrlKey: true })
+    expect(onOpenChange).not.toHaveBeenCalled()
+  })
+
+  it("does NOT toggle on shortcut when keyboardShortcut={null}", () => {
+    const onOpenChange = vi.fn()
+    render(
+      <Sidebar items={items} open={true} onOpenChange={onOpenChange} keyboardShortcut={null} />,
+    )
+    fireEvent.keyDown(window, { key: "b", ctrlKey: true })
+    expect(onOpenChange).not.toHaveBeenCalled()
+  })
+
+  describe("persistOpenState (uncontrolled)", () => {
+    afterEach(() => {
+      // Wipe any cookies set by tests.
+      const all = document.cookie.split(";")
+      for (const c of all) {
+        const eq = c.indexOf("=")
+        const name = (eq > -1 ? c.substring(0, eq) : c).trim()
+        if (name) {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
+        }
+      }
+    })
+
+    it("reads initial open state from cookie when present", () => {
+      document.cookie = "amf-ui:sidebar:state=false; path=/"
+      const { container } = render(<Sidebar items={items} persistOpenState defaultOpen />)
+      const aside = container.querySelector("aside[data-slot='sidebar']") as HTMLElement
+      // Cookie said `false`, defaultOpen is true — cookie wins.
+      expect(aside.getAttribute("data-state")).toBe("collapsed")
+    })
+
+    it("falls back to defaultOpen when cookie is absent", () => {
+      const { container } = render(<Sidebar items={items} persistOpenState defaultOpen={false} />)
+      const aside = container.querySelector("aside[data-slot='sidebar']") as HTMLElement
+      expect(aside.getAttribute("data-state")).toBe("collapsed")
+    })
+
+    it("writes cookie when toggled via keyboard shortcut", () => {
+      // jsdom won't persist `Secure` cookies over the default http://localhost
+      // origin, so we spy on the setter directly to assert the write happens.
+      const proto = Object.getPrototypeOf(document) as Document
+      const original = Object.getOwnPropertyDescriptor(proto, "cookie")
+      const setSpy = vi.fn()
+      Object.defineProperty(document, "cookie", {
+        configurable: true,
+        get: () => "",
+        set: setSpy,
+      })
+      try {
+        render(<Sidebar items={items} persistOpenState defaultOpen />)
+        fireEvent.keyDown(window, { key: "b", metaKey: true })
+        const writes = setSpy.mock.calls.map((c) => c[0] as string)
+        expect(writes.some((w) => w.includes("amf-ui:sidebar:state=false"))).toBe(true)
+      } finally {
+        if (original) Object.defineProperty(proto, "cookie", original)
+      }
+    })
+  })
+
+  describe("mobile rendering (Sheet branch)", () => {
+    beforeEach(() => {
+      Object.defineProperty(window, "matchMedia", {
+        writable: true,
+        value: (query: string) => ({
+          matches: true,
+          media: query,
+          onchange: null,
+          addListener: () => {},
+          removeListener: () => {},
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          dispatchEvent: () => false,
+        }),
+      })
+    })
+
+    afterEach(() => {
+      Object.defineProperty(window, "matchMedia", {
+        writable: true,
+        value: (query: string) => ({
+          matches: false,
+          media: query,
+          onchange: null,
+          addListener: () => {},
+          removeListener: () => {},
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          dispatchEvent: () => false,
+        }),
+      })
+    })
+
+    it("wraps the sidebar in a Sheet when isMobile=true", () => {
+      render(
+        <Sidebar
+          items={items}
+          header={<div data-testid="hdr">Logo</div>}
+          footer={<div data-testid="ftr">User</div>}
+          open={true}
+        />,
+      )
+      // The Sheet's Dialog Title is rendered ("Sidebar"); the mobile aside has
+      // data-mobile="true" on the inner sidebar wrapper.
+      const mobileWrap = document.querySelector('[data-slot="sidebar"][data-mobile="true"]')
+      expect(mobileWrap).toBeTruthy()
+      expect(screen.getByTestId("hdr")).toBeInTheDocument()
+      expect(screen.getByTestId("ftr")).toBeInTheDocument()
+    })
+
+    it("falls back to aside rendering when collapsible='none' even on mobile", () => {
+      const { container } = render(<Sidebar items={items} collapsible="none" />)
+      const aside = container.querySelector("aside[data-slot='sidebar']")
+      expect(aside).toBeTruthy()
+    })
   })
 })

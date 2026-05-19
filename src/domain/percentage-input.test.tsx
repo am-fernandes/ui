@@ -85,4 +85,67 @@ describe("PercentageInput", () => {
     fireEvent.change(input, { target: { value: "" } })
     expect(onValueChange).toHaveBeenLastCalledWith(0)
   })
+
+  // -- Additional coverage tests below --------------------------------------
+
+  it("sets aria-invalid and renders the error message when error is provided", () => {
+    render(<PercentageInput value={0} onValueChange={vi.fn()} error="Inválido" />)
+    const input = screen.getByDisplayValue("0,00") as HTMLInputElement
+    expect(input).toHaveAttribute("aria-invalid", "true")
+    expect(screen.getByRole("alert")).toHaveTextContent("Inválido")
+    expect(input.className).toMatch(/border-destructive/)
+  })
+
+  it("does not set aria-invalid when error is empty string", () => {
+    render(<PercentageInput value={0} onValueChange={vi.fn()} error="" />)
+    const input = screen.getByDisplayValue("0,00") as HTMLInputElement
+    expect(input).not.toHaveAttribute("aria-invalid")
+  })
+
+  it("renders the description text below the field", () => {
+    render(
+      <PercentageInput
+        value={0}
+        onValueChange={vi.fn()}
+        description="Informe a porcentagem desejada"
+      />,
+    )
+    expect(screen.getByText("Informe a porcentagem desejada")).toBeInTheDocument()
+  })
+
+  it("renders the label and links it to the input", () => {
+    render(<PercentageInput value={0} onValueChange={vi.fn()} label="Taxa" />)
+    const label = screen.getByText("Taxa")
+    expect(label).toBeInTheDocument()
+    const input = screen.getByDisplayValue("0,00") as HTMLInputElement
+    expect(input.id).toBeTruthy()
+  })
+
+  it("supports labelPosition='left' on the field shell", () => {
+    const { container } = render(
+      <PercentageInput value={0} onValueChange={vi.fn()} label="Taxa" labelPosition="left" />,
+    )
+    const shell = container.querySelector("[data-slot='field-shell']")
+    expect(shell).toHaveAttribute("data-label-position", "left")
+  })
+
+  it("supports labelPosition='hidden' (label is sr-only)", () => {
+    render(
+      <PercentageInput value={0} onValueChange={vi.fn()} label="Taxa" labelPosition="hidden" />,
+    )
+    const label = screen.getByText("Taxa")
+    expect(label.className).toMatch(/sr-only/)
+  })
+
+  it("required is forwarded to the field label/required indicator", () => {
+    render(<PercentageInput value={0} onValueChange={vi.fn()} label="Taxa" required />)
+    // FieldShell uses Label which renders a required marker (asterisk) when required is set
+    expect(screen.getByText("Taxa")).toBeInTheDocument()
+  })
+
+  it("disabled flag disables the input element", () => {
+    render(<PercentageInput value={0} onValueChange={vi.fn()} disabled />)
+    const input = screen.getByDisplayValue("0,00") as HTMLInputElement
+    expect(input).toBeDisabled()
+  })
 })
