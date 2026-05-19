@@ -5,21 +5,22 @@ import { Typography } from "../primitives/typography"
 
 # Typography
 
-A AM Fernandes adota **Google Sans Flex** como fonte oficial — uma variable font otimizada para interfaces, com escala fluida de tamanhos (`opsz 6–144`) e pesos (`wght 1–1000`).
+A AM Fernandes adota **Geist** como fonte oficial — uma variable font da Vercel/Basement Studio, free e open-source, desenhada especificamente para UIs modernas.
 
-## Por que Google Sans Flex?
+## Por que Geist?
 
-| Critério | Google Sans Flex | Inter | Roboto | Nunito Sans |
-|---|---|---|---|---|
-| Variable font | ✅ opsz + wght fluidos | ✅ apenas wght | ❌ pesos discretos | ✅ apenas wght |
-| Optical sizing (opsz) | ✅ corpos pequenos legíveis sem reflow | ❌ | ❌ | ❌ |
-| Latin Extended (pt-BR) | ✅ | ✅ | ✅ | ✅ |
-| Métricas otimizadas para UI | ✅ desenhada pelo Google Material UX | ⚠️ aceitável | ⚠️ datada (2011) | ⚠️ display-oriented |
-| Peso final no bundle | 1 arquivo variável | 1 arquivo | 5+ arquivos | 2+ arquivos |
+| Critério | Geist | Inter | Roboto |
+|---|---|---|---|
+| Variable font | ✅ `wght 100..900` fluido | ✅ apenas wght | ❌ pesos discretos |
+| Métricas para UI | ✅ desenhada para produtos web/devtools | ⚠️ aceitável | ⚠️ datada (2011) |
+| Latin Extended (pt-BR) | ✅ | ✅ | ✅ |
+| License | ✅ SIL OFL (free, redistribuível) | ✅ SIL OFL | ✅ Apache 2.0 |
+| Peso final | 1 arquivo variável (~32 kB woff2 subset) | 1 arquivo | 5+ arquivos |
+| Stack | usada pelo shadcn/ui, Vercel, Next.js docs | clássica do Material/early shadcn | datada |
 
-**Conclusão:** Roboto e Nunito Sans foram desenhadas antes do amadurecimento das variable fonts (overhead em rede e cache). Inter é tecnicamente competente mas não tem optical sizing — textos pequenos parecem "apertados". Google Sans Flex resolve ambos.
+**Conclusão:** Geist é a escolha contemporânea — alinhada com o ecossistema shadcn/ui que a lib referencia, com glyphs desenhados para code+UI e fallback gracioso na stack de sistema quando o webfont não carrega.
 
-Disponível via `--font-sans` (CSS) e na classe Tailwind `font-sans`.
+Disponível via `--font-sans` (CSS) e na classe Tailwind `font-sans`. Carregada via Google Fonts CDN no import `@amfernandesinc/ui/fonts`.
 
 ## Variantes
 

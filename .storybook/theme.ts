@@ -10,7 +10,7 @@ export default create({
   appContentBg: "#ffffff",
   appBorderColor: "#dddde5",
   appBorderRadius: 8,
-  fontBase: '"Google Sans Flex", sans-serif',
+  fontBase: '"Geist", ui-sans-serif, system-ui, sans-serif',
   fontCode: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", monospace',
   textColor: "#0b0d14",
   textInverseColor: "#ffffff",
