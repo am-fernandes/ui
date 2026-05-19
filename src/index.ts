@@ -9,6 +9,7 @@
 // Data
 export { Card, type CardProps } from "./data/card"
 export { DataTable, type DataTableProps } from "./data/data-table"
+export { dateColumn, type DateColumnOptions, type DateColumnShowTime } from "./data/columns"
 export { Image, type ImageProps } from "./data/image"
 export { ScrollArea, type ScrollAreaOrientation } from "./data/scroll-area"
 export { tableStyles, type TableStyles } from "./data/table-styles"

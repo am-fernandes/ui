@@ -3,6 +3,7 @@ import type { ColumnDef, PaginationState, SortingState } from "@tanstack/react-t
 import { useState } from "react"
 
 import { Badge } from "../primitives/badge"
+import { dateColumn } from "./columns"
 import { DataTable } from "./data-table"
 
 interface Contrato {
@@ -176,7 +177,12 @@ const meta = {
           "- `globalFilter` / `onGlobalFilterChange` — filtro de busca controlado.",
           "- `pageIndex` / `onPaginationChange` / `pageCount` / `manualPagination` — paginação server-side.",
           "- `labels?: { search?, empty?, rowCount?(filtered, total) => string }` — sobrescreve os textos default.",
+          "- `onRowClick?: (row, event) => void` — torna cada linha clicável. Adiciona `role=\"button\"`, `tabIndex=0` e suporte a Enter/Espaço automaticamente.",
+          "- `rowClassName?: (row, index) => string | undefined` — classes por linha. Retorne `undefined` para a linha herdar o estilo padrão. Útil para colorir linhas por status.",
           "- `className?: string` — classes extras no wrapper externo.",
+          "",
+          "**Helpers para colunas:**",
+          "- `dateColumn({ accessorKey, header, showTime? })` — column helper para campos data/datetime. Renderiza `dd/MM/yyyy` (ou `dd/MM/yyyy HH:mm` se a linha trouxer hora/minuto), e tem `sortingFn` que ordena por timestamp — funciona até quando o valor é string BR (`19/05/2026`). Aceita `Date`, ISO (`2026-05-19[T14:30]`), string BR ou epoch (number).",
           "",
           "### Como definir colunas",
           "",
@@ -290,6 +296,18 @@ const meta = {
       control: "text",
       description: "Classes extras no wrapper externo.",
       table: { type: { summary: "string" } },
+    },
+    onRowClick: {
+      control: false,
+      description:
+        "Disparado quando a linha é clicada (ou ativada via Enter/Espaço). Recebe `(row, event)`.",
+      table: { type: { summary: "(row: TData, event: MouseEvent) => void" } },
+    },
+    rowClassName: {
+      control: false,
+      description:
+        "Função que recebe `(row, index)` e retorna classes para a linha. Use para destacar linhas por status — ex: `row.status === 'vencido' ? 'bg-destructive/10' : undefined`.",
+      table: { type: { summary: "(row: TData, index: number) => string | undefined" } },
     },
   },
   args: {
@@ -463,6 +481,210 @@ export const CustomLabels: Story = {
       description: {
         story:
           "Sobrescreva os textos padrão via `labels`. `rowCount` recebe a quantidade filtrada e total, e retorna a string completa.",
+      },
+    },
+  },
+}
+
+export const WithRowCount: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable columns={columns} data={contratos.slice(0, 8)} showRowCount />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Passe `showRowCount` para exibir a contagem total de registros no canto **inferior esquerdo**. Quando há filtro ativo a string vira `<filtrados> de <total> registros`. Independente de paginação — funciona em qualquer modo.",
+      },
+    },
+  },
+}
+
+interface Pedido {
+  numero: string
+  cliente: string
+  /** ISO date-only — vai ser exibida como `dd/MM/yyyy`. */
+  vencimento: string
+  /** ISO datetime — vai ser exibida como `dd/MM/yyyy HH:mm`. */
+  criadoEm: string
+}
+
+const pedidos: Pedido[] = [
+  {
+    numero: "P-001",
+    cliente: "Empresa A",
+    vencimento: "2026-06-15",
+    criadoEm: "2026-05-19T14:30:00",
+  },
+  {
+    numero: "P-002",
+    cliente: "Empresa B",
+    vencimento: "2025-12-20",
+    criadoEm: "2026-05-18T09:15:00",
+  },
+  {
+    numero: "P-003",
+    cliente: "Empresa C",
+    vencimento: "2026-01-10",
+    criadoEm: "2026-05-19T08:00:00",
+  },
+  {
+    numero: "P-004",
+    cliente: "Empresa D",
+    vencimento: "2026-08-01",
+    criadoEm: "2026-05-17T17:45:00",
+  },
+  {
+    numero: "P-005",
+    cliente: "Empresa E",
+    vencimento: "2025-11-05",
+    criadoEm: "2026-05-19T11:20:00",
+  },
+]
+
+const pedidoColumns: ColumnDef<Pedido>[] = [
+  { accessorKey: "numero", header: "Número" },
+  { accessorKey: "cliente", header: "Cliente" },
+  dateColumn<Pedido>({ accessorKey: "vencimento", header: "Vencimento" }),
+  dateColumn<Pedido>({ accessorKey: "criadoEm", header: "Criado em" }),
+]
+
+export const WithDateColumns: Story = {
+  render: () => (
+    <div className="space-y-2 p-6">
+      <p className="text-muted-foreground text-xs">
+        Coluna <strong className="text-foreground">Vencimento</strong> usa ISO date-only
+        (`2026-06-15`) → renderiza `dd/MM/yyyy`.{" "}
+        <strong className="text-foreground">Criado em</strong> usa ISO datetime → renderiza
+        `dd/MM/yyyy HH:mm`. Clique nos headers para ordenar — o sort compara timestamps, não
+        strings, então a ordenação cronológica é correta mesmo quando a string formatada não está
+        em ordem alfabética.
+      </p>
+      <DataTable columns={pedidoColumns} data={pedidos} showRowCount />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: [
+          "`dateColumn<TData>({ accessorKey, header })` cuida de formatação + sort. Detecta automaticamente se a linha tem hora/minuto (mode `\"auto\"`, default).",
+          "",
+          "```tsx",
+          'import { dateColumn, DataTable } from "@amfernandesinc/ui"',
+          "",
+          "const cols: ColumnDef<Pedido>[] = [",
+          '  { accessorKey: "numero", header: "Número" },',
+          '  dateColumn<Pedido>({ accessorKey: "vencimento", header: "Vencimento" }),',
+          '  dateColumn<Pedido>({ accessorKey: "criadoEm", header: "Criado em", showTime: true }),',
+          "]",
+          "```",
+          "",
+          "Aceita `Date`, ISO string, string BR (`19/05/2026 14:30`) ou epoch (number). `showTime` pode ser `\"auto\"` (default), `true` ou `false`.",
+        ].join("\n"),
+      },
+    },
+  },
+}
+
+export const WithRowClick: Story = {
+  render: () => {
+    function Wrapper() {
+      const [selected, setSelected] = useState<Contrato | null>(null)
+      return (
+        <div className="space-y-2 p-6">
+          <p className="text-muted-foreground text-xs">
+            Clique em uma linha (ou use Tab + Enter) para selecionar o contrato.
+            {selected ? (
+              <>
+                {" "}Selecionado:{" "}
+                <strong className="text-foreground">
+                  {selected.numero} — {selected.cliente}
+                </strong>
+              </>
+            ) : (
+              " Nenhum selecionado."
+            )}
+          </p>
+          <DataTable
+            columns={columns}
+            data={contratos.slice(0, 8)}
+            onRowClick={(row) => setSelected(row)}
+          />
+        </div>
+      )
+    }
+    return <Wrapper />
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Passe `onRowClick={(row) => ...}` para tornar a linha inteira clicável. O componente cuida da a11y (`role=\"button\"`, `tabIndex=0`, Enter/Espaço) e adiciona `cursor-pointer`.",
+      },
+    },
+  },
+}
+
+export const WithRowColoring: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        columns={columns}
+        data={contratos.slice(0, 10)}
+        rowClassName={(row) => {
+          if (row.status === "vencido") return "bg-destructive/10 hover:bg-destructive/15"
+          if (row.status === "pendente") return "bg-amber-50 hover:bg-amber-100/70"
+          return undefined
+        }}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`rowClassName(row, index)` permite estilizar linhas individualmente. Aqui: vermelho-claro para `vencido`, âmbar para `pendente`. Retorne `undefined` para manter o estilo padrão.",
+      },
+    },
+  },
+}
+
+export const ClickableAndColored: Story = {
+  render: () => {
+    function Wrapper() {
+      const [selected, setSelected] = useState<string | null>(null)
+      return (
+        <div className="space-y-2 p-6">
+          <p className="text-muted-foreground text-xs">
+            Combinação: linhas coloridas por status + clique para selecionar.
+            {selected ? (
+              <>
+                {" "}Selecionado: <strong className="text-foreground">{selected}</strong>
+              </>
+            ) : null}
+          </p>
+          <DataTable
+            columns={columns}
+            data={contratos.slice(0, 8)}
+            onRowClick={(row) => setSelected(row.numero)}
+            rowClassName={(row) => {
+              if (row.numero === selected) return "bg-primary/10 hover:bg-primary/15"
+              if (row.status === "vencido") return "bg-destructive/10 hover:bg-destructive/15"
+              return undefined
+            }}
+          />
+        </div>
+      )
+    }
+    return <Wrapper />
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`onRowClick` e `rowClassName` se combinam — a linha selecionada usa `bg-primary/10`, vencidas ficam destacadas em vermelho.",
       },
     },
   },

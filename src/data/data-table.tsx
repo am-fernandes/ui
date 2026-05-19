@@ -116,6 +116,10 @@ export interface DataTableProps<TData> {
   manualPagination?: boolean
   /** Overridable copy. */
   labels?: DataTableLabels
+  /** Callback fired when a body row is clicked. Adds button-like a11y (role, tabIndex, keydown). */
+  onRowClick?: (row: TData, event: React.MouseEvent<HTMLTableRowElement>) => void
+  /** Per-row className. Receives the row data and index; return undefined to skip. Useful for coloring rows by status. */
+  rowClassName?: (row: TData, index: number) => string | undefined
 }
 
 function defaultRowCount(filtered: number, total: number): string {
@@ -143,6 +147,8 @@ function DataTable<TData>({
   pageCount,
   manualPagination,
   labels,
+  onRowClick,
+  rowClassName,
 }: DataTableProps<TData>) {
   const isSortingControlled = sortingProp !== undefined
   const isGlobalFilterControlled = globalFilterProp !== undefined
@@ -340,15 +346,40 @@ function DataTable<TData>({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.length > 0 ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row, index) => {
+                const interactive = onRowClick != null
+                return (
+                  <TableRow
+                    key={row.id}
+                    className={cn(
+                      interactive && "cursor-pointer focus-visible:outline-none focus-visible:bg-muted/60",
+                      rowClassName?.(row.original, index),
+                    )}
+                    role={interactive ? "button" : undefined}
+                    tabIndex={interactive ? 0 : undefined}
+                    onClick={interactive ? (e) => onRowClick?.(row.original, e) : undefined}
+                    onKeyDown={
+                      interactive
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault()
+                              onRowClick?.(
+                                row.original,
+                                e as unknown as React.MouseEvent<HTMLTableRowElement>,
+                              )
+                            }
+                          }
+                        : undefined
+                    }
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )
+              })
             ) : (
               <TableRow>
                 <TableCell
