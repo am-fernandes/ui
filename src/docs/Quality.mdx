@@ -222,7 +222,7 @@ exclude: ["src/**/*.stories.tsx", "src/**/*.test.tsx", "src/docs/**", "src/index
 Em `vitest.setup.ts` polyfilamos APIs que o jsdom não implementa nativamente:
 
 - `window.matchMedia` — usado por `useIsMobile` e Sidebar
-- `ResizeObserver` — usado por cmdk, recharts
+- `ResizeObserver` — usado por cmdk
 - `IntersectionObserver` — usado por Image/Video lazy loading
 - `Element.prototype.scrollIntoView` — usado por cmdk
 - `URL.createObjectURL` / `revokeObjectURL` — usado por FileUpload thumbnails
@@ -263,7 +263,6 @@ Após `test:e2e`, abra `playwright-report/index.html` para o relatório HTML com
 
 A tabela acima destaca onde investir esforço próximo. Os mais urgentes:
 
-- **Chart** (`data/chart.tsx`) — apenas ~23 % de linhas porque o `ChartTooltipContent` interno só é exercitado em runtime via recharts. Precisa de unit tests passando `payload` mockado direto.
 - **Combobox** (`forms/combobox.tsx`) — ~72 % de linhas; faltam testes para `creatable`, multi-select remove via X click, e empty state.
 - **TimePicker** (`forms/time-picker.tsx`) — ~72 %; arrow keys, blur clamp e wrap modular ainda não cobertos.
 - **Sidebar** (`navigation/sidebar.tsx`) — ~76 %; falta cobertura do branch mobile (Sheet) e do submenu nested.

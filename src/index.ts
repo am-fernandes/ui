@@ -8,15 +8,6 @@
 
 // Data
 export { Card, type CardProps } from "./data/card"
-export {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartStyle,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "./data/chart"
 export { DataTable, type DataTableProps } from "./data/data-table"
 export { Image, type ImageProps } from "./data/image"
 export { ScrollArea, type ScrollAreaOrientation } from "./data/scroll-area"

@@ -3,7 +3,7 @@
  * Run `bun run sync:e2e-stats` to refresh.
  *
  * Source: tests/e2e/*.spec.ts + src story files
- * Generated: 2026-05-18T23:24:01.133Z
+ * Generated: 2026-05-19T01:37:40.267Z
  */
 
 export interface E2ESpec {
@@ -12,7 +12,7 @@ export interface E2ESpec {
   describes: number
 }
 
-export const E2E_GENERATED_AT = "2026-05-18T23:24:01.133Z"
+export const E2E_GENERATED_AT = "2026-05-19T01:37:40.267Z"
 
 export const E2E_SPECS: readonly E2ESpec[] = [
   {
@@ -60,7 +60,7 @@ export const E2E_SPECS: readonly E2ESpec[] = [
 export const E2E_TOTAL_TESTS = 95
 
 export const STORYBOOK_STATS = {
-  totalStoryFiles: 41,
+  totalStoryFiles: 40,
   playFunctionFiles: 19,
   playFunctionsTotal: 21,
 } as const
