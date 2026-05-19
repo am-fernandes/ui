@@ -59,7 +59,7 @@ function Input({
         disabled={disabled}
         required={required}
         className={cn(
-          "h-full w-full bg-transparent px-3 py-1 placeholder:text-muted-foreground outline-none disabled:cursor-not-allowed",
+          "h-full w-full bg-transparent px-3 py-1 placeholder:text-input outline-none disabled:cursor-not-allowed",
           leadingIcon && "pl-2",
           trailingIcon && "pr-2",
           className,

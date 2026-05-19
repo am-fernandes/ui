@@ -15,7 +15,7 @@ const containerClasses =
   "inline-flex h-9 items-center gap-1 rounded-md border border-input bg-transparent px-3 py-1 text-base transition-colors focus-within:border-primary focus-within:ring-1 focus-within:ring-ring md:text-sm"
 
 const fieldClasses =
-  "w-7 bg-transparent text-center tabular-nums outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
+  "w-7 bg-transparent text-center tabular-nums outline-none placeholder:text-input disabled:cursor-not-allowed"
 
 export interface TimePickerProps {
   value?: string

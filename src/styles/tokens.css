@@ -128,7 +128,6 @@
   /* Inputs & Borders */
   --border: oklch(0.875 0.01 252);
   --input: oklch(0.875 0.01 252);
-  --placeholder: oklch(0.638 0.016 252);
   --ring: oklch(0 0 0);
 
   /* Charts */
@@ -160,7 +159,7 @@
   }
   input::placeholder,
   textarea::placeholder {
-    color: var(--placeholder);
+    color: var(--input);
   }
   input::-webkit-outer-spin-button,
   input::-webkit-inner-spin-button {
