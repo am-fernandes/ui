@@ -77,7 +77,7 @@ function CurrencyInput({
           aria-invalid={hasError ? true : undefined}
           aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
           className={cn(
-            "flex h-9 w-full rounded-md border border-input bg-transparent pl-9 pr-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+            "flex h-9 w-full rounded-md border border-input bg-transparent pl-9 pr-3 py-1 text-sm transition-colors focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
             hasError && "border-destructive",
             className,
           )}

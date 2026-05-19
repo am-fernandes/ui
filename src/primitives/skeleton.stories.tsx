@@ -103,7 +103,7 @@ export const AvatarRow: Story = {
 
 export const Card: Story = {
   render: () => (
-    <div className="w-72 overflow-hidden rounded-lg border bg-card shadow-sm">
+    <div className="w-72 overflow-hidden rounded-lg border bg-card">
       <Skeleton className="h-32 w-full rounded-none" />
       <div className="flex flex-col gap-3 p-4">
         <Skeleton className="h-5 w-3/4" />

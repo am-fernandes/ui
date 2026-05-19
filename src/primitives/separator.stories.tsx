@@ -128,7 +128,7 @@ export const InAccessibilityTree: Story = {
 
 export const InCard: Story = {
   render: () => (
-    <div className="w-80 rounded-lg border bg-card shadow-sm">
+    <div className="w-80 rounded-lg border bg-card">
       <div className="flex flex-col gap-1 p-4">
         <span className="text-xs text-muted-foreground">Cabeçalho</span>
         <span className="font-semibold">João da Silva</span>

@@ -361,7 +361,7 @@ function ImageLightbox({
       onOpenChange={onOpenChange}
       title={<span className="sr-only">{file?.name ?? "Imagem"}</span>}
       size="xl"
-      className="border-0 bg-transparent p-0 shadow-none"
+      className="border-0 bg-transparent p-0"
       hideCloseButton
     >
       {url ? (
