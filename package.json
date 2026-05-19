@@ -1,6 +1,6 @@
 {
-  "name": "@am-fernandes/ui",
-  "version": "10.0.0",
+  "name": "@amfernandesinc/ui",
+  "version": "0.0.1",
   "description": "Design system de UI da AM Fernandes.",
   "license": "UNLICENSED",
   "private": false,
@@ -107,7 +107,8 @@
     "tailwindcss": "^4"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org/",
+    "access": "restricted"
   },
   "repository": {
     "type": "git",
