@@ -36,7 +36,7 @@ function Slot({ index }: { index: number }) {
       data-slot="input-otp-slot"
       data-active={slot.isActive || undefined}
       className={cn(
-        "relative flex h-10 w-10 items-center justify-center border-y border-r border-input text-sm transition-all",
+        "relative flex h-10 w-10 items-center justify-center border-y border-r border-input font-mono text-sm tabular-nums transition-all",
         "first:rounded-l-md first:border-l last:rounded-r-md",
         "data-[active=true]:z-10 data-[active=true]:ring-2 data-[active=true]:ring-ring",
       )}

@@ -70,7 +70,7 @@ function PercentageInput({
           aria-invalid={hasError ? true : undefined}
           aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
           className={cn(
-            "flex w-full rounded-md border border-input bg-transparent px-3 pr-8 py-3 text-sm transition-colors focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+            "flex w-full rounded-md border border-input bg-transparent px-3 pr-8 py-3 text-sm tabular-nums transition-colors focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
             hasError && "border-destructive",
             className,
           )}
