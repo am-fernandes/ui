@@ -5,6 +5,8 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+type PopoverContentProps = React.ComponentProps<typeof PopoverPrimitive.Content>
+
 export interface PopoverProps {
   trigger?: React.ReactNode
   children?: React.ReactNode
@@ -16,6 +18,10 @@ export interface PopoverProps {
   sideOffset?: number
   modal?: boolean
   className?: string
+  onInteractOutside?: PopoverContentProps["onInteractOutside"]
+  onPointerDownOutside?: PopoverContentProps["onPointerDownOutside"]
+  onFocusOutside?: PopoverContentProps["onFocusOutside"]
+  onEscapeKeyDown?: PopoverContentProps["onEscapeKeyDown"]
 }
 
 function Popover({
@@ -29,6 +35,10 @@ function Popover({
   sideOffset = 4,
   modal,
   className,
+  onInteractOutside,
+  onPointerDownOutside,
+  onFocusOutside,
+  onEscapeKeyDown,
 }: PopoverProps) {
   return (
     <PopoverPrimitive.Root
@@ -48,6 +58,10 @@ function Popover({
           align={align}
           side={side}
           sideOffset={sideOffset}
+          onInteractOutside={onInteractOutside}
+          onPointerDownOutside={onPointerDownOutside}
+          onFocusOutside={onFocusOutside}
+          onEscapeKeyDown={onEscapeKeyDown}
           className={cn(
             "z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground outline-none",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",

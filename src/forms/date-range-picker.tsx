@@ -122,6 +122,13 @@ function DateRangePicker({
         align="start"
         trigger={trigger}
         className="w-auto p-0"
+        onPointerDownOutside={(event) => {
+          const target = event.target as HTMLElement | null
+          if (target?.closest('[role="grid"], .rdp, .rdp-root')) {
+            event.preventDefault()
+          }
+        }}
+        onFocusOutside={(event) => event.preventDefault()}
       >
         <Calendar
           mode="range"
