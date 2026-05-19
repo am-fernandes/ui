@@ -42,7 +42,7 @@ function Input({
         "relative flex w-full items-center rounded-md border border-input bg-transparent text-sm transition-colors",
         "focus-within:border-primary focus-within:ring-1 focus-within:ring-ring",
         hasError && "border-destructive focus-within:ring-destructive",
-        disabled && "cursor-not-allowed opacity-50",
+        disabled && "cursor-not-allowed",
       )}
     >
       {leadingIcon ? (

@@ -261,7 +261,7 @@ function TimePicker({
         aria-label={ariaLabel ?? (typeof label === "string" ? label : "Horário")}
         data-slot="time-picker"
         data-disabled={disabled ? "true" : undefined}
-        className={cn(containerClasses, disabled && "cursor-not-allowed opacity-50", className)}
+        className={cn(containerClasses, disabled && "cursor-not-allowed", className)}
       >
         <TimeField
           ref={ref}
