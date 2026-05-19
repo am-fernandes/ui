@@ -203,11 +203,11 @@ function SidebarGroupRender({
   collapsedToIcon: boolean
 }) {
   return (
-    <div data-slot="sidebar-group" className="px-2 py-2">
+    <div data-slot="sidebar-group" className="px-2 py-1.5">
       {group.label && !collapsedToIcon ? (
         <div
           data-slot="sidebar-group-label"
-          className="px-2 py-1 text-xs font-medium text-muted-foreground"
+          className="px-2 py-1.5 text-xs font-medium text-muted-foreground"
         >
           {group.label}
         </div>

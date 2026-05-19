@@ -315,7 +315,7 @@ const TreeNode = React.memo(function TreeNode({ node, depth, visited }: TreeNode
     return (
       <li
         role="treeitem"
-        className="select-none rounded-sm px-2 py-1 text-muted-foreground"
+        className="select-none rounded-sm px-2 py-1.5 text-muted-foreground"
         style={{ paddingInlineStart: `${depth * indentSize + 8}px` }}
       >
         … (depth limit reached)
@@ -345,7 +345,7 @@ const TreeNode = React.memo(function TreeNode({ node, depth, visited }: TreeNode
     >
       <div
         className={cn(
-          "flex cursor-pointer select-none items-center gap-1 rounded-sm px-2 py-1 hover:bg-accent",
+          "flex cursor-pointer select-none items-center gap-1 rounded-sm px-2 py-1.5 hover:bg-accent",
           isSelected && "bg-accent text-accent-foreground",
         )}
         style={{ paddingInlineStart: `${depth * indentSize + 8}px` }}
@@ -383,7 +383,7 @@ const TreeNode = React.memo(function TreeNode({ node, depth, visited }: TreeNode
                 <li
                   key={`${child.id}-cycle`}
                   role="treeitem"
-                  className="select-none rounded-sm px-2 py-1 text-muted-foreground"
+                  className="select-none rounded-sm px-2 py-1.5 text-muted-foreground"
                   style={{ paddingInlineStart: `${(depth + 1) * indentSize + 8}px` }}
                 >
                   … (cycle detected)
