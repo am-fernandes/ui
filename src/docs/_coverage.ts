@@ -3,7 +3,7 @@
  * Run `bun run sync:coverage` to refresh.
  *
  * Source: coverage/coverage-summary.json (vitest + v8 provider)
- * Generated: 2026-05-19T03:19:07.132Z
+ * Generated: 2026-05-19T03:22:35.949Z
  */
 
 export interface CoverageMetric {
@@ -28,28 +28,28 @@ export interface CoverageRow {
   branches: number
 }
 
-export const COVERAGE_GENERATED_AT = "2026-05-19T03:19:07.132Z"
+export const COVERAGE_GENERATED_AT = "2026-05-19T03:22:35.949Z"
 
 export const TOTAL_COVERAGE: CoverageFile = {
   "lines": {
     "total": 4412,
-    "covered": 4326,
-    "pct": 98.05
+    "covered": 4335,
+    "pct": 98.25
   },
   "statements": {
     "total": 4412,
-    "covered": 4326,
-    "pct": 98.05
+    "covered": 4335,
+    "pct": 98.25
   },
   "functions": {
     "total": 178,
-    "covered": 171,
-    "pct": 96.06
+    "covered": 172,
+    "pct": 96.62
   },
   "branches": {
-    "total": 1154,
-    "covered": 1079,
-    "pct": 93.5
+    "total": 1160,
+    "covered": 1086,
+    "pct": 93.62
   }
 } as const
 
@@ -121,10 +121,10 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     "file": "domain/file-upload.tsx",
     "group": "Domain",
-    "lines": 85.43,
-    "statements": 85.43,
-    "functions": 77.27,
-    "branches": 91.4
+    "lines": 87.65,
+    "statements": 87.65,
+    "functions": 81.81,
+    "branches": 92.53
   },
   {
     "file": "domain/input-otp.tsx",
