@@ -71,4 +71,6 @@ function ScrollBar({ className, orientation = "vertical", ref, ...props }: Scrol
   )
 }
 
+ScrollArea.displayName = "ScrollArea"
+
 export { ScrollArea, ScrollBar }

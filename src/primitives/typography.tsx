@@ -58,4 +58,6 @@ function Typography({ className, variant, as, ref, ...props }: TypographyProps) 
   return <Element ref={ref} className={cn(typographyVariants({ variant }), className)} {...props} />
 }
 
+Typography.displayName = "Typography"
+
 export { Typography, typographyVariants }

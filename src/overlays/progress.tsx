@@ -38,4 +38,6 @@ function Progress({ className, value, ref, ...props }: ProgressProps) {
   )
 }
 
+Progress.displayName = "Progress"
+
 export { Progress }

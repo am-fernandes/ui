@@ -164,4 +164,6 @@ function Video({
   )
 }
 
+Video.displayName = "Video"
+
 export { Video }

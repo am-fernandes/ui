@@ -37,4 +37,6 @@ function Badge({ className, variant, ref, ...props }: BadgeProps) {
   )
 }
 
+Badge.displayName = "Badge"
+
 export { Badge, badgeVariants }

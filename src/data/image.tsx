@@ -168,4 +168,6 @@ function Image({
   )
 }
 
+Image.displayName = "Image"
+
 export { Image }

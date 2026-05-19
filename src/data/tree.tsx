@@ -400,4 +400,6 @@ const TreeNode = React.memo(function TreeNode({ node, depth, visited }: TreeNode
   )
 })
 
+Tree.displayName = "Tree"
+
 export { Tree }
