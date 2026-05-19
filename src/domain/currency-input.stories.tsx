@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, userEvent, within } from "@storybook/test"
 import * as React from "react"
-import { Label } from "../primitives/label"
 import { CurrencyInput } from "./currency-input"
 
 const meta = {
@@ -22,14 +21,21 @@ const meta = {
           "- `placeholder` — texto exibido quando o campo está vazio (apesar da máscara, é repassado ao `<input>`).",
           "- Demais props do `<input>` nativo (exceto `value`, `onChange`, `type`) são repassadas, incluindo `id`, `name`, `aria-*`, `className`.",
           "",
+          "**Rótulo:** prefira a prop `label` (renderizada internamente pelo `FieldShell` como `<label htmlFor>`) em vez de um `<Label>` externo.",
+          "",
           "**Exemplo de uso:**",
           "",
           "```tsx",
           'import { CurrencyInput } from "@am-fernandes/ui"',
           "",
-          "const [valor, setValor] = useState(0)",
+          "const [value, setValue] = useState(0)",
           "",
-          "<CurrencyInput value={valor} onValueChange={setValor} />",
+          "<CurrencyInput",
+          '  id="contract-value"',
+          '  label="Valor do contrato (R$)"',
+          "  value={value}",
+          "  onValueChange={setValue}",
+          "/>",
           "```",
         ].join("\n"),
       },
@@ -60,6 +66,12 @@ const meta = {
       description: "Placeholder repassado ao `<input>` nativo.",
       table: { type: { summary: "string" } },
     },
+    label: {
+      control: "text",
+      description:
+        "Rótulo renderizado pelo próprio componente via `FieldShell`. Use em vez de `<Label>` externo.",
+      table: { type: { summary: "ReactNode" } },
+    },
   },
 } satisfies Meta<typeof CurrencyInput>
 
@@ -80,10 +92,10 @@ export const Playground: Story = {
     }, [args.value])
     return (
       <div className="flex flex-col gap-2 w-80">
-        <Label htmlFor="contract-value">Valor do contrato (R$)</Label>
         <CurrencyInput
           {...args}
           id="contract-value"
+          label="Valor do contrato (R$)"
           value={value}
           onValueChange={(next) => {
             setValue(next)
@@ -104,9 +116,13 @@ export const Default: Story = {
   render: () => {
     const [value, setValue] = React.useState<number>(0)
     return (
-      <div className="flex flex-col gap-2 w-80">
-        <Label htmlFor="contract-value">Valor do contrato (R$)</Label>
-        <CurrencyInput id="contract-value" value={value} onValueChange={setValue} />
+      <div className="w-80">
+        <CurrencyInput
+          id="contract-value"
+          label="Valor do contrato (R$)"
+          value={value}
+          onValueChange={setValue}
+        />
       </div>
     )
   },

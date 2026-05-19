@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { useState } from "react"
 
-import { Label } from "../primitives/label"
 import { DateInput } from "./date-input"
 
 const meta = {
@@ -20,20 +19,23 @@ const meta = {
           "- `onChange(value)` — recebe nova string ISO ou `''` ao limpar.",
           "- `placeholder` — texto exibido quando `value` está vazio.",
           "- `disabled` — alterna para um `Input` somente leitura com fundo `muted`.",
-          "- `id` — encaminhado ao botão trigger para integração com `<Label htmlFor>`.",
+          "- `label` — rótulo renderizado pelo próprio componente (via `FieldShell`). Use em vez de envolver com `<Label>` externo.",
           "",
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { DateInput, Label } from "@am-fernandes/ui"',
+          'import { DateInput } from "@am-fernandes/ui"',
           'import { useState } from "react"',
           "",
           'const [value, setValue] = useState("")',
           "",
-          '<div className="flex flex-col gap-2">',
-          '  <Label htmlFor="birth">Data de nascimento</Label>',
-          '  <DateInput id="birth" value={value} onChange={setValue} placeholder="DD/MM/AAAA" />',
-          "</div>",
+          "<DateInput",
+          '  id="birth"',
+          '  label="Data de nascimento"',
+          "  value={value}",
+          "  onChange={setValue}",
+          '  placeholder="DD/MM/AAAA"',
+          "/>",
           "```",
         ].join("\n"),
       },
@@ -57,8 +59,13 @@ const meta = {
     },
     id: {
       control: "text",
-      description: "Forwarded ao trigger para casar com `<Label htmlFor>`.",
+      description: "ID do trigger. `FieldShell` deriva o `htmlFor` do label interno a partir disso.",
       table: { type: { summary: "string" } },
+    },
+    label: {
+      control: "text",
+      description: "Rótulo renderizado pelo componente. Use em vez de `<Label>` externo.",
+      table: { type: { summary: "ReactNode" } },
     },
     onChange: { control: false, table: { category: "Eventos" } },
   },
@@ -73,14 +80,15 @@ export const Playground: Story = {
     placeholder: "DD/MM/AAAA",
     disabled: false,
     id: "playground-date",
+    label: "Data",
   },
   render: (args) => {
     const [value, setValue] = useState(args.value)
     return (
       <div className="flex w-[280px] flex-col gap-2">
-        <Label htmlFor={args.id}>Data</Label>
         <DateInput
           id={args.id}
+          label={args.label}
           value={value}
           onChange={setValue}
           placeholder={args.placeholder}
@@ -98,8 +106,13 @@ export const Default: Story = {
     const [value, setValue] = useState("")
     return (
       <div className="flex w-[280px] flex-col gap-2">
-        <Label htmlFor="birth">Data de nascimento</Label>
-        <DateInput id="birth" value={value} onChange={setValue} placeholder="DD/MM/AAAA" />
+        <DateInput
+          id="birth"
+          label="Data de nascimento"
+          value={value}
+          onChange={setValue}
+          placeholder="DD/MM/AAAA"
+        />
       </div>
     )
   },

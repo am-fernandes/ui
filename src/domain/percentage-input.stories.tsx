@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import * as React from "react"
-import { Label } from "../primitives/label"
 import { PercentageInput } from "./percentage-input"
 
 const meta = {
@@ -17,6 +16,7 @@ const meta = {
           "**Props principais:**",
           "- `value` — valor atual em percentual (float). Internamente é convertido para centésimos inteiros para evitar erros de ponto flutuante.",
           "- `onValueChange` — callback `(value: number) => void` disparado a cada edição com o novo decimal.",
+          "- `label` — rótulo renderizado pelo próprio componente via `FieldShell`. Prefira esta prop em vez de um `<Label>` externo.",
           "- `disabled` — desabilita a edição.",
           "- `placeholder` — texto exibido quando vazio (repassado ao `<input>`).",
           "- Demais props do `<input>` nativo (exceto `value`, `onChange`, `type`) são repassadas (`id`, `name`, `aria-*`, `className`).",
@@ -26,9 +26,14 @@ const meta = {
           "```tsx",
           'import { PercentageInput } from "@am-fernandes/ui"',
           "",
-          "const [valor, setValor] = useState(0)",
+          "const [value, setValue] = useState(0)",
           "",
-          "<PercentageInput value={valor} onValueChange={setValor} />",
+          "<PercentageInput",
+          '  id="commission"',
+          '  label="Comissão (%)"',
+          "  value={value}",
+          "  onValueChange={setValue}",
+          "/>",
           "```",
         ].join("\n"),
       },
@@ -39,6 +44,12 @@ const meta = {
       control: "number",
       description: "Valor percentual atual como decimal (ex.: `33.33`). Display exibe `33,33 %`.",
       table: { type: { summary: "number" } },
+    },
+    label: {
+      control: "text",
+      description:
+        "Rótulo renderizado pelo próprio componente via `FieldShell`. Use em vez de `<Label>` externo.",
+      table: { type: { summary: "ReactNode" } },
     },
     onValueChange: {
       control: false,
@@ -78,10 +89,10 @@ export const Playground: Story = {
     }, [args.value])
     return (
       <div className="flex flex-col gap-2 w-80">
-        <Label htmlFor="commission">Comissão (%)</Label>
         <PercentageInput
           {...args}
           id="commission"
+          label="Comissão (%)"
           value={value}
           onValueChange={(next) => {
             setValue(next)
@@ -102,9 +113,13 @@ export const Default: Story = {
   render: () => {
     const [value, setValue] = React.useState<number>(0)
     return (
-      <div className="flex flex-col gap-2 w-80">
-        <Label htmlFor="commission">Comissão (%)</Label>
-        <PercentageInput id="commission" value={value} onValueChange={setValue} />
+      <div className="w-80">
+        <PercentageInput
+          id="commission"
+          label="Comissão (%)"
+          value={value}
+          onValueChange={setValue}
+        />
       </div>
     )
   },
