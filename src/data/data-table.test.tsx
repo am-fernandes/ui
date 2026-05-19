@@ -1,4 +1,4 @@
-import type { ColumnDef, PaginationState, SortingState } from "@tanstack/react-table"
+import type { ColumnDef, PaginationState } from "@tanstack/react-table"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
@@ -124,34 +124,6 @@ describe("DataTable", () => {
     const next = screen.getByRole("button", { name: "Próxima página" })
     await userEvent.click(next)
     expect(next).toBeDisabled()
-  })
-
-  it("supports controlled sorting", async () => {
-    function Wrapper() {
-      const [sorting, setSorting] = React.useState<SortingState>([{ id: "name", desc: false }])
-      return (
-        <>
-          <button type="button" data-testid="reset" onClick={() => setSorting([])}>
-            reset
-          </button>
-          <DataTable
-            columns={columns}
-            data={data}
-            sortableColumns={["name"]}
-            sorting={sorting}
-            onSortingChange={setSorting}
-          />
-        </>
-      )
-    }
-    render(<Wrapper />)
-    // Controlled: Alpha should be first body row.
-    let rows = screen.getAllByRole("row")
-    expect(rows[1]?.textContent).toContain("Alpha")
-    // Reset sorting externally.
-    await userEvent.click(screen.getByTestId("reset"))
-    rows = screen.getAllByRole("row")
-    expect(rows[1]?.textContent).toContain("Bravo")
   })
 
   it("supports controlled pagination", async () => {
@@ -282,21 +254,6 @@ describe("DataTable", () => {
     expect(screen.getByText(/Página 1 de 4/)).toBeInTheDocument()
     // With manualPagination, the rows array is rendered verbatim.
     expect(screen.getByText("Row 12")).toBeInTheDocument()
-  })
-
-  it("invokes onSortingChange when sort is controlled (handler short-circuit branch)", async () => {
-    const onSortingChange = vi.fn()
-    render(
-      <DataTable
-        columns={columns}
-        data={data}
-        sortableColumns={["name"]}
-        sorting={[]}
-        onSortingChange={onSortingChange}
-      />,
-    )
-    await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
-    expect(onSortingChange).toHaveBeenCalled()
   })
 
   it("invokes onGlobalFilterChange when globalFilter is controlled (short-circuit branch)", async () => {

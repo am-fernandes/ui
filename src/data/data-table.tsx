@@ -116,10 +116,6 @@ export interface DataTableProps<TData> {
   }
   /** Show row count in the footer (e.g. `12 registros` or `5 de 12 registros` when filtered). Default `false`. */
   showRowCount?: boolean
-  /** Controlled sorting state. */
-  sorting?: SortingState
-  /** Controlled sorting change handler. */
-  onSortingChange?: OnChangeFn<SortingState>
   /** Controlled global filter value. */
   globalFilter?: string
   /** Controlled global filter change handler. */
@@ -192,8 +188,6 @@ function DataTable<TData>({
   className,
   pagination,
   showRowCount = false,
-  sorting: sortingProp,
-  onSortingChange: onSortingChangeProp,
   globalFilter: globalFilterProp,
   onGlobalFilterChange: onGlobalFilterChangeProp,
   pageIndex: pageIndexProp,
@@ -206,11 +200,10 @@ function DataTable<TData>({
   loading = false,
   downloadable,
 }: DataTableProps<TData>) {
-  const isSortingControlled = sortingProp !== undefined
   const isGlobalFilterControlled = globalFilterProp !== undefined
   const isPaginationControlled = pageIndexProp !== undefined || onPaginationChangeProp !== undefined
 
-  const [internalSorting, setInternalSorting] = React.useState<SortingState>([])
+  const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [internalGlobalFilter, setInternalGlobalFilter] = React.useState("")
   const [paginationState, setPaginationState] = React.useState<PaginationState>({
@@ -235,22 +228,9 @@ function DataTable<TData>({
     )
   }, [pageIndexProp])
 
-  const sorting = isSortingControlled ? sortingProp : internalSorting
   const globalFilter = isGlobalFilterControlled ? globalFilterProp : internalGlobalFilter
 
   const paginationEnabled = pagination != null || manualPagination === true
-
-  const handleSortingChange: OnChangeFn<SortingState> = React.useCallback(
-    (updater) => {
-      if (isSortingControlled) {
-        onSortingChangeProp?.(updater)
-        return
-      }
-      setInternalSorting(updater)
-      onSortingChangeProp?.(updater)
-    },
-    [isSortingControlled, onSortingChangeProp],
-  )
 
   const handleGlobalFilterChange: OnChangeFn<string> = React.useCallback(
     (updater) => {
@@ -301,7 +281,7 @@ function DataTable<TData>({
         globalFilter,
         ...(paginationEnabled ? { pagination: paginationState } : {}),
       },
-      onSortingChange: handleSortingChange,
+      onSortingChange: setSorting,
       onColumnFiltersChange: setColumnFilters,
       onGlobalFilterChange: handleGlobalFilterChange,
       onPaginationChange: paginationEnabled ? handlePaginationChange : undefined,
@@ -326,7 +306,6 @@ function DataTable<TData>({
       globalFilter,
       paginationState,
       paginationEnabled,
-      handleSortingChange,
       handleGlobalFilterChange,
       handlePaginationChange,
       manualPagination,

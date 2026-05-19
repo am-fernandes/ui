@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import type { ColumnDef, PaginationState, SortingState } from "@tanstack/react-table"
+import type { ColumnDef, PaginationState } from "@tanstack/react-table"
 import { useState } from "react"
 
 import { Badge } from "../primitives/badge"
@@ -173,7 +173,6 @@ const meta = {
           "- `emptyMessage?: ReactNode` — conteúdo exibido quando `data` filtrado fica vazio (default `Nenhum resultado.`).",
           "- `pagination?: { pageSize?: number }` — habilita paginação.",
           "- `showRowCount?: boolean` — mostra a contagem de registros no footer.",
-          "- `sorting` / `onSortingChange` — sorting controlado.",
           "- `globalFilter` / `onGlobalFilterChange` — filtro de busca controlado.",
           "- `pageIndex` / `onPaginationChange` / `pageCount` / `manualPagination` — paginação server-side.",
           "- `labels?: { search?, empty?, rowCount?(filtered, total) => string }` — sobrescreve os textos default.",
@@ -725,39 +724,6 @@ export const ClickableAndColored: Story = {
       description: {
         story:
           "`onRowClick` e `rowClassName` se combinam — a linha selecionada usa `bg-primary/10`, vencidas ficam destacadas em vermelho.",
-      },
-    },
-  },
-}
-
-export const ControlledSorting: Story = {
-  render: () => {
-    function Wrapper() {
-      const [sorting, setSorting] = useState<SortingState>([{ id: "valor", desc: true }])
-      return (
-        <div className="space-y-2 p-6">
-          <p className="text-muted-foreground text-xs">
-            Sorting controlado externamente — atualmente ordenando por{" "}
-            <code className="rounded bg-muted px-1">{sorting[0]?.id ?? "(nenhum)"}</code>{" "}
-            {sorting[0]?.desc ? "↓" : "↑"}.
-          </p>
-          <DataTable
-            columns={columns}
-            data={contratos.slice(0, 8)}
-            sortableColumns={["numero", "cliente", "vencimento", "valor"]}
-            sorting={sorting}
-            onSortingChange={setSorting}
-          />
-        </div>
-      )
-    }
-    return <Wrapper />
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Passe `sorting` + `onSortingChange` para controlar a ordenação externamente — útil para sincronizar com a URL ou um estado global.",
       },
     },
   },
