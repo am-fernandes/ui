@@ -4,12 +4,12 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
+interface InternalLabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
   required?: boolean
   ref?: React.Ref<HTMLLabelElement>
 }
 
-function Label({ className, children, required, ref, ...props }: LabelProps) {
+function Label({ className, children, required, ref, ...props }: InternalLabelProps) {
   return (
     // biome-ignore lint/a11y/noLabelWithoutControl: consumers pass `htmlFor` to associate; the component cannot statically verify the control exists.
     <label
@@ -31,4 +31,4 @@ function Label({ className, children, required, ref, ...props }: LabelProps) {
   )
 }
 
-export { Label, type LabelProps }
+export { Label, type InternalLabelProps }

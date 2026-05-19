@@ -5,7 +5,8 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-type ProgressProps = React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> & {
+export interface ProgressProps
+  extends React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> {
   ref?: React.Ref<React.ComponentRef<typeof ProgressPrimitive.Root>>
 }
 

@@ -185,6 +185,22 @@ export const InText: Story = {
   },
 }
 
+export const AsChildLink: Story = {
+  render: () => (
+    <Badge asChild>
+      <a href="/">Tag</a>
+    </Badge>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`asChild` delega o elemento renderizado para o filho — útil para envolver `<a>`, `<Link>` (Next/React Router) ou outros elementos sem perder os estilos do Badge.",
+      },
+    },
+  },
+}
+
 export const CustomClassName: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-2">

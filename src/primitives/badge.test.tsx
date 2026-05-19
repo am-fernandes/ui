@@ -25,4 +25,17 @@ describe("Badge", () => {
     render(<Badge variant="outline">Outline</Badge>)
     expect(screen.getByText("Outline")).toHaveClass("border")
   })
+
+  it("renders as child element when asChild is true", () => {
+    render(
+      <Badge asChild>
+        <a href="/tag">Tag</a>
+      </Badge>,
+    )
+    const link = screen.getByRole("link", { name: "Tag" })
+    expect(link.tagName).toBe("A")
+    expect(link).toHaveAttribute("href", "/tag")
+    expect(link).toHaveAttribute("data-slot", "badge")
+    expect(link).toHaveClass("bg-primary")
+  })
 })

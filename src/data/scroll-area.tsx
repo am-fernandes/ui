@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 
 export type ScrollAreaOrientation = "vertical" | "horizontal" | "both"
 
-interface ScrollAreaProps extends React.ComponentProps<typeof ScrollAreaPrimitive.Root> {
+export interface ScrollAreaProps extends React.ComponentProps<typeof ScrollAreaPrimitive.Root> {
   /** Which scrollbar(s) to render. Default `"vertical"`. */
   orientation?: ScrollAreaOrientation
   ref?: React.Ref<React.ComponentRef<typeof ScrollAreaPrimitive.Root>>
@@ -44,7 +44,7 @@ function ScrollArea({
   )
 }
 
-interface ScrollBarProps
+export interface ScrollBarProps
   extends React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar> {
   ref?: React.Ref<React.ComponentRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>>
 }

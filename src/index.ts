@@ -11,12 +11,19 @@ export { Card, type CardProps } from "./data/card"
 export {
   DataTable,
   defaultDataTableLabels,
+  type DataTableDownloadable,
   type DataTableLabels,
   type DataTableProps,
 } from "./data/data-table"
 export { dateColumn, type DateColumnOptions, type DateColumnShowTime } from "./data/columns"
 export { Image, type ImageProps } from "./data/image"
-export { ScrollArea, type ScrollAreaOrientation } from "./data/scroll-area"
+export {
+  ScrollArea,
+  ScrollBar,
+  type ScrollAreaOrientation,
+  type ScrollAreaProps,
+  type ScrollBarProps,
+} from "./data/scroll-area"
 export { tableStyles, type TableStyles } from "./data/table-styles"
 export { Tree, type TreeNodeData, type TreeProps } from "./data/tree"
 export { Video, type VideoCaptionTrack, type VideoProps } from "./data/video"
@@ -80,7 +87,14 @@ export { PercentageInput, type PercentageInputProps } from "./domain/percentage-
 export { PhoneInput, type PhoneInputProps } from "./domain/phone-input"
 
 // Forms
-export { Calendar, defaultCalendarLabels, type CalendarLabels } from "./forms/calendar"
+export {
+  Calendar,
+  defaultCalendarLabels,
+  type CalendarLabels,
+  type CalendarProps,
+  type DisabledDayPreset,
+  type DisabledDays,
+} from "./forms/calendar"
 export {
   Combobox,
   defaultComboboxLabels,
@@ -103,9 +117,9 @@ export { AlertDialog, type AlertDialogProps } from "./overlays/alert-dialog"
 export { Collapsible, type CollapsibleProps } from "./overlays/collapsible"
 export { Dialog, type DialogProps } from "./overlays/dialog"
 export { Popover, type PopoverProps } from "./overlays/popover"
-export { Progress } from "./overlays/progress"
+export { Progress, type ProgressProps } from "./overlays/progress"
 export { Sheet, type SheetProps } from "./overlays/sheet"
-export { Toaster, toast } from "./overlays/sonner"
+export { Toaster, toast, type ToasterProps } from "./overlays/sonner"
 export { Tooltip, type TooltipProps } from "./overlays/tooltip"
 
 // Primitives
@@ -114,17 +128,19 @@ export { Badge, badgeVariants, type BadgeProps } from "./primitives/badge"
 export { Button, buttonVariants, type ButtonProps } from "./primitives/button"
 export { Checkbox, type CheckboxProps } from "./primitives/checkbox"
 export { Input, type InputProps } from "./primitives/input"
+export { Label, type LabelProps } from "./primitives/label"
 export {
   RadioGroup,
   type RadioGroupItemData,
   type RadioGroupProps,
 } from "./primitives/radio-group"
 export { Separator, type SeparatorProps } from "./primitives/separator"
-export { Skeleton } from "./primitives/skeleton"
+export { Skeleton, type SkeletonProps } from "./primitives/skeleton"
 export { Switch, type SwitchProps } from "./primitives/switch"
 export { Textarea, type TextareaProps } from "./primitives/textarea"
 export {
   Typography,
   typographyVariants,
+  type TypographyAs,
   type TypographyProps,
 } from "./primitives/typography"

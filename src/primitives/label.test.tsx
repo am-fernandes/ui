@@ -33,4 +33,17 @@ describe("Label", () => {
     render(<Label className="text-red-500">Red</Label>)
     expect(screen.getByText("Red")).toHaveClass("text-red-500")
   })
+
+  it("renders as child element when asChild is true", () => {
+    render(
+      <Label asChild>
+        <span>Custom</span>
+      </Label>,
+    )
+    const node = screen.getByText("Custom")
+    expect(node.tagName).toBe("SPAN")
+    expect(node).toHaveAttribute("data-slot", "label")
+    expect(node).toHaveClass("text-sm")
+    expect(node).toHaveClass("font-medium")
+  })
 })

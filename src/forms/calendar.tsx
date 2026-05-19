@@ -81,7 +81,7 @@ export interface CalendarLabels {
 
 export const defaultCalendarLabels: CalendarLabels = {}
 
-type CalendarProps = React.ComponentProps<typeof DayPicker> & {
+export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
   /**
    * Disable specific days. Accepts a Date, Date[], preset string, preset[], or custom predicate.
