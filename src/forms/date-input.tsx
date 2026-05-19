@@ -81,7 +81,7 @@ function DateInput({
       })}
       disabled={disabled}
       className={cn(
-        "w-full justify-start text-left font-normal h-9",
+        "w-full justify-start text-left font-normal h-auto px-3 py-3",
         !hasValidValue && "text-muted-foreground",
         disabled && "bg-muted",
         className,
