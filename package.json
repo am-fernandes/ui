@@ -171,6 +171,18 @@
       "types": "./dist/data/video.d.ts",
       "import": "./dist/data/video.js"
     },
+    "./cep-input": {
+      "types": "./dist/domain/cep-input.d.ts",
+      "import": "./dist/domain/cep-input.js"
+    },
+    "./cnpj-input": {
+      "types": "./dist/domain/cnpj-input.d.ts",
+      "import": "./dist/domain/cnpj-input.js"
+    },
+    "./cpf-input": {
+      "types": "./dist/domain/cpf-input.d.ts",
+      "import": "./dist/domain/cpf-input.js"
+    },
     "./currency-input": {
       "types": "./dist/domain/currency-input.d.ts",
       "import": "./dist/domain/currency-input.js"
@@ -191,9 +203,17 @@
       "types": "./dist/domain/percentage-input.d.ts",
       "import": "./dist/domain/percentage-input.js"
     },
+    "./phone-input": {
+      "types": "./dist/domain/phone-input.d.ts",
+      "import": "./dist/domain/phone-input.js"
+    },
     "./hooks/use-is-mobile": {
       "types": "./dist/hooks/use-is-mobile.d.ts",
       "import": "./dist/hooks/use-is-mobile.js"
+    },
+    "./lib/brazil": {
+      "types": "./dist/lib/brazil.d.ts",
+      "import": "./dist/lib/brazil.js"
     },
     "./lib/currency": {
       "types": "./dist/lib/currency.d.ts",

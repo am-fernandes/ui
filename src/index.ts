@@ -8,7 +8,12 @@
 
 // Data
 export { Card, type CardProps } from "./data/card"
-export { DataTable, type DataTableProps } from "./data/data-table"
+export {
+  DataTable,
+  defaultDataTableLabels,
+  type DataTableLabels,
+  type DataTableProps,
+} from "./data/data-table"
 export { dateColumn, type DateColumnOptions, type DateColumnShowTime } from "./data/columns"
 export { Image, type ImageProps } from "./data/image"
 export { ScrollArea, type ScrollAreaOrientation } from "./data/scroll-area"
@@ -20,6 +25,7 @@ export { Video, type VideoCaptionTrack, type VideoProps } from "./data/video"
 export { useIsMobile } from "./hooks/use-is-mobile"
 
 // Lib
+export { isValidCEP, isValidCNPJ, isValidCPF, isValidPhone } from "./lib/brazil"
 export {
   centsToDisplay,
   formatBRL,
@@ -41,8 +47,10 @@ export {
 } from "./navigation/breadcrumb"
 export {
   CommandPalette,
+  defaultCommandPaletteLabels,
   type CommandPaletteGroup,
   type CommandPaletteItem,
+  type CommandPaletteLabels,
   type CommandPaletteProps,
 } from "./navigation/command-palette"
 export {
@@ -54,9 +62,14 @@ export {
 export { Tabs, type TabsItemData, type TabsProps } from "./navigation/tabs"
 
 // Domain
+export { CEPInput, type CEPInputProps } from "./domain/cep-input"
+export { CNPJInput, type CNPJInputProps } from "./domain/cnpj-input"
+export { CPFInput, type CPFInputProps } from "./domain/cpf-input"
 export { CurrencyInput, type CurrencyInputProps } from "./domain/currency-input"
 export {
   FileUpload,
+  defaultFileUploadLabels,
+  type FileUploadLabels,
   type FileUploadProps,
   type FileUploadRejection,
   type FileUploadRejectionReason,
@@ -64,12 +77,15 @@ export {
 export { InputOTP, REGEXP_ONLY_DIGITS, type InputOTPProps } from "./domain/input-otp"
 export { MultiInput, type MultiInputProps } from "./domain/multi-input"
 export { PercentageInput, type PercentageInputProps } from "./domain/percentage-input"
+export { PhoneInput, type PhoneInputProps } from "./domain/phone-input"
 
 // Forms
-export { Calendar } from "./forms/calendar"
+export { Calendar, defaultCalendarLabels, type CalendarLabels } from "./forms/calendar"
 export {
   Combobox,
+  defaultComboboxLabels,
   useComboboxOptions,
+  type ComboboxLabels,
   type ComboboxOption,
   type ComboboxProps,
 } from "./forms/combobox"
