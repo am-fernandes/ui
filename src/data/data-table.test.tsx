@@ -2,7 +2,15 @@ import type { ColumnDef, PaginationState, SortingState } from "@tanstack/react-t
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+const { downloadXlsxMock } = vi.hoisted(() => ({
+  downloadXlsxMock: vi.fn(async () => undefined),
+}))
+
+vi.mock("./_xlsx-export", () => ({
+  downloadXlsx: downloadXlsxMock,
+}))
 
 import { DataTable } from "./data-table"
 
@@ -201,6 +209,33 @@ describe("DataTable", () => {
     expect(screen.getByText("1 registro")).toBeInTheDocument()
   })
 
+  it("formats large row counts with pt-BR thousands separator", () => {
+    const many: Row[] = Array.from({ length: 1832 }, (_, i) => ({
+      name: `User ${i}`,
+      age: i,
+    }))
+    render(<DataTable columns={columns} data={many} pagination={{ pageSize: 10 }} showRowCount />)
+    expect(screen.getByText("1.832 registros")).toBeInTheDocument()
+  })
+
+  it("formats both filtered and total with thousands separator", () => {
+    const many: Row[] = Array.from({ length: 1832 }, (_, i) => ({
+      name: i < 1234 ? `Alpha ${i}` : `Bravo ${i}`,
+      age: i,
+    }))
+    render(
+      <DataTable
+        columns={columns}
+        data={many}
+        globalFilter="Alpha"
+        searchableColumns={["name"]}
+        pagination={{ pageSize: 10 }}
+        showRowCount
+      />,
+    )
+    expect(screen.getByText("1.234 de 1.832 registros")).toBeInTheDocument()
+  })
+
   it("uses custom labels.search / labels.empty / labels.rowCount", async () => {
     render(
       <DataTable
@@ -293,5 +328,192 @@ describe("DataTable", () => {
       .getAllByRole("button")
       .find((b) => /Ordenar por name/i.test(b.getAttribute("aria-label") ?? ""))
     expect(btn).toBeTruthy()
+  })
+
+  describe("downloadable", () => {
+    beforeEach(() => {
+      downloadXlsxMock.mockClear()
+    })
+
+    it("does not render the export button by default", () => {
+      render(<DataTable columns={columns} data={data} />)
+      expect(screen.queryByText("Exportar para Excel")).not.toBeInTheDocument()
+    })
+
+    it("renders an Exportar para Excel ghost button when downloadable is set", () => {
+      render(<DataTable columns={columns} data={data} downloadable />)
+      const btn = screen.getByRole("button", { name: /Exportar para Excel/i })
+      expect(btn).toBeInTheDocument()
+    })
+
+    it("disables the export trigger when data is empty", () => {
+      render(<DataTable columns={columns} data={[]} downloadable />)
+      const btn = screen.getByRole("button", { name: /Exportar para Excel/i })
+      expect(btn).toBeDisabled()
+    })
+
+    it("opens a popover with the three scope options on click", async () => {
+      render(<DataTable columns={columns} data={data} downloadable />)
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      expect(screen.getByRole("menuitem", { name: /Exportar dados filtrados/i })).toBeInTheDocument()
+      expect(screen.getByRole("menuitem", { name: /Exportar página atual/i })).toBeInTheDocument()
+      expect(screen.getByRole("menuitem", { name: /Exportar todos os dados/i })).toBeInTheDocument()
+    })
+
+    it("exports filtered rows respecting the active search filter", async () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          downloadable
+          searchableColumns={["name"]}
+          globalFilter="alp"
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar dados filtrados/i }))
+      expect(downloadXlsxMock).toHaveBeenCalledTimes(1)
+      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [Record<string, unknown>[], string, string]
+      expect(records).toHaveLength(1)
+      expect(records[0]).toMatchObject({ Name: "Alpha" })
+    })
+
+    it("exports the current page when pagination is active", async () => {
+      render(
+        <DataTable columns={columns} data={data} downloadable pagination={{ pageSize: 2 }} />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar página atual/i }))
+      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [Record<string, unknown>[], string, string]
+      expect(records).toHaveLength(2)
+    })
+
+    it("exports all original rows ignoring filter and pagination", async () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          downloadable
+          searchableColumns={["name"]}
+          globalFilter="alp"
+          pagination={{ pageSize: 1 }}
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
+      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [Record<string, unknown>[], string, string]
+      expect(records).toHaveLength(data.length)
+    })
+
+    it("uses custom filename, sheetName and rowToRecord when provided", async () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          downloadable={{
+            filename: "contratos.xlsx",
+            sheetName: "Contratos",
+            rowToRecord: (row) => ({ NOME_CUSTOM: row.name.toUpperCase() }),
+          }}
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
+      const [records, filename, sheetName] = downloadXlsxMock.mock.calls[0] as unknown as [
+        Record<string, unknown>[],
+        string,
+        string,
+      ]
+      expect(filename).toBe("contratos.xlsx")
+      expect(sheetName).toBe("Contratos")
+      expect(records[0]).toEqual({ NOME_CUSTOM: "BRAVO" })
+    })
+
+    it("replaces the export button with a skeleton when loading", () => {
+      const { container } = render(
+        <DataTable columns={columns} data={data} downloadable loading />,
+      )
+      expect(screen.queryByText("Exportar para Excel")).not.toBeInTheDocument()
+      expect(
+        container.querySelector('[data-slot="data-table-download-skeleton"]'),
+      ).toBeTruthy()
+    })
+  })
+
+  describe("loading", () => {
+    it("renders 5 skeleton rows by default when pagination is off", () => {
+      const { container } = render(<DataTable columns={columns} data={[]} loading />)
+      const skeletonRows = container.querySelectorAll(
+        '[data-slot="data-table-skeleton-row"]',
+      )
+      expect(skeletonRows).toHaveLength(5)
+    })
+
+    it("derives skeleton row count from pagination.pageSize", () => {
+      const { container } = render(
+        <DataTable columns={columns} data={[]} loading pagination={{ pageSize: 8 }} />,
+      )
+      const skeletonRows = container.querySelectorAll(
+        '[data-slot="data-table-skeleton-row"]',
+      )
+      expect(skeletonRows).toHaveLength(8)
+    })
+
+    it("renders one skeleton cell per column", () => {
+      const { container } = render(<DataTable columns={columns} data={[]} loading />)
+      const firstRow = container.querySelector('[data-slot="data-table-skeleton-row"]')
+      expect(firstRow).toBeTruthy()
+      expect(firstRow?.querySelectorAll("td")).toHaveLength(columns.length)
+    })
+
+    it("replaces the search input with a skeleton when searchableColumns is provided", () => {
+      const { container } = render(
+        <DataTable
+          columns={columns}
+          data={[]}
+          loading
+          searchableColumns={["name"]}
+        />,
+      )
+      expect(screen.queryByPlaceholderText("Buscar...")).not.toBeInTheDocument()
+      expect(
+        container.querySelector('[data-slot="data-table-search-skeleton"]'),
+      ).toBeTruthy()
+    })
+
+    it("does not render a search skeleton when searchableColumns is omitted", () => {
+      const { container } = render(<DataTable columns={columns} data={[]} loading />)
+      expect(
+        container.querySelector('[data-slot="data-table-search-skeleton"]'),
+      ).toBeNull()
+    })
+
+    it("disables pagination buttons while loading", () => {
+      render(
+        <DataTable columns={columns} data={data} loading pagination={{ pageSize: 2 }} />,
+      )
+      const prev = screen.getByRole("button", { name: /Página anterior/i })
+      const next = screen.getByRole("button", { name: /Próxima página/i })
+      expect(prev).toBeDisabled()
+      expect(next).toBeDisabled()
+    })
+
+    it("sets aria-busy on the wrapper while loading", () => {
+      const { container } = render(<DataTable columns={columns} data={[]} loading />)
+      const wrapper = container.querySelector('[data-slot="data-table"]')
+      expect(wrapper?.getAttribute("aria-busy")).toBe("true")
+    })
+
+    it("does not show the empty-state message while loading (skeleton instead)", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={[]}
+          loading
+          emptyMessage="Should not appear"
+        />,
+      )
+      expect(screen.queryByText("Should not appear")).not.toBeInTheDocument()
+    })
   })
 })

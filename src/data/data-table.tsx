@@ -13,12 +13,22 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react"
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Search,
+} from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { Popover } from "../overlays/popover"
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
+import { downloadXlsx } from "./_xlsx-export"
 
 // Internal Table primitives — inlined here (was src/data/table.tsx).
 function Table({ className, children, ...props }: React.HTMLAttributes<HTMLTableElement>) {
@@ -122,13 +132,48 @@ export interface DataTableProps<TData> {
   onRowClick?: (row: TData, event: React.MouseEvent<HTMLTableRowElement>) => void
   /** Per-row className. Receives the row data and index; return undefined to skip. Useful for coloring rows by status. */
   rowClassName?: (row: TData, index: number) => string | undefined
+  /**
+   * When `true`, the body renders skeleton rows in place of data. Search input and
+   * footer (count + pagination buttons) also skeleton-ize. Skeleton row count
+   * derives from `pagination.pageSize` (or 5 when pagination is off). `aria-busy`
+   * is set on the wrapper so assistive tech announces the loading state once.
+   */
+  loading?: boolean
+  /**
+   * Render an "Exportar para Excel" ghost button on the right side of the toolbar.
+   * Clicking opens a popover with three scopes (filtered, current page, all rows).
+   * Pass `true` to enable with defaults or an object to customize filename / sheet
+   * name / row mapping.
+   */
+  downloadable?: boolean | DataTableDownloadable<TData>
 }
 
+export interface DataTableDownloadable<TData> {
+  /** Filename for the downloaded xlsx. Default `"export.xlsx"`. */
+  filename?: string
+  /** Sheet name inside the workbook. Default `"Dados"`. */
+  sheetName?: string
+  /**
+   * Custom row → record mapping. Defaults to one column per visible leaf column,
+   * using the column's `header` (when it's a string) as the key and the resolved
+   * cell value as the cell content.
+   */
+  rowToRecord?: (row: TData) => Record<string, unknown>
+}
+
+type ExportScope = "filtered" | "page" | "all"
+
+/** Width classes used to vary skeleton cell widths so rows don't look uniform. */
+const SKELETON_CELL_WIDTHS = ["w-3/4", "w-1/2", "w-2/3", "w-5/6", "w-3/5"] as const
+
+const rowCountFormatter = new Intl.NumberFormat("pt-BR")
+
 function defaultRowCount(filtered: number, total: number): string {
+  const totalStr = rowCountFormatter.format(total)
   if (filtered === total) {
-    return `${total} registro${total === 1 ? "" : "s"}`
+    return `${totalStr} registro${total === 1 ? "" : "s"}`
   }
-  return `${filtered} de ${total} registros`
+  return `${rowCountFormatter.format(filtered)} de ${totalStr} registros`
 }
 
 function DataTable<TData>({
@@ -151,6 +196,8 @@ function DataTable<TData>({
   labels,
   onRowClick,
   rowClassName,
+  loading = false,
+  downloadable,
 }: DataTableProps<TData>) {
   const isSortingControlled = sortingProp !== undefined
   const isGlobalFilterControlled = globalFilterProp !== undefined
@@ -288,21 +335,150 @@ function DataTable<TData>({
   const resolvedEmptyMessage = emptyMessage ?? labels?.empty ?? "Nenhum resultado."
   const rowCountFn = labels?.rowCount ?? defaultRowCount
 
+  const skeletonRowCount = pagination?.pageSize ?? 5
+  const skeletonColumnCount = columns.length
+
+  const hasSearch = !!(searchableColumns && searchableColumns.length > 0)
+  const hasDownload = !!downloadable
+  const downloadConfig: DataTableDownloadable<TData> | undefined =
+    downloadable && typeof downloadable === "object" ? downloadable : undefined
+
+  const defaultRowToRecord = React.useCallback(
+    (row: TData): Record<string, unknown> => {
+      const record: Record<string, unknown> = {}
+      const leafCols = table.getVisibleLeafColumns()
+      for (const col of leafCols) {
+        const headerDef = col.columnDef.header
+        const label = typeof headerDef === "string" && headerDef.length > 0 ? headerDef : col.id
+        const accessorKey = (col.columnDef as { accessorKey?: string }).accessorKey
+        const rawValue =
+          accessorKey != null
+            ? (row as Record<string, unknown>)[accessorKey]
+            : (row as Record<string, unknown>)[col.id]
+        record[label] = rawValue ?? ""
+      }
+      return record
+    },
+    [table],
+  )
+
+  const handleExport = React.useCallback(
+    async (scope: ExportScope) => {
+      const rows: TData[] =
+        scope === "filtered"
+          ? table.getFilteredRowModel().rows.map((r) => r.original)
+          : scope === "page"
+            ? table.getRowModel().rows.map((r) => r.original)
+            : data
+      const mapper = downloadConfig?.rowToRecord ?? defaultRowToRecord
+      const records = rows.map(mapper)
+      await downloadXlsx(
+        records,
+        downloadConfig?.filename ?? "export.xlsx",
+        downloadConfig?.sheetName ?? "Dados",
+      )
+    },
+    [data, defaultRowToRecord, downloadConfig, table],
+  )
+
+  const renderDownloadMenu = () => {
+    if (loading) {
+      return (
+        <div
+          data-slot="data-table-download-skeleton"
+          className="h-9 w-40 animate-pulse rounded-md bg-primary/10"
+        />
+      )
+    }
+    return (
+      <Popover
+        align="end"
+        trigger={
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={data.length === 0}
+            data-slot="data-table-download-trigger"
+            className="gap-2"
+          >
+            <Download className="size-4" aria-hidden />
+            Exportar para Excel
+          </Button>
+        }
+        className="w-56 p-1"
+      >
+        <div role="menu" className="flex flex-col">
+          <button
+            type="button"
+            role="menuitem"
+            data-slot="data-table-download-filtered"
+            className="rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              void handleExport("filtered")
+            }}
+          >
+            Exportar dados filtrados
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            data-slot="data-table-download-page"
+            className="rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              void handleExport("page")
+            }}
+          >
+            Exportar página atual
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            data-slot="data-table-download-all"
+            className="rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              void handleExport("all")
+            }}
+          >
+            Exportar todos os dados
+          </button>
+        </div>
+      </Popover>
+    )
+  }
+
   return (
-    <div className={cn("space-y-3", className)} data-slot="data-table">
-      {searchableColumns && searchableColumns.length > 0 ? (
-        <div className="relative w-full max-w-sm">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            value={globalFilter}
-            onChange={(e) => handleGlobalFilterChange(e.target.value)}
-            placeholder={resolvedSearchPlaceholder}
-            className="pl-9"
-            aria-label="Buscar na tabela"
-          />
+    <div
+      className={cn("space-y-3", className)}
+      data-slot="data-table"
+      aria-busy={loading || undefined}
+    >
+      {hasSearch || hasDownload ? (
+        <div className="flex items-center justify-between gap-2">
+          {hasSearch ? (
+            loading ? (
+              <div
+                data-slot="data-table-search-skeleton"
+                className="h-9 w-full max-w-sm animate-pulse rounded-md bg-primary/10"
+              />
+            ) : (
+              <div className="relative w-full max-w-sm">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden
+                />
+                <Input
+                  value={globalFilter}
+                  onChange={(e) => handleGlobalFilterChange(e.target.value)}
+                  placeholder={resolvedSearchPlaceholder}
+                  className="pl-9"
+                  aria-label="Buscar na tabela"
+                />
+              </div>
+            )
+          ) : (
+            <span aria-hidden />
+          )}
+          {hasDownload ? renderDownloadMenu() : null}
         </div>
       ) : null}
 
@@ -347,7 +523,31 @@ function DataTable<TData>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.length > 0 ? (
+            {loading ? (
+              Array.from({ length: skeletonRowCount }).map((_, rowIdx) => (
+                <TableRow
+                  // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows are positional and identityless
+                  key={`skeleton-${rowIdx}`}
+                  data-slot="data-table-skeleton-row"
+                >
+                  {Array.from({ length: skeletonColumnCount }).map((__, colIdx) => (
+                    <TableCell
+                      // biome-ignore lint/suspicious/noArrayIndexKey: skeleton cells are positional
+                      key={`skeleton-${rowIdx}-${colIdx}`}
+                    >
+                      <div
+                        className={cn(
+                          "h-4 animate-pulse rounded-md bg-primary/10",
+                          SKELETON_CELL_WIDTHS[
+                            (rowIdx + colIdx) % SKELETON_CELL_WIDTHS.length
+                          ],
+                        )}
+                      />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row, index) => {
                 const interactive = onRowClick != null
                 return (
@@ -399,21 +599,29 @@ function DataTable<TData>({
       {paginationEnabled || showRowCount ? (
         <div className="flex items-center justify-between gap-2 px-2 py-3">
           {showRowCount ? (
-            <span className="text-xs text-muted-foreground">
-              {rowCountFn(table.getFilteredRowModel().rows.length, data.length)}
-            </span>
+            loading ? (
+              <div className="h-3 w-32 animate-pulse rounded-md bg-primary/10" />
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                {rowCountFn(table.getFilteredRowModel().rows.length, data.length)}
+              </span>
+            )
           ) : (
             <span />
           )}
           {paginationEnabled ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
-                Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
-              </span>
+              {loading ? (
+                <div className="h-3 w-24 animate-pulse rounded-md bg-primary/10" />
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
+                </span>
+              )}
               <Button
                 variant="outline"
                 size="icon"
-                disabled={!table.getCanPreviousPage()}
+                disabled={loading || !table.getCanPreviousPage()}
                 onClick={() => table.previousPage()}
                 aria-label="Página anterior"
               >
@@ -422,7 +630,7 @@ function DataTable<TData>({
               <Button
                 variant="outline"
                 size="icon"
-                disabled={!table.getCanNextPage()}
+                disabled={loading || !table.getCanNextPage()}
                 onClick={() => table.nextPage()}
                 aria-label="Próxima página"
               >

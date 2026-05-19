@@ -179,6 +179,8 @@ const meta = {
           "- `labels?: { search?, empty?, rowCount?(filtered, total) => string }` — sobrescreve os textos default.",
           "- `onRowClick?: (row, event) => void` — torna cada linha clicável. Adiciona `role=\"button\"`, `tabIndex=0` e suporte a Enter/Espaço automaticamente.",
           "- `rowClassName?: (row, index) => string | undefined` — classes por linha. Retorne `undefined` para a linha herdar o estilo padrão. Útil para colorir linhas por status.",
+          "- `loading?: boolean` — exibe estado skeleton: linhas (count = `pagination.pageSize ?? 5`, células = `columns.length`), input de busca, contagem e botões de paginação. Wrapper recebe `aria-busy`.",
+          "- `downloadable?: boolean | { filename?, sheetName?, rowToRecord? }` — botão `Exportar para Excel` (ghost) à direita; abre popover com 3 escopos: dados filtrados, página atual, todos. Gera `.xlsx` via `xlsx` (SheetJS) lazy-loaded.",
           "- `className?: string` — classes extras no wrapper externo.",
           "",
           "**Helpers para colunas:**",
@@ -717,6 +719,140 @@ export const ControlledSorting: Story = {
       description: {
         story:
           "Passe `sorting` + `onSortingChange` para controlar a ordenação externamente — útil para sincronizar com a URL ou um estado global.",
+      },
+    },
+  },
+}
+
+export const WithDownload: Story = {
+  render: () => (
+    <div className="space-y-6 p-6">
+      <section className="space-y-2">
+        <p className="text-muted-foreground text-xs">
+          <strong className="text-foreground">Toolbar com busca + download</strong> — busca
+          à esquerda, botão `Exportar para Excel` (ghost) à direita. Clique pra abrir o
+          popover com 3 escopos.
+        </p>
+        <DataTable
+          columns={columns}
+          data={contratos}
+          searchableColumns={["numero", "cliente"]}
+          pagination={{ pageSize: 5 }}
+          showRowCount
+          downloadable={{
+            filename: "contratos.xlsx",
+            sheetName: "Contratos",
+          }}
+        />
+      </section>
+
+      <section className="space-y-2">
+        <p className="text-muted-foreground text-xs">
+          <strong className="text-foreground">Só download (sem busca)</strong> — botão
+          ainda fica à direita; o lado esquerdo do toolbar fica vazio.
+        </p>
+        <DataTable columns={columns} data={contratos.slice(0, 6)} downloadable />
+      </section>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: [
+          "Passe `downloadable` para expor um botão `Exportar para Excel` (variante ghost, ícone Download) à direita do toolbar.",
+          "",
+          "O click abre um Popover com 3 itens:",
+          "1. **Exportar dados filtrados** — todas as linhas que passam pela busca (`getFilteredRowModel`), ignorando paginação.",
+          "2. **Exportar página atual** — só as linhas visíveis no momento (`getRowModel` — após filtro + paginação).",
+          "3. **Exportar todos os dados** — o array `data` original, sem filtros nem paginação.",
+          "",
+          "**Geração do arquivo**: usa `xlsx` (SheetJS) **lazy-loaded** via `await import(\"xlsx\")` — o package só entra no bundle do consumer no primeiro clique de export. Default: 1 sheet (\"Dados\"), 1 linha por registro, 1 coluna por leaf column visível (label = `columnDef.header` quando string, senão `column.id`).",
+          "",
+          "**Customização (objeto)**: `downloadable={{ filename, sheetName, rowToRecord }}`.",
+          "- `filename` — default `\"export.xlsx\"`.",
+          "- `sheetName` — default `\"Dados\"`.",
+          "- `rowToRecord(row)` — mapping custom de cada linha pro objeto exportado. Use pra renomear colunas, formatar valores (BRL, datas), ou omitir campos.",
+          "",
+          "```tsx",
+          'import { DataTable } from "@amfernandesinc/ui"',
+          "",
+          "<DataTable",
+          "  columns={columns}",
+          "  data={contratos}",
+          '  searchableColumns={["numero", "cliente"]}',
+          "  pagination={{ pageSize: 10 }}",
+          "  downloadable={{",
+          '    filename: "contratos.xlsx",',
+          '    sheetName: "Contratos",',
+          "    rowToRecord: (r) => ({",
+          "      Número: r.numero,",
+          "      Cliente: r.cliente,",
+          "      Valor: brl.format(r.valor),",
+          "    }),",
+          "  }}",
+          "/>",
+          "```",
+          "",
+          "Botão fica `disabled` quando `data.length === 0`. Em `loading=true` vira skeleton.",
+        ].join("\n"),
+      },
+    },
+  },
+}
+
+export const Loading: Story = {
+  render: () => (
+    <div className="space-y-6 p-6">
+      <section className="space-y-2">
+        <p className="text-muted-foreground text-xs">
+          <strong className="text-foreground">Loading básico</strong> — sem busca, sem
+          paginação. Renderiza 5 linhas skeleton (default).
+        </p>
+        <DataTable columns={columns} data={[]} loading />
+      </section>
+
+      <section className="space-y-2">
+        <p className="text-muted-foreground text-xs">
+          <strong className="text-foreground">Com busca + paginação</strong> — o input de
+          busca também vira skeleton; o número de linhas vem de `pagination.pageSize` (aqui
+          8); botões de página ficam disabled; contagem no footer também é skeleton.
+        </p>
+        <DataTable
+          columns={columns}
+          data={[]}
+          loading
+          searchableColumns={["numero", "cliente"]}
+          pagination={{ pageSize: 8 }}
+          showRowCount
+        />
+      </section>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: [
+          "Passe `loading` (boolean) para exibir um estado skeleton enquanto os dados carregam. O componente:",
+          "",
+          "- Renderiza `pagination.pageSize ?? 5` linhas skeleton, cada uma com `columns.length` células (larguras variando entre 5 valores pra parecer natural).",
+          "- Se `searchableColumns` estiver definido, troca o `<Input>` de busca por um skeleton equivalente — sem perda de layout.",
+          "- Footer: contagem (`showRowCount`) e indicador de página viram skeletons; botões prev/next ficam disabled.",
+          "- Cabeçalho permanece — colunas são conhecidas estaticamente.",
+          "- `aria-busy=\"true\"` no wrapper externo para assistive tech anunciar uma única vez.",
+          "",
+          "```tsx",
+          'import { DataTable } from "@amfernandesinc/ui"',
+          "",
+          "<DataTable",
+          "  columns={columns}",
+          "  data={data ?? []}",
+          "  loading={isLoading}",
+          '  searchableColumns={["numero", "cliente"]}',
+          "  pagination={{ pageSize: 10 }}",
+          "  showRowCount",
+          "/>",
+          "```",
+        ].join("\n"),
       },
     },
   },
