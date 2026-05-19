@@ -63,7 +63,7 @@ function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCell
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium text-muted-foreground",
+        "px-4 py-4 text-left align-middle font-medium text-muted-foreground",
         className,
       )}
       {...props}
@@ -71,7 +71,9 @@ function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCell
   )
 }
 function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td data-slot="table-cell" className={cn("p-2 align-middle", className)} {...props} />
+  return (
+    <td data-slot="table-cell" className={cn("px-4 py-4 align-middle", className)} {...props} />
+  )
 }
 
 export interface DataTableLabels {

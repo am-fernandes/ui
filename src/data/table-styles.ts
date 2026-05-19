@@ -17,8 +17,8 @@ export function tableStyles() {
     body: "[&_tr:last-child]:border-0",
     footer: "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
     row: "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
-    head: "h-10 px-2 text-left align-middle font-medium text-muted-foreground",
-    cell: "p-2 align-middle",
+    head: "px-4 py-4 text-left align-middle font-medium text-muted-foreground",
+    cell: "px-4 py-4 align-middle",
     caption: "mt-4 text-sm text-muted-foreground",
   } as const
 }
