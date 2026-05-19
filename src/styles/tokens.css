@@ -53,6 +53,7 @@
 
   --color-border: var(--border);
   --color-input: var(--input);
+  --color-placeholder: var(--placeholder);
   --color-ring: var(--ring);
 
   --color-chart-1: var(--chart-1);
@@ -96,8 +97,8 @@
   --accent: oklch(0.968 0.005 252);
   --accent-foreground: oklch(0.203 0.013 252);
 
-  /* Destructive: vermelho puro #ff0000 (0 100% 50%) */
-  --destructive: oklch(0.628 0.258 29.2);
+  /* Destructive: vermelho profundo (#c93125) — passes WCAG AA (5.33:1 on white) */
+  --destructive: oklch(0.55 0.19 29.2);
   --destructive-foreground: oklch(1 0 0);
 
   /* Success: verde #6d8d0b (74 85% 30%) */
@@ -108,8 +109,8 @@
   --warning: oklch(0.868 0.167 92.6);
   --warning-foreground: oklch(0 0 0);
 
-  /* Info: azul claro #03a9f4 (199 98% 48%) */
-  --info: oklch(0.668 0.151 236.3);
+  /* Info: azul corporativo (#006cac) — passes WCAG AA (5.61:1 on white) */
+  --info: oklch(0.5 0.15 236.3);
   --info-foreground: oklch(1 0 0);
 
   /* Status badge palettes — tinted bg, WCAG AA contrast text, medium border */
@@ -129,6 +130,7 @@
   /* Inputs & Borders */
   --border: oklch(0.875 0.01 252);
   --input: oklch(0.875 0.01 252);
+  --placeholder: oklch(0.55 0.005 252);
   --ring: oklch(0 0 0);
 
   /* Charts */
@@ -160,7 +162,7 @@
   }
   input::placeholder,
   textarea::placeholder {
-    color: var(--input);
+    color: var(--placeholder);
   }
   input::-webkit-outer-spin-button,
   input::-webkit-inner-spin-button {

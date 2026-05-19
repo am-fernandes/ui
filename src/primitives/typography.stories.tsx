@@ -251,7 +251,6 @@ export const WithClassName: Story = {
     </div>
   ),
   parameters: {
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story: "`className` permite override pontual de cor, peso, decoração, etc.",
