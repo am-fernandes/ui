@@ -53,6 +53,8 @@ interface TimeFieldProps {
   max: number
   value: string
   ariaLabel: string
+  ariaInvalid?: boolean
+  ariaDescribedBy?: string
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]
   onChange: (raw: string) => void
   onBlur: () => void
@@ -65,6 +67,8 @@ function TimeField({
   id,
   value,
   ariaLabel,
+  ariaInvalid,
+  ariaDescribedBy,
   inputMode = "numeric",
   onChange,
   onBlur,
@@ -79,6 +83,8 @@ function TimeField({
       type="text"
       inputMode={inputMode}
       aria-label={ariaLabel}
+      aria-invalid={ariaInvalid ? true : undefined}
+      aria-describedby={ariaDescribedBy}
       maxLength={2}
       placeholder="--"
       value={value}
@@ -109,6 +115,9 @@ function TimePicker({
 }: TimePickerProps) {
   const ids = useFieldIds(id)
   const minuteRef = React.useRef<HTMLInputElement>(null)
+  const hasError = error != null && error !== ""
+  const hasDescription = description != null && description !== ""
+  const describedBy = ids.describedBy({ description: hasDescription, error: hasError })
 
   // Derive the committed values directly from the prop.
   const { hour: committedHour, minute: committedMinute } = React.useMemo(
@@ -268,6 +277,8 @@ function TimePicker({
           id={ids.controlId}
           value={hour}
           ariaLabel="Horas"
+          ariaInvalid={hasError}
+          ariaDescribedBy={describedBy}
           min={MIN_HOUR}
           max={MAX_HOUR}
           onChange={handleHourChange}
@@ -282,6 +293,8 @@ function TimePicker({
           ref={minuteRef}
           value={minute}
           ariaLabel="Minutos"
+          ariaInvalid={hasError}
+          ariaDescribedBy={describedBy}
           min={MIN_MINUTE}
           max={MAX_MINUTE}
           onChange={handleMinuteChange}

@@ -494,7 +494,10 @@ function CameraDialog({
             <track kind="captions" />
           </video>
           {!isReady ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+            <div
+              role="status"
+              className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
+            >
               <Loader2 className="size-6 animate-spin" aria-hidden />
               <span>Iniciando câmera…</span>
             </div>

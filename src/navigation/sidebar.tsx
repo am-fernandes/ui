@@ -293,13 +293,22 @@ function SidebarItemRender({
       </button>
     )
   } else if (item.href) {
+    const disabled = !!item.disabled
     trigger = (
       <a
-        href={item.href}
+        href={disabled ? undefined : item.href}
         data-active={active ? "true" : undefined}
-        aria-disabled={item.disabled || undefined}
-        className={baseClass}
-        onClick={item.onClick}
+        aria-disabled={disabled ? "true" : undefined}
+        aria-current={active ? "page" : undefined}
+        tabIndex={disabled ? -1 : undefined}
+        className={cn(baseClass, disabled && "pointer-events-none opacity-50")}
+        onClick={(e) => {
+          if (disabled) {
+            e.preventDefault()
+            return
+          }
+          item.onClick?.()
+        }}
       >
         {labelAndBadge}
       </a>
@@ -309,6 +318,7 @@ function SidebarItemRender({
       <button
         type="button"
         data-active={active ? "true" : undefined}
+        aria-current={active ? "true" : undefined}
         disabled={item.disabled}
         className={baseClass}
         onClick={item.onClick}

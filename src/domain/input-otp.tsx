@@ -69,6 +69,8 @@ function InputOTP({
 }: InputOTPProps) {
   const ids = useFieldIds(id)
   const slots = Array.from({ length }, (_, i) => i)
+  const hasError = error != null && error !== ""
+  const hasDescription = description != null && description !== ""
 
   return (
     <FieldShell
@@ -93,6 +95,8 @@ function InputOTP({
         onComplete={onComplete}
         pattern={pattern}
         disabled={disabled}
+        aria-invalid={hasError ? true : undefined}
+        aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
         containerClassName={cn("flex items-center has-disabled:opacity-50", className)}
         render={() => (
           <div className="flex items-center">

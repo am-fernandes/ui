@@ -510,29 +510,42 @@ function DataTable<TData>({
           </TableHeader>
           <TableBody>
             {loading ? (
-              Array.from({ length: skeletonRowCount }).map((_, rowIdx) => (
+              <>
                 <TableRow
-                  // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows are positional and identityless
-                  key={`skeleton-${rowIdx}`}
-                  data-slot="data-table-skeleton-row"
+                  aria-hidden="true"
+                  className="sr-only"
+                  data-slot="data-table-loading-announcer"
                 >
-                  {Array.from({ length: skeletonColumnCount }).map((__, colIdx) => (
-                    <TableCell
-                      // biome-ignore lint/suspicious/noArrayIndexKey: skeleton cells are positional
-                      key={`skeleton-${rowIdx}-${colIdx}`}
-                    >
-                      <div
-                        className={cn(
-                          "h-4 animate-pulse rounded-md bg-primary/10",
-                          SKELETON_CELL_WIDTHS[
-                            (rowIdx + colIdx) % SKELETON_CELL_WIDTHS.length
-                          ],
-                        )}
-                      />
-                    </TableCell>
-                  ))}
+                  <TableCell colSpan={table.getVisibleLeafColumns().length}>
+                    <span role="status" className="sr-only">
+                      Carregando dados…
+                    </span>
+                  </TableCell>
                 </TableRow>
-              ))
+                {Array.from({ length: skeletonRowCount }).map((_, rowIdx) => (
+                  <TableRow
+                    // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows are positional and identityless
+                    key={`skeleton-${rowIdx}`}
+                    data-slot="data-table-skeleton-row"
+                  >
+                    {Array.from({ length: skeletonColumnCount }).map((__, colIdx) => (
+                      <TableCell
+                        // biome-ignore lint/suspicious/noArrayIndexKey: skeleton cells are positional
+                        key={`skeleton-${rowIdx}-${colIdx}`}
+                      >
+                        <div
+                          className={cn(
+                            "h-4 animate-pulse rounded-md bg-primary/10",
+                            SKELETON_CELL_WIDTHS[
+                              (rowIdx + colIdx) % SKELETON_CELL_WIDTHS.length
+                            ],
+                          )}
+                        />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </>
             ) : table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row, index) => {
                 const interactive = onRowClick != null
@@ -574,7 +587,9 @@ function DataTable<TData>({
                   colSpan={table.getVisibleLeafColumns().length}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  {resolvedEmptyMessage}
+                  <span role="status" aria-live="polite">
+                    {resolvedEmptyMessage}
+                  </span>
                 </TableCell>
               </TableRow>
             )}

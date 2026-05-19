@@ -32,6 +32,7 @@ export interface DateRangePickerProps {
   numberOfMonths?: number
   locale?: Locale
   id?: string
+  "aria-label"?: string
   ref?: React.Ref<HTMLButtonElement>
 }
 
@@ -59,11 +60,13 @@ function DateRangePicker({
   className,
   numberOfMonths = 2,
   locale = ptBR,
+  "aria-label": ariaLabel,
   ref,
 }: DateRangePickerProps) {
   const ids = useFieldIds(id)
   const [open, setOpen] = React.useState(false)
   const hasError = error != null && error !== ""
+  const hasDescription = description != null && description !== ""
 
   const fromDate = parseIsoDate(value.from)
   const toDate = parseIsoDate(value.to)
@@ -92,6 +95,11 @@ function DateRangePicker({
       variant="outline"
       disabled={disabled}
       aria-invalid={hasError ? true : undefined}
+      aria-label={ariaLabel ?? (typeof label === "string" ? label : "Selecionar período")}
+      aria-describedby={ids.describedBy({
+        description: hasDescription,
+        error: hasError,
+      })}
       className={cn(
         "w-full justify-start text-left",
         !fromDate && "text-muted-foreground",
