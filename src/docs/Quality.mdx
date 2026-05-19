@@ -213,9 +213,11 @@ exclude: ["src/**/*.stories.tsx", "src/**/*.test.tsx", "src/docs/**", "src/index
 
 ### O que NÃO testamos
 
-- **Pixel-perfect / regressão visual** — fica para uma próxima camada de visual regression (screenshots Playwright + `toHaveScreenshot`).
-- **Layout responsivo** — jsdom não tem layout; nem todo E2E é testado em viewports múltiplos. Adicionar viewports em `playwright.config.ts` quando necessário.
+- **Browsers não-Chromium** — todas as camadas (vitest jsdom, Storybook test-runner, Playwright) rodam em Chromium. WebKit/Firefox não estão no CI; rodadas manuais quando necessário.
+- **Render server-side (SSR/RSC)** — a lib é client-only (`"use client"` nos componentes interativos). Nenhum teste exercita Next.js RSC.
 - **Implementação interna** — testes asseram comportamento, não tipo de hook, não classes intermediárias.
+
+> **Visual regression JÁ está coberta:** `tests/e2e/visual.spec.ts` mantém 57 baselines via `toHaveScreenshot` (Google Fonts bloqueado em cada teste para determinismo). Layout responsivo é coberto em E2E pelos projects `mobile-chromium` (Pixel 5) e `tablet-chromium` (iPad gen 7).
 
 ### Stubs do jsdom
 
@@ -256,6 +258,47 @@ bun run sync:e2e-stats      # recalcula _e2e-stats.ts
 
 Após `test:coverage`, abra `coverage/index.html` para drilldown linha-a-linha.
 Após `test:e2e`, abra `playwright-report/index.html` para o relatório HTML com traces/screenshots.
+
+---
+
+## Layout responsivo
+
+A camada de **testes responsivos** vive em `tests/e2e/responsive.spec.ts` e roda no project `chromium` mudando o viewport em runtime via `page.setViewportSize()`. Diferente dos projects `mobile-chromium` e `tablet-chromium` (que pegam o componente em um único viewport fixo), `responsive.spec.ts` exercita a mesma story em mobile/tablet/desktop e valida que o componente **adapta** o layout.
+
+| Viewport | Width × Height | Uso |
+|---|---|---|
+| Mobile  | 375 × 667 | smartphone retrato |
+| Tablet  | 768 × 1024 | iPad retrato |
+| Desktop | 1280 × 720 | notebook padrão |
+
+### O que validamos
+
+| Componente | Comportamento responsivo testado |
+|---|---|
+| **Sidebar** | Mobile→`<Sheet>` overlay; Desktop→`<aside>` persistente |
+| **DataTable** | Container `overflow-x: auto` em qualquer viewport |
+| **Tabs** | Trigger list não estoura largura da viewport |
+| **Dialog** | Conteúdo respeita width disponível, não vira minúsculo |
+| **Image** | `aspectRatio` mantém proporção (16:9 stays 16:9) |
+| **FieldShell** | Label position adapta layout (flex-col em narrow) |
+
+### Comando
+
+```bash
+bun run test:e2e -- tests/e2e/responsive.spec.ts
+```
+
+Para visual diff em múltiplos viewports da mesma story, use o project-level testing:
+
+```bash
+bun run test:e2e:mobile     # roda mobile.spec.ts no Pixel 5
+bun run test:e2e:tablet     # roda tablet.spec.ts no iPad
+bun run test:visual         # 57 baselines em desktop
+```
+
+### Limitação conhecida
+
+A maioria dos componentes da lib **não tem media queries internas** — eles são "intrinsicamente responsivos" porque usam `w-full`, `flex-wrap`, `min-w-0`, etc. Sidebar é a exceção (usa `useIsMobile`). Por isso a maior parte dos testes responsivos valida **invariantes geométricas** (não estourar largura, manter aspect ratio) e não "elementos mudam ao cruzar breakpoints".
 
 ---
 
