@@ -12,7 +12,7 @@ const MIN_MINUTE = 0
 const MAX_MINUTE = 59
 
 const containerClasses =
-  "inline-flex h-9 items-center gap-1 rounded-md border border-input bg-transparent px-3 py-1 text-base transition-colors focus-within:border-primary focus-within:ring-1 focus-within:ring-ring md:text-sm"
+  "inline-flex h-9 items-center gap-1 rounded-md border border-input bg-transparent px-3 py-3 text-base transition-colors focus-within:border-primary focus-within:ring-1 focus-within:ring-ring md:text-sm"
 
 const fieldClasses =
   "w-7 bg-transparent text-center tabular-nums outline-none placeholder:text-input disabled:cursor-not-allowed"
