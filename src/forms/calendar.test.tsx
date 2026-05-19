@@ -205,6 +205,18 @@ describe("Calendar", () => {
     expect(nav.length).toBeGreaterThanOrEqual(2)
   })
 
+  it("accepts the labels prop without forwarding it as an HTML attribute (reserved for future strings)", () => {
+    // labels is currently reserved; the wrapper accepts it but does not consume it,
+    // and react-day-picker handles all grid copy via `locale`.
+    const { container } = render(
+      <Calendar mode="single" defaultMonth={FIXED_MONTH} labels={{}} />,
+    )
+    const root = container.querySelector('[data-slot="calendar"]')
+    expect(root).not.toBeNull()
+    // The prop must not leak to the DOM.
+    expect(root?.getAttribute("labels")).toBeNull()
+  })
+
   it("uses dropdown captionLayout — shows month/year selects", () => {
     render(<Calendar mode="single" defaultMonth={FIXED_MONTH} captionLayout="dropdown" />)
     // The dropdown layout renders <select> elements for month and year.

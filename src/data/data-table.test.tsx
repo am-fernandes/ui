@@ -214,6 +214,36 @@ describe("DataTable", () => {
     expect(screen.getByText("1.234 de 1.832 registros")).toBeInTheDocument()
   })
 
+  it("overrides pagination, export, loading and sort labels via the labels prop (en-US sample)", async () => {
+    const many: Row[] = Array.from({ length: 12 }, (_, i) => ({
+      name: `Row ${i + 1}`,
+      age: 20 + i,
+    }))
+    render(
+      <DataTable
+        columns={columns}
+        data={many}
+        sortableColumns={["name"]}
+        pagination={{ pageSize: 5 }}
+        downloadable
+        loading
+        labels={{
+          loading: "Loading data…",
+          paginationPrevious: "Previous page",
+          paginationNext: "Next page",
+          pageIndicator: (idx, total) => `Page ${idx + 1} / ${total}`,
+          sortBy: (h) => `Sort by ${h}`,
+          exportTrigger: "Export to Excel",
+        }}
+      />,
+    )
+    // sr-only loading status
+    expect(screen.getByText("Loading data…")).toBeInTheDocument()
+    // pagination aria-labels
+    expect(screen.getByRole("button", { name: "Previous page" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Next page" })).toBeInTheDocument()
+  })
+
   it("uses custom labels.search / labels.empty / labels.rowCount", async () => {
     render(
       <DataTable

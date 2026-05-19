@@ -258,6 +258,47 @@ export const Controlled: Story = {
   },
 }
 
+export const English: Story = {
+  args: {
+    multiple: true,
+    accept: ["image/*", "application/pdf"],
+    maxSize: mb(5),
+    camera: true,
+    labels: {
+      dropzoneMultiple: "Drag files or click to select",
+      dropzoneSingle: "Drag a file or click to select",
+      dropzoneAriaLabel: "Select files",
+      cameraButton: "Take photo",
+      cameraDialogTitle: "Take photo",
+      cameraDialogDescription:
+        'Position the document or object in front of the camera and tap "Take photo".',
+      cameraCancel: "Cancel",
+      cameraTakePhoto: "Take photo",
+      cameraStarting: "Starting camera…",
+      cameraUnavailable: "Camera is not available in this browser.",
+      cameraAccessFailed: "Could not access the camera. Check your browser permissions.",
+      fileListAriaLabel: "Selected files",
+      imageFallbackName: "Image",
+      zoomImage: (name) => `Zoom ${name}`,
+      openFile: (name) => `Open ${name} in a new tab`,
+      removeFile: (name) => `Remove ${name}`,
+    },
+  },
+  render: (args) => (
+    <div className="w-[460px]">
+      <FileUpload {...args} />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Full en-US override via the `labels` prop. Defaults are pt-BR; pass `labels={{ ... }}` to translate or rewrite copy per instance.",
+      },
+    },
+  },
+}
+
 export const RejectionHandler: Story = {
   render: () => {
     function describe(rejection: FileUploadRejection): string {

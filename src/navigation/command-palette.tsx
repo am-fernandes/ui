@@ -22,6 +22,21 @@ export interface CommandPaletteGroup {
   items: CommandPaletteItem[]
 }
 
+export interface CommandPaletteLabels {
+  /** Search input placeholder. */
+  placeholder: string
+  /** Empty-state message shown when no item matches the search. */
+  emptyMessage: React.ReactNode
+  /** Loader text rendered when `loading={true}`. */
+  loading: React.ReactNode
+}
+
+export const defaultCommandPaletteLabels: CommandPaletteLabels = {
+  placeholder: "Buscar...",
+  emptyMessage: "Nenhum resultado",
+  loading: "Carregando…",
+}
+
 export interface CommandPaletteProps {
   open: boolean
   onOpenChange?: (open: boolean) => void
@@ -33,20 +48,29 @@ export interface CommandPaletteProps {
   description?: string
   value?: string
   onValueChange?: (value: string) => void
+  /**
+   * Override individual UI strings. Defaults are pt-BR. The standalone
+   * `placeholder` and `emptyMessage` props still win when provided.
+   */
+  labels?: Partial<CommandPaletteLabels>
 }
 
 function CommandPalette({
   open,
   onOpenChange,
   groups,
-  placeholder = "Buscar...",
-  emptyMessage = "Nenhum resultado",
+  placeholder,
+  emptyMessage,
   loading,
   title,
   description = "",
   value,
   onValueChange,
+  labels,
 }: CommandPaletteProps) {
+  const mergedLabels: CommandPaletteLabels = { ...defaultCommandPaletteLabels, ...labels }
+  const resolvedPlaceholder = placeholder ?? mergedLabels.placeholder
+  const resolvedEmptyMessage = emptyMessage ?? mergedLabels.emptyMessage
   return (
     <Dialog
       open={open}
@@ -69,7 +93,7 @@ function CommandPalette({
         >
           <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
           <CommandPrimitive.Input
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             className="flex w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-input"
           />
         </div>
@@ -79,11 +103,11 @@ function CommandPalette({
         >
           {loading ? (
             <CommandPrimitive.Loading className="py-6 text-center text-sm text-muted-foreground">
-              Carregando…
+              {mergedLabels.loading}
             </CommandPrimitive.Loading>
           ) : null}
           <CommandPrimitive.Empty className="py-6 text-center text-sm text-muted-foreground">
-            {emptyMessage}
+            {resolvedEmptyMessage}
           </CommandPrimitive.Empty>
           {groups.map((group, gi) => (
             <CommandPrimitive.Group

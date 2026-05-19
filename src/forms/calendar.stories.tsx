@@ -288,6 +288,34 @@ export const EnUSLocale: Story = {
   },
 }
 
+export const English: Story = {
+  name: "English",
+  parameters: {
+    docs: {
+      description: {
+        story: [
+          "Translating the calendar UI is driven by `locale`, not `labels`. `react-day-picker` already exposes localized weekday names, month names, and prev/next button aria-labels.",
+          "",
+          "The `labels` prop is reserved for any future wrapper-only copy (currently no strings live in the wrapper).",
+        ].join("\n"),
+      },
+    },
+  },
+  render: () => {
+    const [date, setDate] = useState<Date | undefined>()
+    return (
+      <Calendar
+        mode="single"
+        selected={date}
+        onSelect={setDate}
+        locale={enUS}
+        defaultMonth={FIXED_MONTH}
+        labels={{}}
+      />
+    )
+  },
+}
+
 export const TwoMonthsCompact: Story = {
   name: "Two months side-by-side",
   parameters: {

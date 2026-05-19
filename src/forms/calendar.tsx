@@ -67,6 +67,20 @@ function resolveDisabledDays(
     )
 }
 
+/**
+ * Wrapper-level strings exposed by the AM Fernandes Calendar. The grid itself
+ * is localized by react-day-picker via the `locale` prop — pass a non-pt-BR
+ * `locale` (e.g. `date-fns/locale/enUS`) to translate weekday names, month
+ * names, and the built-in nav button aria-labels. This `labels` prop is
+ * reserved for any future wrapper-only copy (currently empty in pt-BR).
+ */
+export interface CalendarLabels {
+  /** Reserved for future wrapper-level strings. */
+  _reserved?: never
+}
+
+export const defaultCalendarLabels: CalendarLabels = {}
+
 type CalendarProps = React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
   /**
@@ -75,6 +89,12 @@ type CalendarProps = React.ComponentProps<typeof DayPicker> & {
    */
   disabledDays?: DisabledDays
   ref?: React.Ref<HTMLDivElement>
+  /**
+   * Override wrapper-level UI strings. Defaults are pt-BR. Note: the
+   * react-day-picker grid (weekdays, month names, prev/next button aria
+   * labels) is translated via the `locale` prop, not this one.
+   */
+  labels?: Partial<CalendarLabels>
 }
 
 function Calendar({
@@ -89,8 +109,11 @@ function Calendar({
   disabledDays,
   disabled,
   ref,
+  labels: _labels,
   ...props
 }: CalendarProps) {
+  // `labels` is reserved for future wrapper-level strings; not consumed yet.
+  void _labels
   const disabledFn = resolveDisabledDays(disabledDays)
   const resolvedDisabled = disabledFn ?? disabled
   const defaultClassNames = getDefaultClassNames()

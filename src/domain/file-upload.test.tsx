@@ -395,4 +395,37 @@ describe("FileUpload", () => {
   // The full happy-path camera capture (getUserMedia stream → canvas → blob)
   // remains untested at the unit level (jsdom limitation) and is tracked under
   // Playwright e2e instead.
+
+  it("uses pt-BR labels by default", () => {
+    render(<FileUpload multiple />)
+    const input = document.querySelector("input[type=file]") as HTMLInputElement
+    fireEvent.change(input, { target: { files: [makeFile("a.txt", "text/plain")] } })
+    // Default dropzone label
+    expect(screen.getByText(/Arraste arquivos ou clique/)).toBeInTheDocument()
+    // Default aria-label of the list
+    expect(screen.getByRole("list", { name: "Arquivos selecionados" })).toBeInTheDocument()
+    // Default remove button aria-label
+    expect(screen.getByRole("button", { name: /Remover a\.txt/ })).toBeInTheDocument()
+  })
+
+  it("overrides labels via the labels prop (en-US sample)", () => {
+    render(
+      <FileUpload
+        multiple
+        camera
+        labels={{
+          dropzoneMultiple: "Drag files or click to select",
+          fileListAriaLabel: "Selected files",
+          cameraButton: "Take photo",
+          removeFile: (name) => `Remove ${name}`,
+        }}
+      />,
+    )
+    expect(screen.getByText("Drag files or click to select")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Take photo" })).toBeInTheDocument()
+    const input = document.querySelector("input[type=file]") as HTMLInputElement
+    fireEvent.change(input, { target: { files: [makeFile("foo.txt", "text/plain")] } })
+    expect(screen.getByRole("list", { name: "Selected files" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Remove foo.txt" })).toBeInTheDocument()
+  })
 })

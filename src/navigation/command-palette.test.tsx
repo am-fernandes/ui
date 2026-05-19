@@ -121,6 +121,37 @@ describe("CommandPalette", () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
+  it("uses pt-BR labels by default", () => {
+    render(
+      <CommandPalette
+        open
+        title="X"
+        loading
+        groups={[{ items: [{ label: "Dashboard", onSelect: () => {} }] }]}
+      />,
+    )
+    expect(screen.getByPlaceholderText("Buscar...")).toBeInTheDocument()
+    expect(screen.getByText("Carregando…")).toBeInTheDocument()
+  })
+
+  it("overrides labels via the labels prop (en-US sample)", async () => {
+    render(
+      <CommandPalette
+        open
+        title="X"
+        labels={{
+          placeholder: "Search...",
+          emptyMessage: "No results",
+          loading: "Loading…",
+        }}
+        groups={[{ items: [{ label: "Dashboard", onSelect: () => {} }] }]}
+      />,
+    )
+    const input = screen.getByPlaceholderText("Search...")
+    await userEvent.type(input, "zzzzzz")
+    expect(screen.getByText("No results")).toBeInTheDocument()
+  })
+
   it("finds an item via custom keywords search", async () => {
     render(
       <CommandPalette

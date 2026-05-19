@@ -14,6 +14,60 @@ export interface FileUploadRejection {
   reason: FileUploadRejectionReason
 }
 
+export interface FileUploadLabels {
+  /** Default label inside the dropzone when `multiple={false}`. */
+  dropzoneSingle: string
+  /** Default label inside the dropzone when `multiple={true}`. */
+  dropzoneMultiple: string
+  /** Fallback aria-label of the dropzone when `label` is not a string. */
+  dropzoneAriaLabel: string
+  /** Camera trigger button label. */
+  cameraButton: string
+  /** Camera dialog title. */
+  cameraDialogTitle: string
+  /** Camera dialog description. */
+  cameraDialogDescription: string
+  /** Camera dialog cancel button. */
+  cameraCancel: string
+  /** Camera capture/take-photo button. */
+  cameraTakePhoto: string
+  /** Loader caption while the camera stream is starting. */
+  cameraStarting: string
+  /** Error message when getUserMedia is unavailable. */
+  cameraUnavailable: string
+  /** Error message when getUserMedia fails (permission denied / hardware error). */
+  cameraAccessFailed: string
+  /** aria-label of the file list `<ul>`. */
+  fileListAriaLabel: string
+  /** Lightbox title fallback when the image has no name. */
+  imageFallbackName: string
+  /** Aria-label of the lightbox-open button for image rows: `(fileName) => ...`. */
+  zoomImage: (fileName: string) => string
+  /** Aria-label of the open-in-new-tab button for non-image rows. */
+  openFile: (fileName: string) => string
+  /** Aria-label of the remove-row button. */
+  removeFile: (fileName: string) => string
+}
+
+export const defaultFileUploadLabels: FileUploadLabels = {
+  dropzoneSingle: "Arraste um arquivo ou clique para selecionar",
+  dropzoneMultiple: "Arraste arquivos ou clique para selecionar",
+  dropzoneAriaLabel: "Selecionar arquivos",
+  cameraButton: "Capturar foto",
+  cameraDialogTitle: "Capturar foto",
+  cameraDialogDescription: 'Posicione o documento ou objeto na câmera e toque em "Tirar foto".',
+  cameraCancel: "Cancelar",
+  cameraTakePhoto: "Tirar foto",
+  cameraStarting: "Iniciando câmera…",
+  cameraUnavailable: "Câmera não disponível neste navegador.",
+  cameraAccessFailed: "Não foi possível acessar a câmera. Verifique as permissões do navegador.",
+  fileListAriaLabel: "Arquivos selecionados",
+  imageFallbackName: "Imagem",
+  zoomImage: (fileName) => `Ampliar ${fileName}`,
+  openFile: (fileName) => `Abrir ${fileName} em nova aba`,
+  removeFile: (fileName) => `Remover ${fileName}`,
+}
+
 export interface FileUploadProps {
   /** MIME pattern(s) accepted by the picker. Examples: `"image/*"`, `["image/png", "application/pdf"]`. Same syntax as native `<input accept>`. */
   accept?: string | string[]
@@ -45,6 +99,8 @@ export interface FileUploadProps {
   className?: string
   /** Class on the dropzone clickable area. */
   dropzoneClassName?: string
+  /** Override individual UI strings. Defaults are pt-BR. */
+  labels?: Partial<FileUploadLabels>
 }
 
 function normalizeAccept(accept?: string | string[]): string | undefined {
@@ -101,13 +157,15 @@ function FileUpload({
   onReject,
   disabled = false,
   error,
-  label = multiple
-    ? "Arraste arquivos ou clique para selecionar"
-    : "Arraste um arquivo ou clique para selecionar",
+  label,
   description,
   className,
   dropzoneClassName,
+  labels,
 }: FileUploadProps) {
+  const mergedLabels: FileUploadLabels = { ...defaultFileUploadLabels, ...labels }
+  const resolvedLabel: React.ReactNode =
+    label ?? (multiple ? mergedLabels.dropzoneMultiple : mergedLabels.dropzoneSingle)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [internal, setInternal] = React.useState<File[]>([])
   const [isDragging, setDragging] = React.useState(false)
@@ -198,7 +256,9 @@ function FileUpload({
             ingest(e.dataTransfer.files)
           }}
           disabled={disabled}
-          aria-label={typeof label === "string" ? label : "Selecionar arquivos"}
+          aria-label={
+            typeof resolvedLabel === "string" ? resolvedLabel : mergedLabels.dropzoneAriaLabel
+          }
           className={cn(
             "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
             "hover:bg-accent/40",
@@ -210,7 +270,7 @@ function FileUpload({
           )}
         >
           <UploadCloud className="size-6 text-muted-foreground" aria-hidden />
-          <span className="font-medium">{label}</span>
+          <span className="font-medium">{resolvedLabel}</span>
           {renderedDescription ? (
             <span className="text-xs text-muted-foreground">{renderedDescription}</span>
           ) : null}
@@ -224,7 +284,7 @@ function FileUpload({
             className="sm:h-auto sm:min-h-[6.5rem] sm:flex-col sm:gap-2 sm:px-6"
           >
             <Camera className="size-5" aria-hidden />
-            <span>Capturar foto</span>
+            <span>{mergedLabels.cameraButton}</span>
           </Button>
         ) : null}
       </div>
@@ -246,7 +306,7 @@ function FileUpload({
         }}
       />
       {preview === "thumbnail" && files.length > 0 ? (
-        <ul className="space-y-2" aria-label="Arquivos selecionados">
+        <ul className="space-y-2" aria-label={mergedLabels.fileListAriaLabel}>
           {files.map((file, index) => (
             <FileRow
               key={`${file.name}-${file.lastModified}-${index}`}
@@ -254,6 +314,7 @@ function FileUpload({
               disabled={disabled}
               onRemove={() => removeAt(index)}
               onOpenImage={() => setLightboxFile(file)}
+              labels={mergedLabels}
             />
           ))}
         </ul>
@@ -263,9 +324,14 @@ function FileUpload({
           open={cameraOpen}
           onOpenChange={setCameraOpen}
           onCapture={(file) => ingest([file])}
+          labels={mergedLabels}
         />
       ) : null}
-      <ImageLightbox file={lightboxFile} onOpenChange={() => setLightboxFile(null)} />
+      <ImageLightbox
+        file={lightboxFile}
+        onOpenChange={() => setLightboxFile(null)}
+        labels={mergedLabels}
+      />
     </div>
   )
 }
@@ -275,11 +341,13 @@ function FileRow({
   disabled,
   onRemove,
   onOpenImage,
+  labels,
 }: {
   file: File
   disabled: boolean
   onRemove: () => void
   onOpenImage: () => void
+  labels: FileUploadLabels
 }) {
   const isImage = file.type.startsWith("image/")
   const [thumb, setThumb] = React.useState<string | null>(null)
@@ -303,7 +371,7 @@ function FileRow({
         type="button"
         onClick={isImage ? onOpenImage : openInNewTab}
         disabled={disabled}
-        aria-label={isImage ? `Ampliar ${file.name}` : `Abrir ${file.name} em nova aba`}
+        aria-label={isImage ? labels.zoomImage(file.name) : labels.openFile(file.name)}
         className={cn(
           "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-muted-foreground cursor-pointer transition-opacity",
           "hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -328,7 +396,7 @@ function FileRow({
         size="icon"
         disabled={disabled}
         onClick={onRemove}
-        aria-label={`Remover ${file.name}`}
+        aria-label={labels.removeFile(file.name)}
       >
         <X className="size-4" />
       </Button>
@@ -339,9 +407,11 @@ function FileRow({
 function ImageLightbox({
   file,
   onOpenChange,
+  labels,
 }: {
   file: File | null
   onOpenChange: (open: boolean) => void
+  labels: FileUploadLabels
 }) {
   const [url, setUrl] = React.useState<string | null>(null)
 
@@ -359,7 +429,7 @@ function ImageLightbox({
     <Dialog
       open={file != null}
       onOpenChange={onOpenChange}
-      title={<span className="sr-only">{file?.name ?? "Imagem"}</span>}
+      title={<span className="sr-only">{file?.name ?? labels.imageFallbackName}</span>}
       size="xl"
       className="border-0 bg-transparent p-0"
       hideCloseButton
@@ -379,10 +449,12 @@ function CameraDialog({
   open,
   onOpenChange,
   onCapture,
+  labels,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onCapture: (file: File) => void
+  labels: FileUploadLabels
 }) {
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const streamRef = React.useRef<MediaStream | null>(null)
@@ -399,7 +471,7 @@ function CameraDialog({
     setReady(false)
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setErrorMsg("Câmera não disponível neste navegador.")
+      setErrorMsg(labels.cameraUnavailable)
       return
     }
 
@@ -422,7 +494,7 @@ function CameraDialog({
         }
       })
       .catch(() => {
-        setErrorMsg("Não foi possível acessar a câmera. Verifique as permissões do navegador.")
+        setErrorMsg(labels.cameraAccessFailed)
       })
 
     return () => {
@@ -432,7 +504,7 @@ function CameraDialog({
         streamRef.current = null
       }
     }
-  }, [open])
+  }, [open, labels.cameraUnavailable, labels.cameraAccessFailed])
 
   function takePhoto() {
     const v = videoRef.current
@@ -461,16 +533,16 @@ function CameraDialog({
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Capturar foto"
-      description="Posicione o documento ou objeto na câmera e toque em &quot;Tirar foto&quot;."
+      title={labels.cameraDialogTitle}
+      description={labels.cameraDialogDescription}
       size="lg"
       footer={
         <>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {labels.cameraCancel}
           </Button>
           <Button type="button" onClick={takePhoto} disabled={errorMsg != null || !isReady}>
-            Tirar foto
+            {labels.cameraTakePhoto}
           </Button>
         </>
       }
@@ -499,7 +571,7 @@ function CameraDialog({
               className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
             >
               <Loader2 className="size-6 animate-spin" aria-hidden />
-              <span>Iniciando câmera…</span>
+              <span>{labels.cameraStarting}</span>
             </div>
           ) : null}
         </div>
@@ -507,5 +579,7 @@ function CameraDialog({
     </Dialog>
   )
 }
+
+FileUpload.displayName = "FileUpload"
 
 export { FileUpload }

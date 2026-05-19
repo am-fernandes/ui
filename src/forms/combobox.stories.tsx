@@ -311,6 +311,41 @@ export const ControlledMulti: Story = {
   },
 }
 
+export const English: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Full en-US override via the `labels` prop. Defaults are pt-BR; pass `labels={{ ... }}` to translate or rewrite copy per instance. The standalone `placeholder`, `searchPlaceholder`, and `emptyMessage` props still win when set.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState<string[]>([])
+    return (
+      <div className="w-[320px]">
+        <Combobox
+          multiple
+          creatable
+          options={sampleOptions}
+          label="Practice areas"
+          value={value}
+          onValueChange={setValue}
+          labels={{
+            placeholder: "Select areas",
+            searchPlaceholder: "Search or create...",
+            emptyMessage: "No options found.",
+            clearSelection: "Clear selection",
+            selectedCount: (n) => (n === 1 ? `${n} selected` : `${n} selected`),
+            removeBadge: (l) => `Remove ${l}`,
+            createOption: (s) => `Use: "${s}"`,
+          }}
+        />
+      </div>
+    )
+  },
+}
+
 export const Disabled: Story = {
   args: { options: sampleOptions, disabled: true, label: "Área", placeholder: "Indisponível" },
   render: (args) => (

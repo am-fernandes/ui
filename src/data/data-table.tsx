@@ -87,10 +87,58 @@ function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTableCell
 }
 
 export interface DataTableLabels {
-  search?: string
-  empty?: string
+  /** Placeholder of the search input. */
+  search: string
+  /** aria-label of the search input. */
+  searchAriaLabel: string
+  /** Empty-state message when the filtered data is empty. */
+  empty: string
+  /** sr-only status announced while the table is loading. */
+  loading: string
+  /** aria-label of the previous-page button. */
+  paginationPrevious: string
+  /** aria-label of the next-page button. */
+  paginationNext: string
   /** Render the row-count line, given filtered + total counts. */
-  rowCount?: (filtered: number, total: number) => string
+  rowCount: (filtered: number, total: number) => string
+  /** Render the "page X of Y" indicator. */
+  pageIndicator: (pageIndex: number, pageCount: number) => string
+  /** Render the column-header sort button aria-label. */
+  sortBy: (headerText: string) => string
+  /** Export-to-Excel trigger button label. */
+  exportTrigger: string
+  /** "Export filtered data" menu item label. */
+  exportFiltered: string
+  /** "Export current page" menu item label. */
+  exportPage: string
+  /** "Export all data" menu item label. */
+  exportAll: string
+}
+
+const rowCountFormatter = new Intl.NumberFormat("pt-BR")
+
+function defaultRowCount(filtered: number, total: number): string {
+  const totalStr = rowCountFormatter.format(total)
+  if (filtered === total) {
+    return `${totalStr} registro${total === 1 ? "" : "s"}`
+  }
+  return `${rowCountFormatter.format(filtered)} de ${totalStr} registros`
+}
+
+export const defaultDataTableLabels: DataTableLabels = {
+  search: "Buscar...",
+  searchAriaLabel: "Buscar na tabela",
+  empty: "Nenhum resultado.",
+  loading: "Carregando dados…",
+  paginationPrevious: "Página anterior",
+  paginationNext: "Próxima página",
+  rowCount: defaultRowCount,
+  pageIndicator: (pageIndex, pageCount) => `Página ${pageIndex + 1} de ${pageCount}`,
+  sortBy: (headerText) => `Ordenar por ${headerText}`,
+  exportTrigger: "Exportar para Excel",
+  exportFiltered: "Exportar dados filtrados",
+  exportPage: "Exportar página atual",
+  exportAll: "Exportar todos os dados",
 }
 
 export interface DataTableProps<TData> {
@@ -128,8 +176,8 @@ export interface DataTableProps<TData> {
   pageCount?: number
   /** Whether pagination is server-driven. */
   manualPagination?: boolean
-  /** Overridable copy. */
-  labels?: DataTableLabels
+  /** Overridable copy. All keys optional — defaults are pt-BR. */
+  labels?: Partial<DataTableLabels>
   /** Callback fired when a body row is clicked. Adds button-like a11y (role, tabIndex, keydown). */
   onRowClick?: (row: TData, event: React.MouseEvent<HTMLTableRowElement>) => void
   /** Per-row className. Receives the row data and index; return undefined to skip. Useful for coloring rows by status. */
@@ -167,16 +215,6 @@ type ExportScope = "filtered" | "page" | "all"
 
 /** Width classes used to vary skeleton cell widths so rows don't look uniform. */
 const SKELETON_CELL_WIDTHS = ["w-3/4", "w-1/2", "w-2/3", "w-5/6", "w-3/5"] as const
-
-const rowCountFormatter = new Intl.NumberFormat("pt-BR")
-
-function defaultRowCount(filtered: number, total: number): string {
-  const totalStr = rowCountFormatter.format(total)
-  if (filtered === total) {
-    return `${totalStr} registro${total === 1 ? "" : "s"}`
-  }
-  return `${rowCountFormatter.format(filtered)} de ${totalStr} registros`
-}
 
 function DataTable<TData>({
   columns,
@@ -317,9 +355,10 @@ function DataTable<TData>({
 
   const table = useReactTable(tableOptions)
 
-  const resolvedSearchPlaceholder = searchPlaceholder ?? labels?.search ?? "Buscar..."
-  const resolvedEmptyMessage = emptyMessage ?? labels?.empty ?? "Nenhum resultado."
-  const rowCountFn = labels?.rowCount ?? defaultRowCount
+  const mergedLabels: DataTableLabels = { ...defaultDataTableLabels, ...labels }
+  const resolvedSearchPlaceholder = searchPlaceholder ?? mergedLabels.search
+  const resolvedEmptyMessage = emptyMessage ?? mergedLabels.empty
+  const rowCountFn = mergedLabels.rowCount
 
   const skeletonRowCount = pagination?.pageSize ?? 5
   const skeletonColumnCount = columns.length
@@ -388,7 +427,7 @@ function DataTable<TData>({
             className="gap-2"
           >
             <Download className="size-4" aria-hidden />
-            Exportar para Excel
+            {mergedLabels.exportTrigger}
           </Button>
         }
         className="w-56 p-1"
@@ -403,7 +442,7 @@ function DataTable<TData>({
               void handleExport("filtered")
             }}
           >
-            Exportar dados filtrados
+            {mergedLabels.exportFiltered}
           </button>
           <button
             type="button"
@@ -414,7 +453,7 @@ function DataTable<TData>({
               void handleExport("page")
             }}
           >
-            Exportar página atual
+            {mergedLabels.exportPage}
           </button>
           <button
             type="button"
@@ -425,7 +464,7 @@ function DataTable<TData>({
               void handleExport("all")
             }}
           >
-            Exportar todos os dados
+            {mergedLabels.exportAll}
           </button>
         </div>
       </Popover>
@@ -457,7 +496,7 @@ function DataTable<TData>({
                   onChange={(e) => handleGlobalFilterChange(e.target.value)}
                   placeholder={resolvedSearchPlaceholder}
                   className="pl-9"
-                  aria-label="Buscar na tabela"
+                  aria-label={mergedLabels.searchAriaLabel}
                 />
               </div>
             )
@@ -480,7 +519,7 @@ function DataTable<TData>({
                     sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"
                   const headerDef = header.column.columnDef.header
                   const headerText = typeof headerDef === "string" ? headerDef : header.id
-                  const ariaLabel = `Ordenar por ${headerText}`
+                  const ariaLabel = mergedLabels.sortBy(headerText)
                   return (
                     <TableHead key={header.id} aria-sort={canSort ? ariaSort : undefined}>
                       {header.isPlaceholder ? null : canSort ? (
@@ -518,7 +557,7 @@ function DataTable<TData>({
                 >
                   <TableCell colSpan={table.getVisibleLeafColumns().length}>
                     <span role="status" className="sr-only">
-                      Carregando dados…
+                      {mergedLabels.loading}
                     </span>
                   </TableCell>
                 </TableRow>
@@ -616,7 +655,10 @@ function DataTable<TData>({
                 <div className="h-3 w-24 animate-pulse rounded-md bg-primary/10" />
               ) : (
                 <span className="text-xs text-muted-foreground">
-                  Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
+                  {mergedLabels.pageIndicator(
+                    table.getState().pagination.pageIndex,
+                    table.getPageCount(),
+                  )}
                 </span>
               )}
               <Button
@@ -624,7 +666,7 @@ function DataTable<TData>({
                 size="icon"
                 disabled={loading || !table.getCanPreviousPage()}
                 onClick={() => table.previousPage()}
-                aria-label="Página anterior"
+                aria-label={mergedLabels.paginationPrevious}
               >
                 <ChevronLeft className="size-4" />
               </Button>
@@ -633,7 +675,7 @@ function DataTable<TData>({
                 size="icon"
                 disabled={loading || !table.getCanNextPage()}
                 onClick={() => table.nextPage()}
-                aria-label="Próxima página"
+                aria-label={mergedLabels.paginationNext}
               >
                 <ChevronRight className="size-4" />
               </Button>
@@ -644,5 +686,7 @@ function DataTable<TData>({
     </div>
   )
 }
+
+DataTable.displayName = "DataTable"
 
 export { DataTable }

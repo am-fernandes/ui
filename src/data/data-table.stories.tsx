@@ -482,6 +482,48 @@ export const ServerSide: Story = {
   },
 }
 
+export const English: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        columns={columns}
+        data={contratos.slice(0, 8)}
+        searchableColumns={["numero", "cliente"]}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+        pagination={{ pageSize: 5 }}
+        showRowCount
+        downloadable
+        labels={{
+          search: "Search...",
+          searchAriaLabel: "Search the table",
+          empty: "No results.",
+          loading: "Loading data…",
+          paginationPrevious: "Previous page",
+          paginationNext: "Next page",
+          rowCount: (filtered, total) =>
+            filtered === total
+              ? `${total} record${total === 1 ? "" : "s"}`
+              : `${filtered} of ${total} records`,
+          pageIndicator: (idx, total) => `Page ${idx + 1} of ${total}`,
+          sortBy: (h) => `Sort by ${h}`,
+          exportTrigger: "Export to Excel",
+          exportFiltered: "Export filtered data",
+          exportPage: "Export current page",
+          exportAll: "Export all data",
+        }}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Full en-US override via the `labels` prop. Defaults are pt-BR; pass `labels={{ ... }}` to translate or rewrite copy per instance.",
+      },
+    },
+  },
+}
+
 export const CustomLabels: Story = {
   render: () => (
     <div className="p-6">

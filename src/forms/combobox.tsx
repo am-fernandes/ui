@@ -25,6 +25,37 @@ export interface ComboboxOption {
   icon?: React.ComponentType<{ className?: string }>
 }
 
+export interface ComboboxLabels {
+  /** Trigger placeholder when nothing is selected. */
+  placeholder: string
+  /** Search input placeholder inside the popover. */
+  searchPlaceholder: string
+  /** Empty-state message inside the popover when no option matches. */
+  emptyMessage: string
+  /** aria-label of the per-badge remove button (multi mode). */
+  removeBadge: (label: string) => string
+  /** aria-label of the trigger-level clear-all control. */
+  clearSelection: string
+  /** Trigger text used in multi mode: receives the count, returns the label. */
+  selectedCount: (count: number) => string
+  /** Label of the "create from search" item: receives the typed value. */
+  createOption: (search: string) => React.ReactNode
+}
+
+export const defaultComboboxLabels: ComboboxLabels = {
+  placeholder: "Selecione...",
+  searchPlaceholder: "Buscar...",
+  emptyMessage: "Nenhuma opção encontrada.",
+  removeBadge: (labelText) => `Remover ${labelText}`,
+  clearSelection: "Limpar seleção",
+  selectedCount: (count) => `${count} ${count === 1 ? "selecionado" : "selecionados"}`,
+  createOption: (search) => (
+    <>
+      Usar: &ldquo;{search}&rdquo;
+    </>
+  ),
+}
+
 interface ComboboxBaseProps {
   options: ComboboxOption[]
   placeholder?: string
@@ -41,6 +72,12 @@ interface ComboboxBaseProps {
   required?: boolean
   id?: string
   ref?: React.Ref<HTMLButtonElement>
+  /**
+   * Override individual UI strings. Defaults are pt-BR. Note: the standalone
+   * `placeholder`, `searchPlaceholder`, and `emptyMessage` props still win
+   * over the matching `labels.*` keys for backward compatibility.
+   */
+  labels?: Partial<ComboboxLabels>
 }
 
 interface ComboboxSingleProps extends ComboboxBaseProps {
@@ -61,9 +98,9 @@ export type ComboboxProps = ComboboxSingleProps | ComboboxMultipleProps
 export function Combobox(props: ComboboxProps) {
   const {
     options,
-    placeholder = "Selecione...",
-    searchPlaceholder = "Buscar...",
-    emptyMessage = "Nenhuma opção encontrada.",
+    placeholder,
+    searchPlaceholder,
+    emptyMessage,
     disabled = false,
     className,
     popoverWidth,
@@ -75,7 +112,13 @@ export function Combobox(props: ComboboxProps) {
     required,
     id,
     ref,
+    labels,
   } = props
+
+  const mergedLabels: ComboboxLabels = { ...defaultComboboxLabels, ...labels }
+  const resolvedPlaceholder = placeholder ?? mergedLabels.placeholder
+  const resolvedSearchPlaceholder = searchPlaceholder ?? mergedLabels.searchPlaceholder
+  const resolvedEmptyMessage = emptyMessage ?? mergedLabels.emptyMessage
 
   const ids = useFieldIds(id)
   const listboxId = `${ids.controlId}-listbox`
@@ -141,18 +184,14 @@ export function Combobox(props: ComboboxProps) {
     if (isMultiple) {
       const values = toArray(props.value)
       if (values.length === 0) {
-        return <span className="text-muted-foreground">{placeholder}</span>
+        return <span className="text-muted-foreground">{resolvedPlaceholder}</span>
       }
-      return (
-        <span className="text-foreground">
-          {values.length} {values.length === 1 ? "selecionado" : "selecionados"}
-        </span>
-      )
+      return <span className="text-foreground">{mergedLabels.selectedCount(values.length)}</span>
     }
     const selectedOption = options.find((o) => o.value === props.value)
     if (selectedOption) return selectedOption.label
     if (creatable && props.value) return props.value
-    return <span className="text-muted-foreground">{placeholder}</span>
+    return <span className="text-muted-foreground">{resolvedPlaceholder}</span>
   }
 
   const trimmedSearch = search.trim()
@@ -188,7 +227,7 @@ export function Combobox(props: ComboboxProps) {
               {labelText}
               <button
                 type="button"
-                aria-label={`Remover ${labelText}`}
+                aria-label={mergedLabels.removeBadge(labelText)}
                 className="rounded-sm outline-none cursor-pointer transition-colors hover:bg-secondary-foreground/20"
                 onClick={(e) => handleRemoveValue(val, e)}
               >
@@ -236,7 +275,7 @@ export function Combobox(props: ComboboxProps) {
             // biome-ignore lint/a11y/useSemanticElements: avoid nested button inside Button
             role="button"
             tabIndex={0}
-            aria-label="Limpar seleção"
+            aria-label={mergedLabels.clearSelection}
             className="inline-flex cursor-pointer rounded-sm transition-colors hover:bg-secondary-foreground/20"
             onClick={handleClearAll}
             onKeyDown={(e) => {
@@ -294,7 +333,7 @@ export function Combobox(props: ComboboxProps) {
             <div className="flex items-center gap-2 border-b px-3" cmdk-input-wrapper="">
               <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
               <CommandPrimitive.Input
-                placeholder={searchPlaceholder}
+                placeholder={resolvedSearchPlaceholder}
                 onValueChange={setSearch}
                 className="flex w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-input"
               />
@@ -305,7 +344,7 @@ export function Combobox(props: ComboboxProps) {
             >
               {!showCreateOption ? (
                 <CommandPrimitive.Empty className="py-6 text-center text-sm text-muted-foreground">
-                  {emptyMessage}
+                  {resolvedEmptyMessage}
                 </CommandPrimitive.Empty>
               ) : null}
               <CommandPrimitive.Group>
@@ -316,7 +355,7 @@ export function Combobox(props: ComboboxProps) {
                     onSelect={() => handleCreate(trimmedSearch)}
                     className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors aria-selected:bg-accent aria-selected:text-accent-foreground"
                   >
-                    Usar: &ldquo;{trimmedSearch}&rdquo;
+                    {mergedLabels.createOption(trimmedSearch)}
                   </CommandPrimitive.Item>
                 ) : null}
                 {options.map((option) => {
@@ -358,6 +397,8 @@ export function Combobox(props: ComboboxProps) {
     </FieldShell>
   )
 }
+
+Combobox.displayName = "Combobox"
 
 export function useComboboxOptions<
   T extends { id: number | string; nome?: string; label?: string },
