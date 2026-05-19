@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils"
 const typographyVariants = cva("text-foreground", {
   variants: {
     variant: {
-      display: "text-4xl font-bold tracking-tight",
+      heading: "text-3xl font-semibold tracking-tight",
       title: "text-2xl font-semibold tracking-tight",
-      subtitle: "text-lg font-medium",
+      subtitle: "text-xl font-medium",
+      lead: "text-base leading-7",
       body: "text-sm leading-6",
       caption: "text-xs text-muted-foreground",
     },
@@ -19,9 +20,10 @@ const typographyVariants = cva("text-foreground", {
 })
 
 const defaultElementByVariant = {
-  display: "h1",
+  heading: "h1",
   title: "h2",
   subtitle: "h3",
+  lead: "p",
   body: "p",
   caption: "span",
 } as const

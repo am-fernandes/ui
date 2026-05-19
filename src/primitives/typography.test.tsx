@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest"
 import { Typography } from "./typography"
 
 describe("Typography", () => {
-  it("renders display as h1 with display class", () => {
-    render(<Typography variant="display">Hello</Typography>)
+  it("renders heading as h1 with heading class", () => {
+    render(<Typography variant="heading">Hello</Typography>)
     const el = screen.getByText("Hello")
     expect(el.tagName).toBe("H1")
-    expect(el).toHaveClass("text-4xl")
+    expect(el).toHaveClass("text-3xl")
   })
 
   it("renders title as h2", () => {
@@ -22,7 +22,14 @@ describe("Typography", () => {
     render(<Typography variant="subtitle">Sub</Typography>)
     const el = screen.getByText("Sub")
     expect(el.tagName).toBe("H3")
-    expect(el).toHaveClass("text-lg")
+    expect(el).toHaveClass("text-xl")
+  })
+
+  it("renders lead as p", () => {
+    render(<Typography variant="lead">Lead</Typography>)
+    const el = screen.getByText("Lead")
+    expect(el.tagName).toBe("P")
+    expect(el).toHaveClass("text-base")
   })
 
   it("renders body as p by default", () => {
@@ -42,21 +49,19 @@ describe("Typography", () => {
   it("falls back to body variant (and <p>) when variant is omitted", () => {
     render(<Typography>Default</Typography>)
     const el = screen.getByText("Default")
-    // body → <p> with text-sm leading-6.
     expect(el.tagName).toBe("P")
     expect(el).toHaveClass("text-sm", "leading-6")
   })
 
   it("respects `as` override", () => {
     render(
-      <Typography variant="display" as="h3">
+      <Typography variant="heading" as="h3">
         Custom
       </Typography>,
     )
     const el = screen.getByText("Custom")
     expect(el.tagName).toBe("H3")
-    // Variant class still applied
-    expect(el).toHaveClass("text-4xl")
+    expect(el).toHaveClass("text-3xl")
   })
 
   it("respects `as` override on a non-heading element", () => {

@@ -11,14 +11,15 @@ const meta: Meta<typeof Typography> = {
     docs: {
       description: {
         component: [
-          "Componente polimórfico com 5 variantes semânticas. Cada variante mapeia para um elemento HTML padrão; sobrescreva com `as`.",
+          "Componente polimórfico com 6 variantes semânticas. Cada variante mapeia para um elemento HTML padrão; sobrescreva com `as`.",
           "",
           "**Mapeamento padrão:**",
-          "- `display` → `<h1>` — text-4xl, bold, tracking-tight",
-          "- `title` → `<h2>` — text-2xl, semibold, tracking-tight",
-          "- `subtitle` → `<h3>` — text-lg, medium",
-          "- `body` → `<p>` — text-sm, leading-6 (default)",
-          "- `caption` → `<span>` — text-xs, muted",
+          "- `heading` → `<h1>` — text-3xl (30px), semibold, tracking-tight",
+          "- `title` → `<h2>` — text-2xl (24px), semibold, tracking-tight",
+          "- `subtitle` → `<h3>` — text-xl (20px), medium",
+          "- `lead` → `<p>` — text-base (16px), leading-7 — parágrafo introdutório",
+          "- `body` → `<p>` — text-sm (14px), leading-6 (default)",
+          "- `caption` → `<span>` — text-xs (12px), muted",
           "",
           "**API:**",
           "- `variant` — escolhe o estilo tipográfico.",
@@ -31,7 +32,7 @@ const meta: Meta<typeof Typography> = {
           "```tsx",
           'import { Typography } from "@am-fernandes/ui"',
           "",
-          '<Typography variant="display">AM Fernandes</Typography>',
+          '<Typography variant="heading">AM Fernandes</Typography>',
           '<Typography variant="title" as="h1">Título principal da página</Typography>',
           '<Typography variant="body" as="blockquote">Citação</Typography>',
           "```",
@@ -42,10 +43,10 @@ const meta: Meta<typeof Typography> = {
   argTypes: {
     variant: {
       control: "inline-radio",
-      options: ["display", "title", "subtitle", "body", "caption"],
+      options: ["heading", "title", "subtitle", "lead", "body", "caption"],
       description: "Estilo tipográfico.",
       table: {
-        type: { summary: "'display' | 'title' | 'subtitle' | 'body' | 'caption'" },
+        type: { summary: "'heading' | 'title' | 'subtitle' | 'lead' | 'body' | 'caption'" },
         defaultValue: { summary: "'body'" },
       },
     },
@@ -94,8 +95,8 @@ export const Default: Story = {
   args: { variant: "body", children: COPY },
 }
 
-export const Display: Story = {
-  args: { variant: "display", children: COPY },
+export const Heading: Story = {
+  args: { variant: "heading", children: COPY },
   parameters: {
     docs: {
       description: { story: "Maior escala — renderiza `<h1>`. Use para hero/heading principal." },
@@ -114,6 +115,13 @@ export const Subtitle: Story = {
   args: { variant: "subtitle", children: COPY },
   parameters: {
     docs: { description: { story: "Subtítulo de bloco — renderiza `<h3>`." } },
+  },
+}
+
+export const Lead: Story = {
+  args: { variant: "lead", children: COPY },
+  parameters: {
+    docs: { description: { story: "Parágrafo introdutório (16px) — renderiza `<p>`." } },
   },
 }
 
@@ -141,8 +149,8 @@ export const AllVariants: Story = {
   render: () => (
     <div className="flex w-[480px] flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted-foreground">display → h1</span>
-        <Typography variant="display">{COPY}</Typography>
+        <span className="text-xs text-muted-foreground">heading → h1</span>
+        <Typography variant="heading">{COPY}</Typography>
       </div>
       <div className="flex flex-col gap-1">
         <span className="text-xs text-muted-foreground">title → h2</span>
@@ -151,6 +159,10 @@ export const AllVariants: Story = {
       <div className="flex flex-col gap-1">
         <span className="text-xs text-muted-foreground">subtitle → h3</span>
         <Typography variant="subtitle">{COPY}</Typography>
+      </div>
+      <div className="flex flex-col gap-1">
+        <span className="text-xs text-muted-foreground">lead → p</span>
+        <Typography variant="lead">{COPY}</Typography>
       </div>
       <div className="flex flex-col gap-1">
         <span className="text-xs text-muted-foreground">body → p</span>
@@ -239,7 +251,6 @@ export const WithClassName: Story = {
     </div>
   ),
   parameters: {
-    // destructive text on default bg fails 4.5:1; tracked in design-tokens roadmap.
     a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
