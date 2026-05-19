@@ -1,0 +1,537 @@
+import { Meta } from "@storybook/addon-docs/blocks"
+
+<Meta title="Hooks" />
+
+# Hooks & helpers
+
+Além dos 41 componentes, `@am-fernandes/ui` exporta um conjunto pequeno e estável de hooks, utilitários de classes Tailwind, helpers financeiros (BRL/centavos), conversores de tamanho em bytes e constantes re-exportadas de libs upstream. Esta página é a referência canônica desses símbolos.
+
+## Sumário
+
+| Símbolo | Tipo | O que faz |
+|---|---|---|
+| `useIsMobile` | hook | `true` quando a viewport é menor que 768 px (reativo a resize) |
+| `useComboboxOptions` | hook | converte `Array<{ id, nome }>` em `ComboboxOption[]` memoizado |
+| `cn` | function | merge de `className`s Tailwind via `clsx` + `tailwind-merge` |
+| `buttonVariants` | function (CVA) | classnames do `Button` por `variant` + `size` |
+| `badgeVariants` | function (CVA) | classnames do `Badge` por `variant` |
+| `alertVariants` | function (CVA) | classnames do `Alert` por `variant` |
+| `typographyVariants` | function (CVA) | classnames do `Typography` por `variant` |
+| `tableStyles` | function | objeto com classnames para `<table>` cru |
+| `toCents` | function | float reais → inteiro centavos |
+| `fromCents` | function | inteiro centavos → float reais |
+| `centsToDisplay` | function | centavos → string `1.234,56` |
+| `formatBRL` | function | float → string `R$ 1.234,56` |
+| `percentOfTotal` | function | valor a partir de % sobre um total (centavos-safe) |
+| `percentFromValue` | function | % que `value` representa de `total` (2 casas) |
+| `bytes`, `kb`, `mb`, `gb` | function | conversão ergonômica para bytes (binário: KiB/MiB/GiB) |
+| `REGEXP_ONLY_DIGITS` | const | regex `/^\\d+$/` (re-export de `input-otp`) |
+| `toast` | function | API imperativa de toasts (re-export de `sonner`) |
+
+Importação genérica:
+
+```ts
+import {
+  useIsMobile, useComboboxOptions,
+  cn, buttonVariants, badgeVariants, alertVariants, typographyVariants, tableStyles,
+  toCents, fromCents, centsToDisplay, formatBRL, percentOfTotal, percentFromValue,
+  bytes, kb, mb, gb,
+  REGEXP_ONLY_DIGITS, toast,
+} from "@am-fernandes/ui"
+```
+
+---
+
+## State hooks
+
+### `useIsMobile`
+
+Retorna `true` quando a viewport está abaixo do breakpoint mobile (768 px). Reativo a redimensionamento via `matchMedia` listener.
+
+**Signature:**
+
+```ts
+function useIsMobile(): boolean
+```
+
+**Exemplo:**
+
+```tsx
+import { useIsMobile } from "@am-fernandes/ui"
+
+function ResponsiveNav() {
+  const isMobile = useIsMobile()
+  return isMobile ? <MobileDrawer /> : <DesktopSidebar />
+}
+```
+
+**Notas:**
+
+- SSR-safe: retorna `false` no primeiro render (server + hidratação), atualiza no client após o `useEffect` rodar.
+- Listener é registrado uma vez por mount e removido no unmount.
+- Threshold fixo em 768 px (matches `max-width: 767px`). Para customizar, use `window.matchMedia` direto em um hook próprio.
+- Em ambiente de teste com jsdom, lembre-se de stubar `window.matchMedia` (já feito em `vitest.setup.ts` desta lib).
+
+---
+
+## Helpers de dados
+
+### `useComboboxOptions`
+
+Memoiza a transformação de um array de entidades (e.g. retorno de query) em `ComboboxOption[]`. Útil quando você consome `Combobox` com dados vindos da API no formato `{ id, nome }` (ou outro campo de label).
+
+**Signature:**
+
+```ts
+function useComboboxOptions<
+  T extends { id: number | string; nome?: string; label?: string },
+>(data: T[] | undefined, labelKey?: keyof T): ComboboxOption[]
+```
+
+**Exemplo:**
+
+```tsx
+import { Combobox, useComboboxOptions } from "@am-fernandes/ui"
+
+type Cliente = { id: number; nome: string }
+
+function ClienteSelect({ clientes, value, onChange }: {
+  clientes: Cliente[] | undefined
+  value: string
+  onChange: (v: string) => void
+}) {
+  const options = useComboboxOptions(clientes)
+  return <Combobox options={options} value={value} onValueChange={onChange} />
+}
+```
+
+**Notas:**
+
+- O `labelKey` default é `"nome"` (convenção AM). Passe outro campo se a entidade usar nome diferente: `useComboboxOptions(usuarios, "fullName")`.
+- Retorna `[]` quando `data` é `undefined` (estado de loading) — `Combobox` aceita lista vazia normalmente.
+- Memoizado por `data` + `labelKey`. Re-renders do componente pai não recriam o array.
+- `value` é coercido para `string` via `String(item.id)` para suportar tanto `id: number` quanto `id: string`.
+
+---
+
+## Helpers de className
+
+### `cn`
+
+Merge inteligente de `className`s Tailwind. Combina `clsx` (concatena + descarta `false`/`null`/`undefined`) com `tailwind-merge` (resolve conflitos de classes do Tailwind — `p-2 p-4` vira `p-4`).
+
+**Signature:**
+
+```ts
+function cn(...inputs: ClassValue[]): string
+```
+
+`ClassValue` é o tipo do `clsx`: aceita `string`, `number`, `false`, `null`, `undefined`, `Record<string, boolean>`, ou arrays aninhados.
+
+**Exemplo:**
+
+```tsx
+import { cn } from "@am-fernandes/ui"
+
+function Card({ isActive, className }: { isActive?: boolean; className?: string }) {
+  return (
+    <div className={cn(
+      "p-4 rounded-md border",
+      isActive && "bg-primary text-primary-foreground",
+      className, // override do consumidor vence (tailwind-merge resolve)
+    )} />
+  )
+}
+```
+
+**Notas:**
+
+- Sempre passe `className` do consumidor por último — o `tailwind-merge` faz a última classe ganhar.
+- Use quando aplicar classes condicionais ou expor `className` como prop. Para classes estáticas, string literal basta.
+
+### `buttonVariants`
+
+CVA factory que gera os classnames do `Button`. Útil para estilizar elementos não-`<button>` com a aparência de botão (e.g. `<Link>` do Next.js, `<a>` cru) sem usar `asChild`.
+
+**Signature:**
+
+```ts
+function buttonVariants(props?: {
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+  size?: "default" | "sm" | "lg" | "icon"
+  className?: string
+}): string
+```
+
+**Exemplo:**
+
+```tsx
+import { buttonVariants, cn } from "@am-fernandes/ui"
+import Link from "next/link"
+
+<Link
+  href="/contratos"
+  className={cn(buttonVariants({ variant: "outline" }))}
+>
+  Ver contratos
+</Link>
+```
+
+**Notas:**
+
+- Defaults: `variant="default"`, `size="default"`.
+- Não inclui estado `loading` (esse é gerenciado dentro de `<Button>`).
+- Para combinar com classes extras, use `cn(buttonVariants(...), "minha-classe")`.
+
+### `badgeVariants`
+
+CVA factory para os classnames do `Badge`. Útil para elementos custom que precisam de aparência de badge.
+
+**Signature:**
+
+```ts
+function badgeVariants(props?: {
+  variant?: "default" | "secondary" | "destructive" | "outline"
+  className?: string
+}): string
+```
+
+**Exemplo:**
+
+```tsx
+import { badgeVariants } from "@am-fernandes/ui"
+
+<a href="/tag/urgente" className={badgeVariants({ variant: "destructive" })}>
+  Urgente
+</a>
+```
+
+### `alertVariants`
+
+CVA factory para os classnames do `Alert`. Útil quando o consumer renderiza um wrapper próprio em vez do `<Alert>` da lib.
+
+**Signature:**
+
+```ts
+function alertVariants(props?: {
+  variant?: "default" | "info" | "success" | "warning" | "destructive"
+  className?: string
+}): string
+```
+
+**Exemplo:**
+
+```tsx
+import { alertVariants } from "@am-fernandes/ui"
+
+<section role="alert" className={alertVariants({ variant: "warning" })}>
+  Operação requer aprovação manual.
+</section>
+```
+
+### `typographyVariants`
+
+CVA factory para os classnames do `Typography`. Use quando precisar aplicar a escala tipográfica em um elemento custom sem renderizar o componente.
+
+**Signature:**
+
+```ts
+function typographyVariants(props?: {
+  variant?: "display" | "title" | "subtitle" | "body" | "caption"
+  className?: string
+}): string
+```
+
+**Exemplo:**
+
+```tsx
+import { typographyVariants } from "@am-fernandes/ui"
+
+<dt className={typographyVariants({ variant: "caption" })}>Data</dt>
+<dd className={typographyVariants({ variant: "body" })}>17/05/2026</dd>
+```
+
+### `tableStyles`
+
+Retorna um objeto com classnames para cada parte de uma `<table>` HTML crua. Use quando `DataTable` for excessivo (e.g. tabela puramente decorativa, ou render markdown sem `react-table`).
+
+**Signature:**
+
+```ts
+function tableStyles(): {
+  table: string
+  header: string
+  body: string
+  footer: string
+  row: string
+  head: string
+  cell: string
+  caption: string
+}
+```
+
+**Exemplo:**
+
+```tsx
+import { tableStyles } from "@am-fernandes/ui"
+
+const t = tableStyles()
+
+<table className={t.table}>
+  <thead className={t.header}>
+    <tr><th className={t.head}>Nome</th><th className={t.head}>Valor</th></tr>
+  </thead>
+  <tbody>
+    <tr className={t.row}>
+      <td className={t.cell}>Contrato A</td>
+      <td className={t.cell}>R$ 1.234,56</td>
+    </tr>
+  </tbody>
+</table>
+```
+
+**Notas:**
+
+- Retorna o mesmo objeto em cada chamada (não memoiza, mas o objeto é trivialmente reconstruído).
+- Para tabelas com sort, paginação ou filtro use `DataTable` (wrapper sobre `@tanstack/react-table`).
+
+---
+
+## Helpers BRL / financeiros
+
+Toda aritmética financeira na lib é em **centavos inteiros**. Conversões para float acontecem só nas bordas (display ou input do usuário). Isso elimina os erros clássicos de float (`0.1 + 0.2 !== 0.3`).
+
+### `toCents`
+
+Float em reais para inteiro em centavos.
+
+**Signature:**
+
+```ts
+function toCents(value: number): number
+```
+
+**Exemplo:**
+
+```ts
+import { toCents } from "@am-fernandes/ui"
+
+toCents(1234.56)  // 123456
+toCents(0.1)      // 10
+toCents(0.01)     // 1
+```
+
+**Notas:** usa `Math.round` para evitar drift de float (e.g. `1.005 * 100 = 100.49999...`).
+
+### `fromCents`
+
+Inteiro em centavos para float em reais.
+
+**Signature:**
+
+```ts
+function fromCents(cents: number): number
+```
+
+**Exemplo:**
+
+```ts
+import { fromCents } from "@am-fernandes/ui"
+
+fromCents(123456)  // 1234.56
+fromCents(10)      // 0.1
+```
+
+### `centsToDisplay`
+
+Formata centavos como string BRL **sem** o prefixo `R$ `. Útil quando o `R$` já vem do layout (e.g. ícone, label).
+
+**Signature:**
+
+```ts
+function centsToDisplay(cents: number): string
+```
+
+**Exemplo:**
+
+```ts
+import { centsToDisplay } from "@am-fernandes/ui"
+
+centsToDisplay(123456)    // "1.234,56"
+centsToDisplay(-50000)    // "-500,00"
+centsToDisplay(0)         // "0,00"
+```
+
+**Notas:** usa `toLocaleString("pt-BR")` para a parte de reais e padding manual para os centavos.
+
+### `formatBRL`
+
+Formata float em reais como string BRL **com** o prefixo `R$ `.
+
+**Signature:**
+
+```ts
+function formatBRL(value: number): string
+```
+
+**Exemplo:**
+
+```ts
+import { formatBRL } from "@am-fernandes/ui"
+
+formatBRL(1234.56)   // "R$ 1.234,56"
+formatBRL(0)         // "R$ 0,00"
+formatBRL(-99.9)     // "R$ -99,90"
+```
+
+**Notas:** equivalente a `\`R$ ${centsToDisplay(toCents(value))}\``.
+
+### `percentOfTotal`
+
+Calcula o valor a partir de um percentual sobre um total. Tudo em centavos para evitar drift.
+
+**Signature:**
+
+```ts
+function percentOfTotal(percent: number, total: number): number
+```
+
+**Exemplo:**
+
+```ts
+import { percentOfTotal } from "@am-fernandes/ui"
+
+percentOfTotal(70, 185000)     // 129500
+percentOfTotal(33.33, 185000)  // 61660.5 (após arredondamento em centavos)
+percentOfTotal(0, 185000)      // 0
+```
+
+### `percentFromValue`
+
+Calcula o percentual que um valor representa de um total, com 2 casas de precisão.
+
+**Signature:**
+
+```ts
+function percentFromValue(value: number, total: number): number
+```
+
+**Exemplo:**
+
+```ts
+import { percentFromValue } from "@am-fernandes/ui"
+
+percentFromValue(129500, 185000)  // 70
+percentFromValue(50, 200)         // 25
+percentFromValue(0, 100)          // 0
+percentFromValue(50, 0)           // 0 (guarda contra divisão por zero)
+```
+
+**Notas:** se `total === 0` retorna `0` em vez de `NaN`/`Infinity`. Use o par com `percentOfTotal` para roundtrip.
+
+---
+
+## Helpers de bytes
+
+Façam expressões de tamanho de arquivo ergonômicas. Unidades **binárias** (1 KiB = 1024 B, 1 MiB = 1024 KiB, etc.) — alinhadas com o formatter usado por `FileUpload`.
+
+**Signatures:**
+
+```ts
+function bytes(n: number): number  // identidade — só semântica
+function kb(n: number): number     // n * 1024
+function mb(n: number): number     // n * 1024 * 1024
+function gb(n: number): number     // n * 1024 * 1024 * 1024
+```
+
+**Exemplo:**
+
+```tsx
+import { FileUpload, mb, kb, gb } from "@am-fernandes/ui"
+
+<FileUpload accept="image/*" maxSize={mb(2)} />
+<FileUpload accept="application/pdf" maxSize={kb(500)} />
+<FileUpload multiple maxSize={gb(1)} maxFiles={50} />
+```
+
+**Notas:**
+
+- `bytes(n)` existe para legibilidade — quando você quer dizer explicitamente "isso é bytes", mas `bytes` é literalmente a função identidade.
+- Para exibir tamanhos formatados, use as bibliotecas convencionais (`Intl.NumberFormat`) — a lib não exporta um `formatBytes`.
+
+---
+
+## Constantes re-exportadas
+
+### `REGEXP_ONLY_DIGITS`
+
+Re-export da constante de mesmo nome do package `input-otp`. Equivalente a `/^\\d+$/`. Use como `pattern` em `<InputOTP>` para aceitar apenas dígitos (default já é esse, mas explícito é melhor que implícito).
+
+**Exemplo:**
+
+```tsx
+import { InputOTP, REGEXP_ONLY_DIGITS } from "@am-fernandes/ui"
+
+<InputOTP length={6} value={code} onValueChange={setCode} pattern={REGEXP_ONLY_DIGITS} />
+```
+
+**Outras opções:** `input-otp` também exporta `REGEXP_ONLY_CHARS` e `REGEXP_ONLY_DIGITS_AND_CHARS`. Esses não são re-exportados; importe direto de `input-otp` se precisar.
+
+### `toast`
+
+Re-export do `toast` do `sonner`. API imperativa para disparar notificações. Funciona em par com o componente `<Toaster />` (que deve estar montado no root da app).
+
+**Signature (resumo):**
+
+```ts
+toast(message: string | ReactNode, options?: ToastOptions): string | number
+toast.success(message, options?)
+toast.error(message, options?)
+toast.warning(message, options?)
+toast.info(message, options?)
+toast.loading(message, options?)
+toast.promise(promise, { loading, success, error })
+toast.dismiss(id?: string | number)
+```
+
+**Exemplo:**
+
+```tsx
+import { Toaster, toast, Button } from "@am-fernandes/ui"
+
+function Page() {
+  return (
+    <>
+      <Toaster />
+      <Button onClick={() => toast.success("Salvo com sucesso!")}>Salvar</Button>
+    </>
+  )
+}
+```
+
+**Notas:**
+
+- `<Toaster />` precisa estar no root da app (uma vez só) — sem ele, `toast()` é no-op.
+- Para a API completa veja [`sonner` na NPM](https://sonner.emilkowal.ski/).
+
+---
+
+## Tipos exportados (TypeScript)
+
+Os tipos de cada componente seguem o padrão `<Nome>Props`. Os mais úteis para reaproveitamento em código consumidor:
+
+```ts
+import type {
+  ComboboxOption,
+  ComboboxProps,
+  DateRangeValue,
+  FileUploadRejection,
+  FileUploadRejectionReason,
+  TableStyles,
+  TreeNodeData,
+  TypographyProps,
+  VideoCaptionTrack,
+} from "@am-fernandes/ui"
+```
+
+Tipos `*Props` cobrem o shape público de cada componente (incluindo eventos, refs e variants do CVA). Use-os ao escrever wrappers ou HOCs em torno dos componentes da lib.

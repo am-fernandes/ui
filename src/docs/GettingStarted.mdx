@@ -4,7 +4,7 @@ import { Meta } from "@storybook/addon-docs/blocks"
 
 # @am-fernandes/ui
 
-Design system oficial da AM Fernandes — 40+ componentes React acessíveis, theming em OKLCH, fonte Google Sans Flex, light-only.
+Design system oficial da AM Fernandes — 41 componentes React acessíveis, theming em OKLCH, fonte Google Sans Flex, light-only.
 
 ## Pré-requisitos
 
@@ -61,8 +61,9 @@ export function Demo() {
 
 - **Light only.** Sem dark mode por escolha de produto.
 - **Tokens são a API.** Consuma cor/raio/espaço via classe Tailwind (`bg-primary`, `rounded-md`), nunca hardcoded.
-- **Acessibilidade ≥ AA.** Componentes seguem padrões ARIA; status badges, contraste e foco validados.
-- **Composição sobre configuração.** Componentes verbosos (Dialog/Sheet/Popover) ficam compositionais para máxima flexibilidade. Componentes onde uma API plana faz sentido (Breadcrumb, Tabs simples) também expõem `items`.
+- **Acessibilidade ≥ AA.** Componentes seguem padrões ARIA; status badges, contraste e foco validados via `addon-a11y` no Storybook e `injectAxe`/`checkA11y` em CI.
+- **API plana por padrão.** Cada componente expõe um único export com `title`/`description`/`children` (overlays) ou `items` (navegação). Slots `headerAction`/`footer`/`trigger`/`action` cobrem os edge cases sem expor subcomponentes Radix.
+- **Forms sem wrapper.** Combine os controles (`Combobox`, `DateInput`, `Calendar`, etc.) com `react-hook-form` direto — todos eles aceitam `label`/`description`/`error` nativamente.
 
 ## Testes
 
@@ -74,17 +75,18 @@ bun run test
 
 ## Categorias
 
-| Categoria | Conteúdo |
-|---|---|
-| **Primitives** | Inputs, botões, badges, separadores — building blocks |
-| **Overlays** | Dialog, Sheet, Popover, Tooltip, Sonner, Alert, Progress |
-| **Navigation** | Tabs, Breadcrumb, DropdownMenu, Command, Accordion, Sidebar |
-| **Forms** | Form (RHF), Field, Combobox, Calendar, DateInput, DateRangePicker, TimePicker |
-| **Domain** | Inputs específicos AM: CurrencyInput, PercentageInput, MultiNumberInput, InputOTP |
-| **Data** | Card, DataTable, Chart, ScrollArea, Tree |
-| **Foundations** | Cores, tipografia, ícones |
+| Categoria | Count | Conteúdo |
+|---|---|---|
+| **Primitives** | 11 | Avatar, Badge, Button, Checkbox, Input, RadioGroup, Separator, Skeleton, Switch, Textarea, Typography |
+| **Overlays** | 9 | Alert, AlertDialog, Collapsible, Dialog, Popover, Progress, Sheet, Toaster (Sonner), Tooltip |
+| **Navigation** | 5 | Accordion, Breadcrumb, CommandPalette, Sidebar, Tabs |
+| **Forms** | 5 | Calendar, Combobox, DateInput, DateRangePicker, TimePicker |
+| **Domain** | 5 | CurrencyInput, FileUpload, InputOTP, MultiInput, PercentageInput |
+| **Data** | 6 | Card, DataTable, Image, ScrollArea, Tree, Video |
+| **Hooks** | — | `useIsMobile`, `useComboboxOptions`, helpers de className, BRL e bytes |
+| **Foundations** | — | Cores, tipografia, espaçamento, iconografia |
 
-Navegue pela sidebar à esquerda para ver cada componente, suas props e variantes.
+Navegue pela sidebar à esquerda para ver cada componente, suas props e variantes. A aba **Hooks** documenta os helpers/hooks não-componentes expostos pelo barrel.
 
 ## Migração de apps existentes
 
@@ -106,7 +108,8 @@ Para apps internas que já usam cópias shadcn locais:
 **Gotchas conhecidas:**
 - `Button` não tem mais flow de confirmação embutido — use `AlertDialog` quando precisar confirmar.
 - Sem dark mode. Remova qualquer toggle de classe `.dark` que ainda exista.
-- Helpers `toCents`, `fromCents`, `centsToDisplay`, `percentOfTotal`, `percentFromValue`, `formatBRL` são exportados — delete `lib/currency.ts` locais.
+- `Chart*`, `Form`/`Field`/`FieldGroup`/`FormField`, `DropdownMenu` foram removidos em v10. Use `recharts` direto para gráficos, `react-hook-form` direto para forms, e `Popover` + `Button` para menus de ação.
+- Helpers `toCents`, `fromCents`, `centsToDisplay`, `percentOfTotal`, `percentFromValue`, `formatBRL` são exportados — delete `lib/currency.ts` locais. Veja a aba **Hooks** para a lista completa.
 
 ## FAQ
 

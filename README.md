@@ -1,8 +1,8 @@
 # @am-fernandes/ui
 
-![version](https://img.shields.io/badge/version-1.0.0-black) ![license](https://img.shields.io/badge/license-proprietary-lightgrey)
+![version](https://img.shields.io/badge/version-10.0.0-black) ![license](https://img.shields.io/badge/license-proprietary-lightgrey)
 
-Design system de UI da AM Fernandes — 42 componentes React, tokens Tailwind v4 e documentação Storybook.
+Design system de UI da AM Fernandes — 41 componentes React, tokens Tailwind v4 e documentação Storybook.
 
 ## Instalação
 
@@ -42,19 +42,24 @@ import { cn } from "@am-fernandes/ui"
 
 | Categoria   | Count | Componentes |
 | ----------- | ----- | ----------- |
-| Primitives  | 11    | avatar, badge, button, checkbox, input, label, radio-group, separator, skeleton, switch, textarea |
-| Overlays    | 8     | alert, alert-dialog, dialog, popover, progress, sheet, sonner, tooltip |
-| Composed    | 1     | confirm-button |
-| Navigation  | 6     | accordion, breadcrumb, command, dropdown-menu, sidebar, tabs |
-| Forms       | 8     | calendar, combobox, date-input, date-range-picker, field, form, multi-select, select |
-| Domain      | 4     | currency-input, multi-number-input, input-otp, percentage-input |
+| Primitives  | 11    | avatar, badge, button, checkbox, input, radio-group, separator, skeleton, switch, textarea, typography |
+| Overlays    | 9     | alert, alert-dialog, collapsible, dialog, popover, progress, sheet, sonner, tooltip |
+| Navigation  | 5     | accordion, breadcrumb, command-palette, sidebar, tabs |
+| Forms       | 5     | calendar, combobox, date-input, date-range-picker, time-picker |
+| Domain      | 5     | currency-input, file-upload, input-otp, multi-input, percentage-input |
 | Data        | 6     | card, data-table, image, scroll-area, tree, video |
 
-Helpers adicionais expostos pelo barrel:
+Helpers adicionais expostos pelo barrel (veja a aba **Hooks** no Storybook para a documentação completa):
 
-- `cn` — merge de classes Tailwind.
-- `useIsMobile` — hook de breakpoint.
+- `cn` — merge de classes Tailwind via `clsx` + `tailwind-merge`.
+- `useIsMobile` — hook de breakpoint (viewport menor que 768 px).
+- `useComboboxOptions` — transforma arrays `{ id, nome }` em `ComboboxOption[]`.
+- `buttonVariants`, `badgeVariants`, `alertVariants`, `typographyVariants` — CVA factories para reaproveitar variantes em `className`.
+- `tableStyles` — classnames prontos para `<table>` cru.
 - `toCents`, `fromCents`, `percentOfTotal`, `percentFromValue`, `centsToDisplay`, `formatBRL` — utilitários monetários (BRL, inteiros em centavos).
+- `bytes`, `kb`, `mb`, `gb` — helpers ergonômicos de tamanho em bytes (unidades binárias).
+- `REGEXP_ONLY_DIGITS` — re-export de `input-otp` para `pattern` do `InputOTP`.
+- `toast` — re-export de `sonner` (use junto com `<Toaster />`).
 
 ## Scripts
 
@@ -84,7 +89,7 @@ bun run lint             # biome check .
 
 Apps internas (`requerimento-contratos-pf`, `assistencia-tecnica`) devem migrar de cópias locais de shadcn/ui para este pacote. O processo é incremental, mantém os mesmos nomes de exports e troca apenas o caminho de import.
 
-Veja o guia em Storybook → `docs/Migration`.
+Veja o guia em Storybook → **Getting Started** (seção *Migração de apps existentes*).
 
 ## Licença
 

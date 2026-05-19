@@ -10,6 +10,7 @@ const preview: Preview = {
         order: [
           "Getting Started",
           "Quality",
+          "Hooks",
           "Foundations",
           ["Colors", "Typography", "Iconography", "Spacing"],
           "Primitives",

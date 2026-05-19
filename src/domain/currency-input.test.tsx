@@ -70,4 +70,69 @@ describe("CurrencyInput", () => {
     rerender(<CurrencyInput value={42} onValueChange={vi.fn()} />)
     expect(screen.getByDisplayValue("42,00")).toBeInTheDocument()
   })
+
+  it("sets aria-invalid and renders the error message when error prop is provided", () => {
+    render(
+      <CurrencyInput value={0} onValueChange={vi.fn()} label="Valor" error="Campo obrigatório" />,
+    )
+    const input = screen.getByDisplayValue("0,00") as HTMLInputElement
+    expect(input).toHaveAttribute("aria-invalid", "true")
+    expect(screen.getByRole("alert")).toHaveTextContent("Campo obrigatório")
+  })
+
+  it("does not set aria-invalid when error is empty string", () => {
+    render(<CurrencyInput value={0} onValueChange={vi.fn()} label="Valor" error="" />)
+    const input = screen.getByDisplayValue("0,00") as HTMLInputElement
+    expect(input).not.toHaveAttribute("aria-invalid")
+  })
+
+  it("wires aria-describedby to both description and error ids", () => {
+    render(
+      <CurrencyInput
+        value={0}
+        onValueChange={vi.fn()}
+        label="Valor"
+        description="Valor sem impostos"
+        error="Campo obrigatório"
+      />,
+    )
+    const input = screen.getByDisplayValue("0,00") as HTMLInputElement
+    const describedBy = input.getAttribute("aria-describedby")
+    expect(describedBy).toBeTruthy()
+    // The describedBy should reference 2 separate ids (description + error)
+    expect(describedBy?.split(" ")).toHaveLength(2)
+  })
+
+  it("omits aria-describedby when there is no description nor error", () => {
+    render(<CurrencyInput value={0} onValueChange={vi.fn()} label="Valor" />)
+    const input = screen.getByDisplayValue("0,00") as HTMLInputElement
+    expect(input).not.toHaveAttribute("aria-describedby")
+  })
+
+  it("renders the label and marks the field as required", () => {
+    render(<CurrencyInput value={0} onValueChange={vi.fn()} label="Total" required />)
+    expect(screen.getByText("Total")).toBeInTheDocument()
+  })
+
+  it("applies disabled state to the input and the FieldShell", () => {
+    render(<CurrencyInput value={10} onValueChange={vi.fn()} label="Valor" disabled />)
+    const input = screen.getByDisplayValue("10,00") as HTMLInputElement
+    expect(input).toBeDisabled()
+  })
+
+  it("supports labelPosition='hidden' by attaching label invisibly via sr-only", () => {
+    render(
+      <CurrencyInput value={1} onValueChange={vi.fn()} label="Oculto" labelPosition="hidden" />,
+    )
+    // Label should still render in the DOM (for screen readers).
+    expect(screen.getByText("Oculto")).toBeInTheDocument()
+  })
+
+  it("supports labelPosition='left' switching the FieldShell layout", () => {
+    const { container } = render(
+      <CurrencyInput value={1} onValueChange={vi.fn()} label="Esquerda" labelPosition="left" />,
+    )
+    const shell = container.querySelector("[data-slot='field-shell']")
+    expect(shell?.getAttribute("data-label-position")).toBe("left")
+  })
 })

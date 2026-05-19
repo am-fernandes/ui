@@ -8,29 +8,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 **First public release.** This is the inaugural published API of `@am-fernandes/ui` on npm.
 
-The library was iterated privately to ~145 exports (v9.x), then audited (Google Engineering Practices, OWASP Top 10:2025, Clean Code) and simplified to ~49 public exports before publication. The release represents the final API decisions: data-driven where it fits, `label`/`description`/`error` on every form control, `title`/`description`/`children` on every overlay, single-export for every flat component, `ReactNode` slots (`footer`, `headerAction`, `action`, `trigger`) for the common edge cases.
+The library was iterated privately to ~145 exports (v9.x), then audited (Google Engineering Practices, OWASP Top 10:2025, Clean Code) and simplified before publication. Post-publication, three further breaking removals tightened the surface: `Chart*` (consumers use `recharts` directly), the `Form`/`Field`/`FieldGroup`/`FormField` wrappers (consumers use `react-hook-form` directly), and `DropdownMenu` (no internal consumer). The release represents the final API decisions: data-driven where it fits, `label`/`description`/`error` on every form control, `title`/`description`/`children` on every overlay, single-export for every flat component, `ReactNode` slots (`footer`, `headerAction`, `action`, `trigger`) for the common edge cases.
 
-### Public API surface (49 exports)
+### Public API surface (41 components + 19 helpers/constants)
 
-**Primitives (11):** `Avatar`, `Badge`, `Button` (+`buttonVariants`), `Checkbox`, `Input`, `RadioGroup`, `Separator`, `Skeleton`, `Switch`, `Textarea`, `Typography` (+`typographyVariants`)
+**Primitives (11):** `Avatar`, `Badge` (+`badgeVariants`), `Button` (+`buttonVariants`), `Checkbox`, `Input`, `RadioGroup`, `Separator`, `Skeleton`, `Switch`, `Textarea`, `Typography` (+`typographyVariants`)
 
 **Overlays (9):** `Alert` (+`alertVariants`), `AlertDialog`, `Collapsible`, `Dialog`, `Popover`, `Progress`, `Sheet`, `Toaster`/`toast` (sonner), `Tooltip`
 
-**Forms (8):** `Calendar`, `Combobox` (+`useComboboxOptions`), `DateInput`, `DateRangePicker`, `Field`, `FieldGroup`, `Form`, `FormField` (+`useForm` from RHF), `TimePicker`
+**Forms (5):** `Calendar`, `Combobox` (+`useComboboxOptions`), `DateInput`, `DateRangePicker`, `TimePicker`
 
 **Navigation (5):** `Accordion`, `Breadcrumb`, `CommandPalette`, `Sidebar`, `Tabs`
 
-**Data (8):** `Card`, `ChartContainer`/`ChartTooltip`/`ChartLegend`/`ChartStyle`, `DataTable`, `Image`, `ScrollArea`, `Tree`, `Video`
+**Data (6):** `Card`, `DataTable`, `Image`, `ScrollArea`, `Tree`, `Video` (+`tableStyles` helper)
 
 **Domain (5):** `CurrencyInput`, `FileUpload`, `InputOTP` (+`REGEXP_ONLY_DIGITS`), `MultiInput`, `PercentageInput`
 
 **Hooks (1):** `useIsMobile`
 
-**Lib (10):** `cn`, `tableStyles`, `toCents`, `fromCents`, `centsToDisplay`, `formatBRL`, `percentFromValue`, `percentOfTotal`, `bytes`/`kb`/`mb`/`gb`
+**Lib (10):** `cn`, `toCents`, `fromCents`, `centsToDisplay`, `formatBRL`, `percentFromValue`, `percentOfTotal`, `bytes`/`kb`/`mb`/`gb`
+
+> See the Storybook **Hooks** tab for the canonical reference on every non-component export (signatures, examples, SSR notes).
 
 ### Quality posture
 
-- 304 tests pass (jsdom + @testing-library/react via vitest)
+- 346 unit/integration tests pass (jsdom + @testing-library/react via vitest)
+- 289 Storybook stories smoke-tested via `@storybook/test-runner` (Chromium real, Axe wcag2aa assertions, 0 serious/critical violations)
+- 96 Playwright E2E tests across desktop + mobile (Pixel 5) + tablet (iPad gen 7) viewports
+- 57 visual regression baselines via `toHaveScreenshot` (Google Fonts blocked for determinism)
 - typecheck clean
 - lint clean (biome)
 - React 19 native `ref` prop pattern across all components (no `forwardRef`)
@@ -38,10 +43,16 @@ The library was iterated privately to ~145 exports (v9.x), then audited (Google 
 - WCAG 2.4.7 focus rings on every interactive primitive
 - Radix Dialog title always present (CommandPalette uses sr-only defaults)
 - Image/Video validate src against allowed protocols
-- Chart sanitizes config color before CSS interpolation
 - Sidebar cookie persistence is opt-in (`persistOpenState`)
 - FileUpload documents MIME validation as browser-supplied (server must re-validate)
 - Tree implements full WAI-ARIA tree pattern (roving tabindex, arrow keys, Home/End)
+
+### Post-publication breaking changes folded into 10.0.0
+
+- **Removed `Chart*` family** — consumers use `recharts` directly. The library still ships `--chart-1` … `--chart-5` tokens (see Foundations/Colors).
+- **Removed `Form`, `FormField`, `Field`, `FieldGroup`** — consumers use `react-hook-form` directly. `Combobox`, `DateInput`, etc. already expose `label`/`description`/`error` props, so a `<Field>` wrapper was redundant.
+- **Removed `DropdownMenu`** — no internal consumer and removed Radix `@radix-ui/react-dropdown-menu` from deps. Use `Popover` + `Button` when an action menu is required.
+- **Unexported `Sheet*` subcomponents** — `Sheet` remains exported, but the lower-level Radix subcomponents (`SheetTrigger`/`SheetContent`/etc.) are no longer part of the public API. The flat `<Sheet title description children>` API is the supported entrypoint; `Sidebar` consumes Sheet internals directly.
 
 ### Previous private iterations
 
