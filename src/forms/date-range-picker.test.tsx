@@ -17,7 +17,7 @@ function Controlled({
     <DateRangePicker
       label="Período"
       value={value}
-      onChange={(v) => {
+      onValueChange={(v) => {
         onChangeSpy?.(v)
         setValue(v)
       }}
@@ -31,7 +31,7 @@ describe("DateRangePicker", () => {
       <DateRangePicker
         label="Período"
         value={{ from: "", to: "" }}
-        onChange={() => {}}
+        onValueChange={() => {}}
         placeholder="Selecione"
       />,
     )
@@ -43,7 +43,7 @@ describe("DateRangePicker", () => {
       <DateRangePicker
         label="Período"
         value={{ from: "2025-01-01", to: "2025-01-31" }}
-        onChange={() => {}}
+        onValueChange={() => {}}
       />,
     )
     expect(screen.getByText(/01\/01\/2025.*31\/01\/2025/)).toBeInTheDocument()
@@ -54,7 +54,7 @@ describe("DateRangePicker", () => {
       <DateRangePicker
         label="X"
         value={{ from: "", to: "" }}
-        onChange={() => {}}
+        onValueChange={() => {}}
         error="obrigatório"
       />,
     )
@@ -62,7 +62,14 @@ describe("DateRangePicker", () => {
   })
 
   it("respects disabled", () => {
-    render(<DateRangePicker label="X" value={{ from: "", to: "" }} onChange={() => {}} disabled />)
+    render(
+      <DateRangePicker
+        label="X"
+        value={{ from: "", to: "" }}
+        onValueChange={() => {}}
+        disabled
+      />,
+    )
     expect(screen.getByRole("button")).toBeDisabled()
   })
 
@@ -71,7 +78,7 @@ describe("DateRangePicker", () => {
       <DateRangePicker
         label="Período"
         value={{ from: "2025-04-10", to: "" }}
-        onChange={() => {}}
+        onValueChange={() => {}}
       />,
     )
     expect(screen.getByText(/10\/04\/2025.*\.\.\./)).toBeInTheDocument()
@@ -89,7 +96,14 @@ describe("DateRangePicker", () => {
   })
 
   it("does not open the popover when disabled", async () => {
-    render(<DateRangePicker label="X" value={{ from: "", to: "" }} onChange={() => {}} disabled />)
+    render(
+      <DateRangePicker
+        label="X"
+        value={{ from: "", to: "" }}
+        onValueChange={() => {}}
+        disabled
+      />,
+    )
     await userEvent.click(screen.getByRole("button"))
     expect(screen.queryByRole("grid")).toBeNull()
   })
@@ -120,7 +134,7 @@ describe("DateRangePicker", () => {
       <DateRangePicker
         label="X"
         value={{ from: "", to: "" }}
-        onChange={() => {}}
+        onValueChange={() => {}}
         numberOfMonths={2}
       />,
     )
@@ -136,7 +150,7 @@ describe("DateRangePicker", () => {
       <DateRangePicker
         label="X"
         value={{ from: "", to: "" }}
-        onChange={() => {}}
+        onValueChange={() => {}}
         numberOfMonths={1}
       />,
     )
@@ -152,7 +166,7 @@ describe("DateRangePicker", () => {
       <DateRangePicker
         label="X"
         value={{ from: "", to: "" }}
-        onChange={() => {}}
+        onValueChange={() => {}}
         error="obrigatório"
       />,
     )
@@ -168,7 +182,7 @@ describe("DateRangePicker", () => {
         <DateRangePicker
           label="Período"
           value={value}
-          onChange={(v) => {
+          onValueChange={(v) => {
             onChange(v)
             setValue(v)
           }}

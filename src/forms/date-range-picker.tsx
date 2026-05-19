@@ -26,7 +26,7 @@ export interface DateRangePickerProps {
   required?: boolean
   disabled?: boolean
   value: DateRangeValue
-  onChange: (value: DateRangeValue) => void
+  onValueChange: (value: DateRangeValue) => void
   placeholder?: string
   className?: string
   numberOfMonths?: number
@@ -55,7 +55,7 @@ function DateRangePicker({
   required,
   disabled,
   value,
-  onChange,
+  onValueChange,
   placeholder = "Selecione um período",
   className,
   numberOfMonths = 2,
@@ -74,7 +74,7 @@ function DateRangePicker({
     fromDate || toDate ? { from: fromDate, to: toDate } : undefined
 
   const handleSelect = (range: DateRange | undefined) => {
-    onChange({
+    onValueChange({
       from: toIsoString(range?.from),
       to: toIsoString(range?.to),
     })
@@ -150,7 +150,7 @@ function DateRangePicker({
             variant="ghost"
             size="sm"
             onClick={() => {
-              onChange({ from: "", to: "" })
+              onValueChange({ from: "", to: "" })
               setOpen(false)
             }}
           >

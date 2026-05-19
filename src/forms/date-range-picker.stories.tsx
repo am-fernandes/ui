@@ -25,7 +25,7 @@ const meta = {
           "",
           "**Props principais:**",
           "- `value: { from: string; to: string }` — extremos em ISO ou vazios.",
-          "- `onChange(value)` — recebe `{ from, to }` atualizado.",
+          "- `onValueChange(value)` — recebe `{ from, to }` atualizado.",
           "- `numberOfMonths` — quantos meses renderizar (default `2`).",
           "- `locale` — `Locale` de `date-fns` (default `ptBR`).",
           "- `label`, `description`, `error`, `required`, `labelPosition`, `disabled` — wiring de `FieldShell`.",
@@ -39,7 +39,7 @@ const meta = {
           "",
           'const [range, setRange] = useState<DateRangeValue>({ from: "", to: "" })',
           "",
-          '<DateRangePicker label="Período" value={range} onChange={setRange} />',
+          '<DateRangePicker label="Período" value={range} onValueChange={setRange} />',
           "```",
         ].join("\n"),
       },
@@ -78,7 +78,7 @@ const meta = {
       description: "Desabilita o trigger.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
-    onChange: { control: false, table: { category: "Eventos" } },
+    onValueChange: { control: false, table: { category: "Eventos" } },
   },
 } satisfies Meta<typeof DateRangePicker>
 
@@ -100,7 +100,7 @@ export const Playground: Story = {
         <DateRangePicker
           label={args.label}
           value={range}
-          onChange={setRange}
+          onValueChange={setRange}
           placeholder={args.placeholder}
           numberOfMonths={args.numberOfMonths}
           disabled={args.disabled}
@@ -123,7 +123,7 @@ export const Default: Story = {
     const [range, setRange] = useState<DateRangeValue>({ from: "", to: "" })
     return (
       <div className="w-[360px]">
-        <DateRangePicker label="Período" value={range} onChange={setRange} />
+        <DateRangePicker label="Período" value={range} onValueChange={setRange} />
       </div>
     )
   },
@@ -142,7 +142,7 @@ export const PreFilled: Story = {
     const [range, setRange] = useState<DateRangeValue>({ from: "2025-03-01", to: "2025-03-31" })
     return (
       <div className="flex w-[360px] flex-col gap-2">
-        <DateRangePicker label="Mês de março/2025" value={range} onChange={setRange} />
+        <DateRangePicker label="Mês de março/2025" value={range} onValueChange={setRange} />
         <span className="text-xs text-muted-foreground">
           ISO: {range.from} → {range.to}
         </span>
@@ -166,7 +166,7 @@ export const WithError: Story = {
           required
           error="Selecione um período antes de continuar."
           value={range}
-          onChange={setRange}
+          onValueChange={setRange}
         />
       </div>
     )
@@ -180,7 +180,7 @@ export const Disabled: Story = {
       <DateRangePicker
         label="Período"
         value={{ from: "2025-01-01", to: "2025-01-15" }}
-        onChange={() => {}}
+        onValueChange={() => {}}
         disabled
       />
     </div>
@@ -202,7 +202,7 @@ export const OneMonth: Story = {
           label="Período (1 mês)"
           numberOfMonths={1}
           value={range}
-          onChange={setRange}
+          onValueChange={setRange}
         />
       </div>
     )
@@ -220,7 +220,7 @@ export const EnUSLocale: Story = {
     const [range, setRange] = useState<DateRangeValue>({ from: "", to: "" })
     return (
       <div className="w-[360px]">
-        <DateRangePicker label="Date range" value={range} onChange={setRange} locale={enUS} />
+        <DateRangePicker label="Date range" value={range} onValueChange={setRange} locale={enUS} />
       </div>
     )
   },
@@ -243,7 +243,7 @@ export const Controlled: Story = {
           label="Período"
           description={`ISO: ${range.from || "(vazio)"} → ${range.to || "(vazio)"}`}
           value={range}
-          onChange={setRange}
+          onValueChange={setRange}
         />
         <div className="flex gap-2">
           <button
@@ -308,7 +308,7 @@ export const WithRHF: Story = {
               label="Período de vigência"
               required
               value={field.value}
-              onChange={field.onChange}
+              onValueChange={field.onChange}
               error={fieldState.error?.message}
             />
           )}

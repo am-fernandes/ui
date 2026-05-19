@@ -25,7 +25,7 @@ O prop `error: string` em todos os campos é **puramente visual**: ele pinta a b
 | `RadioGroup` | sim (`value: string`) | sim (`defaultValue: string`, via Radix) | `onValueChange(value: string)` | Itens passam via prop `values: RadioGroupItemData[]`. |
 | `Combobox` | sim (`value: string` ou `string[]` no modo `multiple`) | **não** | `onValueChange(value)` | Controlled-only. Use `Controller`. |
 | `DateInput` | sim, **obrigatório** (`value: string` ISO `yyyy-MM-dd`) | **não** | `onChange(value: string)` | Controlled-only. Valor em string vazia `""` representa "sem data". |
-| `DateRangePicker` | sim, **obrigatório** (`value: { from: string; to: string }`) | **não** | `onChange(value: DateRangeValue)` | Controlled-only. Use sempre `Controller`. |
+| `DateRangePicker` | sim, **obrigatório** (`value: { from: string; to: string }`) | **não** | `onValueChange(value: DateRangeValue)` | Controlled-only. Use sempre `Controller`. |
 | `CurrencyInput` | sim, **obrigatório** (`value: number` em reais float) | **não** | `onValueChange(value: number)` | Controlled-only. Emite `number`, não `event`. |
 | `PercentageInput` | sim, **obrigatório** (`value: number`) | **não** | `onValueChange(value: number)` | Mesmo perfil de `CurrencyInput`. |
 | `MultiInput` | sim, **obrigatório** (`value: string[]` ou `number[]`) | **não** | `onValueChange(values)` | Controlled-only. Modo `type="number"` ordena ascendente. |
@@ -245,7 +245,7 @@ Ambos disparam `onCheckedChange(checked: boolean | "indeterminate")` — **não 
     <DateRangePicker
       label="Período"
       value={field.value}
-      onChange={field.onChange}
+      onValueChange={field.onChange}
       error={fieldState.error?.message}
     />
   )}
