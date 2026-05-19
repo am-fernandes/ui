@@ -25,7 +25,7 @@ describe("Label", () => {
       </div>,
     )
     const label = screen.getByText("Aceito")
-    expect(label).toHaveClass("peer-disabled:opacity-70")
+    expect(label).toHaveClass("peer-disabled:opacity-50")
     expect(label).toHaveClass("peer-disabled:cursor-not-allowed")
   })
 

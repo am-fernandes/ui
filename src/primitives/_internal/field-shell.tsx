@@ -48,7 +48,7 @@ function FieldShell({
       className={cn(
         "flex w-full",
         labelPosition === "left" ? "flex-row items-center gap-3" : "flex-col gap-1.5",
-        disabled && "opacity-60",
+        disabled && "opacity-50",
         className,
       )}
     >
