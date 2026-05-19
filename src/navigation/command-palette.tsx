@@ -64,10 +64,10 @@ function CommandPalette({
       >
         <div
           data-slot="command-input-wrap"
-          className="flex items-center border-b px-3"
+          className="flex items-center gap-2 border-b px-3"
           cmdk-input-wrapper=""
         >
-          <SearchIcon className="mr-2 size-4 shrink-0 opacity-50" aria-hidden="true" />
+          <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
           <CommandPrimitive.Input
             placeholder={placeholder}
             className="flex w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-input"
@@ -104,14 +104,14 @@ function CommandPalette({
                     item.onSelect()
                   }}
                   className={cn(
-                    "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none",
+                    "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none",
                     "aria-selected:bg-accent aria-selected:text-accent-foreground",
                     "data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50",
                   )}
                 >
                   {item.render ?? (
                     <>
-                      {item.icon ? <item.icon className="mr-2 size-4" /> : null}
+                      {item.icon ? <item.icon className="size-4" /> : null}
                       <span>{item.label}</span>
                       {item.shortcut ? (
                         <span className="ml-auto text-xs tracking-widest text-muted-foreground">

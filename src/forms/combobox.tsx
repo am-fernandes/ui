@@ -181,15 +181,15 @@ export function Combobox(props: ComboboxProps) {
             <Badge
               key={val}
               variant="outline"
-              className="rounded-md px-1.5 py-0.5 font-normal bg-muted text-foreground border-border inline-flex items-center"
+              className="rounded-md px-1.5 py-0.5 font-normal bg-muted text-foreground border-border inline-flex items-center gap-1"
               aria-label={labelText}
             >
-              {Icon ? <Icon className="mr-1 size-3 shrink-0" /> : null}
+              {Icon ? <Icon className="size-3 shrink-0" /> : null}
               {labelText}
               <button
                 type="button"
                 aria-label={`Remover ${labelText}`}
-                className="ml-1 rounded-full outline-none cursor-pointer hover:bg-background/50"
+                className="rounded-full outline-none cursor-pointer hover:bg-background/50"
                 onClick={(e) => handleRemoveValue(val, e)}
               >
                 <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
@@ -291,8 +291,8 @@ export function Combobox(props: ComboboxProps) {
             }
             className="flex h-full w-full flex-col"
           >
-            <div className="flex items-center border-b px-3" cmdk-input-wrapper="">
-              <SearchIcon className="mr-2 size-4 shrink-0 opacity-50" aria-hidden="true" />
+            <div className="flex items-center gap-2 border-b px-3" cmdk-input-wrapper="">
+              <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
               <CommandPrimitive.Input
                 placeholder={searchPlaceholder}
                 onValueChange={setSearch}
@@ -333,11 +333,11 @@ export function Combobox(props: ComboboxProps) {
                         if (isMultiple) handleMultipleSelect(option.value)
                         else handleSingleSelect(option.value)
                       }}
-                      className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
+                      className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
                     >
                       <div
                         className={cn(
-                          "mr-2 flex h-4 w-4 items-center justify-center rounded-md border border-primary",
+                          "flex h-4 w-4 items-center justify-center rounded-md border border-primary",
                           isSelected
                             ? "bg-primary text-primary-foreground"
                             : "opacity-50 [&_svg]:invisible",
@@ -345,7 +345,7 @@ export function Combobox(props: ComboboxProps) {
                       >
                         <Check className="h-3 w-3" />
                       </div>
-                      {option.icon ? <option.icon className="mr-2 size-4 shrink-0" /> : null}
+                      {option.icon ? <option.icon className="size-4 shrink-0" /> : null}
                       {option.label}
                     </CommandPrimitive.Item>
                   )

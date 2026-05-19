@@ -98,7 +98,7 @@ function DateRangePicker({
         className,
       )}
     >
-      <CalendarIcon className="mr-2 size-4" aria-hidden="true" />
+      <CalendarIcon className="size-4" aria-hidden="true" />
       {display}
     </Button>
   )
