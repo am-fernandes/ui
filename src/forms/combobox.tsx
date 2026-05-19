@@ -189,10 +189,10 @@ export function Combobox(props: ComboboxProps) {
               <button
                 type="button"
                 aria-label={`Remover ${labelText}`}
-                className="rounded-full outline-none cursor-pointer hover:bg-background/50"
+                className="rounded-sm outline-none cursor-pointer transition-colors hover:bg-secondary-foreground/20"
                 onClick={(e) => handleRemoveValue(val, e)}
               >
-                <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                <X className="h-3 w-3 text-muted-foreground" />
               </button>
             </Badge>
           )
@@ -237,7 +237,7 @@ export function Combobox(props: ComboboxProps) {
             role="button"
             tabIndex={0}
             aria-label="Limpar seleção"
-            className="inline-flex"
+            className="inline-flex cursor-pointer rounded-sm transition-colors hover:bg-secondary-foreground/20"
             onClick={handleClearAll}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -246,7 +246,7 @@ export function Combobox(props: ComboboxProps) {
               }
             }}
           >
-            <X className="h-4 w-4 shrink-0 opacity-50 hover:opacity-100" />
+            <X className="h-4 w-4 shrink-0 opacity-50" />
           </span>
         ) : null}
         <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />

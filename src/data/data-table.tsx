@@ -398,7 +398,7 @@ function DataTable<TData>({
             type="button"
             role="menuitem"
             data-slot="data-table-download-filtered"
-            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground"
             onClick={() => {
               void handleExport("filtered")
             }}
@@ -409,7 +409,7 @@ function DataTable<TData>({
             type="button"
             role="menuitem"
             data-slot="data-table-download-page"
-            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground"
             onClick={() => {
               void handleExport("page")
             }}
@@ -420,7 +420,7 @@ function DataTable<TData>({
             type="button"
             role="menuitem"
             data-slot="data-table-download-all"
-            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground"
             onClick={() => {
               void handleExport("all")
             }}
@@ -487,7 +487,7 @@ function DataTable<TData>({
                         <button
                           type="button"
                           onClick={header.column.getToggleSortingHandler()}
-                          className="-mx-2 inline-flex h-8 items-center gap-2 rounded-md px-2 text-left hover:bg-accent"
+                          className="-mx-2 inline-flex h-8 items-center gap-2 rounded-md px-2 text-left cursor-pointer transition-colors hover:bg-accent"
                           aria-label={ariaLabel}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
