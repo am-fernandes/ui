@@ -1,0 +1,545 @@
+import { Meta } from "@storybook/addon-docs/blocks"
+
+<Meta title="Form Integration" />
+
+# Integração com formulários
+
+`@am-fernandes/ui` é deliberadamente **uma biblioteca de UI, não um framework de formulários**. Não enviamos wrappers tipo `<Form>`, `<FormField>` ou um motor próprio de validação — os componentes da família `forms/` e `domain/` expõem APIs controladas simples (`value` + `onValueChange`/`onChange`) que conectam diretamente em qualquer state-manager. A recomendação oficial é **[react-hook-form](https://react-hook-form.com)** (RHF) para o estado e **[zod](https://zod.dev)** para o schema/validação, mas qualquer combinação que respeite o contrato dos componentes funciona.
+
+A maioria dos controles é **controlled-only**: você sempre passa `value` e atualiza via callback. Alguns componentes (`Input`, `Textarea`, `Checkbox`, `Switch`, `RadioGroup`) suportam também o modo uncontrolled via `defaultValue`/`defaultChecked` herdado do HTML nativo ou do Radix — útil quando você usa `register()` do RHF, que opera em modo uncontrolled. Veja a tabela abaixo para o detalhe componente-a-componente.
+
+O prop `error: string` em todos os campos é **puramente visual**: ele pinta a borda de vermelho, dispara `aria-invalid` e renderiza a mensagem abaixo do controle com `role="alert"`. A lib **não valida nada** — quem decide quando há erro é o consumidor. Com RHF, o padrão é `error={errors.<nome>?.message}`. Isso mantém a UI desacoplada da regra de negócio e permite que apps com validação assíncrona (e.g. checar duplicidade no servidor) liguem qualquer fonte de erro à apresentação visual sem hacks.
+
+> **RHF como devDependency.** A partir de v0.0.2, `react-hook-form` foi movido para `devDependencies` da lib (era só usado em stories). Sua app continua precisando declarar `react-hook-form` (e `zod`/`@hookform/resolvers`, se for esse o caso) como dependency própria — a lib não puxa mais nada disso para o seu bundle.
+
+---
+
+## Tabela: controlled vs uncontrolled
+
+| Componente | Aceita `value` | Aceita `defaultValue` | Callback de mudança | Notas |
+|---|---|---|---|---|
+| `Input` | sim (`value: string`) | sim (`defaultValue`) | `onChange(event)` | API HTML nativa; funciona com `register()` direto. |
+| `Textarea` | sim | sim | `onChange(event)` | API HTML nativa; suporta `register()`. `maxLength` mostra contador. |
+| `Checkbox` | sim (`checked: boolean \| "indeterminate"`) | sim (`defaultChecked: boolean`, via Radix) | `onCheckedChange(checked)` | Não emite `event` — precisa de `Controller` se você quiser ler boolean direto, mas `register()` funciona para o caso simples (RHF lê via `event.target.checked`). |
+| `Switch` | sim (`checked: boolean`) | sim (`defaultChecked: boolean`, via Radix) | `onCheckedChange(checked: boolean)` | Mesmo perfil de `Checkbox`. |
+| `RadioGroup` | sim (`value: string`) | sim (`defaultValue: string`, via Radix) | `onValueChange(value: string)` | Itens passam via prop `values: RadioGroupItemData[]`. |
+| `Combobox` | sim (`value: string` ou `string[]` no modo `multiple`) | **não** | `onValueChange(value)` | Controlled-only. Use `Controller`. |
+| `DateInput` | sim, **obrigatório** (`value: string` ISO `yyyy-MM-dd`) | **não** | `onChange(value: string)` | Controlled-only. Valor em string vazia `""` representa "sem data". |
+| `DateRangePicker` | sim, **obrigatório** (`value: { from: string; to: string }`) | **não** | `onChange(value: DateRangeValue)` | Controlled-only. Use sempre `Controller`. |
+| `CurrencyInput` | sim, **obrigatório** (`value: number` em reais float) | **não** | `onValueChange(value: number)` | Controlled-only. Emite `number`, não `event`. |
+| `PercentageInput` | sim, **obrigatório** (`value: number`) | **não** | `onValueChange(value: number)` | Mesmo perfil de `CurrencyInput`. |
+| `MultiInput` | sim, **obrigatório** (`value: string[]` ou `number[]`) | **não** | `onValueChange(values)` | Controlled-only. Modo `type="number"` ordena ascendente. |
+| `TimePicker` | sim (`value?: string` formato `HH:MM`) | **não** | `onChange(value: string)` | Controlled. Valor inválido vira `""`. |
+| `InputOTP` | sim, **obrigatório** (`value: string`) | **não** | `onValueChange(value: string)`, mais `onComplete(value)` | Controlled-only. `onComplete` dispara ao preencher todos os slots. |
+| `FileUpload` | opcional (`value?: File[]`) | **não** — gerencia state interno se `value` não for passado | `onValueChange(files: File[])` | Híbrido: passe `value` + `onValueChange` para controlar, ou omita ambos para deixar o componente gerenciar. Emite `File[]`, não `FileList`. |
+
+**Regra prática:** se a coluna `defaultValue` mostrar "não", você **precisa** de `Controller` para integrar com RHF. Se ambas colunas tiverem "sim" e o callback for `onChange(event)` padrão, `register()` direto resolve.
+
+---
+
+## Receita com react-hook-form
+
+### Setup mínimo
+
+```tsx
+import { useForm } from "react-hook-form"
+import { Input, Button } from "@am-fernandes/ui"
+
+type FormValues = {
+  nome: string
+  email: string
+}
+
+export function ContatoForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+    defaultValues: { nome: "", email: "" },
+  })
+
+  const onSubmit = (data: FormValues) => {
+    console.log(data)
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
+      <Input
+        label="Nome"
+        required
+        {...register("nome", { required: "Informe o nome" })}
+        error={errors.nome?.message}
+      />
+      <Input
+        label="E-mail"
+        type="email"
+        required
+        {...register("email", { required: "Informe o e-mail" })}
+        error={errors.email?.message}
+      />
+      <Button type="submit">Enviar</Button>
+    </form>
+  )
+}
+```
+
+### `Input` e `Textarea` — `register` ou `Controller`
+
+Ambos seguem a API HTML padrão (`value` + `onChange(event)`), então **`register()` é a forma idiomática**:
+
+```tsx
+<Input
+  label="E-mail"
+  type="email"
+  {...register("email", {
+    required: "E-mail é obrigatório",
+    pattern: { value: /\S+@\S+\.\S+/, message: "Formato inválido" },
+  })}
+  error={errors.email?.message}
+/>
+
+<Textarea
+  label="Observações"
+  rows={4}
+  maxLength={500}
+  {...register("observacoes")}
+  error={errors.observacoes?.message}
+/>
+```
+
+Use `Controller` apenas se precisar de comportamento extra (e.g. parsing customizado, integração com `watch`/`setValue` imperativo).
+
+### `Checkbox` e `Switch` — `register` direto OU `Controller`
+
+Ambos disparam `onCheckedChange(checked: boolean | "indeterminate")` — **não é o `event` padrão**. Ainda assim, `register()` funciona para o caso boolean simples porque RHF detecta o input nativo do Radix e lê `event.target.checked` por baixo. Para acesso programático ou quando o checkbox precisa do estado `"indeterminate"`, use `Controller`:
+
+```tsx
+// Caminho simples — register()
+<Checkbox
+  label="Aceito os termos"
+  {...register("aceitaTermos", { required: "Necessário aceitar" })}
+  error={errors.aceitaTermos?.message}
+/>
+
+// Caminho controlado — Controller (boolean explícito, suporta "indeterminate")
+<Controller
+  control={control}
+  name="aceitaTermos"
+  rules={{ required: "Necessário aceitar" }}
+  render={({ field, fieldState }) => (
+    <Checkbox
+      label="Aceito os termos"
+      checked={field.value}
+      onCheckedChange={field.onChange}
+      onBlur={field.onBlur}
+      error={fieldState.error?.message}
+    />
+  )}
+/>
+```
+
+`Switch` segue o mesmo padrão:
+
+```tsx
+<Controller
+  control={control}
+  name="notificacoes"
+  render={({ field }) => (
+    <Switch
+      label="Receber notificações"
+      checked={field.value}
+      onCheckedChange={field.onChange}
+    />
+  )}
+/>
+```
+
+### `RadioGroup` — `Controller`
+
+```tsx
+<Controller
+  control={control}
+  name="prioridade"
+  rules={{ required: "Escolha uma prioridade" }}
+  render={({ field, fieldState }) => (
+    <RadioGroup
+      label="Prioridade"
+      required
+      value={field.value}
+      onValueChange={field.onChange}
+      error={fieldState.error?.message}
+      values={[
+        { value: "baixa", label: "Baixa" },
+        { value: "media", label: "Média" },
+        { value: "alta", label: "Alta" },
+      ]}
+    />
+  )}
+/>
+```
+
+### `Combobox` — single e multiple
+
+```tsx
+// Single
+<Controller
+  control={control}
+  name="area"
+  rules={{ required: "Selecione uma área" }}
+  render={({ field, fieldState }) => (
+    <Combobox
+      label="Área"
+      required
+      options={areaOptions}
+      value={field.value}
+      onValueChange={field.onChange}
+      error={fieldState.error?.message}
+    />
+  )}
+/>
+
+// Multiple — o tipo de field.value precisa ser string[]
+<Controller
+  control={control}
+  name="tags"
+  defaultValue={[]}
+  render={({ field, fieldState }) => (
+    <Combobox
+      multiple
+      label="Tags"
+      options={tagOptions}
+      value={field.value}
+      onValueChange={field.onChange}
+      error={fieldState.error?.message}
+    />
+  )}
+/>
+```
+
+### `DateInput` e `DateRangePicker`
+
+`DateInput` opera em strings ISO `yyyy-MM-dd` (formato server-friendly):
+
+```tsx
+<Controller
+  control={control}
+  name="nascimento"
+  rules={{ required: "Informe a data de nascimento" }}
+  render={({ field, fieldState }) => (
+    <DateInput
+      label="Data de nascimento"
+      required
+      value={field.value ?? ""}
+      onChange={field.onChange}
+      error={fieldState.error?.message}
+    />
+  )}
+/>
+```
+
+`DateRangePicker` exige um objeto `{ from, to }` — defaulte para strings vazias:
+
+```tsx
+<Controller
+  control={control}
+  name="periodo"
+  defaultValue={{ from: "", to: "" }}
+  render={({ field, fieldState }) => (
+    <DateRangePicker
+      label="Período"
+      value={field.value}
+      onChange={field.onChange}
+      error={fieldState.error?.message}
+    />
+  )}
+/>
+```
+
+### `CurrencyInput` e `PercentageInput`
+
+**Atenção:** o callback é `onValueChange(value: number)` — recebe o **número direto**, não um event. Sempre use `Controller`:
+
+```tsx
+<Controller
+  control={control}
+  name="salario"
+  rules={{
+    required: "Informe o salário",
+    min: { value: 0.01, message: "Deve ser maior que zero" },
+  }}
+  render={({ field, fieldState }) => (
+    <CurrencyInput
+      label="Salário pretendido"
+      required
+      value={field.value ?? 0}
+      onValueChange={field.onChange}
+      error={fieldState.error?.message}
+    />
+  )}
+/>
+
+<Controller
+  control={control}
+  name="comissao"
+  render={({ field, fieldState }) => (
+    <PercentageInput
+      label="Comissão"
+      max={100}
+      value={field.value ?? 0}
+      onValueChange={field.onChange}
+      error={fieldState.error?.message}
+    />
+  )}
+/>
+```
+
+> **Dica BRL.** `CurrencyInput` emite `number` em reais float, mas arredondamento internamente passa por centavos. Para aritmética financeira (somas, percentuais, totais), converta via `toCents()` antes e `fromCents()` na saída — veja a aba **Hooks** para a API completa.
+
+### `MultiInput`
+
+```tsx
+<Controller
+  control={control}
+  name="emails"
+  defaultValue={[]}
+  render={({ field, fieldState }) => (
+    <MultiInput
+      label="E-mails de contato"
+      value={field.value}
+      onValueChange={field.onChange}
+      error={fieldState.error?.message}
+      maxItems={5}
+    />
+  )}
+/>
+
+// Modo numérico
+<Controller
+  control={control}
+  name="parcelas"
+  defaultValue={[]}
+  render={({ field }) => (
+    <MultiInput
+      type="number"
+      label="Parcelas disponíveis"
+      value={field.value}
+      onValueChange={field.onChange}
+      suffix="x"
+    />
+  )}
+/>
+```
+
+### `TimePicker`
+
+```tsx
+<Controller
+  control={control}
+  name="horario"
+  rules={{
+    required: "Informe o horário",
+    pattern: { value: /^\d{2}:\d{2}$/, message: "Horário inválido" },
+  }}
+  render={({ field, fieldState }) => (
+    <TimePicker
+      label="Horário do compromisso"
+      value={field.value}
+      onChange={field.onChange}
+      error={fieldState.error?.message}
+    />
+  )}
+/>
+```
+
+### `InputOTP`
+
+```tsx
+<Controller
+  control={control}
+  name="codigo"
+  rules={{
+    required: "Informe o código",
+    minLength: { value: 6, message: "Código deve ter 6 dígitos" },
+  }}
+  render={({ field, fieldState }) => (
+    <InputOTP
+      length={6}
+      label="Código de verificação"
+      value={field.value ?? ""}
+      onValueChange={field.onChange}
+      onComplete={(value) => console.log("Completo:", value)}
+      error={fieldState.error?.message}
+    />
+  )}
+/>
+```
+
+### `FileUpload`
+
+Emite `File[]` (não `FileList`). Como `value` é opcional e o componente gerencia state próprio quando omitido, o caminho mais simples é entregar tudo ao RHF via `Controller`:
+
+```tsx
+<Controller
+  control={control}
+  name="anexos"
+  defaultValue={[]}
+  rules={{
+    validate: (files: File[]) =>
+      files.length > 0 || "Anexe ao menos um arquivo",
+  }}
+  render={({ field, fieldState }) => (
+    <FileUpload
+      multiple
+      accept={["image/*", "application/pdf"]}
+      maxSize={mb(5)}
+      maxFiles={3}
+      value={field.value}
+      onValueChange={field.onChange}
+      error={fieldState.error?.message}
+      onReject={(rejections) => {
+        // exibir toast, opcional
+        console.warn("Rejeitados:", rejections)
+      }}
+    />
+  )}
+/>
+```
+
+---
+
+## Wiring de erro
+
+O padrão em **todos** os componentes da lib é o mesmo: o consumer mapeia a mensagem do RHF para a prop `error`. A lib se encarrega de pintar a borda, setar `aria-invalid` e renderizar `<p role="alert">` abaixo do controle.
+
+```tsx
+<Input
+  label="E-mail"
+  {...register("email", { required: "Obrigatório" })}
+  error={errors.email?.message}
+/>
+```
+
+Em `Controller`, prefira `fieldState.error?.message` (escopo local) ao invés de subir até `formState.errors` — é mais ergonômico e evita re-renders extras.
+
+```tsx
+<Controller
+  control={control}
+  name="area"
+  render={({ field, fieldState }) => (
+    <Combobox
+      label="Área"
+      options={areaOptions}
+      value={field.value}
+      onValueChange={field.onChange}
+      error={fieldState.error?.message}
+    />
+  )}
+/>
+```
+
+---
+
+## Integração com zod
+
+Para validação declarativa, combine RHF com `zod` via `@hookform/resolvers/zod`. Ambos são deps da **app**, não da lib.
+
+```bash
+bun add zod @hookform/resolvers
+```
+
+```tsx
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import { Input, Combobox, CurrencyInput, Switch, Button } from "@am-fernandes/ui"
+
+const schema = z.object({
+  email: z.string().email("E-mail inválido"),
+  area: z.string().min(1, "Selecione uma área"),
+  salario: z.number().min(0.01, "Deve ser maior que zero"),
+  aceitaTermos: z.literal(true, {
+    errorMap: () => ({ message: "Necessário aceitar os termos" }),
+  }),
+})
+
+type FormValues = z.infer<typeof schema>
+
+export function PropostaForm() {
+  const { register, control, handleSubmit, formState: { errors } } =
+    useForm<FormValues>({
+      resolver: zodResolver(schema),
+      defaultValues: { email: "", area: "", salario: 0, aceitaTermos: false },
+    })
+
+  return (
+    <form onSubmit={handleSubmit((data) => console.log(data))}>
+      <Input
+        label="E-mail"
+        {...register("email")}
+        error={errors.email?.message}
+      />
+
+      <Controller
+        control={control}
+        name="area"
+        render={({ field, fieldState }) => (
+          <Combobox
+            label="Área"
+            options={areaOptions}
+            value={field.value}
+            onValueChange={field.onChange}
+            error={fieldState.error?.message}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="salario"
+        render={({ field, fieldState }) => (
+          <CurrencyInput
+            label="Salário"
+            value={field.value}
+            onValueChange={field.onChange}
+            error={fieldState.error?.message}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="aceitaTermos"
+        render={({ field, fieldState }) => (
+          <Switch
+            label="Aceito os termos"
+            checked={field.value}
+            onCheckedChange={field.onChange}
+            error={fieldState.error?.message}
+          />
+        )}
+      />
+
+      <Button type="submit">Enviar</Button>
+    </form>
+  )
+}
+```
+
+---
+
+## Pitfalls
+
+**Sempre declare `defaultValues` no `useForm()`.** RHF tem comportamento sutil quando o valor inicial vem `undefined`: o componente pode iniciar uncontrolled e mudar para controlled na primeira interação, o que dispara o warning clássico do React (`A component is changing an uncontrolled input to be controlled`). Os componentes que exigem `value` (todos os `forms/` e `domain/` controlled-only) ficam ainda mais sensíveis — sempre forneça valor inicial coerente: `""` para string, `0` para número, `[]` para arrays, `{ from: "", to: "" }` para `DateRangePicker`.
+
+**Componentes sem `event` precisam de `Controller`.** Qualquer componente cujo callback **não seja** `onChange(event)` HTML não funciona com `register()` direto. Isso inclui: `Combobox`, `DateInput`, `DateRangePicker`, `CurrencyInput`, `PercentageInput`, `MultiInput`, `TimePicker`, `InputOTP`, `FileUpload`. `Checkbox` e `Switch` ficam no limite: `register()` resolve para boolean simples, mas se você precisa do estado `"indeterminate"` do Checkbox, use `Controller`.
+
+**Não misture `value=` com `{...register(...)}`.** Se você passar `register("campo")` no mesmo elemento que `value={...}`, o controle fica em estado inconsistente — `register` instala o seu próprio `ref`/`onChange`/`onBlur` e assume modo uncontrolled. Escolha um caminho: ou `register()` (uncontrolled, RHF gerencia o DOM), ou `Controller` + `value={field.value}` (controlled, você gerencia explicitamente).
+
+**`value` controlado precisa de fallback `??`.** Em campos controlled-only (`InputOTP`, `DateInput`, etc.), se `field.value` vier `undefined` em algum render (e.g. defaultValue ausente), o componente pode crashar ou disparar o warning. Use `field.value ?? ""` (ou o tipo apropriado) como guard.
+
+**`CurrencyInput` arredonda para 2 casas.** Internamente o componente passa por `toCents → fromCents`, então `0.123456` vira `0.12`. Para aritmética financeira (somas, percentuais), opere em centavos via os helpers `toCents`/`fromCents`/`percentOfTotal` exportados pela lib — veja a aba **Hooks**.
+
+**`FileUpload` é híbrido.** Diferente dos demais, ele aceita ser uncontrolled (omita `value` + `onValueChange` e ele gerencia o estado interno). Com RHF, **sempre** passe os dois para o `Controller`: omitir `onValueChange` faz com que mudanças não sejam propagadas; omitir `value` cria uma fonte de verdade duplicada.
+
+---
+
+## Exemplo completo
+
+A story [`Form Integration / RHF Form`](?path=/story/form-integration-rhf-form--default) traz um formulário end-to-end usando Input, Combobox, DateInput, CurrencyInput e Switch — com submit e display dos valores parseados. Use como referência viva ao migrar formulários existentes para a lib.

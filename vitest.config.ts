@@ -23,7 +23,13 @@ export default defineConfig({
     css: false,
     // Playwright specs use `@playwright/test`'s test.describe — vitest must not
     // pick them up. node_modules/dist are excluded by default.
-    exclude: ["**/node_modules/**", "**/dist/**", "**/storybook-static/**", "tests/e2e/**"],
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/storybook-static/**",
+      "tests/e2e/**",
+      "docs/**",
+    ],
     // input-otp queues a deferred setSelectionRange via setTimeout that fires
     // after the jsdom env is torn down, throwing "window is not defined".
     // It is harmless — we don't fail the suite on these post-teardown errors.
