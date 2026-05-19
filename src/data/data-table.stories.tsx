@@ -136,7 +136,6 @@ const columns: ColumnDef<Contrato>[] = [
   {
     accessorKey: "status",
     header: "Status",
-    enableSorting: false,
     cell: ({ row }) => {
       const variant =
         row.original.status === "aprovado"
@@ -169,6 +168,7 @@ const meta = {
           "- `columns: ColumnDef<TData>[]` — definição das colunas (tipo do `@tanstack/react-table`).",
           "- `data: TData[]` — array de linhas. `TData` é o seu tipo de domínio.",
           "- `searchableColumns?: string[]` — `accessorKey`s das colunas incluídas na busca global. Sem isso, o campo de busca não aparece.",
+          "- `sortableColumns?: string[]` — `accessorKey`s das colunas com header ordenável. Sem isso, **nenhum** header é ordenável — mesma semântica opt-in de `searchableColumns`.",
           "- `searchPlaceholder?: string` — placeholder do input de busca (default `Buscar...`).",
           "- `emptyMessage?: ReactNode` — conteúdo exibido quando `data` filtrado fica vazio (default `Nenhum resultado.`).",
           "- `pagination?: { pageSize?: number }` — habilita paginação.",
@@ -209,11 +209,10 @@ const meta = {
           "      ),",
           "  },",
           "",
-          "  // 3. Desabilitar ordenação em uma coluna específica.",
+          "  // 3. Coluna sem sort: simplesmente deixe-a fora de `sortableColumns`.",
           "  {",
           '    accessorKey: "status",',
           '    header: "Status",',
-          "    enableSorting: false,",
           "    cell: ({ row }) => <Badge>{row.original.status}</Badge>,",
           "  },",
           "]",
@@ -229,6 +228,7 @@ const meta = {
           "  columns={columns}",
           "  data={contratos}",
           '  searchableColumns={["numero", "cliente"]}',
+          '  sortableColumns={["numero", "cliente", "vencimento", "valor"]}',
           "  pagination={{ pageSize: 10 }}",
           "  showRowCount",
           "/>",
@@ -241,8 +241,14 @@ const meta = {
     columns: {
       control: false,
       description:
-        "Definições de coluna do `@tanstack/react-table`. Use `enableSorting: false` para travar a ordenação em colunas específicas.",
+        "Definições de coluna do `@tanstack/react-table`. Para habilitar ordenação use a prop top-level `sortableColumns`.",
       table: { type: { summary: "ColumnDef<TData>[]" } },
+    },
+    sortableColumns: {
+      control: "object",
+      description:
+        "`accessorKey`s das colunas cujo header é ordenável. Quando omitido, nenhum header é clicável.",
+      table: { type: { summary: "string[]" } },
     },
     data: {
       control: false,
@@ -324,13 +330,18 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   render: () => (
     <div className="p-6">
-      <DataTable columns={columns} data={contratos.slice(0, 10)} />
+      <DataTable
+        columns={columns}
+        data={contratos.slice(0, 10)}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+      />
     </div>
   ),
   parameters: {
     docs: {
       description: {
-        story: "10 linhas, sem busca, sem paginação. Cabeçalhos ordenáveis por padrão.",
+        story:
+          "10 linhas, sem busca, sem paginação. Cabeçalhos das colunas listadas em `sortableColumns` ficam clicáveis (Status não).",
       },
     },
   },
@@ -343,6 +354,7 @@ export const Searchable: Story = {
         columns={columns}
         data={contratos}
         searchableColumns={["numero", "cliente"]}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
         searchPlaceholder="Buscar por número ou cliente..."
       />
     </div>
@@ -359,7 +371,13 @@ export const Searchable: Story = {
 export const Paginated: Story = {
   render: () => (
     <div className="p-6">
-      <DataTable columns={columns} data={contratos} pagination={{ pageSize: 5 }} showRowCount />
+      <DataTable
+        columns={columns}
+        data={contratos}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+        pagination={{ pageSize: 5 }}
+        showRowCount
+      />
     </div>
   ),
   parameters: {
@@ -374,14 +392,18 @@ export const Paginated: Story = {
 export const Sortable: Story = {
   render: () => (
     <div className="p-6">
-      <DataTable columns={columns} data={contratos.slice(0, 8)} />
+      <DataTable
+        columns={columns}
+        data={contratos.slice(0, 8)}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+      />
     </div>
   ),
   parameters: {
     docs: {
       description: {
         story:
-          "Clique no header para alternar entre `asc` / `desc` / sem ordenação. Status tem `enableSorting: false` na column def — header continua sendo texto puro.",
+          "Clique no header para alternar entre `asc` / `desc` / sem ordenação. Status fica fora de `sortableColumns` — header continua sendo texto puro.",
       },
     },
   },
@@ -394,6 +416,7 @@ export const Empty: Story = {
         columns={columns}
         data={[]}
         searchableColumns={["numero", "cliente"]}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
         emptyMessage="Nenhum contrato cadastrado."
       />
     </div>
@@ -425,6 +448,7 @@ export const ServerSide: Story = {
           <DataTable
             columns={columns}
             data={visible}
+            sortableColumns={["numero", "cliente", "vencimento", "valor"]}
             manualPagination
             pageIndex={pageIndex}
             pageCount={pageCount}
@@ -466,6 +490,7 @@ export const CustomLabels: Story = {
         columns={columns}
         data={contratos.slice(0, 6)}
         searchableColumns={["numero", "cliente"]}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
         showRowCount
         labels={{
           search: "Procurar contrato...",
@@ -491,7 +516,12 @@ export const CustomLabels: Story = {
 export const WithRowCount: Story = {
   render: () => (
     <div className="p-6">
-      <DataTable columns={columns} data={contratos.slice(0, 8)} showRowCount />
+      <DataTable
+        columns={columns}
+        data={contratos.slice(0, 8)}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+        showRowCount
+      />
     </div>
   ),
   parameters: {
@@ -564,7 +594,12 @@ export const WithDateColumns: Story = {
         strings, então a ordenação cronológica é correta mesmo quando a string formatada não está
         em ordem alfabética.
       </p>
-      <DataTable columns={pedidoColumns} data={pedidos} showRowCount />
+      <DataTable
+        columns={pedidoColumns}
+        data={pedidos}
+        sortableColumns={["vencimento", "criadoEm"]}
+        showRowCount
+      />
     </div>
   ),
   parameters: {
@@ -612,6 +647,7 @@ export const WithRowClick: Story = {
           <DataTable
             columns={columns}
             data={contratos.slice(0, 8)}
+            sortableColumns={["numero", "cliente", "vencimento", "valor"]}
             onRowClick={(row) => setSelected(row)}
           />
         </div>
@@ -635,6 +671,7 @@ export const WithRowColoring: Story = {
       <DataTable
         columns={columns}
         data={contratos.slice(0, 10)}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
         rowClassName={(row) => {
           if (row.status === "vencido") return "bg-destructive/10 hover:bg-destructive/15"
           if (row.status === "pendente") return "bg-amber-50 hover:bg-amber-100/70"
@@ -670,6 +707,7 @@ export const ClickableAndColored: Story = {
           <DataTable
             columns={columns}
             data={contratos.slice(0, 8)}
+            sortableColumns={["numero", "cliente", "vencimento", "valor"]}
             onRowClick={(row) => setSelected(row.numero)}
             rowClassName={(row) => {
               if (row.numero === selected) return "bg-primary/10 hover:bg-primary/15"
@@ -706,6 +744,7 @@ export const ControlledSorting: Story = {
           <DataTable
             columns={columns}
             data={contratos.slice(0, 8)}
+            sortableColumns={["numero", "cliente", "vencimento", "valor"]}
             sorting={sorting}
             onSortingChange={setSorting}
           />
@@ -737,6 +776,7 @@ export const WithDownload: Story = {
           columns={columns}
           data={contratos}
           searchableColumns={["numero", "cliente"]}
+          sortableColumns={["numero", "cliente", "vencimento", "valor"]}
           pagination={{ pageSize: 5 }}
           showRowCount
           downloadable={{
@@ -751,7 +791,12 @@ export const WithDownload: Story = {
           <strong className="text-foreground">Só download (sem busca)</strong> — botão
           ainda fica à direita; o lado esquerdo do toolbar fica vazio.
         </p>
-        <DataTable columns={columns} data={contratos.slice(0, 6)} downloadable />
+        <DataTable
+          columns={columns}
+          data={contratos.slice(0, 6)}
+          sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+          downloadable
+        />
       </section>
     </div>
   ),
@@ -808,7 +853,12 @@ export const Loading: Story = {
           <strong className="text-foreground">Loading básico</strong> — sem busca, sem
           paginação. Renderiza 5 linhas skeleton (default).
         </p>
-        <DataTable columns={columns} data={[]} loading />
+        <DataTable
+          columns={columns}
+          data={[]}
+          loading
+          sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+        />
       </section>
 
       <section className="space-y-2">
@@ -822,6 +872,7 @@ export const Loading: Story = {
           data={[]}
           loading
           searchableColumns={["numero", "cliente"]}
+          sortableColumns={["numero", "cliente", "vencimento", "valor"]}
           pagination={{ pageSize: 8 }}
           showRowCount
         />

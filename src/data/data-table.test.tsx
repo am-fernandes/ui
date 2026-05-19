@@ -41,7 +41,7 @@ describe("DataTable", () => {
   })
 
   it("sorts when the sortable header is toggled", async () => {
-    render(<DataTable columns={columns} data={data} />)
+    render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
     const sortBtn = screen.getByRole("button", { name: /Ordenar por Name/i })
     await userEvent.click(sortBtn)
     const rows = screen.getAllByRole("row")
@@ -52,7 +52,7 @@ describe("DataTable", () => {
   })
 
   it("toggles to descending sort on the second click", async () => {
-    render(<DataTable columns={columns} data={data} />)
+    render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
     const sortBtn = screen.getByRole("button", { name: /Ordenar por Name/i })
     await userEvent.click(sortBtn)
     await userEvent.click(sortBtn)
@@ -62,7 +62,7 @@ describe("DataTable", () => {
   })
 
   it("clears sort after three clicks", async () => {
-    render(<DataTable columns={columns} data={data} />)
+    render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
     const sortBtn = screen.getByRole("button", { name: /Ordenar por Name/i })
     await userEvent.click(sortBtn)
     await userEvent.click(sortBtn)
@@ -73,7 +73,7 @@ describe("DataTable", () => {
   })
 
   it("reflects sort state via aria-sort on the header cell", async () => {
-    render(<DataTable columns={columns} data={data} />)
+    render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
     const headerCells = screen.getAllByRole("columnheader")
     expect(headerCells[0]?.getAttribute("aria-sort")).toBe("none")
     await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
@@ -134,7 +134,13 @@ describe("DataTable", () => {
           <button type="button" data-testid="reset" onClick={() => setSorting([])}>
             reset
           </button>
-          <DataTable columns={columns} data={data} sorting={sorting} onSortingChange={setSorting} />
+          <DataTable
+            columns={columns}
+            data={data}
+            sortableColumns={["name"]}
+            sorting={sorting}
+            onSortingChange={setSorting}
+          />
         </>
       )
     }
@@ -281,7 +287,13 @@ describe("DataTable", () => {
   it("invokes onSortingChange when sort is controlled (handler short-circuit branch)", async () => {
     const onSortingChange = vi.fn()
     render(
-      <DataTable columns={columns} data={data} sorting={[]} onSortingChange={onSortingChange} />,
+      <DataTable
+        columns={columns}
+        data={data}
+        sortableColumns={["name"]}
+        sorting={[]}
+        onSortingChange={onSortingChange}
+      />,
     )
     await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
     expect(onSortingChange).toHaveBeenCalled()
@@ -302,18 +314,24 @@ describe("DataTable", () => {
     expect(onGlobalFilterChange).toHaveBeenCalled()
   })
 
-  it("renders a non-sortable column header (canSort=false branch)", () => {
-    const noSortCols: ColumnDef<Row>[] = [
-      { accessorKey: "name", header: "Name", enableSorting: false },
-      { accessorKey: "age", header: "Age", enableSorting: false },
-    ]
-    render(<DataTable columns={noSortCols} data={data} />)
-    // No sort button when sorting is disabled — header text is rendered directly.
+  it("renders no sort button when sortableColumns is omitted", () => {
+    render(<DataTable columns={columns} data={data} />)
     expect(screen.queryByRole("button", { name: /Ordenar por/i })).not.toBeInTheDocument()
     expect(screen.getByText("Name")).toBeInTheDocument()
+    expect(screen.getByText("Age")).toBeInTheDocument()
   })
 
-  it("renders an element-typed header (non-string header branch)", async () => {
+  it("renders sort buttons only for columns listed in sortableColumns", () => {
+    render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
+    expect(
+      screen.getByRole("button", { name: /Ordenar por Name/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /Ordenar por Age/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it("renders an element-typed header (non-string header branch)", () => {
     const cols: ColumnDef<Row>[] = [
       {
         accessorKey: "name",
@@ -321,7 +339,7 @@ describe("DataTable", () => {
       },
       { accessorKey: "age", header: "Age" },
     ]
-    render(<DataTable columns={cols} data={data} />)
+    render(<DataTable columns={cols} data={data} sortableColumns={["name"]} />)
     expect(screen.getByTestId("hdr-name")).toBeInTheDocument()
     // Sort button still rendered but its aria-label uses column id, not the JSX.
     const btn = screen

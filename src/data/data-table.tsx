@@ -98,6 +98,12 @@ export interface DataTableProps<TData> {
   data: TData[]
   /** Enable global text search; the columns listed are the only ones searched. */
   searchableColumns?: string[]
+  /**
+   * Whitelist of column ids (typically `accessorKey`) whose headers are sortable.
+   * When omitted, **no** header is sortable. Mirrors the `searchableColumns`
+   * opt-in pattern. Replaces the per-column `enableSorting` flag in the columnDef.
+   */
+  sortableColumns?: string[]
   /** Placeholder for the search input. */
   searchPlaceholder?: string
   /** Render this when data + filters result in zero rows. */
@@ -180,6 +186,7 @@ function DataTable<TData>({
   columns,
   data,
   searchableColumns,
+  sortableColumns,
   searchPlaceholder,
   emptyMessage,
   className,
@@ -488,7 +495,7 @@ function DataTable<TData>({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const canSort = header.column.getCanSort()
+                  const canSort = sortableColumns?.includes(header.column.id) ?? false
                   const sorted = header.column.getIsSorted()
                   const ariaSort: "ascending" | "descending" | "none" =
                     sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"
