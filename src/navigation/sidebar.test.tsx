@@ -54,7 +54,28 @@ describe("Sidebar (data-driven)", () => {
     expect(dash).toHaveAttribute("data-active", "true")
   })
 
-  it("renders submenu when item has children items", () => {
+  it("renders submenu when item has children items and defaultOpen: true", () => {
+    render(
+      <Sidebar
+        items={[
+          {
+            id: "reports",
+            label: "Relatórios",
+            defaultOpen: true,
+            items: [
+              { id: "fin", label: "Financeiro", href: "/fin" },
+              { id: "ops", label: "Operacional", href: "/ops" },
+            ],
+          },
+        ]}
+      />,
+    )
+    expect(screen.getByText("Relatórios")).toBeInTheDocument()
+    expect(screen.getByText("Financeiro")).toBeInTheDocument()
+    expect(screen.getByText("Operacional")).toBeInTheDocument()
+  })
+
+  it("submenu is collapsed by default (children not in the DOM)", () => {
     render(
       <Sidebar
         items={[
@@ -70,8 +91,54 @@ describe("Sidebar (data-driven)", () => {
       />,
     )
     expect(screen.getByText("Relatórios")).toBeInTheDocument()
+    expect(screen.queryByText("Financeiro")).not.toBeInTheDocument()
+    expect(screen.queryByText("Operacional")).not.toBeInTheDocument()
+    const trigger = screen.getByRole("button", { name: /Relatórios/i })
+    expect(trigger.getAttribute("aria-expanded")).toBe("false")
+  })
+
+  it("clicking the submenu trigger toggles the children open and closed", async () => {
+    render(
+      <Sidebar
+        items={[
+          {
+            id: "reports",
+            label: "Relatórios",
+            items: [
+              { id: "fin", label: "Financeiro", href: "/fin" },
+              { id: "ops", label: "Operacional", href: "/ops" },
+            ],
+          },
+        ]}
+      />,
+    )
+    const trigger = screen.getByRole("button", { name: /Relatórios/i })
+    await userEvent.click(trigger)
+    expect(trigger.getAttribute("aria-expanded")).toBe("true")
     expect(screen.getByText("Financeiro")).toBeInTheDocument()
-    expect(screen.getByText("Operacional")).toBeInTheDocument()
+    await userEvent.click(trigger)
+    expect(trigger.getAttribute("aria-expanded")).toBe("false")
+    expect(screen.queryByText("Financeiro")).not.toBeInTheDocument()
+  })
+
+  it("fires item.onClick alongside toggling when the trigger is clicked", async () => {
+    const onClick = vi.fn()
+    render(
+      <Sidebar
+        items={[
+          {
+            id: "reports",
+            label: "Relatórios",
+            onClick,
+            items: [{ id: "fin", label: "Financeiro", href: "/fin" }],
+          },
+        ]}
+      />,
+    )
+    const trigger = screen.getByRole("button", { name: /Relatórios/i })
+    await userEvent.click(trigger)
+    expect(onClick).toHaveBeenCalledTimes(1)
+    expect(trigger.getAttribute("aria-expanded")).toBe("true")
   })
 
   it("applies right-side border classes when side=right", () => {

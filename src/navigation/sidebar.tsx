@@ -1,5 +1,6 @@
 "use client"
 
+import { ChevronDown } from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -16,6 +17,12 @@ export interface SidebarItem {
   disabled?: boolean
   items?: SidebarItem[]
   tooltip?: React.ReactNode
+  /**
+   * When the item has children (`items`), controls the initial submenu state.
+   * `true` opens the submenu at mount; `false` (default) keeps it collapsed.
+   * Ignored when the item has no children.
+   */
+  defaultOpen?: boolean
 }
 
 export interface SidebarGroup {
@@ -234,8 +241,12 @@ function SidebarItemRender({
   const active = isActive?.(item) ?? false
   const Icon = item.icon
   const hasChildren = !!item.items?.length
+  const submenuId = React.useId()
+  const [expanded, setExpanded] = React.useState<boolean>(item.defaultOpen ?? false)
 
-  const content = (
+  const showSubmenu = hasChildren && !collapsedToIcon && expanded
+
+  const labelAndBadge = (
     <>
       {Icon ? <Icon className="size-4 shrink-0" /> : null}
       {!collapsedToIcon ? <span className="flex-1 truncate">{item.label}</span> : null}
@@ -253,33 +264,70 @@ function SidebarItemRender({
     depth > 0 && "pl-7",
   )
 
-  const trigger = item.href ? (
-    <a
-      href={item.href}
-      data-active={active ? "true" : undefined}
-      aria-disabled={item.disabled || undefined}
-      className={baseClass}
-      onClick={item.onClick}
-    >
-      {content}
-    </a>
-  ) : (
-    <button
-      type="button"
-      data-active={active ? "true" : undefined}
-      disabled={item.disabled}
-      className={baseClass}
-      onClick={item.onClick}
-    >
-      {content}
-    </button>
-  )
+  let trigger: React.ReactNode
+  if (hasChildren) {
+    trigger = (
+      <button
+        type="button"
+        data-active={active ? "true" : undefined}
+        data-state={expanded ? "open" : "closed"}
+        disabled={item.disabled}
+        className={baseClass}
+        aria-expanded={expanded}
+        aria-controls={submenuId}
+        onClick={() => {
+          setExpanded((v) => !v)
+          item.onClick?.()
+        }}
+      >
+        {labelAndBadge}
+        {!collapsedToIcon ? (
+          <ChevronDown
+            aria-hidden
+            className={cn(
+              "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+              expanded ? "rotate-0" : "-rotate-90",
+            )}
+          />
+        ) : null}
+      </button>
+    )
+  } else if (item.href) {
+    trigger = (
+      <a
+        href={item.href}
+        data-active={active ? "true" : undefined}
+        aria-disabled={item.disabled || undefined}
+        className={baseClass}
+        onClick={item.onClick}
+      >
+        {labelAndBadge}
+      </a>
+    )
+  } else {
+    trigger = (
+      <button
+        type="button"
+        data-active={active ? "true" : undefined}
+        disabled={item.disabled}
+        className={baseClass}
+        onClick={item.onClick}
+      >
+        {labelAndBadge}
+      </button>
+    )
+  }
 
   return (
     <li data-slot="sidebar-item">
       {trigger}
-      {hasChildren && !collapsedToIcon ? (
-        <ul data-slot="sidebar-submenu" className="mt-0.5 flex flex-col gap-0.5">
+      {showSubmenu ? (
+        <ul
+          id={submenuId}
+          data-slot="sidebar-submenu"
+          data-state="open"
+          className="mt-0.5 flex flex-col gap-0.5"
+        >
           {item.items?.map((child, ci) => (
             <SidebarItemRender
               key={child.id ?? `${ci}-${typeof child.label === "string" ? child.label : ""}`}
