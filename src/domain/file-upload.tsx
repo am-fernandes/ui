@@ -181,7 +181,7 @@ function FileUpload({
   const hasError = error != null && error !== ""
 
   return (
-    <div className={cn("space-y-3", className)} data-slot="file-upload">
+    <div className={cn("flex flex-col gap-3", className)} data-slot="file-upload">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <button
           type="button"
@@ -298,7 +298,7 @@ function FileRow({
   }
 
   return (
-    <li className="flex items-center gap-3 rounded-md border bg-background px-3 py-2 text-sm">
+    <li className="flex items-center gap-3 rounded-md border bg-background px-2 py-1.5 text-sm">
       <button
         type="button"
         onClick={isImage ? onOpenImage : openInNewTab}

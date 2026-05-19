@@ -434,7 +434,7 @@ function DataTable<TData>({
 
   return (
     <div
-      className={cn("space-y-3", className)}
+      className={cn("flex flex-col gap-3", className)}
       data-slot="data-table"
       aria-busy={loading || undefined}
     >
