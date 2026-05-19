@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, within } from "@storybook/test"
 import { BellIcon, CheckCircle2Icon, ClockIcon, XCircleIcon } from "lucide-react"
 
+import { formatCount } from "../lib/format-count"
 import { Badge } from "./badge"
 
 const meta: Meta<typeof Badge> = {
@@ -131,32 +132,38 @@ export const WithIcon: Story = {
 export const AsCounter: Story = {
   render: () => (
     <div className="flex items-center gap-4">
-      <div className="relative inline-flex">
-        <BellIcon className="size-6 text-muted-foreground" />
-        <Badge
-          variant="destructive"
-          className="-right-2 -top-2 absolute h-5 min-w-5 justify-center rounded-full px-1 text-[10px]"
-        >
-          3
-        </Badge>
-      </div>
-      <div className="relative inline-flex">
-        <BellIcon className="size-6 text-muted-foreground" />
-        <Badge
-          variant="destructive"
-          className="-right-2 -top-2 absolute h-5 min-w-5 justify-center rounded-full px-1 text-[10px]"
-        >
-          99+
-        </Badge>
-      </div>
+      {[3, 42, 999, 1234].map((n) => (
+        <div key={n} className="relative inline-flex">
+          <BellIcon className="size-6 text-muted-foreground" />
+          <Badge
+            variant="destructive"
+            className="-right-2 -top-2 absolute h-5 min-w-5 justify-center rounded-full px-1 text-[10px]"
+          >
+            {formatCount(n)}
+          </Badge>
+        </div>
+      ))}
     </div>
   ),
   parameters: {
     a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
-        story:
+        story: [
           "Pattern de contador sobreposto a um ícone — útil para notificações, mensagens, carrinho.",
+          "",
+          "Use o helper `formatCount(count, max?)` (exportado da lib) para limitar o número exibido — default cap em **999+**. Acima do max vira `${max}+`; valores negativos/non-finite são clamped para `0`.",
+          "",
+          "```tsx",
+          'import { Badge, formatCount } from "@amfernandesinc/ui"',
+          "",
+          "<Badge variant=\"destructive\">{formatCount(unreadCount)}</Badge>",
+          "// 3      → \"3\"",
+          "// 999    → \"999\"",
+          "// 1234   → \"999+\"",
+          "// custom: formatCount(1234, 99) → \"99+\"",
+          "```",
+        ].join("\n"),
       },
     },
   },

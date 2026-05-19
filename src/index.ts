@@ -28,6 +28,7 @@ export {
   percentOfTotal,
   toCents,
 } from "./lib/currency"
+export { formatCount } from "./lib/format-count"
 export { bytes, gb, kb, mb } from "./lib/size"
 export { cn } from "./lib/utils"
 
