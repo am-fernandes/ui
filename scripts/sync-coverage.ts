@@ -11,6 +11,7 @@
 
 import { writeFile } from "node:fs/promises"
 import path from "node:path"
+import { $ } from "bun"
 
 interface MetricBucket {
   total: number
@@ -148,6 +149,9 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = ${JSON.stringify(rows, null
 `
 
 await writeFile(OUT_PATH, out, "utf8")
+// Format the generated file so it conforms to biome's style rules (no
+// trailing commas inside JSON.stringify output, double-quoted keys, etc).
+await $`bunx biome format --write ${OUT_PATH}`.quiet()
 console.log(`✓ wrote ${path.relative(ROOT, OUT_PATH)} with ${rows.length} files`)
 console.log(
   `  total lines=${summary.total.lines.pct}%, branches=${summary.total.branches.pct}%, functions=${summary.total.functions.pct}%`,
