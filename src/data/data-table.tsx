@@ -162,6 +162,15 @@ export interface DataTableProps<TData> {
   sortableColumns?: string[]
   /** Placeholder for the search input. */
   searchPlaceholder?: string
+  /**
+   * Extra classes for the search input's wrapper. Use to override the
+   * default `w-full max-w-sm` width when you want the search to align
+   * with an external filter grid.
+   *
+   * Tip: pass `"w-full max-w-none"` to make it span all available space,
+   * or `"max-w-[200px]"` to clamp to a specific cell width.
+   */
+  searchClassName?: string
   /** Render this when data + filters result in zero rows. */
   emptyMessage?: React.ReactNode
   /** Additional class on the outer wrapper. */
@@ -246,6 +255,7 @@ function DataTable<TData>({
   searchableColumns,
   sortableColumns,
   searchPlaceholder,
+  searchClassName,
   emptyMessage,
   className,
   pagination,
@@ -570,10 +580,16 @@ function DataTable<TData>({
             loading ? (
               <div
                 data-slot="data-table-search-skeleton"
-                className="h-10 w-full max-w-sm animate-pulse rounded-md bg-primary/10"
+                className={cn(
+                  "h-10 w-full max-w-sm animate-pulse rounded-md bg-primary/10",
+                  searchClassName,
+                )}
               />
             ) : (
-              <div className="relative w-full max-w-sm">
+              <div
+                data-slot="data-table-search"
+                className={cn("relative w-full max-w-sm", searchClassName)}
+              >
                 <Search
                   className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
                   aria-hidden
