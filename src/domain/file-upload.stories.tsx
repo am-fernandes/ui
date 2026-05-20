@@ -240,7 +240,7 @@ export const Controlled: Story = {
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{files.length} arquivo(s) selecionado(s)</span>
           {files.length > 0 ? (
-            <Button variant="ghost" size="sm" onClick={() => setFiles([])}>
+            <Button variant="ghost" onClick={() => setFiles([])}>
               Limpar
             </Button>
           ) : null}

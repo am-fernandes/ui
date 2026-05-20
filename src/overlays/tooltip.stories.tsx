@@ -32,7 +32,7 @@ const meta: Meta<typeof Tooltip> = {
           'import { Tooltip, Button } from "@amfernandesinc/ui"',
           "",
           '<Tooltip content="Excluir item">',
-          '  <Button size="icon" aria-label="Excluir">',
+          '  <Button className="size-9 p-0" aria-label="Excluir">',
           "    <TrashIcon />",
           "  </Button>",
           "</Tooltip>",
@@ -148,17 +148,17 @@ export const OnIconButton: Story = {
   render: () => (
     <div className="flex gap-2">
       <Tooltip content="Ajuda">
-        <Button variant="ghost" size="icon" aria-label="Ajuda">
+        <Button variant="ghost" className="size-9 p-0" aria-label="Ajuda">
           <HelpCircleIcon className="size-4" />
         </Button>
       </Tooltip>
       <Tooltip content="Mais informações">
-        <Button variant="ghost" size="icon" aria-label="Informação">
+        <Button variant="ghost" className="size-9 p-0" aria-label="Informação">
           <InfoIcon className="size-4" />
         </Button>
       </Tooltip>
       <Tooltip content="Excluir item permanentemente">
-        <Button variant="ghost" size="icon" aria-label="Excluir">
+        <Button variant="ghost" className="size-9 p-0" aria-label="Excluir">
           <TrashIcon className="size-4" />
         </Button>
       </Tooltip>

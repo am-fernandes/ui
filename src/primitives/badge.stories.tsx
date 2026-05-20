@@ -200,23 +200,3 @@ export const AsChildLink: Story = {
     },
   },
 }
-
-export const CustomClassName: Story = {
-  render: () => (
-    <div className="flex flex-wrap items-center gap-2">
-      <Badge className="rounded-full">pill</Badge>
-      <Badge className="px-3 py-1 text-sm">grande</Badge>
-      <Badge variant="outline" className="border-amber-500 text-amber-700">
-        custom color
-      </Badge>
-    </div>
-  ),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "`className` permite ajustar shape, padding ou cores específicas sem perder a base de estilo.",
-      },
-    },
-  },
-}

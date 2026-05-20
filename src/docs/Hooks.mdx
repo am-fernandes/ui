@@ -13,7 +13,7 @@ Além dos 47 componentes, `@amfernandesinc/ui` exporta um conjunto pequeno e est
 | `useIsMobile` | hook | `true` quando a viewport é menor que 768 px (reativo a resize) |
 | `useComboboxOptions` | hook | converte `Array<{ id, nome }>` em `ComboboxOption[]` memoizado |
 | `cn` | function | merge de `className`s Tailwind via `clsx` + `tailwind-merge` |
-| `buttonVariants` | function (CVA) | classnames do `Button` por `variant` + `size` |
+| `buttonVariants` | function (CVA) | classnames do `Button` por `variant` |
 | `badgeVariants` | function (CVA) | classnames do `Badge` por `variant` |
 | `alertVariants` | function (CVA) | classnames do `Alert` por `variant` |
 | `typographyVariants` | function (CVA) | classnames do `Typography` por `variant` |
@@ -163,7 +163,6 @@ CVA factory que gera os classnames do `Button`. Útil para estilizar elementos n
 ```ts
 function buttonVariants(props?: {
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
-  size?: "default" | "sm" | "lg" | "icon"
   className?: string
 }): string
 ```
@@ -184,7 +183,7 @@ import Link from "next/link"
 
 **Notas:**
 
-- Defaults: `variant="default"`, `size="default"`.
+- Default: `variant="default"`.
 - Não inclui estado `loading` (esse é gerenciado dentro de `<Button>`).
 - Para combinar com classes extras, use `cn(buttonVariants(...), "minha-classe")`.
 
@@ -579,15 +578,13 @@ isValidPhone("(05) 98765-4321")   // false (DDD < 11)
 
 ## i18n labels
 
-Cinco componentes da lib aceitam um prop `labels?: Partial<XLabels>` para overridar strings visíveis (incluindo `aria-label`s e mensagens de estado). Defaults são em **pt-BR**.
+Três componentes da lib aceitam um prop `labels?: Partial<XLabels>` para overridar strings visíveis (incluindo `aria-label`s e mensagens de estado). Defaults são em **pt-BR**.
 
 | Componente | Type | Default constant |
 |---|---|---|
 | `DataTable` | `DataTableLabels` | `defaultDataTableLabels` |
 | `FileUpload` | `FileUploadLabels` | `defaultFileUploadLabels` |
-| `Combobox` | `ComboboxLabels` | `defaultComboboxLabels` |
 | `CommandPalette` | `CommandPaletteLabels` | `defaultCommandPaletteLabels` |
-| `Calendar` | `CalendarLabels` | `defaultCalendarLabels` |
 
 **Override parcial** — você só precisa passar os campos que quer mudar; o resto vem do default:
 
@@ -633,7 +630,7 @@ export const enDataTableLabels: DataTableLabels = {
 **Notas:**
 
 - Todos os labels que dependem de números/contagem são **funções** (`rowCount`, `pageIndicator`, `sortBy`), não templates strings — assim você controla pluralização e ordem das palavras por idioma.
-- Os tipos `DataTableLabels`, `FileUploadLabels`, `ComboboxLabels`, `CommandPaletteLabels` e `CalendarLabels` ficam expostos no barrel, então da pra tipar wrappers internos da app sem importar do subpath do componente.
+- Os tipos `DataTableLabels`, `FileUploadLabels` e `CommandPaletteLabels` ficam expostos no barrel, então da pra tipar wrappers internos da app sem importar do subpath do componente.
 
 ---
 

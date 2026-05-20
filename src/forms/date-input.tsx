@@ -1,10 +1,8 @@
 "use client"
 
 import { format, isValid, parse } from "date-fns"
-import { ptBR } from "date-fns/locale"
 import { CalendarIcon } from "lucide-react"
 import * as React from "react"
-import type { Locale } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Popover } from "../overlays/popover"
@@ -39,7 +37,6 @@ export interface DateInputProps {
   labelPosition?: LabelPosition
   required?: boolean
   "aria-label"?: string
-  locale?: Locale
   ref?: React.Ref<HTMLButtonElement>
 }
 
@@ -56,7 +53,6 @@ function DateInput({
   labelPosition,
   required,
   "aria-label": ariaLabel,
-  locale = ptBR,
   ref,
 }: DateInputProps) {
   const ids = useFieldIds(id)
@@ -118,7 +114,6 @@ function DateInput({
             onChange?.(date ? format(date, "yyyy-MM-dd") : "")
             setOpen(false)
           }}
-          locale={locale}
           defaultMonth={selected}
         />
       </Popover>

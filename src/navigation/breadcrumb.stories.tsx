@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, within } from "@storybook/test"
-import { SlashIcon } from "lucide-react"
 
 import { Breadcrumb } from "./breadcrumb"
 
@@ -22,9 +21,7 @@ const meta: Meta<typeof Breadcrumb> = {
           "",
           "**Props:**",
           "- `items: BreadcrumbItemData[]` — trilha (do raiz ao atual).",
-          "- `separator?: ReactNode` — separador entre itens. Default: ícone `ChevronRight`.",
           "- `ariaLabel?: string` — `aria-label` do `<nav>`. Default `'Breadcrumb'`.",
-          "- `maxItems?: number` — quando definido, colapsa o miolo da trilha em `…` para manter no máximo N itens.",
           "",
           "**Shape do item (`BreadcrumbItemData`):**",
           "```ts",
@@ -58,20 +55,10 @@ const meta: Meta<typeof Breadcrumb> = {
       description: "Trilha do raiz ao item atual.",
       table: { type: { summary: "BreadcrumbItemData[]" } },
     },
-    separator: {
-      control: false,
-      description: "Conteúdo renderizado entre os itens. Default: ícone `ChevronRight`.",
-      table: { type: { summary: "ReactNode" } },
-    },
     ariaLabel: {
       control: "text",
       description: "`aria-label` aplicado ao `<nav>`.",
       table: { type: { summary: "string" }, defaultValue: { summary: "'Breadcrumb'" } },
-    },
-    maxItems: {
-      control: { type: "number", min: 2 },
-      description: "Quando definido, colapsa o miolo da trilha para no máximo N itens.",
-      table: { type: { summary: "number" } },
     },
   },
 }
@@ -93,17 +80,6 @@ export const Default: Story = {
   },
 }
 
-export const CustomSeparator: Story = {
-  args: {
-    separator: <SlashIcon className="size-3.5" />,
-    items: [
-      { label: "Home", href: "/" },
-      { label: "Configurações", href: "/settings" },
-      { label: "Perfil" },
-    ],
-  },
-}
-
 const longTrail = [
   { label: "Home", href: "/" },
   { label: "Empresa", href: "/empresa" },
@@ -116,10 +92,6 @@ const longTrail = [
 
 export const LongTrail: Story = {
   args: { items: longTrail },
-}
-
-export const Collapsed: Story = {
-  args: { items: longTrail, maxItems: 3 },
 }
 
 export const CustomAriaLabel: Story = {

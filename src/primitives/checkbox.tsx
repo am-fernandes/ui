@@ -1,7 +1,7 @@
 "use client"
 
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
-import { CheckIcon, MinusIcon } from "lucide-react"
+import { CheckIcon } from "lucide-react"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -9,10 +9,11 @@ import { Label } from "./_internal/label"
 import { useFieldIds } from "./_internal/use-field-ids"
 
 export interface CheckboxProps
-  extends Omit<React.ComponentProps<typeof CheckboxPrimitive.Root>, "id"> {
+  extends Omit<React.ComponentProps<typeof CheckboxPrimitive.Root>, "id" | "checked"> {
   label?: React.ReactNode
   description?: React.ReactNode
   error?: string
+  checked?: boolean
   id?: string
   ref?: React.Ref<HTMLButtonElement>
 }
@@ -51,7 +52,6 @@ function Checkbox({
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
             "disabled:cursor-not-allowed disabled:opacity-50",
             "data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
-            "data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground",
             hasError && "border-destructive",
             className,
           )}
@@ -61,11 +61,7 @@ function Checkbox({
             data-slot="checkbox-indicator"
             className="grid place-content-center text-current"
           >
-            {checked === "indeterminate" ? (
-              <MinusIcon className="size-3.5" />
-            ) : (
-              <CheckIcon className="size-3.5" />
-            )}
+            <CheckIcon className="size-3.5" />
           </CheckboxPrimitive.Indicator>
         </CheckboxPrimitive.Root>
 

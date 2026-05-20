@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { addDays, subDays } from "date-fns"
-import { enUS } from "date-fns/locale"
 import { useState } from "react"
 import type { DateRange } from "react-day-picker"
 
@@ -20,14 +19,13 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Wrapper sobre `react-day-picker` v9 com defaults da AM Fernandes (locale **pt-BR**, `ghost` button variant, tokens do design system).",
+          "Wrapper sobre `react-day-picker` v9 com defaults da AM Fernandes (locale **pt-BR** fixo, `ghost` button variant, tokens do design system).",
           "Repassa todas as props do `DayPicker` e adiciona um helper `disabledDays` com **presets declarativos**.",
           "",
           "**Props principais:**",
           "- `mode: 'single' | 'range' | 'multiple'` — discriminated union do react-day-picker.",
           "- `selected` / `onSelect` — controle externo (tipo depende de `mode`).",
           "- `numberOfMonths` — quantos meses renderizar lado a lado (útil em `range`).",
-          "- `locale` — `Locale` do `date-fns` (default `ptBR`).",
           "- `buttonVariant` — variante do `Button` aplicada aos chevrons de navegação.",
           "- `disabledDays` — `Date | Date[] | 'past' | 'future' | 'today' | 'weekends' | 'weekdays' | preset[] | (d: Date) => boolean`. Tem precedência sobre `disabled` do react-day-picker.",
           "",
@@ -259,58 +257,6 @@ export const CustomPredicate: Story = {
         onSelect={setDate}
         disabledDays={(d) => d.getDate() === 13}
         defaultMonth={FIXED_MONTH}
-      />
-    )
-  },
-}
-
-export const EnUSLocale: Story = {
-  name: "en-US locale",
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Locale alternativo importado de `date-fns/locale`. Nomes de meses e dias da semana em inglês.",
-      },
-    },
-  },
-  render: () => {
-    const [date, setDate] = useState<Date | undefined>()
-    return (
-      <Calendar
-        mode="single"
-        selected={date}
-        onSelect={setDate}
-        locale={enUS}
-        defaultMonth={FIXED_MONTH}
-      />
-    )
-  },
-}
-
-export const English: Story = {
-  name: "English",
-  parameters: {
-    docs: {
-      description: {
-        story: [
-          "Translating the calendar UI is driven by `locale`, not `labels`. `react-day-picker` already exposes localized weekday names, month names, and prev/next button aria-labels.",
-          "",
-          "The `labels` prop is reserved for any future wrapper-only copy (currently no strings live in the wrapper).",
-        ].join("\n"),
-      },
-    },
-  },
-  render: () => {
-    const [date, setDate] = useState<Date | undefined>()
-    return (
-      <Calendar
-        mode="single"
-        selected={date}
-        onSelect={setDate}
-        locale={enUS}
-        defaultMonth={FIXED_MONTH}
-        labels={{}}
       />
     )
   },

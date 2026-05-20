@@ -255,12 +255,11 @@ export const Controlled: Story = {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            size="sm"
             onClick={() => setValue([...value, `user-${value.length + 1}@example.com`])}
           >
             Adicionar exemplo
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setValue([])}>
+          <Button variant="outline" onClick={() => setValue([])}>
             Limpar
           </Button>
         </div>

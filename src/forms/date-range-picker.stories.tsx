@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { enUS } from "date-fns/locale"
 import { useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 
@@ -27,7 +26,6 @@ const meta = {
           "- `value: { from: string; to: string }` — extremos em ISO ou vazios.",
           "- `onValueChange(value)` — recebe `{ from, to }` atualizado.",
           "- `numberOfMonths` — quantos meses renderizar (default `2`).",
-          "- `locale` — `Locale` de `date-fns` (default `ptBR`).",
           "- `label`, `description`, `error`, `required`, `labelPosition`, `disabled` — wiring de `FieldShell`.",
           "- `placeholder` — texto exibido quando `from` e `to` estão vazios.",
           "",
@@ -129,28 +127,6 @@ export const Default: Story = {
   },
 }
 
-export const PreFilled: Story = {
-  args: { value: { from: "2025-03-01", to: "2025-03-31" } },
-  parameters: {
-    docs: {
-      description: {
-        story: "Range inicial definido — display em pt-BR (`01/03/2025 — 31/03/2025`).",
-      },
-    },
-  },
-  render: () => {
-    const [range, setRange] = useState<DateRangeValue>({ from: "2025-03-01", to: "2025-03-31" })
-    return (
-      <div className="flex w-[360px] flex-col gap-2">
-        <DateRangePicker label="Mês de março/2025" value={range} onValueChange={setRange} />
-        <span className="text-xs text-muted-foreground">
-          ISO: {range.from} → {range.to}
-        </span>
-      </div>
-    )
-  },
-}
-
 export const WithError: Story = {
   args: {
     value: { from: "", to: "" },
@@ -204,23 +180,6 @@ export const OneMonth: Story = {
           value={range}
           onValueChange={setRange}
         />
-      </div>
-    )
-  },
-}
-
-export const EnUSLocale: Story = {
-  args: { value: { from: "", to: "" } },
-  parameters: {
-    docs: {
-      description: { story: "Locale `enUS` — popover em inglês." },
-    },
-  },
-  render: () => {
-    const [range, setRange] = useState<DateRangeValue>({ from: "", to: "" })
-    return (
-      <div className="w-[360px]">
-        <DateRangePicker label="Date range" value={range} onValueChange={setRange} locale={enUS} />
       </div>
     )
   },

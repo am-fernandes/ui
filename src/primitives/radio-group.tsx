@@ -11,7 +11,6 @@ import { useFieldIds } from "./_internal/use-field-ids"
 export interface RadioGroupItemData {
   value: string
   label: React.ReactNode
-  description?: React.ReactNode
   disabled?: boolean
   icon?: React.ComponentType<{ className?: string }>
 }
@@ -94,14 +93,11 @@ function RadioGroup({
                   <CircleIcon className="size-2 fill-current text-current" />
                 </RadioGroupPrimitive.Indicator>
               </RadioGroupPrimitive.Item>
-              <Label htmlFor={itemId} className="flex flex-col gap-0.5 font-normal">
+              <Label htmlFor={itemId} className="font-normal">
                 <span className="inline-flex items-center gap-1.5">
                   {Icon ? <Icon className="size-4" /> : null}
                   {item.label}
                 </span>
-                {item.description ? (
-                  <span className="text-xs text-muted-foreground">{item.description}</span>
-                ) : null}
               </Label>
             </div>
           )

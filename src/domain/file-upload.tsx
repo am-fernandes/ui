@@ -393,7 +393,7 @@ function FileRow({
       <Button
         type="button"
         variant="ghost"
-        size="icon"
+        className="size-9 p-0"
         disabled={disabled}
         onClick={onRemove}
         aria-label={labels.removeFile(file.name)}

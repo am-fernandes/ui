@@ -14,11 +14,10 @@ const meta: Meta<typeof Button> = {
     docs: {
       description: {
         component: [
-          "Botão base do design system. 6 variantes × 4 tamanhos + estados (`loading`, `disabled`) + composição via `asChild`.",
+          'Botão base do design system. 6 variantes + estados (`loading`, `disabled`) + composição via `asChild`. Tamanho único e canônico — para um botão quadrado só de ícone use `className="size-9 p-0"`.',
           "",
           "**API:**",
           "- `variant` — `default | destructive | outline | secondary | ghost | link`.",
-          "- `size` — `default | sm | lg | icon` (`icon` para botões quadrados só com ícone).",
           "- `loading` — exibe um spinner antes do conteúdo e desabilita o botão.",
           "- `disabled` — desabilita o botão.",
           "- `asChild` — renderiza o filho como elemento raiz (use com `<a>` ou `<Link>`).",
@@ -47,15 +46,6 @@ const meta: Meta<typeof Button> = {
         type: {
           summary: "'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'",
         },
-        defaultValue: { summary: "'default'" },
-      },
-    },
-    size: {
-      control: "inline-radio",
-      options: ["default", "sm", "lg", "icon"],
-      description: "Tamanho — `icon` para botões só com ícone.",
-      table: {
-        type: { summary: "'default' | 'sm' | 'lg' | 'icon'" },
         defaultValue: { summary: "'default'" },
       },
     },
@@ -147,27 +137,6 @@ export const AllVariants: Story = {
   },
 }
 
-export const Sizes: Story = {
-  render: () => (
-    <div className="flex flex-wrap items-center gap-3">
-      <Button size="sm">sm</Button>
-      <Button size="default">default</Button>
-      <Button size="lg">lg</Button>
-      <Button size="icon" aria-label="Add">
-        <PlusIcon />
-      </Button>
-    </div>
-  ),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Quatro tamanhos disponíveis. Use `size="icon"` para botões quadrados só com ícone (lembre do `aria-label`).',
-      },
-    },
-  },
-}
-
 export const WithIcons: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-3">
@@ -187,7 +156,7 @@ export const WithIcons: Story = {
         <Trash2Icon />
         Excluir
       </Button>
-      <Button size="icon" aria-label="Buscar">
+      <Button className="size-9 p-0" aria-label="Buscar">
         <SearchIcon />
       </Button>
     </div>
@@ -325,7 +294,7 @@ export const Controlled: Story = {
           <PlusIcon />
           Cliques: {count}
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => setCount(0)}>
+        <Button variant="ghost" onClick={() => setCount(0)}>
           Resetar
         </Button>
       </div>

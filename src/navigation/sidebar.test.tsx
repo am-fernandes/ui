@@ -141,15 +141,6 @@ describe("Sidebar (data-driven)", () => {
     expect(trigger.getAttribute("aria-expanded")).toBe("true")
   })
 
-  it("applies right-side border classes when side=right", () => {
-    const { container } = render(<Sidebar items={items} side="right" />)
-    const aside = container.querySelector("aside[data-slot='sidebar']") as HTMLElement
-    expect(aside).toBeTruthy()
-    expect(aside.getAttribute("data-side")).toBe("right")
-    expect(aside.className).toContain("border-l")
-    expect(aside.className).toContain("border-r-0")
-  })
-
   it("collapsible=icon collapsed hides labels but keeps icon", () => {
     const { container } = render(
       <Sidebar

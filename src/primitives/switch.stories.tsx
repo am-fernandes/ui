@@ -17,7 +17,6 @@ const meta: Meta<typeof Switch> = {
           "",
           "**API:**",
           "- `label` — texto ou JSX exibido junto ao switch.",
-          "- `labelPosition` — `'right'` (default) ou `'left'`.",
           "- `description` — texto auxiliar abaixo do label.",
           '- `error` — mensagem de erro com `role="alert"`.',
           "- `checked` / `defaultChecked` — `boolean`.",
@@ -39,15 +38,6 @@ const meta: Meta<typeof Switch> = {
     label: { control: "text", description: "Texto do label." },
     description: { control: "text", description: "Texto auxiliar abaixo do label." },
     error: { control: "text", description: "Mensagem de erro." },
-    labelPosition: {
-      control: "inline-radio",
-      options: ["right", "left"],
-      description: "Posição do label em relação ao switch.",
-      table: {
-        type: { summary: "'left' | 'right'" },
-        defaultValue: { summary: "'right'" },
-      },
-    },
     checked: {
       control: "boolean",
       description: "Estado controlado.",
@@ -112,18 +102,6 @@ export const WithError: Story = {
   },
 }
 
-export const LabelLeft: Story = {
-  args: { label: "Ativo", labelPosition: "left" },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Com `labelPosition="left"` o label aparece antes do controle — útil em listas de configurações alinhadas à direita.',
-      },
-    },
-  },
-}
-
 export const Disabled: Story = {
   args: { label: "Indisponível", disabled: true },
 }
@@ -156,65 +134,6 @@ export const Controlled: Story = {
   parameters: {
     docs: {
       description: { story: "Switch em modo controlado refletindo o estado em texto vivo." },
-    },
-  },
-}
-
-interface SettingsState {
-  notifications: boolean
-  newsletter: boolean
-  marketing: boolean
-}
-
-export const SettingsList: Story = {
-  render: () => {
-    const [settings, setSettings] = useState<SettingsState>({
-      notifications: true,
-      newsletter: false,
-      marketing: false,
-    })
-
-    const update = (key: keyof SettingsState) => (next: boolean) =>
-      setSettings((prev) => ({ ...prev, [key]: next }))
-
-    return (
-      <div className="flex w-96 flex-col gap-4 rounded-lg border p-5">
-        <header>
-          <h3 className="font-semibold text-base">Notificações</h3>
-          <p className="text-xs text-muted-foreground">Escolha quais alertas você quer receber.</p>
-        </header>
-        <div className="flex flex-col gap-4">
-          <Switch
-            label="Notificações no app"
-            description="Alertas em tempo real dentro do produto."
-            labelPosition="left"
-            checked={settings.notifications}
-            onCheckedChange={update("notifications")}
-          />
-          <Switch
-            label="Newsletter semanal"
-            description="Resumo das principais novidades toda segunda."
-            labelPosition="left"
-            checked={settings.newsletter}
-            onCheckedChange={update("newsletter")}
-          />
-          <Switch
-            label="Comunicações de marketing"
-            description="Promoções, descontos e lançamentos."
-            labelPosition="left"
-            checked={settings.marketing}
-            onCheckedChange={update("marketing")}
-          />
-        </div>
-      </div>
-    )
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Pattern de configurações com 3 switches, label à esquerda, controle alinhado à direita.",
-      },
     },
   },
 }

@@ -16,7 +16,7 @@ const meta: Meta<typeof RadioGroup> = {
         component: [
           "RadioGroup data-driven. Passe `values: RadioGroupItemData[]`.",
           "",
-          "Cada item: `value`, `label`, opcional `description`, `icon`, `disabled`.",
+          "Cada item: `value`, `label`, opcional `icon`, `disabled`.",
         ].join("\n"),
       },
     },
@@ -40,9 +40,9 @@ const PLANS = [
 ]
 
 const PLANS_RICH = [
-  { value: "free", label: "Free", description: "R$ 0/mês", icon: ZapIcon },
-  { value: "pro", label: "Pro", description: "R$ 29/mês", icon: CrownIcon },
-  { value: "team", label: "Team", description: "R$ 99/mês", icon: BuildingIcon, disabled: true },
+  { value: "free", label: "Free", icon: ZapIcon },
+  { value: "pro", label: "Pro", icon: CrownIcon },
+  { value: "team", label: "Team", icon: BuildingIcon, disabled: true },
 ]
 
 export const Default: Story = {
@@ -56,8 +56,6 @@ export const Default: Story = {
     await expect(pro).toHaveAttribute("aria-checked", "true")
   },
 }
-
-export const WithDescriptions: Story = { args: { label: "Escolha um plano", values: PLANS_RICH } }
 
 export const Horizontal: Story = {
   args: {
@@ -86,17 +84,6 @@ export const DefaultValue: Story = {
 
 export const Disabled: Story = {
   args: { label: "Plano", disabled: true, defaultValue: "free", values: PLANS },
-}
-
-export const WithItemDescription: Story = {
-  args: {
-    label: "Método de pagamento",
-    values: [
-      { value: "card", label: "Cartão de crédito", description: "Aprovação imediata" },
-      { value: "pix", label: "PIX", description: "Aprovação em segundos" },
-      { value: "boleto", label: "Boleto", description: "Até 3 dias úteis" },
-    ],
-  },
 }
 
 export const Controlled: Story = {

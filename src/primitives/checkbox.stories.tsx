@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, fn, userEvent, within } from "@storybook/test"
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 import { Checkbox } from "./checkbox"
 
@@ -19,8 +19,8 @@ const meta: Meta<typeof Checkbox> = {
           "- `label` — texto ou JSX exibido ao lado do controle (parea via `htmlFor` automaticamente).",
           "- `description` — texto auxiliar abaixo do label, vinculado via `aria-describedby`.",
           '- `error` — mensagem de erro com `role="alert"` e `aria-invalid` no controle.',
-          "- `checked` / `defaultChecked` — `boolean | 'indeterminate'`.",
-          "- `onCheckedChange` — `(checked: boolean | 'indeterminate') => void`.",
+          "- `checked` / `defaultChecked` — `boolean`.",
+          "- `onCheckedChange` — `(checked: boolean) => void`.",
           "- `disabled`, `required` — comportamentos padrão.",
           "- `id` — opcional; o componente gera um ID estável quando omitido.",
           "",
@@ -41,8 +41,8 @@ const meta: Meta<typeof Checkbox> = {
     error: { control: "text", description: "Mensagem de erro (renderiza `role=alert`)." },
     checked: {
       control: "boolean",
-      description: "Estado controlado (`true`, `false` ou `'indeterminate'`).",
-      table: { type: { summary: "boolean | 'indeterminate'" } },
+      description: "Estado controlado (`true` ou `false`).",
+      table: { type: { summary: "boolean" } },
     },
     defaultChecked: {
       control: "boolean",
@@ -66,7 +66,7 @@ const meta: Meta<typeof Checkbox> = {
       description: "Handler de mudança.",
       table: {
         category: "Eventos",
-        type: { summary: "(checked: boolean | 'indeterminate') => void" },
+        type: { summary: "(checked: boolean) => void" },
       },
     },
   },
@@ -116,28 +116,6 @@ export const Checked: Story = {
   args: { label: "Selecionado", defaultChecked: true },
 }
 
-export const Indeterminate: Story = {
-  render: () => {
-    const [checked, setChecked] = useState<boolean | "indeterminate">("indeterminate")
-    return (
-      <Checkbox
-        label="Indeterminate (clique para alternar)"
-        description={`Estado atual: ${String(checked)}`}
-        checked={checked}
-        onCheckedChange={setChecked}
-      />
-    )
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Estado `'indeterminate'` renderiza um traço (`MinusIcon`). Usado tipicamente em \"selecionar todos\" quando há seleção parcial.",
-      },
-    },
-  },
-}
-
 export const RichLabel: Story = {
   args: {
     label: (
@@ -183,62 +161,5 @@ export const Controlled: Story = {
   },
   parameters: {
     docs: { description: { story: "Modo controlado clássico via `useState`." } },
-  },
-}
-
-interface TaskState {
-  id: string
-  label: string
-  done: boolean
-}
-
-export const Group: Story = {
-  render: () => {
-    const [tasks, setTasks] = useState<TaskState[]>([
-      { id: "design", label: "Definir design system", done: true },
-      { id: "build", label: "Implementar componentes", done: false },
-      { id: "docs", label: "Documentar API pública", done: false },
-    ])
-
-    const allChecked = useMemo(() => tasks.every((t) => t.done), [tasks])
-    const someChecked = useMemo(() => tasks.some((t) => t.done), [tasks])
-    const parentState: boolean | "indeterminate" = allChecked
-      ? true
-      : someChecked
-        ? "indeterminate"
-        : false
-
-    const toggleAll = (next: boolean | "indeterminate") => {
-      const target = next === true
-      setTasks((prev) => prev.map((t) => ({ ...t, done: target })))
-    }
-
-    const toggleOne = (id: string, next: boolean | "indeterminate") => {
-      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: next === true } : t)))
-    }
-
-    return (
-      <div className="flex w-80 flex-col gap-2 rounded-md border p-4">
-        <Checkbox label="Selecionar todas" checked={parentState} onCheckedChange={toggleAll} />
-        <div className="ml-6 flex flex-col gap-2 border-l pl-3">
-          {tasks.map((t) => (
-            <Checkbox
-              key={t.id}
-              label={t.label}
-              checked={t.done}
-              onCheckedChange={(next) => toggleOne(t.id, next)}
-            />
-          ))}
-        </div>
-      </div>
-    )
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Pattern "select-all" com 3 filhos. O pai fica `indeterminate` quando há seleção parcial e marca/desmarca todos quando clicado.',
-      },
-    },
   },
 }

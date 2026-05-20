@@ -181,24 +181,6 @@ export const WithAction: Story = {
   },
 }
 
-export const Compact: Story = {
-  args: {
-    title: "Apenas título",
-  },
-  decorators: [
-    (Story) => (
-      <div className="w-[320px]">
-        <Story />
-      </div>
-    ),
-  ],
-  parameters: {
-    docs: {
-      description: { story: "Header mínimo: só `title`, sem `description` ou body." },
-    },
-  },
-}
-
 export const ContentOnly: Story = {
   render: () => (
     <div className="w-[420px]">
@@ -258,7 +240,7 @@ export const CardGrid: Story = {
         title="Contratos ativos"
         headerAction={<Badge variant="secondary">147</Badge>}
         footer={
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost">
             Ver todos
             <ArrowUpRightIcon />
           </Button>
@@ -272,7 +254,7 @@ export const CardGrid: Story = {
         title="Pendentes de revisão"
         headerAction={<Badge variant="destructive">5</Badge>}
         footer={
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost">
             Revisar
             <ArrowUpRightIcon />
           </Button>
@@ -285,12 +267,12 @@ export const CardGrid: Story = {
       <Card
         title="Equipe"
         headerAction={
-          <Button variant="ghost" size="icon" aria-label="Mais ações">
+          <Button variant="ghost" aria-label="Mais ações">
             <MoreHorizontalIcon />
           </Button>
         }
         footer={
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost">
             Gerenciar
             <ArrowUpRightIcon />
           </Button>

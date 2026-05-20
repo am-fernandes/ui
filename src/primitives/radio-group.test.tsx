@@ -35,14 +35,11 @@ describe("RadioGroup", () => {
     expect(screen.getByRole("radio", { name: "Team" })).toBeDisabled()
   })
 
-  it("renders item description and icon when provided", () => {
-    render(
-      <RadioGroup
-        label="Plano"
-        values={[{ value: "f", label: "Free", description: "R$ 0", icon: ZapIcon }]}
-      />,
+  it("renders item icon when provided", () => {
+    const { container } = render(
+      <RadioGroup label="Plano" values={[{ value: "f", label: "Free", icon: ZapIcon }]} />,
     )
-    expect(screen.getByText("R$ 0")).toBeInTheDocument()
+    expect(container.querySelector("svg")).toBeInTheDocument()
   })
 
   it("supports horizontal orientation", () => {

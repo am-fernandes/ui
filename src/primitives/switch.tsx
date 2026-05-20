@@ -11,7 +11,6 @@ export interface SwitchProps extends Omit<React.ComponentProps<typeof SwitchPrim
   label?: React.ReactNode
   description?: React.ReactNode
   error?: string
-  labelPosition?: "left" | "right"
   id?: string
   ref?: React.Ref<HTMLButtonElement>
 }
@@ -23,7 +22,6 @@ function Switch({
   error,
   required,
   disabled,
-  labelPosition = "right",
   className,
   ref,
   ...props
@@ -72,15 +70,10 @@ function Switch({
   ) : null
 
   return (
-    <div
-      data-slot="switch-field"
-      data-label-position={labelPosition}
-      className="flex w-full flex-col gap-1.5"
-    >
+    <div data-slot="switch-field" className="flex w-full flex-col gap-1.5">
       <div className="flex items-center gap-2">
-        {labelPosition === "left" ? labelEl : null}
         {switchEl}
-        {labelPosition === "right" ? labelEl : null}
+        {labelEl}
       </div>
       {hasError ? (
         <p id={ids.errorId} role="alert" className="text-xs text-destructive">

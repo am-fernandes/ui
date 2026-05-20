@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { enUS } from "date-fns/locale"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
@@ -75,19 +74,6 @@ describe("DateInput", () => {
     render(<DateInput value="" />)
     await userEvent.click(screen.getByRole("button"))
     expect(await screen.findByRole("grid")).toBeInTheDocument()
-  })
-
-  it("propagates the locale prop to the rendered Calendar", async () => {
-    // Render an empty value with January as the default-month anchor.
-    function Wrapper() {
-      // value empty -> Calendar receives defaultMonth=undefined; pre-set defaultMonth via test.
-      return <DateInput value="2025-01-15" locale={enUS} />
-    }
-    render(<Wrapper />)
-    await userEvent.click(screen.getByRole("button"))
-    await screen.findByRole("grid")
-    // enUS locale should produce the English month name.
-    expect(screen.getByText(/january/i)).toBeInTheDocument()
   })
 
   it("fires onChange with an ISO yyyy-MM-dd string when a day is selected", async () => {

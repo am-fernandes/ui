@@ -21,7 +21,7 @@ const meta: Meta<typeof Progress> = {
           "Barra de progresso linear. Use para indicar avanço de upload, processamento ou wizards.",
           "",
           "**Props principais:**",
-          "- `value: number` — progresso atual de 0 a 100. Omita (ou passe `undefined`) para estado indeterminado.",
+          "- `value: number` — progresso atual de 0 a 100.",
           "- `max: number` — valor máximo. Default `100`.",
           "- Aceita demais props do `Radix Progress.Root` e do `<div>` nativo (`className`, `aria-label`, etc.).",
           "",
@@ -39,7 +39,7 @@ const meta: Meta<typeof Progress> = {
   argTypes: {
     value: {
       control: { type: "number", min: 0, max: 100, step: 1 },
-      description: "Progresso atual (0–100). Omita para estado indeterminado.",
+      description: "Progresso atual (0–100).",
       table: { type: { summary: "number" } },
     },
   },
@@ -67,10 +67,6 @@ export const Default: Story = {
     const bar = canvas.getByRole("progressbar")
     await expect(bar).toHaveAttribute("aria-valuenow", "60")
   },
-}
-
-export const Indeterminate: Story = {
-  args: {},
 }
 
 export const Zero: Story = {

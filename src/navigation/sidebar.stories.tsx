@@ -38,8 +38,6 @@ const meta: Meta<typeof Sidebar> = {
           "- `groups?: SidebarGroup[]` — múltiplos grupos com `label` opcional.",
           "- `header?` / `footer?: ReactNode` — slots para logo, busca, perfil do usuário etc.",
           "- `collapsible?: 'offcanvas' | 'icon' | 'none'` — comportamento de colapso. Default `'icon'`.",
-          "- `side?: 'left' | 'right'` — lado de fixação. Default `'left'`.",
-          "- `variant?: 'sidebar' | 'floating' | 'inset'` — variação visual. Default `'sidebar'`.",
           "- `defaultOpen?: boolean` / `open?` / `onOpenChange?` — controle do estado expandido.",
           "- `persistOpenState?: boolean` — persiste estado em cookie (apenas uncontrolled).",
           "- `keyboardShortcut?: string | null` — atalho `Cmd/Ctrl + tecla` para toggle. Default `'b'`.",
@@ -111,21 +109,6 @@ const meta: Meta<typeof Sidebar> = {
         defaultValue: { summary: "'icon'" },
       },
     },
-    side: {
-      control: "inline-radio",
-      options: ["left", "right"],
-      description: "Lado de fixação.",
-      table: { type: { summary: "'left' | 'right'" }, defaultValue: { summary: "'left'" } },
-    },
-    variant: {
-      control: "inline-radio",
-      options: ["sidebar", "floating", "inset"],
-      description: "Variação visual.",
-      table: {
-        type: { summary: "'sidebar' | 'floating' | 'inset'" },
-        defaultValue: { summary: "'sidebar'" },
-      },
-    },
     defaultOpen: {
       control: "boolean",
       description: "Estado inicial expandido (uncontrolled).",
@@ -182,15 +165,6 @@ function Frame({ children }: { children: React.ReactNode }) {
       </main>
     </div>
   )
-}
-
-export const FlatItems: Story = {
-  args: { items: flatItems },
-  render: (args) => (
-    <Frame>
-      <Sidebar {...args} />
-    </Frame>
-  ),
 }
 
 export const WithGroups: Story = {
@@ -416,36 +390,5 @@ export const CollapsibleIcon: Story = {
     <Frame>
       <Sidebar {...args} />
     </Frame>
-  ),
-}
-
-export const Floating: Story = {
-  args: { items: flatItems, variant: "floating" },
-  render: (args) => (
-    <Frame>
-      <Sidebar {...args} />
-    </Frame>
-  ),
-}
-
-export const Inset: Story = {
-  args: { items: flatItems, variant: "inset" },
-  render: (args) => (
-    <Frame>
-      <Sidebar {...args} />
-    </Frame>
-  ),
-}
-
-export const RightSide: Story = {
-  args: { items: flatItems, side: "right" },
-  render: (args) => (
-    <div className="flex" style={{ height: "100vh" }}>
-      <main className="flex-1 overflow-auto p-6">
-        <h1 className="text-2xl font-semibold">Conteúdo da página</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Sidebar fixada à direita.</p>
-      </main>
-      <Sidebar {...args} />
-    </div>
   ),
 }

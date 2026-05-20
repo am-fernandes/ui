@@ -108,7 +108,7 @@ export const SideBottom: Story = {
 export const WithForm: Story = {
   args: {
     trigger: (
-      <Button variant="outline" size="icon" aria-label="Configurações">
+      <Button variant="outline" className="size-9 p-0" aria-label="Configurações">
         <SettingsIcon className="size-4" />
       </Button>
     ),
@@ -122,9 +122,7 @@ export const WithForm: Story = {
       >
         <h4 className="text-sm font-medium">Renomear documento</h4>
         <Input label="Nome" labelPosition="hidden" placeholder="Novo nome..." />
-        <Button type="submit" size="default">
-          Salvar
-        </Button>
+        <Button type="submit">Salvar</Button>
       </form>
     ),
   },

@@ -24,14 +24,6 @@ describe("Switch", () => {
     expect(onChange).toHaveBeenCalledWith(true)
   })
 
-  it("applies labelPosition='left'", () => {
-    const { container } = render(<Switch label="X" labelPosition="left" />)
-    expect(container.querySelector('[data-slot="switch-field"]')).toHaveAttribute(
-      "data-label-position",
-      "left",
-    )
-  })
-
   it("respects disabled", () => {
     render(<Switch label="X" disabled />)
     expect(screen.getByRole("switch", { name: "X" })).toBeDisabled()

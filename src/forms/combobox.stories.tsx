@@ -1,16 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { Briefcase, Building2, GraduationCap, Scale, Tag, Users } from "lucide-react"
 import { useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 
 import { Combobox, type ComboboxOption } from "./combobox"
 
 const sampleOptions: ComboboxOption[] = [
-  { value: "advocacia", label: "Advocacia", icon: Scale },
-  { value: "consultoria", label: "Consultoria", icon: Briefcase },
-  { value: "academia", label: "Academia", icon: GraduationCap },
-  { value: "corporativo", label: "Corporativo", icon: Building2 },
-  { value: "rh", label: "Recursos Humanos", icon: Users },
+  { value: "advocacia", label: "Advocacia" },
+  { value: "consultoria", label: "Consultoria" },
+  { value: "academia", label: "Academia" },
+  { value: "corporativo", label: "Corporativo" },
+  { value: "rh", label: "Recursos Humanos" },
 ]
 
 const plainOptions: ComboboxOption[] = [
@@ -22,7 +21,6 @@ const plainOptions: ComboboxOption[] = [
 const longOptions: ComboboxOption[] = Array.from({ length: 50 }, (_, i) => ({
   value: `option-${i + 1}`,
   label: `Opção ${i + 1}`,
-  icon: Tag,
 }))
 
 const meta: Meta<typeof Combobox> = {
@@ -35,12 +33,11 @@ const meta: Meta<typeof Combobox> = {
       description: {
         component: [
           "Select com **busca built-in** baseado em `cmdk`. A prop `multiple` alterna entre seleção única e múltipla (com badges removíveis).",
-          "Suporta ícone por opção e modo `creatable` para permitir valores fora da lista.",
+          "Suporta modo `creatable` para permitir valores fora da lista.",
           "",
           "**Shape de `ComboboxOption`:**",
           "- `value: string` — chave única.",
           "- `label: string` — texto exibido.",
-          "- `icon?: ComponentType<{ className?: string }>` — ícone leading (ex.: lucide-react).",
           "- `disabled?: boolean` — desabilita a opção individual.",
           "",
           "**Props principais:**",
@@ -172,31 +169,6 @@ export const Default: Story = {
   },
 }
 
-export const WithIcons: Story = {
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Cada opção pode declarar um `icon` (ex.: lucide-react) renderizado à esquerda do label.",
-      },
-    },
-  },
-  render: () => {
-    const [value, setValue] = useState<string | undefined>("advocacia")
-    return (
-      <div className="w-[320px]">
-        <Combobox
-          options={sampleOptions}
-          label="Área"
-          value={value}
-          onValueChange={setValue}
-          placeholder="Selecione uma área"
-        />
-      </div>
-    )
-  },
-}
-
 export const WithDescription: Story = {
   render: () => {
     const [value, setValue] = useState<string | undefined>()
@@ -306,41 +278,6 @@ export const ControlledMulti: Story = {
           placeholder="Adicione áreas"
         />
         <p className="text-xs text-muted-foreground">JSON: {JSON.stringify(value)}</p>
-      </div>
-    )
-  },
-}
-
-export const English: Story = {
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Full en-US override via the `labels` prop. Defaults are pt-BR; pass `labels={{ ... }}` to translate or rewrite copy per instance. The standalone `placeholder`, `searchPlaceholder`, and `emptyMessage` props still win when set.",
-      },
-    },
-  },
-  render: () => {
-    const [value, setValue] = useState<string[]>([])
-    return (
-      <div className="w-[320px]">
-        <Combobox
-          multiple
-          creatable
-          options={sampleOptions}
-          label="Practice areas"
-          value={value}
-          onValueChange={setValue}
-          labels={{
-            placeholder: "Select areas",
-            searchPlaceholder: "Search or create...",
-            emptyMessage: "No options found.",
-            clearSelection: "Clear selection",
-            selectedCount: (n) => (n === 1 ? `${n} selected` : `${n} selected`),
-            removeBadge: (l) => `Remove ${l}`,
-            createOption: (s) => `Use: "${s}"`,
-          }}
-        />
       </div>
     )
   },

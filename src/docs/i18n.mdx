@@ -14,7 +14,7 @@ Decisões deliberadas:
 - **Defaults exportados.** Cada componente exporta também `defaultXLabels` para que consumers possam compor traduções completas a partir do default pt-BR (útil quando 90% das strings já está OK e você só quer trocar 1 ou 2).
 - **`Partial` na prop.** Você sempre passa só o que quer mudar; o componente faz `merge` interno com o default.
 
-Atualmente 5 componentes implementam esse pattern:
+Atualmente 3 componentes implementam esse pattern:
 
 ## Tabela de componentes localizáveis
 
@@ -22,9 +22,7 @@ Atualmente 5 componentes implementam esse pattern:
 |---               |---                      |---                               |---:     |
 | `DataTable`      | `DataTableLabels`       | `defaultDataTableLabels`         | 12 |
 | `FileUpload`     | `FileUploadLabels`      | `defaultFileUploadLabels`        | 16 |
-| `Combobox`       | `ComboboxLabels`        | `defaultComboboxLabels`          | 7 |
 | `CommandPalette` | `CommandPaletteLabels`  | `defaultCommandPaletteLabels`    | 3 |
-| `Calendar`       | `CalendarLabels`        | `defaultCalendarLabels`          | 0 (reservado) |
 
 Todos os tipos e defaults estão exportados no barrel principal:
 
@@ -32,9 +30,7 @@ Todos os tipos e defaults estão exportados no barrel principal:
 import {
   defaultDataTableLabels, type DataTableLabels,
   defaultFileUploadLabels, type FileUploadLabels,
-  defaultComboboxLabels, type ComboboxLabels,
   defaultCommandPaletteLabels, type CommandPaletteLabels,
-  defaultCalendarLabels, type CalendarLabels,
 } from "@amfernandesinc/ui"
 ```
 
@@ -100,10 +96,6 @@ Algumas chaves não são strings, são **funções**. Isso permite plural corret
 Exemplos:
 
 ```ts
-// Combobox — selectedCount(count)
-defaultComboboxLabels.selectedCount = (n) =>
-  `${n} ${n === 1 ? "selecionado" : "selecionados"}`
-
 // DataTable — rowCount(filtered, total)
 defaultDataTableLabels.rowCount = (filtered, total) => {
   const totalStr = new Intl.NumberFormat("pt-BR").format(total)
@@ -119,27 +111,15 @@ Para traduzir, basta sobrescrever a função:
 
 ```ts
 labels={{
-  selectedCount: (n) => n === 1 ? "1 selected" : `${n} selected`,
+  removeFile: (fileName) => `Remove ${fileName}`,
 }}
 ```
 
 A regra: **strings simples** quando não há variação; **funções** quando há flexão (plural, gênero, número formatado, nome dinâmico injetado).
 
-## Caveat do Calendar
+## Calendar e date pickers
 
-`Calendar.labels` é uma prop **reservada para uso futuro** — atualmente o tipo `CalendarLabels` só contém um campo opcional `_reserved`. Isso é intencional.
-
-A localização dos dias da semana, nomes de mês e aria-labels dos botões prev/next vem do `react-day-picker`, via a prop `locale`:
-
-```tsx
-import { ptBR } from "date-fns/locale"
-import { enUS } from "date-fns/locale"
-
-<Calendar locale={ptBR} /> // padrão pt-BR
-<Calendar locale={enUS} /> // tradução completa do grid
-```
-
-A separação existe porque o `react-day-picker` já tem um sistema robusto e bem testado de localização — replicar via nossa prop `labels` seria duplicar trabalho e fonte de inconsistência. A prop `labels` fica reservada caso a gente adicione **strings de wrapper** no futuro (ex.: um botão "Hoje" custom, um header com instrução, etc.).
+`Calendar`, `DateInput` e `DateRangePicker` são **pt-BR-only by design** — não aceitam `labels` nem `locale`. O grid (nomes de mês, dias da semana, aria-labels dos botões prev/next) é renderizado pelo `react-day-picker` com `ptBR` do `date-fns/locale` hardcoded internamente. Essa decisão segue a postura geral da lib: pt-BR first, sem mecanismos de override para componentes onde a opinionação é parte do produto.
 
 ## Quando criar um novo `XLabels`?
 

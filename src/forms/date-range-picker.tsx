@@ -1,10 +1,9 @@
 "use client"
 
 import { format, isValid, parse } from "date-fns"
-import { ptBR } from "date-fns/locale"
 import { CalendarIcon } from "lucide-react"
 import * as React from "react"
-import type { DateRange, Locale } from "react-day-picker"
+import type { DateRange } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Popover } from "../overlays/popover"
@@ -30,7 +29,6 @@ export interface DateRangePickerProps {
   placeholder?: string
   className?: string
   numberOfMonths?: number
-  locale?: Locale
   id?: string
   "aria-label"?: string
   ref?: React.Ref<HTMLButtonElement>
@@ -59,7 +57,6 @@ function DateRangePicker({
   placeholder = "Selecione um período",
   className,
   numberOfMonths = 2,
-  locale = ptBR,
   "aria-label": ariaLabel,
   ref,
 }: DateRangePickerProps) {
@@ -143,12 +140,10 @@ function DateRangePicker({
           selected={selectedRange}
           onSelect={handleSelect}
           numberOfMonths={numberOfMonths}
-          locale={locale}
         />
         <div className="flex justify-end gap-2 border-t p-3">
           <Button
             variant="ghost"
-            size="sm"
             onClick={() => {
               onValueChange({ from: "", to: "" })
               setOpen(false)

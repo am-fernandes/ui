@@ -36,8 +36,6 @@ export interface SidebarProps {
   header?: React.ReactNode
   footer?: React.ReactNode
   collapsible?: "offcanvas" | "icon" | "none"
-  side?: "left" | "right"
-  variant?: "sidebar" | "floating" | "inset"
   defaultOpen?: boolean
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -65,8 +63,6 @@ function Sidebar({
   header,
   footer,
   collapsible = "icon",
-  side = "left",
-  variant = "sidebar",
   defaultOpen = true,
   open,
   onOpenChange,
@@ -127,7 +123,7 @@ function Sidebar({
         onOpenChange={setOpen}
         title="Sidebar"
         description="Menu principal"
-        side={side}
+        side="left"
         className="w-[--sidebar-width] p-0"
       >
         <div
@@ -160,8 +156,6 @@ function Sidebar({
     <aside
       data-slot="sidebar"
       data-collapsible={collapsible}
-      data-side={side}
-      data-variant={variant}
       data-state={isOpen ? "expanded" : "collapsed"}
       style={
         {
@@ -172,7 +166,6 @@ function Sidebar({
       }
       className={cn(
         "flex h-full flex-col border-r bg-background transition-[width] duration-200",
-        side === "right" && "border-l border-r-0",
         className,
       )}
     >

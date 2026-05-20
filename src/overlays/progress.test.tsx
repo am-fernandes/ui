@@ -48,13 +48,4 @@ describe("Progress", () => {
       .querySelector('[data-slot="progress-indicator"]')
     expect(indicator).toHaveStyle({ transform: "translateX(-100%)" })
   })
-
-  it("renders indeterminate state when value is undefined", () => {
-    render(<Progress data-testid="progress" />)
-    const indicator = screen
-      .getByTestId("progress")
-      .querySelector('[data-slot="progress-indicator"]')
-    expect(indicator).toHaveAttribute("data-state", "indeterminate")
-    expect(indicator).toHaveClass("animate-pulse")
-  })
 })

@@ -230,10 +230,10 @@ export const Controlled: Story = {
       <div className="flex w-[320px] flex-col items-start gap-3">
         <InputOTP length={6} label="Código" value={value} onValueChange={setValue} />
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setValue("123456")}>
+          <Button variant="outline" onClick={() => setValue("123456")}>
             Preencher
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setValue("")}>
+          <Button variant="outline" onClick={() => setValue("")}>
             Limpar
           </Button>
         </div>

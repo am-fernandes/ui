@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { enUS } from "date-fns/locale"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
@@ -27,11 +26,6 @@ describe("Calendar", () => {
   it("renders a grid", () => {
     render(<Calendar mode="single" defaultMonth={new Date(2025, 0, 15)} />)
     expect(screen.getByRole("grid")).toBeInTheDocument()
-  })
-
-  it("renders with custom locale (enUS) — month name in English", () => {
-    render(<Calendar mode="single" defaultMonth={new Date(2025, 0, 15)} locale={enUS} />)
-    expect(screen.getByText(/january/i)).toBeInTheDocument()
   })
 
   it("returns undefined disabledDays predicate when input is nullish", async () => {
@@ -173,22 +167,12 @@ describe("Calendar", () => {
     expect(arg?.getMonth()).toBe(5)
   })
 
-  it("memoized components are reused while locale stays the same", () => {
-    // Render twice with the same locale; the inner DayPicker should accept
-    // identical `components` references (smoke test for the memoization path).
+  it("memoized components are reused across re-renders", () => {
+    // Render twice; the inner DayPicker should accept identical `components`
+    // references (smoke test for the memoization path).
     const { rerender } = render(<Calendar mode="single" defaultMonth={FIXED_MONTH} />)
     rerender(<Calendar mode="single" defaultMonth={FIXED_MONTH} />)
     expect(screen.getByRole("grid")).toBeInTheDocument()
-  })
-
-  it("re-memoizes components when locale changes (en-US then pt-BR)", () => {
-    const { rerender } = render(
-      <Calendar mode="single" defaultMonth={new Date(2025, 0, 15)} locale={enUS} />,
-    )
-    expect(screen.getByText(/january/i)).toBeInTheDocument()
-    rerender(<Calendar mode="single" defaultMonth={new Date(2025, 0, 15)} />)
-    // Default locale is ptBR — "janeiro" should now appear.
-    expect(screen.getByText(/janeiro/i)).toBeInTheDocument()
   })
 
   it("forwards the ref to the root element via the Root component", () => {
@@ -203,16 +187,6 @@ describe("Calendar", () => {
     // react-day-picker labels navigation buttons via aria-label
     const nav = screen.getAllByRole("button", { name: /(previous|next|próx|anterior)/i })
     expect(nav.length).toBeGreaterThanOrEqual(2)
-  })
-
-  it("accepts the labels prop without forwarding it as an HTML attribute (reserved for future strings)", () => {
-    // labels is currently reserved; the wrapper accepts it but does not consume it,
-    // and react-day-picker handles all grid copy via `locale`.
-    const { container } = render(<Calendar mode="single" defaultMonth={FIXED_MONTH} labels={{}} />)
-    const root = container.querySelector('[data-slot="calendar"]')
-    expect(root).not.toBeNull()
-    // The prop must not leak to the DOM.
-    expect(root?.getAttribute("labels")).toBeNull()
   })
 
   it("uses dropdown captionLayout — shows month/year selects", () => {

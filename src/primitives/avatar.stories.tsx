@@ -61,28 +61,6 @@ export const InvalidSrc: Story = {
   },
 }
 
-export const Sizes: Story = {
-  render: () => (
-    <div className="flex items-center gap-3">
-      <Avatar alt="XS" fallback="XS" className="size-6 text-xs" />
-      <Avatar alt="SM" fallback="SM" className="size-8 text-sm" />
-      <Avatar alt="MD" fallback="MD" />
-      <Avatar alt="LG" fallback="LG" className="size-14 text-lg" />
-      <Avatar alt="XL" fallback="XL" className="size-20 text-2xl" />
-    </div>
-  ),
-}
-
-export const Shapes: Story = {
-  render: () => (
-    <div className="flex items-center gap-3">
-      <Avatar alt="Round" fallback="R" />
-      <Avatar alt="Square" fallback="S" className="rounded-md" />
-      <Avatar alt="None" fallback="N" className="rounded-none" />
-    </div>
-  ),
-}
-
 export const WithStatusDot: Story = {
   render: () => (
     <div className="relative inline-block">

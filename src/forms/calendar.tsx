@@ -4,7 +4,7 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import * as React from "react"
-import { type DayButton, DayPicker, type Locale, getDefaultClassNames } from "react-day-picker"
+import { type DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "../primitives/button"
@@ -67,20 +67,6 @@ function resolveDisabledDays(
     )
 }
 
-/**
- * Wrapper-level strings exposed by the AM Fernandes Calendar. The grid itself
- * is localized by react-day-picker via the `locale` prop — pass a non-pt-BR
- * `locale` (e.g. `date-fns/locale/enUS`) to translate weekday names, month
- * names, and the built-in nav button aria-labels. This `labels` prop is
- * reserved for any future wrapper-only copy (currently empty in pt-BR).
- */
-export interface CalendarLabels {
-  /** Reserved for future wrapper-level strings. */
-  _reserved?: never
-}
-
-export const defaultCalendarLabels: CalendarLabels = {}
-
 export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
   /**
@@ -89,12 +75,6 @@ export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
    */
   disabledDays?: DisabledDays
   ref?: React.Ref<HTMLDivElement>
-  /**
-   * Override wrapper-level UI strings. Defaults are pt-BR. Note: the
-   * react-day-picker grid (weekdays, month names, prev/next button aria
-   * labels) is translated via the `locale` prop, not this one.
-   */
-  labels?: Partial<CalendarLabels>
 }
 
 function Calendar({
@@ -103,17 +83,13 @@ function Calendar({
   showOutsideDays = true,
   captionLayout = "label",
   buttonVariant = "ghost",
-  locale = ptBR,
   formatters,
   components,
   disabledDays,
   disabled,
   ref,
-  labels: _labels,
   ...props
 }: CalendarProps) {
-  // `labels` is reserved for future wrapper-level strings; not consumed yet.
-  void _labels
   const disabledFn = resolveDisabledDays(disabledDays)
   const resolvedDisabled = disabledFn ?? disabled
   const defaultClassNames = getDefaultClassNames()
@@ -154,10 +130,10 @@ function Calendar({
         return <ChevronDownIcon aria-hidden="true" className={cn("size-4", className)} />
       },
       DayButton: (dayButtonProps: React.ComponentProps<typeof DayButton>) => (
-        <CalendarDayButton locale={locale} {...dayButtonProps} />
+        <CalendarDayButton {...dayButtonProps} />
       ),
     }),
-    [locale, ref],
+    [ref],
   )
 
   return (
@@ -170,9 +146,9 @@ function Calendar({
         className,
       )}
       captionLayout={captionLayout}
-      locale={locale}
+      locale={ptBR}
       formatters={{
-        formatMonthDropdown: (date) => date.toLocaleString(locale?.code, { month: "short" }),
+        formatMonthDropdown: (date) => date.toLocaleString(ptBR.code, { month: "short" }),
         ...formatters,
       }}
       classNames={{
@@ -240,24 +216,15 @@ function Calendar({
 }
 Calendar.displayName = "Calendar"
 
-type CalendarDayButtonProps = React.ComponentProps<typeof DayButton> & {
-  locale?: Partial<Locale>
-}
+type CalendarDayButtonProps = React.ComponentProps<typeof DayButton>
 
-function CalendarDayButton({
-  className,
-  day,
-  modifiers,
-  locale: _locale,
-  ...props
-}: CalendarDayButtonProps) {
+function CalendarDayButton({ className, day, modifiers, ...props }: CalendarDayButtonProps) {
   const defaultClassNames = getDefaultClassNames()
   const isOutside = !!modifiers.outside
 
   return (
     <Button
       variant="ghost"
-      size="icon"
       data-slot="calendar-day-button"
       {...(!isOutside && { "data-day": format(day.date, "yyyy-MM-dd") })}
       data-selected-single={

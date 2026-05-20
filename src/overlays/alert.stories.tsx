@@ -124,11 +124,7 @@ export const WithAction: Story = {
     variant: "info",
     title: "Verifique seu e-mail",
     description: "Enviamos um link de confirmação.",
-    action: (
-      <Button size="default" variant="outline">
-        Reenviar
-      </Button>
-    ),
+    action: <Button variant="outline">Reenviar</Button>,
   },
   parameters: {
     docs: {

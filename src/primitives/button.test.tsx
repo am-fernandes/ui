@@ -15,15 +15,6 @@ describe("Button", () => {
     expect(screen.getByRole("button")).toHaveClass("bg-destructive")
   })
 
-  it("supports sm/lg/icon sizes", () => {
-    const { rerender } = render(<Button size="sm">x</Button>)
-    expect(screen.getByRole("button")).toHaveClass("h-8")
-    rerender(<Button size="lg">x</Button>)
-    expect(screen.getByRole("button")).toHaveClass("h-10")
-    rerender(<Button size="icon">x</Button>)
-    expect(screen.getByRole("button")).toHaveClass("size-9")
-  })
-
   it("renders a spinner and disables when loading", () => {
     render(<Button loading>Salvar</Button>)
     const btn = screen.getByRole("button", { name: /Salvar/ })

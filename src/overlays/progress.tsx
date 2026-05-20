@@ -11,29 +11,20 @@ export interface ProgressProps
 }
 
 function Progress({ className, value, ref, ...props }: ProgressProps) {
-  const isIndeterminate = value === undefined || value === null
-  const safeValue = isIndeterminate ? 0 : Math.max(0, Math.min(100, value))
+  const safeValue = Math.max(0, Math.min(100, value ?? 0))
 
   return (
     <ProgressPrimitive.Root
       ref={ref}
       data-slot="progress"
-      value={isIndeterminate ? undefined : safeValue}
+      value={safeValue}
       className={cn("relative h-2 w-full overflow-hidden rounded-full bg-primary/20", className)}
       {...props}
     >
       <ProgressPrimitive.Indicator
         data-slot="progress-indicator"
-        data-state={isIndeterminate ? "indeterminate" : "determinate"}
-        className={cn(
-          "h-full w-full flex-1 bg-primary transition-[width]",
-          isIndeterminate && "w-1/3 animate-pulse",
-        )}
-        style={
-          isIndeterminate
-            ? { transform: "translateX(0)" }
-            : { transform: `translateX(-${100 - safeValue}%)` }
-        }
+        className="h-full w-full flex-1 bg-primary transition-[width]"
+        style={{ transform: `translateX(-${100 - safeValue}%)` }}
       />
     </ProgressPrimitive.Root>
   )

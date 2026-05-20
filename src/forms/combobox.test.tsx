@@ -273,36 +273,6 @@ describe("Combobox", () => {
     expect(screen.getByText("Selecione...")).toBeInTheDocument()
   })
 
-  it("overrides labels via the labels prop (en-US sample)", async () => {
-    render(
-      <Combobox
-        multiple
-        options={options}
-        value={["a"]}
-        labels={{
-          placeholder: "Select...",
-          searchPlaceholder: "Search...",
-          emptyMessage: "No options found.",
-          clearSelection: "Clear selection",
-          selectedCount: (n) => (n === 1 ? `${n} selected` : `${n} selected`),
-          removeBadge: (l) => `Remove ${l}`,
-          createOption: (s) => `Use: "${s}"`,
-        }}
-      />,
-    )
-    // Multi-mode trigger text uses overridden selectedCount.
-    expect(screen.getByText("1 selected")).toBeInTheDocument()
-    // Clear-all aria-label overridden.
-    expect(screen.getByRole("button", { name: "Clear selection" })).toBeInTheDocument()
-    // Remove-badge aria-label overridden.
-    expect(screen.getByRole("button", { name: "Remove Alpha" })).toBeInTheDocument()
-    // Open the popover to check searchPlaceholder + emptyMessage.
-    await userEvent.click(screen.getByRole("combobox"))
-    const searchInput = await screen.findByPlaceholderText("Search...")
-    await userEvent.type(searchInput, "zzz-nonsense")
-    expect(await screen.findByText("No options found.")).toBeInTheDocument()
-  })
-
   it("triggers Limpar seleção via keyboard (Enter)", async () => {
     const onValueChange = vi.fn()
     render(

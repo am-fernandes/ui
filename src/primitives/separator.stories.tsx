@@ -159,26 +159,3 @@ export const InCard: Story = {
     },
   },
 }
-
-export const Customized: Story = {
-  render: () => (
-    <div className="flex w-72 flex-col gap-3">
-      <p className="text-sm">Linha padrão</p>
-      <Separator />
-      <p className="text-sm">Mais grossa</p>
-      <Separator className="h-0.5" />
-      <p className="text-sm">Cor primária</p>
-      <Separator className="bg-primary" />
-      <p className="text-sm">Tracejada (via border)</p>
-      <Separator className="h-0 border-t border-dashed bg-transparent" />
-    </div>
-  ),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Variações de espessura, cor e estilo aplicadas via `className`. Para tracejado, neutralize o `bg-border` e use `border-t border-dashed`.",
-      },
-    },
-  },
-}

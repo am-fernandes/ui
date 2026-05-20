@@ -664,7 +664,7 @@ function DataTable<TData>({
               )}
               <Button
                 variant="outline"
-                size="icon"
+                className="size-9 p-0"
                 disabled={loading || !table.getCanPreviousPage()}
                 onClick={() => table.previousPage()}
                 aria-label={mergedLabels.paginationPrevious}
@@ -673,7 +673,7 @@ function DataTable<TData>({
               </Button>
               <Button
                 variant="outline"
-                size="icon"
+                className="size-9 p-0"
                 disabled={loading || !table.getCanNextPage()}
                 onClick={() => table.nextPage()}
                 aria-label={mergedLabels.paginationNext}

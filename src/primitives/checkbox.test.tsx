@@ -28,11 +28,6 @@ describe("Checkbox", () => {
     expect(onCheckedChange).toHaveBeenCalledWith(true)
   })
 
-  it("renders indeterminate state (aria-checked=mixed)", () => {
-    render(<Checkbox label="X" checked="indeterminate" />)
-    expect(screen.getByRole("checkbox", { name: "X" })).toHaveAttribute("aria-checked", "mixed")
-  })
-
   it("respects disabled", () => {
     render(<Checkbox label="X" disabled />)
     expect(screen.getByRole("checkbox", { name: "X" })).toBeDisabled()
