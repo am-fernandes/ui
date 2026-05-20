@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0
+
+### Minor Changes
+
+- 7aeb2f5: Initial documented release. See CHANGELOG.md "Unreleased" section for the full list of additions, fixes, and three breaking changes since v0.0.2 (Typography `display` variant removed in favor of `heading`; DataTable per-column `enableSorting` replaced by top-level `sortableColumns` whitelist; DateRangePicker `onChange` renamed to `onValueChange`).
+
 All notable changes to `@amfernandesinc/ui` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
@@ -18,6 +24,7 @@ Releases from this point forward are managed via [changesets](https://github.com
 ### Added
 
 #### Brazilian inputs and validators
+
 - `CPFInput` — masked `000.000.000-00` input, emits 11 cleaned digits.
 - `CNPJInput` — masked `00.000.000/0000-00` input, emits 14 cleaned digits.
 - `CEPInput` — masked `00000-000` input, emits 8 cleaned digits.
@@ -25,21 +32,25 @@ Releases from this point forward are managed via [changesets](https://github.com
 - `isValidCPF`, `isValidCNPJ`, `isValidCEP`, `isValidPhone` — pure validators in `@amfernandesinc/ui/lib/brazil`. Canonical Receita Federal modulo-11 DV checks; reject all-same-digit and out-of-range area codes.
 
 #### i18n labels
+
 - `labels?: Partial<XLabels>` prop on `DataTable`, `FileUpload`, `Combobox`, `CommandPalette`, and `Calendar`. All keys optional, pt-BR defaults preserved, per-instance override (no global Provider).
 - Exported label types and default constants: `DataTableLabels` / `defaultDataTableLabels` (13 keys: loading, empty, pagination prev/next, row count formatter, page indicator, sort-by, export trigger + 3 menu items, search placeholder + aria-label), `FileUploadLabels` / `defaultFileUploadLabels` (17 keys), `ComboboxLabels` / `defaultComboboxLabels` (7 keys), `CommandPaletteLabels` / `defaultCommandPaletteLabels` (3 keys), `CalendarLabels` (reserved for future wrapper copy — `react-day-picker`'s `locale` prop still drives day/month names).
 - One `English` / `CustomLabels` story per component demonstrating the override pattern.
 
 #### Tokens and motion
+
 - Tiered z-index scale exposed as CSS variables: `--z-overlay` (40), `--z-modal` (50), `--z-popover` (60), `--z-tooltip` (70), `--z-toast` (80). Replaces the hardcoded `999999999` Sonner default.
 - Motion duration tokens: `--motion-fast` (100ms), `--motion-default` (150ms), `--motion-slow` (200ms), `--motion-slowest` (300ms). Wired through Tooltip/Popover/Dialog/AlertDialog/Sheet.
 - Global `@media (prefers-reduced-motion: reduce)` override so motion-sensitive users get effectively-instant transitions.
 - `--font-mono` token (Geist Mono) applied to `InputOTP` slots (`font-mono` + `tabular-nums`) plus `tabular-nums` on `CurrencyInput` / `PercentageInput`.
 
 #### Fonts
+
 - Self-hosted Geist + Geist Mono via `@fontsource/geist` and `@fontsource/geist-mono` (only weights 400/500/600/700 sans, 400/500 mono). Drops Google Fonts CDN dependency (LGPD + render-blocking).
 - Geist replaces the previous Google Sans Flex tagline as the default `--font-sans`.
 
 #### DataTable improvements
+
 - `loading` prop — replaces body rows with skeleton cells (count = `pagination.pageSize ?? 5`, rotating widths), swaps search input and footer for skeletons, disables pagination, sets `aria-busy="true"`.
 - `downloadable` prop — renders an "Exportar para Excel" ghost button; opens a popover with three scopes (filtered / current page / all rows), each producing an `.xlsx` via lazy-imported `xlsx`. Accepts `boolean` or an object with `filename`, `sheetName`, `rowToRecord`.
 - pt-BR thousands separator on `defaultRowCount` — large counts now render as "1.832 registros" via `Intl.NumberFormat("pt-BR")`.
@@ -48,6 +59,7 @@ Releases from this point forward are managed via [changesets](https://github.com
 - New `Data/Table` simple story showcasing the `tableStyles()` helper for plain `<table>` markup.
 
 #### DX and types
+
 - Every public component now ships a typed `*Props` export: `CalendarProps`, `ProgressProps`, `SkeletonProps`, `ToasterProps`, `ScrollAreaProps`, `ScrollBarProps`, `LabelProps`. The internal `Label` used by `FieldShell` is renamed to `InternalLabelProps` to avoid collision.
 - `asChild?: boolean` on `Badge` and `Label` (via `@radix-ui/react-slot`), matching the `Button` pattern. Lets consumers render as a `Link`, custom button, or arbitrary child while keeping the visual class set.
 - Orphan types and values exported from the barrel: `DataTableDownloadable`, `DisabledDayPreset`, `DisabledDays`, `TypographyAs`, `ScrollBar`.
@@ -57,6 +69,7 @@ Releases from this point forward are managed via [changesets](https://github.com
 - Sidebar collapsible submenu with per-item `defaultOpen` flag.
 
 #### Packaging
+
 - Per-component subpath exports — `import { Button } from "@amfernandesinc/ui/button"` and pay only for what you use. The `exports` map grew from 3 entries to 53 (one per component + hooks + `lib/*` helpers + `./package.json`).
 - `tsup` configured with `splitting: true` so shared helpers (`cn`, `cva`, `FieldShell`, `useFieldIds`, Radix re-exports) live in `chunk-*.js` and are deduped instead of inlined per entry. `sourcemap: false` drops ~354KB of `.map` files from the tarball — published size ~514KB → ~260KB.
 - Subpath exports added for the Brazilian inputs and `./lib/brazil`.
@@ -64,6 +77,7 @@ Releases from this point forward are managed via [changesets](https://github.com
 ### Changed
 
 #### Spacing and density
+
 - Inputs: vertical padding bumped to `py-3` across `Input`, `Textarea`, `CurrencyInput`, `PercentageInput`, `MultiInput`, `TimePicker`. Fixed `h-9` / `h-11` heights dropped — box height now flows from padding.
 - `DateInput` trigger: aligned to `px-3 py-3`, no fixed height (matches sibling inputs).
 - `Button`: `default` size goes `px-4` → `px-3` so buttons sit flush with inputs; `lg` size goes `px-8` → `px-6` (enterprise tooling, not landing-page hero).
@@ -74,10 +88,12 @@ Releases from this point forward are managed via [changesets](https://github.com
 - Icon spacing: `mr-*` margins removed inside `<Button>` (its base variant already declares `gap-2`); other flex parents gain `gap-2`/`gap-1` and lose per-icon margin (Combobox, CommandPalette, DateInput, DateRangePicker).
 
 #### Tokens
+
 - `--radius` flattened to `0.25rem` (4px) — every `--radius-{sm,md,lg,xl,2xl,3xl,4xl}` resolves to the same value. `rounded-full` is unaffected.
 - Placeholder color routed through `--input` (the border color) — inputs, textareas, time picker, combobox, command palette all switch `placeholder:text-muted-foreground` → `placeholder:text-input`. The standalone `--placeholder` token introduced during the contrast pass was rolled back in favor of this unified low-emphasis tone.
 
 #### Motion language
+
 - Killed `transition-all` (anti-pattern: animates every property). `InputOTP` slot, Accordion trigger, Tabs trigger → `transition-colors`. Progress indicator → `transition-[width]`.
 - Removed orphan `transition-[color]` from ScrollArea viewport.
 - Chevron rotations normalized to default 150ms across Accordion, Sidebar, Tree (Accordion and Sidebar previously hardcoded `duration-200`).
@@ -89,6 +105,7 @@ Releases from this point forward are managed via [changesets](https://github.com
 ### Fixed
 
 #### Accessibility
+
 - Sidebar disabled links are no longer keyboard-focusable or clickable (drop `href`, `tabIndex={-1}`, `aria-disabled`, `pointer-events-none`, intercept `onClick`). Active items announce `aria-current="page"` (links) / `"true"` (buttons).
 - DataTable: inserts `sr-only role="status"` "Carregando dados…" during loading so VoiceOver/NVDA pick up the state transition. Empty-state text wrapped in `role="status" aria-live="polite"` so filter changes that flip row count to zero are announced.
 - FileUpload: camera "Iniciando câmera…" wrapper gains `role="status"`.
@@ -98,12 +115,14 @@ Releases from this point forward are managed via [changesets](https://github.com
 - CurrencyInput and PercentageInput forward `required` and `aria-required` to the underlying `<input>` (previously only the visual asterisk was set).
 
 #### Contrast (WCAG AA hardening)
+
 - `--destructive`: oklch(.628 .258 29.2) → oklch(.55 .19 29.2). Pure red (#ff0000) failed 4.5:1 on white text and on white background; the new deep red (#c93125) clears AA at 5.33:1.
 - `--info`: oklch(.668 .151 236.3) → oklch(.5 .15 236.3). Light blue failed at 2.93:1 on white; the new corporate blue (#006cac) clears AA at 5.61:1.
 - (Interim) introduced a `--placeholder` token at 4.85:1 on white, then folded the same role into `--input` — see _Changed → Tokens_ above.
 - Drops the `color-contrast` a11y override on the `Typography` `WithClassName` story (the underlying issue is now fixed).
 
 #### Focus rings (2-tier system finalized)
+
 - **Tier 1 (fields)** — single rule across `Input`, `Textarea`, `CurrencyInput`, `PercentageInput`, `MultiInput`: `focus-within:border-primary focus-within:ring-1 focus-within:ring-ring`. Error state collapses to persistent red border + red ring on focus (previously three different behaviors).
 - **Tier 2 (active controls)** — `Sheet` close button (was missing both `ring-ring` and `ring-offset-2` — rendered colorless ring), `Dialog` close button, Collapsible trigger, FileUpload thumbnail all gain `ring-offset-2`.
 - RadioGroup migrated from Radix-v2 soft ring (`ring-[3px] ring-ring/50`) to the Tier 2 standard.
@@ -111,15 +130,18 @@ Releases from this point forward are managed via [changesets](https://github.com
 - DataTable interactive rows gain an inset focus ring (`focus-visible:ring-2 ring-ring ring-inset`) — the previous `focus-visible:bg-muted/60` was invisible against zebra stripes or hovered backgrounds.
 
 #### Disabled state
+
 - FieldShell wrapper and Label peer-disabled normalized to `opacity-50` (was `opacity-60` and `opacity-70` respectively).
 - Removed inner `disabled:opacity-50` duplication on `Input`, `Textarea`, `MultiInput`, `TimePicker`, `CurrencyInput`, `PercentageInput` — FieldShell is now the sole owner of the visual fade (was compounding to 0.25 effective opacity).
 - DateInput dropped `bg-muted` on disabled — every other field just fades; DateInput was the lone outlier painting a grey background.
 
 #### Interactivity (post-Tailwind-v4 Preflight regression)
+
 - Tailwind v4 dropped the default `cursor: pointer` on `<button>` — every Button in the lib was rendering the default arrow on hover. Restored on `Button` base (covers all variants), `Checkbox`, `RadioGroup` (parity with `Switch`), DataTable filter menu items + sort header, Combobox tag close + clear-all wrappers, Sidebar item base, Sheet/Dialog close buttons, Collapsible trigger.
 - Hover semantics: Tabs inactive triggers gain `hover:bg-background/50` (previously no hover feedback). Combobox tag close switches to `hover:bg-secondary-foreground/20` for visible feedback over the `bg-muted` Badge. Combobox clear-all gains wrapper hover (was relying on icon-pixel-only `hover:opacity-100`). DataTable sort header gains `transition-colors` for smooth hover.
 
 #### DateRangePicker
+
 - Popover no longer closes prematurely while clicking inside the Calendar grid. Uses the new Popover `onInteractOutside` / `onFocusOutside` callbacks to detect clicks on `role="grid"`, `.rdp`, or `.rdp-root` and keep itself open.
 
 ### Removed
