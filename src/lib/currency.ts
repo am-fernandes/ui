@@ -58,3 +58,22 @@ export function centsToDisplay(cents: number): string {
 export function formatBRL(value: number): string {
   return `R$ ${centsToDisplay(toCents(value))}`
 }
+
+/**
+ * Formata número para exibição BRL sem prefixo: 1234.5 → "1.234,50"
+ * Útil para tabelas e campos onde o símbolo R$ já está no label.
+ */
+export function toBRLMoney(value?: string | number | null): string {
+  if (value === null || value === undefined || value === "") return ""
+  return new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2 }).format(
+    parseFloat(String(value)),
+  )
+}
+
+/**
+ * Reverte máscara BRL para número: "1.234,56" → 1234.56
+ * Usar ao submeter formulários com campos monetários mascarados.
+ */
+export function parseMaskedValue(value: string): number {
+  return Number(value.replaceAll(".", "").replaceAll(",", "."))
+}
