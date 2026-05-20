@@ -104,8 +104,8 @@ test.describe("Visual: Primitives — Button", () => {
   test("link", async ({ page }) => {
     await snapshot(page, "primitives-button--link", "button-link.png")
   })
-  test("sizes", async ({ page }) => {
-    await snapshot(page, "primitives-button--sizes", "button-sizes.png")
+  test("all-variants", async ({ page }) => {
+    await snapshot(page, "primitives-button--all-variants", "button-all-variants.png")
   })
   test("loading", async ({ page }) => {
     await snapshot(page, "primitives-button--loading", "button-loading.png")
@@ -143,8 +143,8 @@ test.describe("Visual: Primitives — Checkbox", () => {
   test("checked", async ({ page }) => {
     await snapshot(page, "primitives-checkbox--checked", "checkbox-checked.png")
   })
-  test("indeterminate", async ({ page }) => {
-    await snapshot(page, "primitives-checkbox--indeterminate", "checkbox-indeterminate.png")
+  test("disabled", async ({ page }) => {
+    await snapshot(page, "primitives-checkbox--disabled", "checkbox-disabled.png")
   })
   test("with-error", async ({ page }) => {
     await snapshot(page, "primitives-checkbox--with-error", "checkbox-with-error.png")
@@ -260,8 +260,8 @@ test.describe("Visual: Overlays — Progress", () => {
   test("full", async ({ page }) => {
     await snapshot(page, "overlays-progress--full", "progress-full.png")
   })
-  test("indeterminate", async ({ page }) => {
-    await snapshot(page, "overlays-progress--indeterminate", "progress-indeterminate.png")
+  test("playground", async ({ page }) => {
+    await snapshot(page, "overlays-progress--playground", "progress-playground.png")
   })
 })
 
@@ -284,8 +284,8 @@ test.describe("Visual: Navigation — Breadcrumb", () => {
   test("default", async ({ page }) => {
     await snapshot(page, "navigation-breadcrumb--default", "breadcrumb-default.png")
   })
-  test("collapsed", async ({ page }) => {
-    await snapshot(page, "navigation-breadcrumb--collapsed", "breadcrumb-collapsed.png")
+  test("long-trail", async ({ page }) => {
+    await snapshot(page, "navigation-breadcrumb--long-trail", "breadcrumb-long-trail.png")
   })
 })
 
