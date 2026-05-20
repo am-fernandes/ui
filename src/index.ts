@@ -29,6 +29,8 @@ export { Tree, type TreeNodeData, type TreeProps } from "./data/tree"
 export { Video, type VideoCaptionTrack, type VideoProps } from "./data/video"
 
 // Hooks
+export { useCopyToClipboard } from "./hooks/use-copy-to-clipboard"
+export { useDebounce } from "./hooks/use-debounce"
 export { useIsMobile } from "./hooks/use-is-mobile"
 
 // Lib
@@ -37,11 +39,32 @@ export {
   centsToDisplay,
   formatBRL,
   fromCents,
+  parseMaskedValue,
   percentFromValue,
   percentOfTotal,
   toCents,
+  toBRLMoney,
 } from "./lib/currency"
+export {
+  addDays,
+  addMonths,
+  compareDates,
+  diffInDays,
+  endOfDay,
+  endOfMonth,
+  formatDate,
+  isFuture,
+  isPast,
+  isSameDay,
+  isValidDate,
+  parseDate,
+  startOfDay,
+  startOfMonth,
+  subDays,
+  type DateFormat,
+} from "./lib/date"
 export { formatCount } from "./lib/format-count"
+export { formatCEP, formatCNPJ, formatCPF, formatPhone } from "./lib/format"
 export { bytes, gb, kb, mb } from "./lib/size"
 export { cn } from "./lib/utils"
 
