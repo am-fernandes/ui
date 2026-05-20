@@ -26,6 +26,12 @@ test.setTimeout(60_000)
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
+// Force system fonts everywhere during visual tests so we don't race
+// against Geist (loaded from @fontsource at runtime). Geist's font-loaded
+// event fires at slightly different points across runs, which produced
+// sub-pixel rendering jitter and flaky failures on identical UI. The
+// stack matches the fallback half of --font-sans / --font-mono in
+// tokens.css — what the lib renders when Geist hasn't loaded.
 const KILL_ANIMATIONS = `
 *, *::before, *::after {
   animation-duration: 0s !important;
@@ -33,6 +39,10 @@ const KILL_ANIMATIONS = `
   transition-duration: 0s !important;
   transition-delay: 0s !important;
   caret-color: transparent !important;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+[class*="font-mono"], code, kbd, pre, samp, [class*="tabular-nums"] {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
 }
 `
 
@@ -208,11 +218,14 @@ test.describe("Visual: Primitives — Skeleton", () => {
 })
 
 test.describe("Visual: Primitives — Typography", () => {
-  test("display", async ({ page }) => {
-    await snapshot(page, "primitives-typography--display", "typography-display.png")
+  test("heading", async ({ page }) => {
+    await snapshot(page, "primitives-typography--heading", "typography-heading.png")
   })
   test("title", async ({ page }) => {
     await snapshot(page, "primitives-typography--title", "typography-title.png")
+  })
+  test("lead", async ({ page }) => {
+    await snapshot(page, "primitives-typography--lead", "typography-lead.png")
   })
   test("body", async ({ page }) => {
     await snapshot(page, "primitives-typography--body", "typography-body.png")
