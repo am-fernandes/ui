@@ -1,5 +1,6 @@
-import type { ColumnDef } from "@tanstack/react-table"
+import type { ColumnDef, Row } from "@tanstack/react-table"
 import { format } from "date-fns"
+import type * as React from "react"
 
 export type DateColumnShowTime = boolean | "auto"
 
@@ -98,6 +99,75 @@ export function dateColumn<TData>(opts: DateColumnOptions<TData>): ColumnDef<TDa
       if (a == null) return -1
       if (b == null) return 1
       return a < b ? -1 : a > b ? 1 : 0
+    },
+  } as ColumnDef<TData>
+}
+
+type FormattedColumnAccessor<TData, TValue> =
+  | {
+      accessorKey: keyof TData & string
+      accessorFn?: never
+      id?: string
+    }
+  | {
+      accessorKey?: never
+      accessorFn: (row: TData, rowIndex: number) => TValue
+      id: string
+    }
+
+export type FormattedColumnOptions<TData, TValue = unknown> = FormattedColumnAccessor<
+  TData,
+  TValue
+> & {
+  header: ColumnDef<TData>["header"]
+  /**
+   * Format the cell's display. Receives the raw value plus the full row, so
+   * you can synthesize labels from sibling fields (e.g. `formatPhone(value)`,
+   * `formatBRL(value)`, `\`${row.firstName} ${row.lastName}\``).
+   *
+   * The xlsx export and the column's sort/filter use the raw value — only the
+   * UI display goes through `format`.
+   */
+  format: (value: TValue, row: TData) => React.ReactNode
+  /** Extra class on the wrapping `<span>`. Omit and we render the value bare. */
+  className?: string
+  /** Render this string when the raw value is `null`, `undefined`, or `""`. */
+  emptyText?: string
+  enableSorting?: boolean
+  /** Custom sort. Defaults to TanStack's automatic comparator on the raw value. */
+  sortingFn?: ColumnDef<TData>["sortingFn"]
+}
+
+/**
+ * Column helper that decouples the display format from the underlying value.
+ *
+ * @example
+ * formattedColumn<Lead, string>({
+ *   accessorFn: (lead) => lead.phone,
+ *   id: 'phone',
+ *   header: 'Telefone',
+ *   format: (raw) => formatPhone(raw ?? ''),
+ *   emptyText: '—',
+ * })
+ */
+export function formattedColumn<TData, TValue = unknown>(
+  opts: FormattedColumnOptions<TData, TValue>,
+): ColumnDef<TData> {
+  const { header, format: formatter, className, emptyText = "", enableSorting, sortingFn } = opts
+  const access =
+    opts.accessorKey != null
+      ? { accessorKey: opts.accessorKey, ...(opts.id ? { id: opts.id } : {}) }
+      : { accessorFn: opts.accessorFn, id: opts.id }
+  return {
+    ...access,
+    header,
+    enableSorting,
+    sortingFn,
+    cell: ({ getValue, row }: { getValue: () => unknown; row: Row<TData> }) => {
+      const raw = getValue() as TValue
+      if (raw == null || raw === "") return emptyText
+      const node = formatter(raw, row.original)
+      return className ? <span className={className}>{node}</span> : node
     },
   } as ColumnDef<TData>
 }

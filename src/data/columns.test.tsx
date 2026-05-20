@@ -2,7 +2,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table"
 import { render } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
-import { dateColumn } from "./columns"
+import { dateColumn, formattedColumn } from "./columns"
 
 interface RowShape {
   data: string | Date | number | null
@@ -100,5 +100,113 @@ describe("dateColumn", () => {
     expect(callSort(col, null, "2026-01-15")).toBe(-1)
     expect(callSort(col, "2026-01-15", null)).toBe(1)
     expect(callSort(col, null, null)).toBe(0)
+  })
+})
+
+interface PhoneRow {
+  phone: string | null
+  name: string
+}
+
+function renderFormattedCell(
+  col: ColumnDef<PhoneRow>,
+  value: unknown,
+  rowOriginal: PhoneRow,
+): string {
+  const cell = (
+    col as unknown as {
+      cell: (ctx: {
+        getValue: () => unknown
+        row: { original: PhoneRow }
+      }) => React.ReactNode
+    }
+  ).cell
+  const node = cell({ getValue: () => value, row: { original: rowOriginal } })
+  const { container } = render(<div>{node}</div>)
+  return container.textContent ?? ""
+}
+
+describe("formattedColumn", () => {
+  const sampleRow: PhoneRow = { phone: "11944951458", name: "Gisel" }
+
+  it("formats the cell display through the provided `format` callback", () => {
+    const col = formattedColumn<PhoneRow, string>({
+      accessorKey: "phone",
+      header: "Telefone",
+      format: (v) => `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`,
+    })
+    expect(renderFormattedCell(col, "11944951458", sampleRow)).toBe("(11) 94495-1458")
+  })
+
+  it("passes the full row to `format` so you can synthesize across fields", () => {
+    const col = formattedColumn<PhoneRow, string>({
+      accessorKey: "phone",
+      header: "Contato",
+      format: (v, row) => `${row.name} — ${v}`,
+    })
+    expect(renderFormattedCell(col, "11944951458", sampleRow)).toBe("Gisel — 11944951458")
+  })
+
+  it("renders `emptyText` when the raw value is nullish/empty", () => {
+    const col = formattedColumn<PhoneRow, string>({
+      accessorKey: "phone",
+      header: "Telefone",
+      format: (v) => v.toUpperCase(),
+      emptyText: "—",
+    })
+    expect(renderFormattedCell(col, null, sampleRow)).toBe("—")
+    expect(renderFormattedCell(col, "", sampleRow)).toBe("—")
+    expect(renderFormattedCell(col, undefined, sampleRow)).toBe("—")
+  })
+
+  it("wraps the formatted output in a span when `className` is provided", () => {
+    const col = formattedColumn<PhoneRow, string>({
+      accessorKey: "phone",
+      header: "Telefone",
+      format: (v) => v,
+      className: "font-mono text-xs",
+    })
+    const cell = (
+      col as unknown as {
+        cell: (ctx: {
+          getValue: () => unknown
+          row: { original: PhoneRow }
+        }) => React.ReactNode
+      }
+    ).cell
+    const { container } = render(
+      <div>{cell({ getValue: () => "x", row: { original: sampleRow } })}</div>,
+    )
+    const span = container.querySelector("span")
+    expect(span?.className).toContain("font-mono")
+  })
+
+  it("supports `accessorFn` columns (computed values)", () => {
+    interface DeepRow {
+      lead: { phone: string }
+    }
+    const col = formattedColumn<DeepRow, string>({
+      accessorFn: (row) => row.lead.phone,
+      id: "phone",
+      header: "Telefone",
+      format: (v) => `+55 ${v}`,
+    })
+    const cell = (
+      col as unknown as {
+        cell: (ctx: {
+          getValue: () => unknown
+          row: { original: DeepRow }
+        }) => React.ReactNode
+      }
+    ).cell
+    const { container } = render(
+      <div>
+        {cell({
+          getValue: () => "11944951458",
+          row: { original: { lead: { phone: "11944951458" } } },
+        })}
+      </div>,
+    )
+    expect(container.textContent).toBe("+55 11944951458")
   })
 })

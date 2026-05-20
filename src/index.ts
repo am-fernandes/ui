@@ -15,7 +15,13 @@ export {
   type DataTableLabels,
   type DataTableProps,
 } from "./data/data-table"
-export { dateColumn, type DateColumnOptions, type DateColumnShowTime } from "./data/columns"
+export {
+  dateColumn,
+  formattedColumn,
+  type DateColumnOptions,
+  type DateColumnShowTime,
+  type FormattedColumnOptions,
+} from "./data/columns"
 export { Image, type ImageProps } from "./data/image"
 export {
   ScrollArea,
