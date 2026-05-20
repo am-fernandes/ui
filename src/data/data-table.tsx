@@ -648,7 +648,9 @@ function DataTable<TData>({
       </div>
 
       {paginationEnabled || showRowCount ? (
-        <div className="flex items-center justify-between gap-2 px-3 py-3">
+        // -mt-1 trims the parent `gap-3` (12px) to 8px below the table —
+        // a tight footer reads less detached from the rows above it.
+        <div className="-mt-1 flex items-center justify-between gap-2 px-3 py-3">
           {showRowCount ? (
             loading ? (
               <div className="h-3 w-32 animate-pulse rounded-md bg-primary/10" />
