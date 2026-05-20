@@ -172,6 +172,14 @@ describe("Sidebar (data-driven)", () => {
     expect(onClick).toHaveBeenCalled()
   })
 
+  it("button-mode items override the browser's default text-align: center", () => {
+    // Regression: <button> defaults to text-align: center in user-agent CSS,
+    // which centered the label inside its flex-1 span. Force text-left.
+    render(<Sidebar items={[{ id: "btn", label: "Configurações", onClick: () => {} }]} />)
+    const btn = screen.getByRole("button", { name: /Configurações/i })
+    expect(btn.className).toContain("text-left")
+  })
+
   it("renders disabled item with aria-disabled when it's an anchor", () => {
     render(<Sidebar items={[{ id: "a", label: "Diz", href: "/x", disabled: true }]} />)
     const link = screen.getByText("Diz").closest("a") as HTMLAnchorElement
