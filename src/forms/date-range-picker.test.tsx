@@ -170,6 +170,7 @@ describe("DateRangePicker", () => {
     // calls preventDefault() so Radix does not auto-dismiss the popover.
     render(
       <div>
+        {/* biome-ignore lint/a11y/useSemanticElements: mock grid container for testing */}
         <div role="grid" data-testid="outside-grid">
           <button type="button" data-testid="outside-grid-cell">
             cell

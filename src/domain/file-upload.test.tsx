@@ -433,119 +433,122 @@ describe("FileUpload", () => {
     expect(screen.queryByRole("button", { name: "Cancelar" })).not.toBeInTheDocument()
   })
 
-  it("takePhoto captures a frame and forwards the File via onCapture → ingest", { timeout: 20000 }, async () => {
-    // Mock navigator.mediaDevices.getUserMedia and a minimal MediaStream so the
-    // CameraDialog reaches the "ready" branch and the "Tirar foto" button is
-    // enabled.
-    const stop = vi.fn()
-    const fakeTrack = { stop } as unknown as MediaStreamTrack
-    const fakeStream = {
-      getTracks: () => [fakeTrack],
-    } as unknown as MediaStream
-    const getUserMedia = vi.fn().mockResolvedValue(fakeStream)
-    const originalMediaDevices = (
-      navigator as unknown as { mediaDevices?: MediaDevices }
-    ).mediaDevices
-    Object.defineProperty(navigator, "mediaDevices", {
-      configurable: true,
-      value: { getUserMedia },
-    })
-
-    // Make HTMLVideoElement look like a ready video with a known frame size.
-    const videoWidthSpy = vi
-      .spyOn(HTMLVideoElement.prototype, "videoWidth", "get")
-      .mockReturnValue(640)
-    const videoHeightSpy = vi
-      .spyOn(HTMLVideoElement.prototype, "videoHeight", "get")
-      .mockReturnValue(480)
-    const readyStateSpy = vi
-      .spyOn(HTMLMediaElement.prototype, "readyState", "get")
-      .mockReturnValue(2)
-    // jsdom does not support assigning a MediaStream to srcObject — stub the
-    // setter so the dialog's useEffect does not throw.
-    const srcObjectDescriptor = Object.getOwnPropertyDescriptor(
-      HTMLMediaElement.prototype,
-      "srcObject",
-    )
-    Object.defineProperty(HTMLMediaElement.prototype, "srcObject", {
-      configurable: true,
-      get() {
-        return null
-      },
-      set() {
-        /* no-op */
-      },
-    })
-
-    // jsdom does not implement Canvas 2D context — stub getContext so takePhoto
-    // does not bail at `if (!ctx) return`.
-    const fakeCtx = { drawImage: vi.fn() } as unknown as CanvasRenderingContext2D
-    const getContextSpy = vi
-      .spyOn(HTMLCanvasElement.prototype, "getContext")
-      .mockImplementation(() => fakeCtx as unknown as RenderingContext)
-    // jsdom's canvas.toBlob may produce null. Stub so `takePhoto` receives a
-    // real Blob and continues into the File/onCapture path.
-    const toBlobSpy = vi
-      .spyOn(HTMLCanvasElement.prototype, "toBlob")
-      .mockImplementation((cb: BlobCallback) => {
-        cb(new Blob(["fake-jpeg"], { type: "image/jpeg" }))
+  it(
+    "takePhoto captures a frame and forwards the File via onCapture → ingest",
+    { timeout: 20000 },
+    async () => {
+      // Mock navigator.mediaDevices.getUserMedia and a minimal MediaStream so the
+      // CameraDialog reaches the "ready" branch and the "Tirar foto" button is
+      // enabled.
+      const stop = vi.fn()
+      const fakeTrack = { stop } as unknown as MediaStreamTrack
+      const fakeStream = {
+        getTracks: () => [fakeTrack],
+      } as unknown as MediaStream
+      const getUserMedia = vi.fn().mockResolvedValue(fakeStream)
+      const originalMediaDevices = (navigator as unknown as { mediaDevices?: MediaDevices })
+        .mediaDevices
+      Object.defineProperty(navigator, "mediaDevices", {
+        configurable: true,
+        value: { getUserMedia },
       })
 
-    try {
-      const onValueChange = vi.fn()
-      render(<FileUpload camera onValueChange={onValueChange} />)
-      fireEvent.click(screen.getByRole("button", { name: /Capturar foto/ }))
-
-      // Wait for the getUserMedia promise to resolve and the ready effect to
-      // flush — the "Tirar foto" button is initially disabled and becomes
-      // enabled once the dialog's setReady(true) commits.
-      await waitFor(
-        () => {
-          expect(screen.getByRole("button", { name: "Tirar foto" })).not.toBeDisabled()
-        },
-        { timeout: 10000 },
+      // Make HTMLVideoElement look like a ready video with a known frame size.
+      const videoWidthSpy = vi
+        .spyOn(HTMLVideoElement.prototype, "videoWidth", "get")
+        .mockReturnValue(640)
+      const videoHeightSpy = vi
+        .spyOn(HTMLVideoElement.prototype, "videoHeight", "get")
+        .mockReturnValue(480)
+      const readyStateSpy = vi
+        .spyOn(HTMLMediaElement.prototype, "readyState", "get")
+        .mockReturnValue(2)
+      // jsdom does not support assigning a MediaStream to srcObject — stub the
+      // setter so the dialog's useEffect does not throw.
+      const srcObjectDescriptor = Object.getOwnPropertyDescriptor(
+        HTMLMediaElement.prototype,
+        "srcObject",
       )
-
-      const takeBtn = screen.getByRole("button", { name: "Tirar foto" })
-      await act(async () => {
-        fireEvent.click(takeBtn)
+      Object.defineProperty(HTMLMediaElement.prototype, "srcObject", {
+        configurable: true,
+        get() {
+          return null
+        },
+        set() {
+          /* no-op */
+        },
       })
 
-      // takePhoto → onCapture → ingest → onValueChange called with the snapshot File.
-      expect(onValueChange).toHaveBeenCalledTimes(1)
-      const captured = onValueChange.mock.calls[0]?.[0] as File[]
-      expect(captured).toHaveLength(1)
-      expect(captured[0]).toBeInstanceOf(File)
-      expect(captured[0]?.type).toBe("image/jpeg")
-      // Dialog also closes (onOpenChange(false) inside the toBlob callback).
-      expect(screen.queryByRole("button", { name: "Tirar foto" })).not.toBeInTheDocument()
-    } finally {
-      toBlobSpy.mockRestore()
-      getContextSpy.mockRestore()
-      if (srcObjectDescriptor) {
-        Object.defineProperty(HTMLMediaElement.prototype, "srcObject", srcObjectDescriptor)
-      } else {
-        // biome-ignore lint/performance/noDelete: restoring jsdom's original (absent) descriptor
-        delete (HTMLMediaElement.prototype as unknown as { srcObject?: unknown }).srcObject
-      }
-      readyStateSpy.mockRestore()
-      videoHeightSpy.mockRestore()
-      videoWidthSpy.mockRestore()
-      if (originalMediaDevices === undefined) {
-        // Restore "absent" mediaDevices (jsdom default) so subsequent tests hit
-        // the error branch again as before.
-        Object.defineProperty(navigator, "mediaDevices", {
-          configurable: true,
-          value: undefined,
+      // jsdom does not implement Canvas 2D context — stub getContext so takePhoto
+      // does not bail at `if (!ctx) return`.
+      const fakeCtx = { drawImage: vi.fn() } as unknown as CanvasRenderingContext2D
+      const getContextSpy = vi
+        .spyOn(HTMLCanvasElement.prototype, "getContext")
+        .mockImplementation(() => fakeCtx as unknown as RenderingContext)
+      // jsdom's canvas.toBlob may produce null. Stub so `takePhoto` receives a
+      // real Blob and continues into the File/onCapture path.
+      const toBlobSpy = vi
+        .spyOn(HTMLCanvasElement.prototype, "toBlob")
+        .mockImplementation((cb: BlobCallback) => {
+          cb(new Blob(["fake-jpeg"], { type: "image/jpeg" }))
         })
-      } else {
-        Object.defineProperty(navigator, "mediaDevices", {
-          configurable: true,
-          value: originalMediaDevices,
+
+      try {
+        const onValueChange = vi.fn()
+        render(<FileUpload camera onValueChange={onValueChange} />)
+        fireEvent.click(screen.getByRole("button", { name: /Capturar foto/ }))
+
+        // Wait for the getUserMedia promise to resolve and the ready effect to
+        // flush — the "Tirar foto" button is initially disabled and becomes
+        // enabled once the dialog's setReady(true) commits.
+        await waitFor(
+          () => {
+            expect(screen.getByRole("button", { name: "Tirar foto" })).not.toBeDisabled()
+          },
+          { timeout: 10000 },
+        )
+
+        const takeBtn = screen.getByRole("button", { name: "Tirar foto" })
+        await act(async () => {
+          fireEvent.click(takeBtn)
         })
+
+        // takePhoto → onCapture → ingest → onValueChange called with the snapshot File.
+        expect(onValueChange).toHaveBeenCalledTimes(1)
+        const captured = onValueChange.mock.calls[0]?.[0] as File[]
+        expect(captured).toHaveLength(1)
+        expect(captured[0]).toBeInstanceOf(File)
+        expect(captured[0]?.type).toBe("image/jpeg")
+        // Dialog also closes (onOpenChange(false) inside the toBlob callback).
+        expect(screen.queryByRole("button", { name: "Tirar foto" })).not.toBeInTheDocument()
+      } finally {
+        toBlobSpy.mockRestore()
+        getContextSpy.mockRestore()
+        if (srcObjectDescriptor) {
+          Object.defineProperty(HTMLMediaElement.prototype, "srcObject", srcObjectDescriptor)
+        } else {
+          // biome-ignore lint/performance/noDelete: restoring jsdom's original (absent) descriptor
+          delete (HTMLMediaElement.prototype as unknown as { srcObject?: unknown }).srcObject
+        }
+        readyStateSpy.mockRestore()
+        videoHeightSpy.mockRestore()
+        videoWidthSpy.mockRestore()
+        if (originalMediaDevices === undefined) {
+          // Restore "absent" mediaDevices (jsdom default) so subsequent tests hit
+          // the error branch again as before.
+          Object.defineProperty(navigator, "mediaDevices", {
+            configurable: true,
+            value: undefined,
+          })
+        } else {
+          Object.defineProperty(navigator, "mediaDevices", {
+            configurable: true,
+            value: originalMediaDevices,
+          })
+        }
       }
-    }
-  })
+    },
+  )
 
   it("overrides labels via the labels prop (en-US sample)", () => {
     render(
