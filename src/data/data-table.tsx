@@ -185,6 +185,15 @@ export interface DataTableProps<TData> {
   globalFilter?: string
   /** Controlled global filter change handler. */
   onGlobalFilterChange?: OnChangeFn<string>
+  /**
+   * Whether filtering is server-driven. When `true`, the table skips its
+   * own client-side filtering pass — the row set you pass in `data` is
+   * rendered as-is. Use this when you refetch on every keystroke and
+   * don't want the visible page locally filtered first (which causes a
+   * brief mismatch between filtered-local rows and the next server
+   * response).
+   */
+  manualFiltering?: boolean
   /** Controlled page index (0-based). */
   pageIndex?: number
   /** Controlled pagination change handler. */
@@ -282,6 +291,7 @@ function DataTable<TData>({
   sorting: sortingProp,
   onSortingChange: onSortingChangeProp,
   manualSorting,
+  manualFiltering,
 }: DataTableProps<TData>) {
   const isGlobalFilterControlled = globalFilterProp !== undefined
   const isPaginationControlled = pageIndexProp !== undefined || onPaginationChangeProp !== undefined
@@ -404,7 +414,13 @@ function DataTable<TData>({
       onPaginationChange: paginationEnabled ? handlePaginationChange : undefined,
       getCoreRowModel: getCoreRowModel(),
       getSortedRowModel: getSortedRowModel(),
-      getFilteredRowModel: getFilteredRowModel(),
+      // Skip the client-side filter pass when the server is filtering.
+      // Without this, typing in the search would briefly show locally
+      // filtered rows from the current page before the next server
+      // response arrives — a visible mismatch.
+      ...(manualFiltering
+        ? { manualFiltering: true }
+        : { getFilteredRowModel: getFilteredRowModel() }),
       ...(paginationEnabled && !manualPagination
         ? { getPaginationRowModel: getPaginationRowModel() }
         : {}),
@@ -428,6 +444,7 @@ function DataTable<TData>({
       handleSortingChange,
       manualPagination,
       manualSorting,
+      manualFiltering,
       pageCount,
       searchableColumns,
       globalFilterFn,
