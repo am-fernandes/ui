@@ -468,6 +468,14 @@ function DataTable<TData>({
     [data, defaultRowToRecord, downloadConfig, table],
   )
 
+  const [downloadMenuOpen, setDownloadMenuOpen] = React.useState(false)
+  const runExport = React.useCallback(
+    (scope: ExportScope) => {
+      setDownloadMenuOpen(false)
+      void handleExport(scope)
+    },
+    [handleExport],
+  )
   const renderDownloadMenu = () => {
     if (loading) {
       return (
@@ -480,6 +488,8 @@ function DataTable<TData>({
     return (
       <Popover
         align="end"
+        open={downloadMenuOpen}
+        onOpenChange={setDownloadMenuOpen}
         trigger={
           <Button
             type="button"
@@ -500,9 +510,7 @@ function DataTable<TData>({
             role="menuitem"
             data-slot="data-table-download-filtered"
             className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              void handleExport("filtered")
-            }}
+            onClick={() => runExport("filtered")}
           >
             {mergedLabels.exportFiltered}
           </button>
@@ -511,9 +519,7 @@ function DataTable<TData>({
             role="menuitem"
             data-slot="data-table-download-page"
             className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              void handleExport("page")
-            }}
+            onClick={() => runExport("page")}
           >
             {mergedLabels.exportPage}
           </button>
@@ -522,9 +528,7 @@ function DataTable<TData>({
             role="menuitem"
             data-slot="data-table-download-all"
             className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              void handleExport("all")
-            }}
+            onClick={() => runExport("all")}
           >
             {mergedLabels.exportAll}
           </button>
