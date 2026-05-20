@@ -270,4 +270,25 @@ describe("Tree", () => {
     expect(items[1]?.getAttribute("tabindex")).toBe("0")
     expect(items[1]?.getAttribute("aria-selected")).toBe("true")
   })
+
+  it("row keydown handler activates on Enter/Space and ignores other keys", () => {
+    // Targets the inner row <div>'s onKeyDown handler (distinct from the <li>
+    // onKeyDown which owns arrow-nav). The row handler only reacts to
+    // Enter/Space and calls handleRowActivate, otherwise it's a no-op.
+    const onSelectedChange = vi.fn()
+    render(<Tree data={data} onSelectedChange={onSelectedChange} />)
+    // The row <div> is the parent of the label text node.
+    const row = screen.getByText("Sibling").parentElement as HTMLElement
+    expect(row).not.toBeNull()
+    // Non-activation key: handler should early-return (no preventDefault, no activate).
+    fireEvent.keyDown(row, { key: "a" })
+    expect(onSelectedChange).not.toHaveBeenCalled()
+    // Enter triggers row activate via the row's own onKeyDown.
+    fireEvent.keyDown(row, { key: "Enter" })
+    expect(onSelectedChange).toHaveBeenCalledWith("sibling")
+    // Space also triggers activation.
+    onSelectedChange.mockClear()
+    fireEvent.keyDown(row, { key: " " })
+    expect(onSelectedChange).toHaveBeenCalledWith("sibling")
+  })
 })

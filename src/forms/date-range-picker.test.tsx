@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
@@ -162,6 +162,67 @@ describe("DateRangePicker", () => {
     )
     const trigger = screen.getByRole("button")
     expect(trigger).toHaveAttribute("aria-invalid", "true")
+  })
+
+  it("keeps the popover open on pointer-down inside an outside element with role=grid", async () => {
+    // Exercises the onPointerDownOutside handler: when the event target lives
+    // inside an element matching '[role="grid"], .rdp, .rdp-root', the handler
+    // calls preventDefault() so Radix does not auto-dismiss the popover.
+    render(
+      <div>
+        <div role="grid" data-testid="outside-grid">
+          <button type="button" data-testid="outside-grid-cell">
+            cell
+          </button>
+        </div>
+        <Controlled />
+      </div>,
+    )
+    const trigger = screen.getByText("Selecione um período").closest("button")
+    if (!trigger) throw new Error("trigger not found")
+    await userEvent.click(trigger)
+    // Wait for the popover content to be in the DOM.
+    const openedGrids = await screen.findAllByRole("grid")
+    expect(openedGrids.length).toBeGreaterThan(0)
+
+    // Dispatch a pointerdown on an element OUTSIDE the popover whose ancestor
+    // matches the grid selector. Radix will fire onPointerDownOutside, our
+    // handler will detect the grid ancestor and call preventDefault, leaving
+    // the popover open.
+    const outsideCell = screen.getByTestId("outside-grid-cell")
+    fireEvent.pointerDown(outsideCell, { button: 0, ctrlKey: false })
+
+    // The popover content (Calendar grid) must still be in the document.
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.queryAllByRole("grid").length).toBeGreaterThan(1)
+  })
+
+  it("keeps the popover open when focus moves outside (onFocusOutside preventDefault)", async () => {
+    // Exercises onFocusOutside: the handler unconditionally calls
+    // preventDefault, so when focus escapes the popover Radix should NOT
+    // auto-dismiss it.
+    render(
+      <div>
+        <input data-testid="outside-input" />
+        <Controlled />
+      </div>,
+    )
+    const trigger = screen.getByText("Selecione um período").closest("button")
+    if (!trigger) throw new Error("trigger not found")
+    await userEvent.click(trigger)
+    await screen.findAllByRole("grid")
+
+    // Move focus to an element OUTSIDE the popover. Radix's DismissableLayer
+    // listens for focusin on the document and dispatches a focusOutside event;
+    // the picker's handler preventDefaults it.
+    const outsideInput = screen.getByTestId("outside-input") as HTMLInputElement
+    outsideInput.focus()
+    // Some Radix builds rely on a focusin event bubbling to document; ensure it fires.
+    fireEvent.focusIn(outsideInput)
+
+    await new Promise((r) => setTimeout(r, 20))
+    // Popover content (calendar grid) must still be present.
+    expect(screen.queryAllByRole("grid").length).toBeGreaterThan(0)
   })
 
   it("selects a single day and emits a partial range with only 'from'", async () => {

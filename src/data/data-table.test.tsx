@@ -449,6 +449,74 @@ describe("DataTable", () => {
     })
   })
 
+  describe("interactive rows (onRowClick)", () => {
+    it("fires onRowClick with the row data and click event when a row is clicked", async () => {
+      const onRowClick = vi.fn()
+      render(<DataTable columns={columns} data={data} onRowClick={onRowClick} />)
+      const bravoCell = screen.getByText("Bravo")
+      const bravoRow = bravoCell.closest("tr")
+      expect(bravoRow).toBeTruthy()
+      await userEvent.click(bravoRow as HTMLTableRowElement)
+      expect(onRowClick).toHaveBeenCalledTimes(1)
+      const [rowArg, eventArg] = onRowClick.mock.calls[0] as [Row, React.MouseEvent]
+      expect(rowArg).toEqual({ name: "Bravo", age: 30 })
+      expect(eventArg).toBeDefined()
+      expect(eventArg.type).toBe("click")
+    })
+
+    it("fires onRowClick when Enter or Space is pressed on a focused interactive row", async () => {
+      const onRowClick = vi.fn()
+      render(<DataTable columns={columns} data={data} onRowClick={onRowClick} />)
+      const alphaRow = screen.getByText("Alpha").closest("tr") as HTMLTableRowElement
+      expect(alphaRow).toBeTruthy()
+      expect(alphaRow.getAttribute("role")).toBe("button")
+      expect(alphaRow.getAttribute("tabindex")).toBe("0")
+
+      alphaRow.focus()
+      await userEvent.keyboard("{Enter}")
+      expect(onRowClick).toHaveBeenCalledTimes(1)
+      expect(onRowClick.mock.calls[0]?.[0]).toEqual({ name: "Alpha", age: 20 })
+
+      alphaRow.focus()
+      await userEvent.keyboard(" ")
+      expect(onRowClick).toHaveBeenCalledTimes(2)
+      expect(onRowClick.mock.calls[1]?.[0]).toEqual({ name: "Alpha", age: 20 })
+    })
+
+    it("does not attach interactive role/handlers when onRowClick is omitted", async () => {
+      render(<DataTable columns={columns} data={data} />)
+      const row = screen.getByText("Bravo").closest("tr") as HTMLTableRowElement
+      expect(row.getAttribute("role")).toBeNull()
+      expect(row.getAttribute("tabindex")).toBeNull()
+    })
+  })
+
+  describe("pagination previous", () => {
+    it("returns to the previous page when the previous button is clicked", async () => {
+      const many: Row[] = Array.from({ length: 5 }, (_, i) => ({
+        name: `Row ${i + 1}`,
+        age: 20 + i,
+      }))
+      render(<DataTable columns={columns} data={many} pagination={{ pageSize: 2 }} />)
+
+      // Start on page 1 of 3 — previous should be disabled.
+      const prev = screen.getByRole("button", { name: "Página anterior" })
+      const next = screen.getByRole("button", { name: "Próxima página" })
+      expect(prev).toBeDisabled()
+      expect(screen.getByText(/Página 1 de 3/)).toBeInTheDocument()
+
+      // Advance to page 2, then go back via "Previous".
+      await userEvent.click(next)
+      expect(screen.getByText(/Página 2 de 3/)).toBeInTheDocument()
+      expect(prev).not.toBeDisabled()
+
+      await userEvent.click(prev)
+      expect(screen.getByText(/Página 1 de 3/)).toBeInTheDocument()
+      expect(screen.getByText("Row 1")).toBeInTheDocument()
+      expect(screen.queryByText("Row 3")).not.toBeInTheDocument()
+    })
+  })
+
   describe("loading", () => {
     it("renders 5 skeleton rows by default when pagination is off", () => {
       const { container } = render(<DataTable columns={columns} data={[]} loading />)

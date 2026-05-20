@@ -178,6 +178,38 @@ describe("Sidebar (data-driven)", () => {
     expect(link.getAttribute("aria-disabled")).toBe("true")
   })
 
+  it("intercepts click on a disabled anchor by calling preventDefault", () => {
+    const itemOnClick = vi.fn()
+    const { container } = render(
+      <Sidebar
+        items={[{ id: "x", label: "Item X", href: "/x", disabled: true, onClick: itemOnClick }]}
+      />,
+    )
+    const link = container.querySelector('a[aria-disabled="true"]') as HTMLAnchorElement
+    expect(link).toBeTruthy()
+    expect(link.tabIndex).toBe(-1)
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true })
+    const preventDefaultSpy = vi.spyOn(event, "preventDefault")
+    link.dispatchEvent(event)
+    expect(preventDefaultSpy).toHaveBeenCalled()
+    // The user's onClick must NOT run for a disabled item.
+    expect(itemOnClick).not.toHaveBeenCalled()
+  })
+
+  it("fires item.onClick on a non-disabled anchor without intercepting", () => {
+    const itemOnClick = vi.fn()
+    const { container } = render(
+      <Sidebar items={[{ id: "y", label: "Item Y", href: "/y", onClick: itemOnClick }]} />,
+    )
+    const link = container.querySelector('a[href="/y"]') as HTMLAnchorElement
+    expect(link).toBeTruthy()
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true })
+    const preventDefaultSpy = vi.spyOn(event, "preventDefault")
+    link.dispatchEvent(event)
+    expect(preventDefaultSpy).not.toHaveBeenCalled()
+    expect(itemOnClick).toHaveBeenCalledTimes(1)
+  })
+
   it("supports controlled open/onOpenChange via keyboard shortcut Ctrl+B", () => {
     const onOpenChange = vi.fn()
     render(<Sidebar items={items} open={true} onOpenChange={onOpenChange} />)
