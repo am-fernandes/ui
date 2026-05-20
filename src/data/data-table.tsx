@@ -363,6 +363,23 @@ function DataTable<TData>({
         columnFilters,
         globalFilter,
         ...(paginationEnabled ? { pagination: paginationState } : {}),
+        // Columns flagged `meta.exportOnly: true` are removed from the
+        // rendered table but kept in `getAllLeafColumns()` so the xlsx
+        // export still includes them.
+        columnVisibility: Object.fromEntries(
+          columns
+            .filter((col) => {
+              const meta = (col as { meta?: { exportOnly?: boolean } }).meta
+              return meta?.exportOnly === true
+            })
+            .map((col) => [
+              ((col as { id?: string; accessorKey?: string }).id ??
+                (col as { accessorKey?: string }).accessorKey ??
+                "") as string,
+              false,
+            ])
+            .filter(([id]) => id !== ""),
+        ),
       },
       onSortingChange: handleSortingChange,
       manualSorting,
@@ -424,7 +441,10 @@ function DataTable<TData>({
   const defaultRowToRecord = React.useCallback(
     (row: TData, rowIndex: number): Record<string, unknown> => {
       const record: Record<string, unknown> = {}
-      const leafCols = table.getVisibleLeafColumns()
+      // Use ALL leaf cols (not just visible) so columns flagged
+      // `meta.exportOnly: true` — hidden from the table UI — still appear
+      // in the xlsx output.
+      const leafCols = table.getAllLeafColumns()
       for (const col of leafCols) {
         const headerDef = col.columnDef.header
         const label = typeof headerDef === "string" && headerDef.length > 0 ? headerDef : col.id
