@@ -78,7 +78,7 @@ function Textarea({
       }}
       className={cn(
         "min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-3 text-sm transition-colors",
-        "placeholder:text-input focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring",
+        "placeholder:text-placeholder focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring",
         "disabled:cursor-not-allowed",
         hasError && "border-destructive focus-visible:ring-destructive",
         autoResize && "resize-none overflow-hidden",

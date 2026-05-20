@@ -295,7 +295,7 @@ export function Combobox(props: ComboboxProps) {
               <CommandPrimitive.Input
                 placeholder={resolvedSearchPlaceholder}
                 onValueChange={setSearch}
-                className="flex w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-input"
+                className="flex w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-placeholder"
               />
             </div>
             <CommandPrimitive.List
