@@ -115,14 +115,18 @@ export interface DataTableLabels {
   exportAll: string
 }
 
-const rowCountFormatter = new Intl.NumberFormat("pt-BR")
+const numberFormatter = new Intl.NumberFormat("pt-BR")
 
 function defaultRowCount(filtered: number, total: number): string {
-  const totalStr = rowCountFormatter.format(total)
+  const totalStr = numberFormatter.format(total)
   if (filtered === total) {
     return `${totalStr} registro${total === 1 ? "" : "s"}`
   }
-  return `${rowCountFormatter.format(filtered)} de ${totalStr} registros`
+  return `${numberFormatter.format(filtered)} de ${totalStr} registros`
+}
+
+function defaultPageIndicator(pageIndex: number, pageCount: number): string {
+  return `Página ${numberFormatter.format(pageIndex + 1)} de ${numberFormatter.format(pageCount)}`
 }
 
 export const defaultDataTableLabels: DataTableLabels = {
@@ -133,7 +137,7 @@ export const defaultDataTableLabels: DataTableLabels = {
   paginationPrevious: "Página anterior",
   paginationNext: "Próxima página",
   rowCount: defaultRowCount,
-  pageIndicator: (pageIndex, pageCount) => `Página ${pageIndex + 1} de ${pageCount}`,
+  pageIndicator: defaultPageIndicator,
   sortBy: (headerText) => `Ordenar por ${headerText}`,
   exportTrigger: "Exportar para Excel",
   exportFiltered: "Exportar dados filtrados",
