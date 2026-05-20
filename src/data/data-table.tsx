@@ -569,7 +569,11 @@ function DataTable<TData>({
             {hasClearFilters ? (
               <Button
                 type="button"
-                variant="outline"
+                // Outline when no filters are active (subtle, idle), destructive
+                // when there's actually something to clear (draws attention to
+                // the "undo your filtered view" affordance without using red
+                // permanently — which would dilute its meaning).
+                variant={clearFiltersDisabled ? "outline" : "destructive"}
                 disabled={loading || clearFiltersDisabled}
                 onClick={onClearFilters}
                 data-slot="data-table-clear-filters"
