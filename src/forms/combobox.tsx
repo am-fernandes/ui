@@ -144,7 +144,7 @@ export function Combobox(props: ComboboxProps) {
     if (isMultiple) {
       const values = toArray(props.value)
       if (values.length === 0) {
-        return <span className="text-muted-foreground">{resolvedPlaceholder}</span>
+        return <span className="text-placeholder">{resolvedPlaceholder}</span>
       }
       const count = values.length
       const countText = `${count} ${count === 1 ? "selecionado" : "selecionados"}`
@@ -153,7 +153,7 @@ export function Combobox(props: ComboboxProps) {
     const selectedOption = options.find((o) => o.value === props.value)
     if (selectedOption) return selectedOption.label
     if (creatable && props.value) return props.value
-    return <span className="text-muted-foreground">{resolvedPlaceholder}</span>
+    return <span className="text-placeholder">{resolvedPlaceholder}</span>
   }
 
   const trimmedSearch = search.trim()
@@ -224,7 +224,7 @@ export function Combobox(props: ComboboxProps) {
       disabled={disabled}
       className={cn(
         "w-full justify-between min-h-10 h-auto overflow-hidden",
-        !hasValue && "text-muted-foreground",
+        !hasValue && "text-placeholder",
         className,
       )}
     >

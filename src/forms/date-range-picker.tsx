@@ -120,11 +120,7 @@ function DateRangePicker({
         description: hasDescription,
         error: hasError,
       })}
-      className={cn(
-        "w-full justify-start text-left",
-        !fromDate && "text-muted-foreground",
-        className,
-      )}
+      className={cn("w-full justify-start text-left", !fromDate && "text-placeholder", className)}
     >
       <CalendarIcon className="size-4" aria-hidden="true" />
       {display}
