@@ -218,8 +218,30 @@ Calendar.displayName = "Calendar"
 
 type CalendarDayButtonProps = React.ComponentProps<typeof DayButton>
 
-function CalendarDayButton({ className, day, modifiers, ...props }: CalendarDayButtonProps) {
-  const defaultClassNames = getDefaultClassNames()
+// Hoisted so it isn't re-created (and re-frozen) on every day-cell render.
+const DAY_BUTTON_DEFAULTS = getDefaultClassNames()
+
+// Stable base class — concatenated once at module load instead of going through
+// `cn()` (and tailwind-merge) on every day cell every render. With
+// `numberOfMonths={2}` we render ~138 day buttons, so doing this work per cell
+// adds up — especially under React StrictMode's double-invoke in dev.
+const DAY_BUTTON_BASE_CLASS = [
+  "relative isolate z-10 flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 border-0 leading-none font-normal",
+  "data-[range-end=true]:rounded-(--cell-radius) data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground",
+  "data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-muted data-[range-middle=true]:text-foreground",
+  "data-[range-start=true]:rounded-(--cell-radius) data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground",
+  "data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground",
+  DAY_BUTTON_DEFAULTS.day,
+]
+  .filter(Boolean)
+  .join(" ")
+
+const CalendarDayButton = React.memo(function CalendarDayButton({
+  className,
+  day,
+  modifiers,
+  ...props
+}: CalendarDayButtonProps) {
   const isOutside = !!modifiers.outside
 
   return (
@@ -236,19 +258,11 @@ function CalendarDayButton({ className, day, modifiers, ...props }: CalendarDayB
       data-range-start={modifiers.range_start}
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
-      className={cn(
-        "relative isolate z-10 flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 border-0 leading-none font-normal",
-        "data-[range-end=true]:rounded-(--cell-radius) data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground",
-        "data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-muted data-[range-middle=true]:text-foreground",
-        "data-[range-start=true]:rounded-(--cell-radius) data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground",
-        "data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground",
-        defaultClassNames.day,
-        className,
-      )}
+      className={className ? cn(DAY_BUTTON_BASE_CLASS, className) : DAY_BUTTON_BASE_CLASS}
       {...props}
     />
   )
-}
+})
 CalendarDayButton.displayName = "CalendarDayButton"
 
 export { Calendar }
