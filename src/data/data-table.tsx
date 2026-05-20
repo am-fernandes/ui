@@ -430,7 +430,12 @@ function DataTable<TData>({
   const rowCountFn = mergedLabels.rowCount
 
   const skeletonRowCount = pagination?.pageSize ?? 5
-  const skeletonColumnCount = columns.length
+  // Skip `meta.exportOnly` columns: they're absent from the rendered header,
+  // so the skeleton body shouldn't render placeholder cells for them either —
+  // otherwise the body row is wider than the header and rows misalign.
+  const skeletonColumnCount = columns.filter(
+    (col) => !(col as { meta?: { exportOnly?: boolean } }).meta?.exportOnly,
+  ).length
 
   const hasSearch = !!(searchableColumns && searchableColumns.length > 0)
   const hasDownload = !!downloadable
