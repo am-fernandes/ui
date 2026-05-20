@@ -42,7 +42,12 @@ export default defineConfig({
       // still surfaces real structural drift (radius, density, focus rings,
       // contrast, layout shifts). When a baseline genuinely needs to be
       // updated, run `bun run test:visual:update` locally.
-      maxDiffPixels: 5000,
+      // 0.02 = 2% pixel ratio. Scales with screenshot dimensions so the
+      // tolerance stays sensible for both tiny inputs and large cards.
+      // Locally-generated baselines and CI's Linux runner share the same
+      // distro family but differ slightly in font hinting / sub-pixel
+      // positioning, producing consistent ~1% diffs on text-heavy stories.
+      maxDiffPixelRatio: 0.02,
       threshold: 0.5,
     },
   },
