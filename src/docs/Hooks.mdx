@@ -4,7 +4,7 @@ import { Meta } from "@storybook/addon-docs/blocks"
 
 # Hooks & helpers
 
-Além dos 41 componentes, `@am-fernandes/ui` exporta um conjunto pequeno e estável de hooks, utilitários de classes Tailwind, helpers financeiros (BRL/centavos), conversores de tamanho em bytes e constantes re-exportadas de libs upstream. Esta página é a referência canônica desses símbolos.
+Além dos 47 componentes, `@amfernandesinc/ui` exporta um conjunto pequeno e estável de hooks, utilitários de classes Tailwind, helpers financeiros (BRL/centavos), conversores de tamanho em bytes, validadores brasileiros e constantes re-exportadas de libs upstream. Esta página é a referência canônica desses símbolos.
 
 ## Sumário
 
@@ -25,6 +25,9 @@ Além dos 41 componentes, `@am-fernandes/ui` exporta um conjunto pequeno e está
 | `percentOfTotal` | function | valor a partir de % sobre um total (centavos-safe) |
 | `percentFromValue` | function | % que `value` representa de `total` (2 casas) |
 | `bytes`, `kb`, `mb`, `gb` | function | conversão ergonômica para bytes (binário: KiB/MiB/GiB) |
+| `formatCount` | function | formata contadores capando em `max` (`"999+"`) |
+| `isValidCPF`, `isValidCNPJ`, `isValidCEP`, `isValidPhone` | function | validadores brasileiros (DV oficial p/ CPF/CNPJ) |
+| `defaultDataTableLabels` etc. | const | defaults pt-BR dos componentes com prop `labels` |
 | `REGEXP_ONLY_DIGITS` | const | regex `/^\\d+$/` (re-export de `input-otp`) |
 | `toast` | function | API imperativa de toasts (re-export de `sonner`) |
 
@@ -36,8 +39,10 @@ import {
   cn, buttonVariants, badgeVariants, alertVariants, typographyVariants, tableStyles,
   toCents, fromCents, centsToDisplay, formatBRL, percentOfTotal, percentFromValue,
   bytes, kb, mb, gb,
+  formatCount,
+  isValidCPF, isValidCNPJ, isValidCEP, isValidPhone,
   REGEXP_ONLY_DIGITS, toast,
-} from "@am-fernandes/ui"
+} from "@amfernandesinc/ui"
 ```
 
 ---
@@ -57,7 +62,7 @@ function useIsMobile(): boolean
 **Exemplo:**
 
 ```tsx
-import { useIsMobile } from "@am-fernandes/ui"
+import { useIsMobile } from "@amfernandesinc/ui"
 
 function ResponsiveNav() {
   const isMobile = useIsMobile()
@@ -91,7 +96,7 @@ function useComboboxOptions<
 **Exemplo:**
 
 ```tsx
-import { Combobox, useComboboxOptions } from "@am-fernandes/ui"
+import { Combobox, useComboboxOptions } from "@amfernandesinc/ui"
 
 type Cliente = { id: number; nome: string }
 
@@ -131,7 +136,7 @@ function cn(...inputs: ClassValue[]): string
 **Exemplo:**
 
 ```tsx
-import { cn } from "@am-fernandes/ui"
+import { cn } from "@amfernandesinc/ui"
 
 function Card({ isActive, className }: { isActive?: boolean; className?: string }) {
   return (
@@ -166,7 +171,7 @@ function buttonVariants(props?: {
 **Exemplo:**
 
 ```tsx
-import { buttonVariants, cn } from "@am-fernandes/ui"
+import { buttonVariants, cn } from "@amfernandesinc/ui"
 import Link from "next/link"
 
 <Link
@@ -199,7 +204,7 @@ function badgeVariants(props?: {
 **Exemplo:**
 
 ```tsx
-import { badgeVariants } from "@am-fernandes/ui"
+import { badgeVariants } from "@amfernandesinc/ui"
 
 <a href="/tag/urgente" className={badgeVariants({ variant: "destructive" })}>
   Urgente
@@ -222,7 +227,7 @@ function alertVariants(props?: {
 **Exemplo:**
 
 ```tsx
-import { alertVariants } from "@am-fernandes/ui"
+import { alertVariants } from "@amfernandesinc/ui"
 
 <section role="alert" className={alertVariants({ variant: "warning" })}>
   Operação requer aprovação manual.
@@ -237,7 +242,7 @@ CVA factory para os classnames do `Typography`. Use quando precisar aplicar a es
 
 ```ts
 function typographyVariants(props?: {
-  variant?: "display" | "title" | "subtitle" | "body" | "caption"
+  variant?: "heading" | "title" | "subtitle" | "lead" | "body" | "caption"
   className?: string
 }): string
 ```
@@ -245,7 +250,7 @@ function typographyVariants(props?: {
 **Exemplo:**
 
 ```tsx
-import { typographyVariants } from "@am-fernandes/ui"
+import { typographyVariants } from "@amfernandesinc/ui"
 
 <dt className={typographyVariants({ variant: "caption" })}>Data</dt>
 <dd className={typographyVariants({ variant: "body" })}>17/05/2026</dd>
@@ -273,7 +278,7 @@ function tableStyles(): {
 **Exemplo:**
 
 ```tsx
-import { tableStyles } from "@am-fernandes/ui"
+import { tableStyles } from "@amfernandesinc/ui"
 
 const t = tableStyles()
 
@@ -314,7 +319,7 @@ function toCents(value: number): number
 **Exemplo:**
 
 ```ts
-import { toCents } from "@am-fernandes/ui"
+import { toCents } from "@amfernandesinc/ui"
 
 toCents(1234.56)  // 123456
 toCents(0.1)      // 10
@@ -336,7 +341,7 @@ function fromCents(cents: number): number
 **Exemplo:**
 
 ```ts
-import { fromCents } from "@am-fernandes/ui"
+import { fromCents } from "@amfernandesinc/ui"
 
 fromCents(123456)  // 1234.56
 fromCents(10)      // 0.1
@@ -355,7 +360,7 @@ function centsToDisplay(cents: number): string
 **Exemplo:**
 
 ```ts
-import { centsToDisplay } from "@am-fernandes/ui"
+import { centsToDisplay } from "@amfernandesinc/ui"
 
 centsToDisplay(123456)    // "1.234,56"
 centsToDisplay(-50000)    // "-500,00"
@@ -377,7 +382,7 @@ function formatBRL(value: number): string
 **Exemplo:**
 
 ```ts
-import { formatBRL } from "@am-fernandes/ui"
+import { formatBRL } from "@amfernandesinc/ui"
 
 formatBRL(1234.56)   // "R$ 1.234,56"
 formatBRL(0)         // "R$ 0,00"
@@ -399,7 +404,7 @@ function percentOfTotal(percent: number, total: number): number
 **Exemplo:**
 
 ```ts
-import { percentOfTotal } from "@am-fernandes/ui"
+import { percentOfTotal } from "@amfernandesinc/ui"
 
 percentOfTotal(70, 185000)     // 129500
 percentOfTotal(33.33, 185000)  // 61660.5 (após arredondamento em centavos)
@@ -419,7 +424,7 @@ function percentFromValue(value: number, total: number): number
 **Exemplo:**
 
 ```ts
-import { percentFromValue } from "@am-fernandes/ui"
+import { percentFromValue } from "@amfernandesinc/ui"
 
 percentFromValue(129500, 185000)  // 70
 percentFromValue(50, 200)         // 25
@@ -447,7 +452,7 @@ function gb(n: number): number     // n * 1024 * 1024 * 1024
 **Exemplo:**
 
 ```tsx
-import { FileUpload, mb, kb, gb } from "@am-fernandes/ui"
+import { FileUpload, mb, kb, gb } from "@amfernandesinc/ui"
 
 <FileUpload accept="image/*" maxSize={mb(2)} />
 <FileUpload accept="application/pdf" maxSize={kb(500)} />
@@ -461,6 +466,177 @@ import { FileUpload, mb, kb, gb } from "@am-fernandes/ui"
 
 ---
 
+## `formatCount`
+
+Formata um inteiro para uso em badges/contadores de notificação, capando em `max` com sufixo `+`. Útil em `<Badge>` de unread counts, "X+ resultados", indicadores em sidebar, etc.
+
+**Signature:**
+
+```ts
+function formatCount(count: number, max?: number): string
+```
+
+- Default `max = 999`.
+- `count <= max` → `String(count)`.
+- `count > max` → `"${max}+"` (e.g. `"999+"`).
+- `count < 0`, `NaN`, `Infinity` → `"0"` (clamped — contadores são não-negativos).
+
+**Exemplo:**
+
+```tsx
+import { Badge, formatCount } from "@amfernandesinc/ui"
+
+formatCount(3)         // "3"
+formatCount(999)       // "999"
+formatCount(1234)      // "999+"
+formatCount(50, 9)     // "9+"
+
+<Badge variant="secondary">{formatCount(unreadCount)}</Badge>
+```
+
+**Notas:**
+
+- O input passa por `Math.floor` — `formatCount(3.9)` retorna `"3"`.
+- O subpath é `@amfernandesinc/ui/lib/format-count` (também re-exportado pelo barrel).
+
+---
+
+## Validadores brasileiros
+
+Quatro validadores puros para identificadores e contatos brasileiros. Algoritmos de CPF/CNPJ implementam o cálculo oficial dos dígitos verificadores (DV) definido pela Receita Federal — não são apenas regexes de formato.
+
+Todos normalizam o input removendo caracteres não-numéricos antes de validar. Aceitam tanto `"123.456.789-09"` quanto `"12345678909"`.
+
+```ts
+function isValidCPF(value: string): boolean
+function isValidCNPJ(value: string): boolean
+function isValidCEP(value: string): boolean
+function isValidPhone(value: string): boolean
+```
+
+**Importação** — subpath dedicado ou barrel, ambos funcionam:
+
+```ts
+// Subpath (recomendado quando só os validadores forem necessários)
+import { isValidCPF, isValidCNPJ } from "@amfernandesinc/ui/lib/brazil"
+
+// Barrel
+import { isValidCEP, isValidPhone } from "@amfernandesinc/ui"
+```
+
+### `isValidCPF`
+
+Valida CPF (11 dígitos) checando os dois DVs. Rejeita strings de dígitos repetidos (`"11111111111"`).
+
+```ts
+isValidCPF("123.456.789-09")   // true
+isValidCPF("12345678909")      // true
+isValidCPF("111.111.111-11")   // false (dígitos repetidos)
+isValidCPF("123.456.789-00")   // false (DV inválido)
+```
+
+### `isValidCNPJ`
+
+Valida CNPJ (14 dígitos) checando os dois DVs com os pesos oficiais. Também rejeita dígitos repetidos.
+
+```ts
+isValidCNPJ("11.222.333/0001-81")  // true
+isValidCNPJ("11222333000181")      // true
+isValidCNPJ("00.000.000/0000-00")  // false
+```
+
+### `isValidCEP`
+
+Valida CEP — exatamente 8 dígitos numéricos. Não checa existência real do CEP (use uma API tipo ViaCEP para isso).
+
+```ts
+isValidCEP("01310-100")   // true
+isValidCEP("01310100")    // true
+isValidCEP("1310-100")    // false (7 dígitos)
+```
+
+### `isValidPhone`
+
+Valida telefone brasileiro: 10 dígitos (fixo) ou 11 (celular). O DDD (primeiros 2 dígitos) deve estar entre 11 e 99.
+
+```ts
+isValidPhone("(11) 98765-4321")   // true
+isValidPhone("11987654321")        // true
+isValidPhone("(11) 3456-7890")    // true (fixo)
+isValidPhone("9876-5432")          // false (sem DDD)
+isValidPhone("(05) 98765-4321")   // false (DDD < 11)
+```
+
+**Notas:**
+
+- Os componentes `CPFInput`, `CNPJInput`, `CEPInput` e `PhoneInput` aplicam máscara automaticamente; combine-os com esses validadores no submit ou via `react-hook-form` resolver.
+- Para validação síncrona em forms, basta passar o validador no `register`:
+  ```ts
+  register("cpf", { validate: (v) => isValidCPF(v) || "CPF inválido" })
+  ```
+
+---
+
+## i18n labels
+
+Cinco componentes da lib aceitam um prop `labels?: Partial<XLabels>` para overridar strings visíveis (incluindo `aria-label`s e mensagens de estado). Defaults são em **pt-BR**.
+
+| Componente | Type | Default constant |
+|---|---|---|
+| `DataTable` | `DataTableLabels` | `defaultDataTableLabels` |
+| `FileUpload` | `FileUploadLabels` | `defaultFileUploadLabels` |
+| `Combobox` | `ComboboxLabels` | `defaultComboboxLabels` |
+| `CommandPalette` | `CommandPaletteLabels` | `defaultCommandPaletteLabels` |
+| `Calendar` | `CalendarLabels` | `defaultCalendarLabels` |
+
+**Override parcial** — você só precisa passar os campos que quer mudar; o resto vem do default:
+
+```tsx
+import { DataTable } from "@amfernandesinc/ui"
+
+<DataTable
+  columns={...}
+  data={...}
+  labels={{
+    empty: "No results.",
+    paginationPrevious: "Previous",
+  }}
+/>
+```
+
+**Override total** — crie um objeto baseado no default e exporte para reusar:
+
+```ts
+import { defaultDataTableLabels, type DataTableLabels } from "@amfernandesinc/ui"
+
+export const enDataTableLabels: DataTableLabels = {
+  ...defaultDataTableLabels,
+  search: "Search…",
+  searchAriaLabel: "Search the table",
+  empty: "No results.",
+  loading: "Loading data…",
+  paginationPrevious: "Previous page",
+  paginationNext: "Next page",
+  rowCount: (filtered, total) =>
+    filtered === total
+      ? `${total} record${total === 1 ? "" : "s"}`
+      : `${filtered} of ${total} records`,
+  pageIndicator: (i, n) => `Page ${i + 1} of ${n}`,
+  sortBy: (header) => `Sort by ${header}`,
+  exportTrigger: "Export to Excel",
+  exportFiltered: "Export filtered data",
+  exportPage: "Export current page",
+  exportAll: "Export all data",
+}
+```
+
+**Notas:**
+
+- Todos os labels que dependem de números/contagem são **funções** (`rowCount`, `pageIndicator`, `sortBy`), não templates strings — assim você controla pluralização e ordem das palavras por idioma.
+- Os tipos `DataTableLabels`, `FileUploadLabels`, `ComboboxLabels`, `CommandPaletteLabels` e `CalendarLabels` ficam expostos no barrel, então da pra tipar wrappers internos da app sem importar do subpath do componente.
+
+---
+
 ## Constantes re-exportadas
 
 ### `REGEXP_ONLY_DIGITS`
@@ -470,7 +646,7 @@ Re-export da constante de mesmo nome do package `input-otp`. Equivalente a `/^\\
 **Exemplo:**
 
 ```tsx
-import { InputOTP, REGEXP_ONLY_DIGITS } from "@am-fernandes/ui"
+import { InputOTP, REGEXP_ONLY_DIGITS } from "@amfernandesinc/ui"
 
 <InputOTP length={6} value={code} onValueChange={setCode} pattern={REGEXP_ONLY_DIGITS} />
 ```
@@ -497,7 +673,7 @@ toast.dismiss(id?: string | number)
 **Exemplo:**
 
 ```tsx
-import { Toaster, toast, Button } from "@am-fernandes/ui"
+import { Toaster, toast, Button } from "@amfernandesinc/ui"
 
 function Page() {
   return (
@@ -531,7 +707,7 @@ import type {
   TreeNodeData,
   TypographyProps,
   VideoCaptionTrack,
-} from "@am-fernandes/ui"
+} from "@amfernandesinc/ui"
 ```
 
 Tipos `*Props` cobrem o shape público de cada componente (incluindo eventos, refs e variants do CVA). Use-os ao escrever wrappers ou HOCs em torno dos componentes da lib.

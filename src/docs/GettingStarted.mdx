@@ -2,9 +2,9 @@ import { Meta } from "@storybook/addon-docs/blocks"
 
 <Meta title="Getting Started" />
 
-# @am-fernandes/ui
+# @amfernandesinc/ui
 
-Design system oficial da AM Fernandes — 41 componentes React acessíveis, theming em OKLCH, fonte Geist, light-only.
+Design system oficial da AM Fernandes — 47 componentes React acessíveis, theming em OKLCH, fonte Geist self-hosted, light-only.
 
 ## Pré-requisitos
 
@@ -12,22 +12,31 @@ Design system oficial da AM Fernandes — 41 componentes React acessíveis, them
 - **React 19**
 - **Tailwind CSS v4**
 
+## Filosofia
+
+- **Light only.** Sem dark mode por escolha de produto — não há toggle, classe `.dark` ou variantes invertidas.
+- **Flat.** Sem `box-shadow`, sem elevação. Hierarquia se faz com cor, peso e espaço.
+- **Raio uniforme de 4px** (`--radius: 0.25rem`). Toda a escala de tokens (`--radius-sm`, `--radius-md`, `--radius-lg`) deriva desse mesmo valor.
+- **Densidade enterprise.** Default é `text-sm` (14px) e `py-3`. Pensado para apps internos com formulários longos e tabelas densas.
+- **Acessibilidade ≥ WCAG AA.** Contraste, foco visível, ARIA correta, suporte a `prefers-reduced-motion`.
+- **Cursor pointer em tudo clicável.** Botões, links, rows interativas, tabs — sempre `cursor: pointer` (não `default`).
+
 ## Instalação
 
 1. **Configure o registro privado** (uma vez por máquina):
 
 ```bash
 # ~/.npmrc
-@am-fernandes:registry=https://npm.pkg.github.com
+@amfernandesinc:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
 
 2. **Adicione o package:**
 
 ```bash
-bun add @am-fernandes/ui
+bun add @amfernandesinc/ui
 # ou
-npm install @am-fernandes/ui
+npm install @amfernandesinc/ui
 ```
 
 ## Setup
@@ -36,16 +45,31 @@ No CSS de entrada da app:
 
 ```css
 /* src/index.css ou app/globals.css */
-@import "@am-fernandes/ui/fonts";
-@import "@am-fernandes/ui/styles";
+@import "@amfernandesinc/ui/fonts";
+@import "@amfernandesinc/ui/styles";
 ```
 
 Pronto. Tokens, paleta e fonte ficam ativos globalmente.
 
+> **Fontes self-hosted.** Geist e Geist Mono são distribuídas via `@fontsource/geist` e `@fontsource/geist-mono` — dependências automáticas do package. Sem Google Fonts CDN, sem render-blocking, sem GDPR risk. O import `@amfernandesinc/ui/fonts` resolve os arquivos `.woff2` direto de `node_modules`.
+
+## Import por componente (tree-shaking)
+
+```ts
+// Barrel (mais conveniente)
+import { Button, DataTable } from "@amfernandesinc/ui"
+
+// Subpath (melhor pra tree-shaking em apps minimalistas)
+import { Button } from "@amfernandesinc/ui/button"
+import { isValidCPF } from "@amfernandesinc/ui/lib/brazil"
+```
+
+O `exports` map do package expõe 53 entradas — uma para cada componente, mais subpaths utilitários (`lib/brazil`, `lib/currency`, `lib/size`, `hooks/*`). Tanto o barrel quanto os subpaths apontam para os mesmos chunks; o subpath é só uma garantia extra de tree-shaking quando o bundler não consegue eliminar exports não usados via análise estática do barrel.
+
 ## Primeiro componente
 
 ```tsx
-import { Button, Typography } from "@am-fernandes/ui"
+import { Button, Typography } from "@amfernandesinc/ui"
 
 export function Demo() {
   return (
@@ -59,11 +83,11 @@ export function Demo() {
 
 ## Conceitos
 
-- **Light only.** Sem dark mode por escolha de produto.
 - **Tokens são a API.** Consuma cor/raio/espaço via classe Tailwind (`bg-primary`, `rounded-md`), nunca hardcoded.
 - **Acessibilidade ≥ AA.** Componentes seguem padrões ARIA; status badges, contraste e foco validados via `addon-a11y` no Storybook e `injectAxe`/`checkA11y` em CI.
 - **API plana por padrão.** Cada componente expõe um único export com `title`/`description`/`children` (overlays) ou `items` (navegação). Slots `headerAction`/`footer`/`trigger`/`action` cobrem os edge cases sem expor subcomponentes Radix.
-- **Forms sem wrapper.** Combine os controles (`Combobox`, `DateInput`, `Calendar`, etc.) com `react-hook-form` direto — todos eles aceitam `label`/`description`/`error` nativamente.
+- **Forms sem wrapper.** Combine os controles (`Combobox`, `DateInput`, `Calendar`, etc.) com `react-hook-form` direto — todos eles aceitam `label`/`description`/`error` nativamente. `react-hook-form` é uma **devDependency**: o consumer instala a própria versão.
+- **i18n por componente.** `DataTable`, `FileUpload`, `Combobox`, `CommandPalette` e `Calendar` aceitam `labels?: Partial<XLabels>` com defaults em pt-BR. Veja a aba **Hooks** para o pattern de override.
 
 ## Testes
 
@@ -77,14 +101,14 @@ bun run test
 
 | Categoria | Count | Conteúdo |
 |---|---|---|
-| **Primitives** | 11 | Avatar, Badge, Button, Checkbox, Input, RadioGroup, Separator, Skeleton, Switch, Textarea, Typography |
+| **Primitives** | 12 | Avatar, Badge, Button, Checkbox, Input, Label, RadioGroup, Separator, Skeleton, Switch, Textarea, Typography |
 | **Overlays** | 9 | Alert, AlertDialog, Collapsible, Dialog, Popover, Progress, Sheet, Toaster (Sonner), Tooltip |
 | **Navigation** | 5 | Accordion, Breadcrumb, CommandPalette, Sidebar, Tabs |
 | **Forms** | 5 | Calendar, Combobox, DateInput, DateRangePicker, TimePicker |
-| **Domain** | 5 | CurrencyInput, FileUpload, InputOTP, MultiInput, PercentageInput |
-| **Data** | 6 | Card, DataTable, Image, ScrollArea, Tree, Video |
-| **Hooks** | — | `useIsMobile`, `useComboboxOptions`, helpers de className, BRL e bytes |
-| **Foundations** | — | Cores, tipografia, espaçamento, iconografia |
+| **Data** | 7 | Card, DataTable, Image, ScrollArea, Tree, Video, (table primitives) |
+| **Domain** | 9 | CEPInput, CNPJInput, CPFInput, CurrencyInput, FileUpload, InputOTP, MultiInput, PercentageInput, PhoneInput |
+| **Hooks** | — | `useIsMobile`, `useComboboxOptions`, helpers de className, BRL, bytes, validadores brasileiros |
+| **Foundations** | — | Cores, tipografia, espaçamento, iconografia, motion, z-index |
 
 Navegue pela sidebar à esquerda para ver cada componente, suas props e variantes. A aba **Hooks** documenta os helpers/hooks não-componentes expostos pelo barrel.
 
@@ -96,20 +120,21 @@ Para apps internas que já usam cópias shadcn locais:
 2. Substitua um import por vez:
    ```diff
    - import { Button } from "@/components/ui/button"
-   + import { Button } from "@am-fernandes/ui"
+   + import { Button } from "@amfernandesinc/ui"
    ```
 3. Para acelerar, use sed em uma página piloto antes de aplicar globalmente:
    ```bash
    find src -type f -name '*.tsx' -exec \
-     sed -i 's|from "@/components/ui/\([a-z-]*\)"|from "@am-fernandes/ui"|g' {} +
+     sed -i 's|from "@/components/ui/\([a-z-]*\)"|from "@amfernandesinc/ui"|g' {} +
    ```
 4. Smoke-test a página, então delete `src/components/ui/*.tsx`.
 
 **Gotchas conhecidas:**
 - `Button` não tem mais flow de confirmação embutido — use `AlertDialog` quando precisar confirmar.
 - Sem dark mode. Remova qualquer toggle de classe `.dark` que ainda exista.
-- `Chart*`, `Form`/`Field`/`FieldGroup`/`FormField`, `DropdownMenu` foram removidos em v10. Use `recharts` direto para gráficos, `react-hook-form` direto para forms, e `Popover` + `Button` para menus de ação.
+- `Chart*`, `Form`/`Field`/`FieldGroup`/`FormField`, `DropdownMenu` foram removidos antes do release público. Use `recharts` direto para gráficos, `react-hook-form` direto para forms, e `Popover` + `Button` para menus de ação.
 - Helpers `toCents`, `fromCents`, `centsToDisplay`, `percentOfTotal`, `percentFromValue`, `formatBRL` são exportados — delete `lib/currency.ts` locais. Veja a aba **Hooks** para a lista completa.
+- Validadores brasileiros (`isValidCPF`, `isValidCNPJ`, `isValidCEP`, `isValidPhone`) e os respectivos inputs (`CPFInput`, `CNPJInput`, `CEPInput`, `PhoneInput`) substituem implementações locais de máscaras/validação.
 
 ## FAQ
 
@@ -117,4 +142,4 @@ Para apps internas que já usam cópias shadcn locais:
 
 **Posso adicionar variantes a um componente existente?** Use `className` (passa pelo `cn()` com tailwind-merge). Para variantes de marca, abra uma issue.
 
-**Como contribuir?** Veja `CONTRIBUTING.md` (em breve). Para mudanças urgentes, contate o time interno.
+**Como contribuir?** Veja [`CONTRIBUTING.md`](https://github.com/amfernandesinc/ui/blob/main/CONTRIBUTING.md) na raiz do repo. Para mudanças urgentes, contate o time interno.

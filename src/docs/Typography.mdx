@@ -20,18 +20,18 @@ A AM Fernandes adota **Geist** como fonte oficial — uma variable font da Verce
 
 **Conclusão:** Geist é a escolha contemporânea — alinhada com o ecossistema shadcn/ui que a lib referencia, com glyphs desenhados para code+UI e fallback gracioso na stack de sistema quando o webfont não carrega.
 
-Disponível via `--font-sans` (CSS) e na classe Tailwind `font-sans`. Carregada via Google Fonts CDN no import `@amfernandesinc/ui/fonts`.
+Disponível via `--font-sans` (CSS) e na classe Tailwind `font-sans`. **Self-hosted** via `@fontsource/geist` (e `@fontsource/geist-mono` para o mono). Sem CDN, sem GDPR risk, sem render-blocking. O import `@amfernandesinc/ui/fonts` resolve os arquivos a partir de `node_modules`.
 
 ## Variantes
 
-O componente `Typography` é a API recomendada — cinco variantes que cobrem a hierarquia editorial padrão de uma app:
+O componente `Typography` é a API recomendada — seis variantes que cobrem a hierarquia editorial padrão de uma app:
 
 <div style={{ display: "flex", flexDirection: "column", gap: 24, padding: 16 }}>
   <div>
     <div style={{ fontSize: 11, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
-      display · text-4xl · font-bold · h1
+      heading · text-3xl · font-semibold · h1
     </div>
-    <Typography variant="display">A AM Fernandes constrói software.</Typography>
+    <Typography variant="heading">A AM Fernandes constrói software.</Typography>
   </div>
   <div>
     <div style={{ fontSize: 11, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
@@ -41,9 +41,15 @@ O componente `Typography` é a API recomendada — cinco variantes que cobrem a 
   </div>
   <div>
     <div style={{ fontSize: 11, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
-      subtitle · text-lg · font-medium · h3
+      subtitle · text-xl · font-medium · h3
     </div>
     <Typography variant="subtitle">A AM Fernandes constrói software.</Typography>
+  </div>
+  <div>
+    <div style={{ fontSize: 11, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+      lead · text-base · leading-7 · p
+    </div>
+    <Typography variant="lead">A AM Fernandes constrói software.</Typography>
   </div>
   <div>
     <div style={{ fontSize: 11, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
@@ -59,15 +65,41 @@ O componente `Typography` é a API recomendada — cinco variantes que cobrem a 
   </div>
 </div>
 
+**Quando usar `lead`?** Para parágrafo introdutório (16px) — maior que `body` (14px), menor que `subtitle` (20px). Útil em sections com título + parágrafo de descrição, ou em hero blocks dentro de páginas internas.
+
 ## Uso
 
 ```tsx
-import { Typography } from "@am-fernandes/ui"
+import { Typography } from "@amfernandesinc/ui"
 
-<Typography variant="display">Página de contratos</Typography>
+<Typography variant="heading">Página de contratos</Typography>
 <Typography variant="title">Filtros aplicados</Typography>
+<Typography variant="lead">Resumo do que esta página mostra.</Typography>
 <Typography variant="body">Conteúdo paginado.</Typography>
 <Typography variant="caption">Atualizado em 17/05/2026</Typography>
 ```
 
-Cada variante mapeia para um elemento semântico padrão (display→h1, title→h2, subtitle→h3, body→p, caption→span). Use o prop `as` quando o outline do documento exigir um nível diferente.
+Cada variante mapeia para um elemento semântico padrão (`heading→h1`, `title→h2`, `subtitle→h3`, `lead→p`, `body→p`, `caption→span`). Use o prop `as` quando o outline do documento exigir um nível diferente:
+
+```tsx
+{/* Visual = heading, mas semanticamente é h2 (já existe um h1 acima) */}
+<Typography variant="heading" as="h2">Seção secundária</Typography>
+```
+
+## Font mono
+
+`@amfernandesinc/ui` distribui também a **Geist Mono** como webfont mono oficial, exposta via:
+
+- Token CSS: `--font-mono: "Geist Mono", ui-monospace, SFMono-Regular, ...`
+- Classe Tailwind: `font-mono`
+
+Componentes que usam mono internamente (sem o consumer precisar setar nada):
+
+- **`InputOTP`** — slots de código renderizados em Geist Mono para alinhamento perfeito por dígito.
+- **`CurrencyInput`**, **`PercentageInput`**, **`TimePicker`** — usam `font-variant-numeric: tabular-nums` (a Geist Mono fornece glyphs de largura fixa para dígitos), garantindo que valores numéricos não "dancem" enquanto o usuário digita ou ao trocar de valor.
+
+Use `font-mono` direto quando precisar de mono em UI custom (logs, IDs, hashes, snippets curtos inline).
+
+```tsx
+<span className="font-mono text-xs">{contractId}</span>
+```
