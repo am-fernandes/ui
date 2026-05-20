@@ -176,7 +176,7 @@ const meta = {
           "- `globalFilter` / `onGlobalFilterChange` — filtro de busca controlado.",
           "- `pageIndex` / `onPaginationChange` / `pageCount` / `manualPagination` — paginação server-side.",
           "- `labels?: { search?, empty?, rowCount?(filtered, total) => string }` — sobrescreve os textos default.",
-          "- `onRowClick?: (row, event) => void` — torna cada linha clicável. Adiciona `role=\"button\"`, `tabIndex=0` e suporte a Enter/Espaço automaticamente.",
+          '- `onRowClick?: (row, event) => void` — torna cada linha clicável. Adiciona `role="button"`, `tabIndex=0` e suporte a Enter/Espaço automaticamente.',
           "- `rowClassName?: (row, index) => string | undefined` — classes por linha. Retorne `undefined` para a linha herdar o estilo padrão. Útil para colorir linhas por status.",
           "- `loading?: boolean` — exibe estado skeleton: linhas (count = `pagination.pageSize ?? 5`, células = `columns.length`), input de busca, contagem e botões de paginação. Wrapper recebe `aria-busy`.",
           "- `downloadable?: boolean | { filename?, sheetName?, rowToRecord? }` — botão `Exportar para Excel` (ghost) à direita; abre popover com 3 escopos: dados filtrados, página atual, todos. Gera `.xlsx` via `xlsx` (SheetJS) lazy-loaded.",
@@ -632,8 +632,8 @@ export const WithDateColumns: Story = {
         (`2026-06-15`) → renderiza `dd/MM/yyyy`.{" "}
         <strong className="text-foreground">Criado em</strong> usa ISO datetime → renderiza
         `dd/MM/yyyy HH:mm`. Clique nos headers para ordenar — o sort compara timestamps, não
-        strings, então a ordenação cronológica é correta mesmo quando a string formatada não está
-        em ordem alfabética.
+        strings, então a ordenação cronológica é correta mesmo quando a string formatada não está em
+        ordem alfabética.
       </p>
       <DataTable
         columns={pedidoColumns}
@@ -647,7 +647,7 @@ export const WithDateColumns: Story = {
     docs: {
       description: {
         story: [
-          "`dateColumn<TData>({ accessorKey, header })` cuida de formatação + sort. Detecta automaticamente se a linha tem hora/minuto (mode `\"auto\"`, default).",
+          '`dateColumn<TData>({ accessorKey, header })` cuida de formatação + sort. Detecta automaticamente se a linha tem hora/minuto (mode `"auto"`, default).',
           "",
           "```tsx",
           'import { dateColumn, DataTable } from "@amfernandesinc/ui"',
@@ -659,7 +659,7 @@ export const WithDateColumns: Story = {
           "]",
           "```",
           "",
-          "Aceita `Date`, ISO string, string BR (`19/05/2026 14:30`) ou epoch (number). `showTime` pode ser `\"auto\"` (default), `true` ou `false`.",
+          'Aceita `Date`, ISO string, string BR (`19/05/2026 14:30`) ou epoch (number). `showTime` pode ser `"auto"` (default), `true` ou `false`.',
         ].join("\n"),
       },
     },
@@ -676,7 +676,8 @@ export const WithRowClick: Story = {
             Clique em uma linha (ou use Tab + Enter) para selecionar o contrato.
             {selected ? (
               <>
-                {" "}Selecionado:{" "}
+                {" "}
+                Selecionado:{" "}
                 <strong className="text-foreground">
                   {selected.numero} — {selected.cliente}
                 </strong>
@@ -700,7 +701,7 @@ export const WithRowClick: Story = {
     docs: {
       description: {
         story:
-          "Passe `onRowClick={(row) => ...}` para tornar a linha inteira clicável. O componente cuida da a11y (`role=\"button\"`, `tabIndex=0`, Enter/Espaço) e adiciona `cursor-pointer`.",
+          'Passe `onRowClick={(row) => ...}` para tornar a linha inteira clicável. O componente cuida da a11y (`role="button"`, `tabIndex=0`, Enter/Espaço) e adiciona `cursor-pointer`.',
       },
     },
   },
@@ -741,7 +742,8 @@ export const ClickableAndColored: Story = {
             Combinação: linhas coloridas por status + clique para selecionar.
             {selected ? (
               <>
-                {" "}Selecionado: <strong className="text-foreground">{selected}</strong>
+                {" "}
+                Selecionado: <strong className="text-foreground">{selected}</strong>
               </>
             ) : null}
           </p>
@@ -776,9 +778,9 @@ export const WithDownload: Story = {
     <div className="space-y-6 p-6">
       <section className="space-y-2">
         <p className="text-muted-foreground text-xs">
-          <strong className="text-foreground">Toolbar com busca + download</strong> — busca
-          à esquerda, botão `Exportar para Excel` (ghost) à direita. Clique pra abrir o
-          popover com 3 escopos.
+          <strong className="text-foreground">Toolbar com busca + download</strong> — busca à
+          esquerda, botão `Exportar para Excel` (ghost) à direita. Clique pra abrir o popover com 3
+          escopos.
         </p>
         <DataTable
           columns={columns}
@@ -796,8 +798,8 @@ export const WithDownload: Story = {
 
       <section className="space-y-2">
         <p className="text-muted-foreground text-xs">
-          <strong className="text-foreground">Só download (sem busca)</strong> — botão
-          ainda fica à direita; o lado esquerdo do toolbar fica vazio.
+          <strong className="text-foreground">Só download (sem busca)</strong> — botão ainda fica à
+          direita; o lado esquerdo do toolbar fica vazio.
         </p>
         <DataTable
           columns={columns}
@@ -819,11 +821,11 @@ export const WithDownload: Story = {
           "2. **Exportar página atual** — só as linhas visíveis no momento (`getRowModel` — após filtro + paginação).",
           "3. **Exportar todos os dados** — o array `data` original, sem filtros nem paginação.",
           "",
-          "**Geração do arquivo**: usa `xlsx` (SheetJS) **lazy-loaded** via `await import(\"xlsx\")` — o package só entra no bundle do consumer no primeiro clique de export. Default: 1 sheet (\"Dados\"), 1 linha por registro, 1 coluna por leaf column visível (label = `columnDef.header` quando string, senão `column.id`).",
+          '**Geração do arquivo**: usa `xlsx` (SheetJS) **lazy-loaded** via `await import("xlsx")` — o package só entra no bundle do consumer no primeiro clique de export. Default: 1 sheet ("Dados"), 1 linha por registro, 1 coluna por leaf column visível (label = `columnDef.header` quando string, senão `column.id`).',
           "",
           "**Customização (objeto)**: `downloadable={{ filename, sheetName, rowToRecord }}`.",
-          "- `filename` — default `\"export.xlsx\"`.",
-          "- `sheetName` — default `\"Dados\"`.",
+          '- `filename` — default `"export.xlsx"`.',
+          '- `sheetName` — default `"Dados"`.',
           "- `rowToRecord(row)` — mapping custom de cada linha pro objeto exportado. Use pra renomear colunas, formatar valores (BRL, datas), ou omitir campos.",
           "",
           "```tsx",
@@ -858,8 +860,8 @@ export const Loading: Story = {
     <div className="space-y-6 p-6">
       <section className="space-y-2">
         <p className="text-muted-foreground text-xs">
-          <strong className="text-foreground">Loading básico</strong> — sem busca, sem
-          paginação. Renderiza 5 linhas skeleton (default).
+          <strong className="text-foreground">Loading básico</strong> — sem busca, sem paginação.
+          Renderiza 5 linhas skeleton (default).
         </p>
         <DataTable
           columns={columns}
@@ -871,9 +873,9 @@ export const Loading: Story = {
 
       <section className="space-y-2">
         <p className="text-muted-foreground text-xs">
-          <strong className="text-foreground">Com busca + paginação</strong> — o input de
-          busca também vira skeleton; o número de linhas vem de `pagination.pageSize` (aqui
-          8); botões de página ficam disabled; contagem no footer também é skeleton.
+          <strong className="text-foreground">Com busca + paginação</strong> — o input de busca
+          também vira skeleton; o número de linhas vem de `pagination.pageSize` (aqui 8); botões de
+          página ficam disabled; contagem no footer também é skeleton.
         </p>
         <DataTable
           columns={columns}
@@ -897,7 +899,7 @@ export const Loading: Story = {
           "- Se `searchableColumns` estiver definido, troca o `<Input>` de busca por um skeleton equivalente — sem perda de layout.",
           "- Footer: contagem (`showRowCount`) e indicador de página viram skeletons; botões prev/next ficam disabled.",
           "- Cabeçalho permanece — colunas são conhecidas estaticamente.",
-          "- `aria-busy=\"true\"` no wrapper externo para assistive tech anunciar uma única vez.",
+          '- `aria-busy="true"` no wrapper externo para assistive tech anunciar uma única vez.',
           "",
           "```tsx",
           'import { DataTable } from "@amfernandesinc/ui"',

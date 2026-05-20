@@ -224,8 +224,18 @@ export const WithKeyboardTrigger: Story = {
             {
               heading: "Navegação",
               items: [
-                { label: "Início", icon: HomeIcon, shortcut: "G H", onSelect: () => setOpen(false) },
-                { label: "Perfil", icon: UserIcon, shortcut: "G P", onSelect: () => setOpen(false) },
+                {
+                  label: "Início",
+                  icon: HomeIcon,
+                  shortcut: "G H",
+                  onSelect: () => setOpen(false),
+                },
+                {
+                  label: "Perfil",
+                  icon: UserIcon,
+                  shortcut: "G P",
+                  onSelect: () => setOpen(false),
+                },
               ],
             },
           ]}
@@ -249,13 +259,7 @@ export const Loading: Story = {
     return (
       <div className="flex flex-col items-center gap-3">
         <Button onClick={() => setOpen(true)}>Abrir paleta</Button>
-        <CommandPalette
-          open={open}
-          onOpenChange={setOpen}
-          loading
-          title="Comandos"
-          groups={[]}
-        />
+        <CommandPalette open={open} onOpenChange={setOpen} loading title="Comandos" groups={[]} />
       </div>
     )
   },

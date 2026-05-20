@@ -111,9 +111,7 @@ describe("Tooltip", () => {
         <button type="button">C</button>
       </Tooltip>,
     )
-    expect(
-      document.querySelector('[data-slot="tooltip-content"]'),
-    ).toBeInTheDocument()
+    expect(document.querySelector('[data-slot="tooltip-content"]')).toBeInTheDocument()
   })
 
   it("respects controlled open=false (does not render content even on focus)", () => {

@@ -63,12 +63,7 @@ describe("DateRangePicker", () => {
 
   it("respects disabled", () => {
     render(
-      <DateRangePicker
-        label="X"
-        value={{ from: "", to: "" }}
-        onValueChange={() => {}}
-        disabled
-      />,
+      <DateRangePicker label="X" value={{ from: "", to: "" }} onValueChange={() => {}} disabled />,
     )
     expect(screen.getByRole("button")).toBeDisabled()
   })
@@ -97,12 +92,7 @@ describe("DateRangePicker", () => {
 
   it("does not open the popover when disabled", async () => {
     render(
-      <DateRangePicker
-        label="X"
-        value={{ from: "", to: "" }}
-        onValueChange={() => {}}
-        disabled
-      />,
+      <DateRangePicker label="X" value={{ from: "", to: "" }} onValueChange={() => {}} disabled />,
     )
     await userEvent.click(screen.getByRole("button"))
     expect(screen.queryByRole("grid")).toBeNull()

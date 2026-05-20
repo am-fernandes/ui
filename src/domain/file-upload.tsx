@@ -566,6 +566,7 @@ function CameraDialog({
             <track kind="captions" />
           </video>
           {!isReady ? (
+            // biome-ignore lint/a11y/useSemanticElements: <output> targets form calculation results; this is a generic camera-loading announcement, role="status" is the right ARIA role.
             <div
               role="status"
               className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground"

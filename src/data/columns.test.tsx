@@ -9,11 +9,13 @@ interface RowShape {
 }
 
 function renderCell(col: ColumnDef<RowShape>, value: unknown): string {
-  const cell = (col as unknown as {
-    cell: (ctx: { getValue: () => unknown }) => React.ReactNode
-  }).cell
+  const cell = (
+    col as unknown as {
+      cell: (ctx: { getValue: () => unknown }) => React.ReactNode
+    }
+  ).cell
   const node = cell({ getValue: () => value })
-  const { container } = render(<>{node}</>)
+  const { container } = render(<div>{node}</div>)
   return container.textContent ?? ""
 }
 

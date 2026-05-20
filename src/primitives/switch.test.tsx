@@ -116,9 +116,7 @@ describe("Switch", () => {
     const sw = screen.getByRole("switch", { name: "DE" })
     const ids = (sw.getAttribute("aria-describedby") ?? "").split(/\s+/).filter(Boolean)
     expect(ids.length).toBeGreaterThanOrEqual(2)
-    const texts = ids
-      .map((id) => document.getElementById(id)?.textContent ?? "")
-      .filter(Boolean)
+    const texts = ids.map((id) => document.getElementById(id)?.textContent ?? "").filter(Boolean)
     expect(texts).toContain("d")
     expect(texts).toContain("e")
   })

@@ -59,7 +59,8 @@ const meta = {
     },
     id: {
       control: "text",
-      description: "ID do trigger. `FieldShell` deriva o `htmlFor` do label interno a partir disso.",
+      description:
+        "ID do trigger. `FieldShell` deriva o `htmlFor` do label interno a partir disso.",
       table: { type: { summary: "string" } },
     },
     label: {

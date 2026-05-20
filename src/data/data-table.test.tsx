@@ -310,12 +310,8 @@ describe("DataTable", () => {
 
   it("renders sort buttons only for columns listed in sortableColumns", () => {
     render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
-    expect(
-      screen.getByRole("button", { name: /Ordenar por Name/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole("button", { name: /Ordenar por Age/i }),
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Ordenar por Name/i })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Ordenar por Age/i })).not.toBeInTheDocument()
   })
 
   it("renders an element-typed header (non-string header branch)", () => {
@@ -360,7 +356,9 @@ describe("DataTable", () => {
     it("opens a popover with the three scope options on click", async () => {
       render(<DataTable columns={columns} data={data} downloadable />)
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
-      expect(screen.getByRole("menuitem", { name: /Exportar dados filtrados/i })).toBeInTheDocument()
+      expect(
+        screen.getByRole("menuitem", { name: /Exportar dados filtrados/i }),
+      ).toBeInTheDocument()
       expect(screen.getByRole("menuitem", { name: /Exportar página atual/i })).toBeInTheDocument()
       expect(screen.getByRole("menuitem", { name: /Exportar todos os dados/i })).toBeInTheDocument()
     })
@@ -378,18 +376,24 @@ describe("DataTable", () => {
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar dados filtrados/i }))
       expect(downloadXlsxMock).toHaveBeenCalledTimes(1)
-      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [Record<string, unknown>[], string, string]
+      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [
+        Record<string, unknown>[],
+        string,
+        string,
+      ]
       expect(records).toHaveLength(1)
       expect(records[0]).toMatchObject({ Name: "Alpha" })
     })
 
     it("exports the current page when pagination is active", async () => {
-      render(
-        <DataTable columns={columns} data={data} downloadable pagination={{ pageSize: 2 }} />,
-      )
+      render(<DataTable columns={columns} data={data} downloadable pagination={{ pageSize: 2 }} />)
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar página atual/i }))
-      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [Record<string, unknown>[], string, string]
+      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [
+        Record<string, unknown>[],
+        string,
+        string,
+      ]
       expect(records).toHaveLength(2)
     })
 
@@ -406,7 +410,11 @@ describe("DataTable", () => {
       )
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
-      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [Record<string, unknown>[], string, string]
+      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [
+        Record<string, unknown>[],
+        string,
+        string,
+      ]
       expect(records).toHaveLength(data.length)
     })
 
@@ -435,22 +443,16 @@ describe("DataTable", () => {
     })
 
     it("replaces the export button with a skeleton when loading", () => {
-      const { container } = render(
-        <DataTable columns={columns} data={data} downloadable loading />,
-      )
+      const { container } = render(<DataTable columns={columns} data={data} downloadable loading />)
       expect(screen.queryByText("Exportar para Excel")).not.toBeInTheDocument()
-      expect(
-        container.querySelector('[data-slot="data-table-download-skeleton"]'),
-      ).toBeTruthy()
+      expect(container.querySelector('[data-slot="data-table-download-skeleton"]')).toBeTruthy()
     })
   })
 
   describe("loading", () => {
     it("renders 5 skeleton rows by default when pagination is off", () => {
       const { container } = render(<DataTable columns={columns} data={[]} loading />)
-      const skeletonRows = container.querySelectorAll(
-        '[data-slot="data-table-skeleton-row"]',
-      )
+      const skeletonRows = container.querySelectorAll('[data-slot="data-table-skeleton-row"]')
       expect(skeletonRows).toHaveLength(5)
     })
 
@@ -458,9 +460,7 @@ describe("DataTable", () => {
       const { container } = render(
         <DataTable columns={columns} data={[]} loading pagination={{ pageSize: 8 }} />,
       )
-      const skeletonRows = container.querySelectorAll(
-        '[data-slot="data-table-skeleton-row"]',
-      )
+      const skeletonRows = container.querySelectorAll('[data-slot="data-table-skeleton-row"]')
       expect(skeletonRows).toHaveLength(8)
     })
 
@@ -473,30 +473,19 @@ describe("DataTable", () => {
 
     it("replaces the search input with a skeleton when searchableColumns is provided", () => {
       const { container } = render(
-        <DataTable
-          columns={columns}
-          data={[]}
-          loading
-          searchableColumns={["name"]}
-        />,
+        <DataTable columns={columns} data={[]} loading searchableColumns={["name"]} />,
       )
       expect(screen.queryByPlaceholderText("Buscar...")).not.toBeInTheDocument()
-      expect(
-        container.querySelector('[data-slot="data-table-search-skeleton"]'),
-      ).toBeTruthy()
+      expect(container.querySelector('[data-slot="data-table-search-skeleton"]')).toBeTruthy()
     })
 
     it("does not render a search skeleton when searchableColumns is omitted", () => {
       const { container } = render(<DataTable columns={columns} data={[]} loading />)
-      expect(
-        container.querySelector('[data-slot="data-table-search-skeleton"]'),
-      ).toBeNull()
+      expect(container.querySelector('[data-slot="data-table-search-skeleton"]')).toBeNull()
     })
 
     it("disables pagination buttons while loading", () => {
-      render(
-        <DataTable columns={columns} data={data} loading pagination={{ pageSize: 2 }} />,
-      )
+      render(<DataTable columns={columns} data={data} loading pagination={{ pageSize: 2 }} />)
       const prev = screen.getByRole("button", { name: /Página anterior/i })
       const next = screen.getByRole("button", { name: /Próxima página/i })
       expect(prev).toBeDisabled()
@@ -510,14 +499,7 @@ describe("DataTable", () => {
     })
 
     it("does not show the empty-state message while loading (skeleton instead)", () => {
-      render(
-        <DataTable
-          columns={columns}
-          data={[]}
-          loading
-          emptyMessage="Should not appear"
-        />,
-      )
+      render(<DataTable columns={columns} data={[]} loading emptyMessage="Should not appear" />)
       expect(screen.queryByText("Should not appear")).not.toBeInTheDocument()
     })
   })

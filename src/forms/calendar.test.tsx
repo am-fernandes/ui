@@ -208,9 +208,7 @@ describe("Calendar", () => {
   it("accepts the labels prop without forwarding it as an HTML attribute (reserved for future strings)", () => {
     // labels is currently reserved; the wrapper accepts it but does not consume it,
     // and react-day-picker handles all grid copy via `locale`.
-    const { container } = render(
-      <Calendar mode="single" defaultMonth={FIXED_MONTH} labels={{}} />,
-    )
+    const { container } = render(<Calendar mode="single" defaultMonth={FIXED_MONTH} labels={{}} />)
     const root = container.querySelector('[data-slot="calendar"]')
     expect(root).not.toBeNull()
     // The prop must not leak to the DOM.

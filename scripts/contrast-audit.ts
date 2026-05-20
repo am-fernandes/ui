@@ -36,8 +36,7 @@ function contrast(a: OKLCH, b: OKLCH): number {
 
 function hex(oklch: OKLCH): string {
   const [r, g, bl] = oklchToLinearRgb(oklch).map(clamp01) as [number, number, number]
-  const enc = (c: number) =>
-    c >= 0.0031308 ? 1.055 * c ** (1 / 2.4) - 0.055 : 12.92 * c
+  const enc = (c: number) => (c >= 0.0031308 ? 1.055 * c ** (1 / 2.4) - 0.055 : 12.92 * c)
   const toByte = (c: number) =>
     Math.round(clamp01(enc(c)) * 255)
       .toString(16)

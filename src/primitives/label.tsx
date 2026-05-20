@@ -6,8 +6,7 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-export interface LabelProps
-  extends React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> {
+export interface LabelProps extends React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> {
   asChild?: boolean
   ref?: React.Ref<React.ComponentRef<typeof LabelPrimitive.Root>>
 }

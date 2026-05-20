@@ -3,8 +3,10 @@
 @import "tw-animate-css";
 
 @theme inline {
-  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
 
   --radius-sm: var(--radius);
   --radius-md: var(--radius);
@@ -79,10 +81,10 @@
   --z-toast: 80;
 
   /* Motion durations — keep open/close in lockstep per component. */
-  --motion-fast: 100ms;        /* tooltip */
-  --motion-default: 150ms;      /* popover, dropdown */
-  --motion-slow: 200ms;         /* dialog, alert-dialog, backdrop */
-  --motion-slowest: 300ms;      /* sheet (symmetric open + close) */
+  --motion-fast: 100ms; /* tooltip */
+  --motion-default: 150ms; /* popover, dropdown */
+  --motion-slow: 200ms; /* dialog, alert-dialog, backdrop */
+  --motion-slowest: 300ms; /* sheet (symmetric open + close) */
 }
 
 :root {

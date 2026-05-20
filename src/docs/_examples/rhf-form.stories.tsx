@@ -2,12 +2,12 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 
+import { CurrencyInput } from "../../domain/currency-input"
 import { Combobox, type ComboboxOption } from "../../forms/combobox"
 import { DateInput } from "../../forms/date-input"
 import { Button } from "../../primitives/button"
 import { Input } from "../../primitives/input"
 import { Switch } from "../../primitives/switch"
-import { CurrencyInput } from "../../domain/currency-input"
 
 const estadoOptions: ComboboxOption[] = [
   { value: "AC", label: "Acre" },

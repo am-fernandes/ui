@@ -40,11 +40,7 @@ describe("Popover", () => {
     function Controlled() {
       const [open, setOpen] = React.useState(false)
       return (
-        <Popover
-          trigger={<button type="button">Toggle</button>}
-          open={open}
-          onOpenChange={setOpen}
-        >
+        <Popover trigger={<button type="button">Toggle</button>} open={open} onOpenChange={setOpen}>
           <p>Body</p>
         </Popover>
       )

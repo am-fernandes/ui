@@ -57,7 +57,7 @@ export const Description: Story = {
   },
 }
 
-export const Error: Story = {
+export const ErrorState: Story = {
   args: {
     label: "Campo",
     value: "valor inválido",

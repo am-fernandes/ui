@@ -49,11 +49,7 @@ export const defaultComboboxLabels: ComboboxLabels = {
   removeBadge: (labelText) => `Remover ${labelText}`,
   clearSelection: "Limpar seleção",
   selectedCount: (count) => `${count} ${count === 1 ? "selecionado" : "selecionados"}`,
-  createOption: (search) => (
-    <>
-      Usar: &ldquo;{search}&rdquo;
-    </>
-  ),
+  createOption: (search) => <>Usar: &ldquo;{search}&rdquo;</>,
 }
 
 interface ComboboxBaseProps {

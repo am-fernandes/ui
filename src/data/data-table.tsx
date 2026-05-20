@@ -556,6 +556,7 @@ function DataTable<TData>({
                   data-slot="data-table-loading-announcer"
                 >
                   <TableCell colSpan={table.getVisibleLeafColumns().length}>
+                    {/* biome-ignore lint/a11y/useSemanticElements: <output> targets calculation results inside <form>; this is a generic loading announcement, role="status" is the right ARIA role. */}
                     <span role="status" className="sr-only">
                       {mergedLabels.loading}
                     </span>
@@ -575,9 +576,7 @@ function DataTable<TData>({
                         <div
                           className={cn(
                             "h-4 animate-pulse rounded-md bg-primary/10",
-                            SKELETON_CELL_WIDTHS[
-                              (rowIdx + colIdx) % SKELETON_CELL_WIDTHS.length
-                            ],
+                            SKELETON_CELL_WIDTHS[(rowIdx + colIdx) % SKELETON_CELL_WIDTHS.length],
                           )}
                         />
                       </TableCell>
@@ -592,7 +591,8 @@ function DataTable<TData>({
                   <TableRow
                     key={row.id}
                     className={cn(
-                      interactive && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset focus-visible:bg-muted/60",
+                      interactive &&
+                        "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset focus-visible:bg-muted/60",
                       rowClassName?.(row.original, index),
                     )}
                     role={interactive ? "button" : undefined}
@@ -626,6 +626,7 @@ function DataTable<TData>({
                   colSpan={table.getVisibleLeafColumns().length}
                   className="h-24 text-center text-muted-foreground"
                 >
+                  {/* biome-ignore lint/a11y/useSemanticElements: <output> targets form calculation results; this is a generic "no results" announcement, role="status" is the right ARIA role. */}
                   <span role="status" aria-live="polite">
                     {resolvedEmptyMessage}
                   </span>
