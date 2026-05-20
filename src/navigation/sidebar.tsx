@@ -23,7 +23,7 @@ export interface SidebarItem {
   /** Stable identity (React key + `isActive` lookups). */
   id: string
   label: string
-  icon?: React.ComponentType<{ className?: string }>
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>
   href?: string
   onClick?: () => void
   badge?: React.ReactNode
@@ -97,17 +97,17 @@ function Sidebar({
       data-slot="sidebar"
       data-state={collapsed ? "collapsed" : "expanded"}
       className={cn(
-        "shrink-0 border-r bg-sidebar flex flex-col transition-[width] duration-200",
+        // `overflow-hidden` keeps the in-flight content (item labels growing
+        // from 0 → full width) from bumping into the rail's right edge and
+        // briefly exposing a horizontal scrollbar while the width animates.
+        "shrink-0 overflow-hidden border-r bg-sidebar flex flex-col transition-[width] duration-200",
         collapsed ? "w-16" : "w-64",
       )}
     >
-      {/* Brand + collapse toggle */}
-      <div
-        className={cn(
-          "border-b px-3 py-4 flex items-center gap-2",
-          collapsed ? "justify-center" : "justify-between",
-        )}
-      >
+      {/* Brand + collapse toggle. `justify-start` is constant across both
+          states so the 32px brand square never shifts horizontally during
+          the width animation — only the aside grows around it. */}
+      <div className="border-b px-3 py-4 flex items-center gap-2 justify-start">
         <Tooltip
           content={collapsed ? `Expandir ${brandLabel}` : `Recolher ${brandLabel}`}
           side="right"
@@ -212,7 +212,7 @@ function SidebarItemRender({
 
   const inner = (
     <>
-      {Icon ? <Icon className="h-4 w-4 shrink-0" /> : null}
+      {Icon ? <Icon className="h-5 w-5 shrink-0" strokeWidth={2} /> : null}
       {!collapsed ? <span className="flex-1 truncate">{item.label}</span> : null}
       {!collapsed && item.badge ? <span data-slot="sidebar-item-badge">{item.badge}</span> : null}
       {!collapsed && hasChildren ? (
