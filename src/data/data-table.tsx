@@ -518,7 +518,10 @@ function DataTable<TData>({
       return (
         <div
           data-slot="data-table-download-skeleton"
-          className="h-10 w-40 animate-pulse rounded-md bg-primary/10"
+          className={cn(
+            "h-10 w-40 animate-pulse rounded-md bg-primary/10",
+            downloadTriggerClassName,
+          )}
         />
       )
     }
