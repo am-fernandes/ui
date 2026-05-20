@@ -163,6 +163,11 @@ function DateRangePicker({
           selected={pendingRange}
           onSelect={handleSelect}
           numberOfMonths={numberOfMonths}
+          // Hide previous/next-month days inside each calendar pane.
+          // Otherwise the range_end day (e.g. June 1) renders twice when the
+          // range spans two months: once as range_end in its own pane, and
+          // once as the outside-day of the previous month's pane.
+          showOutsideDays={false}
         />
         <div className="flex justify-end gap-2 border-t p-3">
           <Button variant="ghost" onClick={handleClear}>
