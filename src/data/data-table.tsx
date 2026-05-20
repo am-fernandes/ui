@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  FilterX,
   Search,
 } from "lucide-react"
 import * as React from "react"
@@ -113,6 +114,8 @@ export interface DataTableLabels {
   exportPage: string
   /** "Export all data" menu item label. */
   exportAll: string
+  /** "Clear filters" toolbar button label. */
+  clearFilters: string
 }
 
 const numberFormatter = new Intl.NumberFormat("pt-BR")
@@ -143,6 +146,7 @@ export const defaultDataTableLabels: DataTableLabels = {
   exportFiltered: "Exportar dados filtrados",
   exportPage: "Exportar página atual",
   exportAll: "Exportar todos os dados",
+  clearFilters: "Limpar filtros",
 }
 
 export interface DataTableProps<TData> {
@@ -207,6 +211,14 @@ export interface DataTableProps<TData> {
    * name / row mapping.
    */
   downloadable?: boolean | DataTableDownloadable<TData>
+  /**
+   * Render a "Limpar filtros" button on the toolbar (left of the export
+   * button). The lib doesn't own the filter state, so the parent decides
+   * what to reset in the callback.
+   */
+  onClearFilters?: () => void
+  /** Disable the clear-filters button (e.g. when no filters are active). */
+  clearFiltersDisabled?: boolean
 }
 
 export interface DataTableDownloadable<TData> {
@@ -249,6 +261,8 @@ function DataTable<TData>({
   rowClassName,
   loading = false,
   downloadable,
+  onClearFilters,
+  clearFiltersDisabled,
   sorting: sortingProp,
   onSortingChange: onSortingChangeProp,
   manualSorting,
@@ -403,6 +417,7 @@ function DataTable<TData>({
 
   const hasSearch = !!(searchableColumns && searchableColumns.length > 0)
   const hasDownload = !!downloadable
+  const hasClearFilters = typeof onClearFilters === "function"
   const downloadConfig: DataTableDownloadable<TData> | undefined =
     downloadable && typeof downloadable === "object" ? downloadable : undefined
 
@@ -524,7 +539,7 @@ function DataTable<TData>({
       data-slot="data-table"
       aria-busy={loading || undefined}
     >
-      {hasSearch || hasDownload ? (
+      {hasSearch || hasDownload || hasClearFilters ? (
         <div className="flex items-center justify-between gap-2">
           {hasSearch ? (
             loading ? (
@@ -550,7 +565,22 @@ function DataTable<TData>({
           ) : (
             <span aria-hidden />
           )}
-          {hasDownload ? renderDownloadMenu() : null}
+          <div className="flex items-center gap-2">
+            {hasClearFilters ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={loading || clearFiltersDisabled}
+                onClick={onClearFilters}
+                data-slot="data-table-clear-filters"
+                className="gap-2"
+              >
+                <FilterX className="size-4" aria-hidden />
+                {mergedLabels.clearFilters}
+              </Button>
+            ) : null}
+            {hasDownload ? renderDownloadMenu() : null}
+          </div>
         </div>
       ) : null}
 
