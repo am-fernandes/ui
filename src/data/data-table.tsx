@@ -206,9 +206,10 @@ export interface DataTableDownloadable<TData> {
   /**
    * Custom row → record mapping. Defaults to one column per visible leaf column,
    * using the column's `header` (when it's a string) as the key and the resolved
-   * cell value as the cell content.
+   * cell value as the cell content. The default resolver supports both
+   * `accessorKey` and `accessorFn` columns.
    */
-  rowToRecord?: (row: TData) => Record<string, unknown>
+  rowToRecord?: (row: TData, rowIndex: number) => Record<string, unknown>
 }
 
 type ExportScope = "filtered" | "page" | "all"
@@ -369,17 +370,26 @@ function DataTable<TData>({
     downloadable && typeof downloadable === "object" ? downloadable : undefined
 
   const defaultRowToRecord = React.useCallback(
-    (row: TData): Record<string, unknown> => {
+    (row: TData, rowIndex: number): Record<string, unknown> => {
       const record: Record<string, unknown> = {}
       const leafCols = table.getVisibleLeafColumns()
       for (const col of leafCols) {
         const headerDef = col.columnDef.header
         const label = typeof headerDef === "string" && headerDef.length > 0 ? headerDef : col.id
-        const accessorKey = (col.columnDef as { accessorKey?: string }).accessorKey
-        const rawValue =
-          accessorKey != null
-            ? (row as Record<string, unknown>)[accessorKey]
-            : (row as Record<string, unknown>)[col.id]
+        const def = col.columnDef as {
+          accessorKey?: string
+          accessorFn?: (row: TData, rowIndex: number) => unknown
+        }
+        // Resolve in priority order: explicit accessorKey > accessorFn (covers
+        // computed/nested values) > fallback to col.id as a property.
+        let rawValue: unknown
+        if (def.accessorKey != null) {
+          rawValue = (row as Record<string, unknown>)[def.accessorKey]
+        } else if (typeof def.accessorFn === "function") {
+          rawValue = def.accessorFn(row, rowIndex)
+        } else {
+          rawValue = (row as Record<string, unknown>)[col.id]
+        }
         record[label] = rawValue ?? ""
       }
       return record
