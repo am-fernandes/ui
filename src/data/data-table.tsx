@@ -228,6 +228,10 @@ export interface DataTableProps<TData> {
   onClearFilters?: () => void
   /** Disable the clear-filters button (e.g. when no filters are active). */
   clearFiltersDisabled?: boolean
+  /** Extra classes for the clear-filters button (e.g. width override). */
+  clearFiltersClassName?: string
+  /** Extra classes for the export trigger button (e.g. width override). */
+  downloadTriggerClassName?: string
 }
 
 export interface DataTableDownloadable<TData> {
@@ -273,6 +277,8 @@ function DataTable<TData>({
   downloadable,
   onClearFilters,
   clearFiltersDisabled,
+  clearFiltersClassName,
+  downloadTriggerClassName,
   sorting: sortingProp,
   onSortingChange: onSortingChangeProp,
   manualSorting,
@@ -527,7 +533,7 @@ function DataTable<TData>({
             variant="outline"
             disabled={data.length === 0}
             data-slot="data-table-download-trigger"
-            className="gap-2"
+            className={cn("gap-2", downloadTriggerClassName)}
           >
             <Download className="size-4" aria-hidden />
             {mergedLabels.exportTrigger}
@@ -618,7 +624,7 @@ function DataTable<TData>({
                 disabled={loading || clearFiltersDisabled}
                 onClick={onClearFilters}
                 data-slot="data-table-clear-filters"
-                className="gap-2"
+                className={cn("gap-2", clearFiltersClassName)}
               >
                 <FilterX className="size-4" aria-hidden />
                 {mergedLabels.clearFilters}
