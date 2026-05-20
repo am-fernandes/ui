@@ -75,6 +75,10 @@ function DateRangePicker({
   const [pendingRange, setPendingRange] = React.useState<DateRange | undefined>(committedRange)
 
   // Sync pending range from the committed value each time the popover opens.
+  // We intentionally only re-sync on the closed→open transition; if the parent
+  // mutates `value` while the popover is open we don't want to clobber the
+  // user's in-progress selection.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
   React.useEffect(() => {
     if (open) setPendingRange(committedRange)
   }, [open])
