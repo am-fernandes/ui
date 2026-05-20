@@ -1,380 +1,157 @@
 # Changelog
 
-All notable changes to `@am-fernandes/ui` are documented in this file.
+All notable changes to `@amfernandesinc/ui` will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [10.0.0] — 2026-05-18
+Releases from this point forward are managed via [changesets](https://github.com/changesets/changesets).
 
-**First public release.** This is the inaugural published API of `@am-fernandes/ui` on npm.
+## [Unreleased]
 
-The library was iterated privately to ~145 exports (v9.x), then audited (Google Engineering Practices, OWASP Top 10:2025, Clean Code) and simplified before publication. Post-publication, three further breaking removals tightened the surface: `Chart*` (consumers use `recharts` directly), the `Form`/`Field`/`FieldGroup`/`FormField` wrappers (consumers use `react-hook-form` directly), and `DropdownMenu` (no internal consumer). The release represents the final API decisions: data-driven where it fits, `label`/`description`/`error` on every form control, `title`/`description`/`children` on every overlay, single-export for every flat component, `ReactNode` slots (`footer`, `headerAction`, `action`, `trigger`) for the common edge cases.
+### ⚠ BREAKING CHANGES
 
-### Public API surface (41 components + 19 helpers/constants)
+- **`Typography`**: the `display` variant has been removed. Rename it to `heading`, which now resolves to `text-3xl` / 30px (down from `display`'s `text-4xl` / 36px). The remaining variants were also renamed and resized: `subtitle` is now `text-xl` (20px), a new `lead` variant lives at `text-base` (16px), and the standalone `label`/`mono`/`overline` variants are gone — apply those tones via `className` overrides on the matching size sibling.
+- **`DataTable`**: per-column `enableSorting` is no longer honored. Pass `sortableColumns={[...columnIds]}` on the `<DataTable>` to whitelist which headers render the sort button. Tables that previously relied on the implicit "everything sortable" default must now opt in explicitly. The controlled `sorting` / `onSortingChange` props were also removed in a follow-up — sort state is internal-only; reintroduce controlled sort via a future `defaultSorting` prop if needed.
+- **`DateRangePicker`**: `onChange` was renamed to `onValueChange` for parity with every other form control (`Combobox`, `MultiInput`, `CurrencyInput`, `PercentageInput`, `RadioGroup`, `InputOTP`, `FileUpload`, …). The callback signature is unchanged — it still receives a `{ from, to }` `DateRangeValue`. Inside react-hook-form `Controller`, only the prop name changes: `onValueChange={field.onChange}`.
 
-**Primitives (11):** `Avatar`, `Badge` (+`badgeVariants`), `Button` (+`buttonVariants`), `Checkbox`, `Input`, `RadioGroup`, `Separator`, `Skeleton`, `Switch`, `Textarea`, `Typography` (+`typographyVariants`)
+### Added
 
-**Overlays (9):** `Alert` (+`alertVariants`), `AlertDialog`, `Collapsible`, `Dialog`, `Popover`, `Progress`, `Sheet`, `Toaster`/`toast` (sonner), `Tooltip`
+#### Brazilian inputs and validators
+- `CPFInput` — masked `000.000.000-00` input, emits 11 cleaned digits.
+- `CNPJInput` — masked `00.000.000/0000-00` input, emits 14 cleaned digits.
+- `CEPInput` — masked `00000-000` input, emits 8 cleaned digits.
+- `PhoneInput` — dynamic mask `(00) 0000-0000` ↔ `(00) 00000-0000` based on digit count (fixo vs celular).
+- `isValidCPF`, `isValidCNPJ`, `isValidCEP`, `isValidPhone` — pure validators in `@amfernandesinc/ui/lib/brazil`. Canonical Receita Federal modulo-11 DV checks; reject all-same-digit and out-of-range area codes.
 
-**Forms (5):** `Calendar`, `Combobox` (+`useComboboxOptions`), `DateInput`, `DateRangePicker`, `TimePicker`
+#### i18n labels
+- `labels?: Partial<XLabels>` prop on `DataTable`, `FileUpload`, `Combobox`, `CommandPalette`, and `Calendar`. All keys optional, pt-BR defaults preserved, per-instance override (no global Provider).
+- Exported label types and default constants: `DataTableLabels` / `defaultDataTableLabels` (13 keys: loading, empty, pagination prev/next, row count formatter, page indicator, sort-by, export trigger + 3 menu items, search placeholder + aria-label), `FileUploadLabels` / `defaultFileUploadLabels` (17 keys), `ComboboxLabels` / `defaultComboboxLabels` (7 keys), `CommandPaletteLabels` / `defaultCommandPaletteLabels` (3 keys), `CalendarLabels` (reserved for future wrapper copy — `react-day-picker`'s `locale` prop still drives day/month names).
+- One `English` / `CustomLabels` story per component demonstrating the override pattern.
 
-**Navigation (5):** `Accordion`, `Breadcrumb`, `CommandPalette`, `Sidebar`, `Tabs`
+#### Tokens and motion
+- Tiered z-index scale exposed as CSS variables: `--z-overlay` (40), `--z-modal` (50), `--z-popover` (60), `--z-tooltip` (70), `--z-toast` (80). Replaces the hardcoded `999999999` Sonner default.
+- Motion duration tokens: `--motion-fast` (100ms), `--motion-default` (150ms), `--motion-slow` (200ms), `--motion-slowest` (300ms). Wired through Tooltip/Popover/Dialog/AlertDialog/Sheet.
+- Global `@media (prefers-reduced-motion: reduce)` override so motion-sensitive users get effectively-instant transitions.
+- `--font-mono` token (Geist Mono) applied to `InputOTP` slots (`font-mono` + `tabular-nums`) plus `tabular-nums` on `CurrencyInput` / `PercentageInput`.
 
-**Data (6):** `Card`, `DataTable`, `Image`, `ScrollArea`, `Tree`, `Video` (+`tableStyles` helper)
+#### Fonts
+- Self-hosted Geist + Geist Mono via `@fontsource/geist` and `@fontsource/geist-mono` (only weights 400/500/600/700 sans, 400/500 mono). Drops Google Fonts CDN dependency (LGPD + render-blocking).
+- Geist replaces the previous Google Sans Flex tagline as the default `--font-sans`.
 
-**Domain (5):** `CurrencyInput`, `FileUpload`, `InputOTP` (+`REGEXP_ONLY_DIGITS`), `MultiInput`, `PercentageInput`
+#### DataTable improvements
+- `loading` prop — replaces body rows with skeleton cells (count = `pagination.pageSize ?? 5`, rotating widths), swaps search input and footer for skeletons, disables pagination, sets `aria-busy="true"`.
+- `downloadable` prop — renders an "Exportar para Excel" ghost button; opens a popover with three scopes (filtered / current page / all rows), each producing an `.xlsx` via lazy-imported `xlsx`. Accepts `boolean` or an object with `filename`, `sheetName`, `rowToRecord`.
+- pt-BR thousands separator on `defaultRowCount` — large counts now render as "1.832 registros" via `Intl.NumberFormat("pt-BR")`.
+- `onRowClick` + `rowClassName` props for interactive rows with inset focus rings.
+- `dateColumn()` helper — dd/MM/yyyy auto-format plus timestamp-based `sortingFn` (handles BR strings, ISO, `Date` objects, epoch millis).
+- New `Data/Table` simple story showcasing the `tableStyles()` helper for plain `<table>` markup.
 
-**Hooks (1):** `useIsMobile`
+#### DX and types
+- Every public component now ships a typed `*Props` export: `CalendarProps`, `ProgressProps`, `SkeletonProps`, `ToasterProps`, `ScrollAreaProps`, `ScrollBarProps`, `LabelProps`. The internal `Label` used by `FieldShell` is renamed to `InternalLabelProps` to avoid collision.
+- `asChild?: boolean` on `Badge` and `Label` (via `@radix-ui/react-slot`), matching the `Button` pattern. Lets consumers render as a `Link`, custom button, or arbitrary child while keeping the visual class set.
+- Orphan types and values exported from the barrel: `DataTableDownloadable`, `DisabledDayPreset`, `DisabledDays`, `TypographyAs`, `ScrollBar`.
+- `displayName` set on 10 previously-missing components: `Image`, `ScrollArea`, `Tree`, `Video`, `Progress`, `Toaster`, `Badge`, `Label`, `Skeleton`, `Typography`.
+- `formatCount(count, max = 999)` helper for notification-style counter badges. Handles negative / NaN / Infinity / fractional inputs; renders `${max}+` past the cap.
+- `Popover` exposes Radix outside-interaction callbacks: `onInteractOutside`, `onPointerDownOutside`, `onFocusOutside`, `onEscapeKeyDown` (types derived from `React.ComponentProps<typeof PopoverPrimitive.Content>`).
+- Sidebar collapsible submenu with per-item `defaultOpen` flag.
 
-**Lib (10):** `cn`, `toCents`, `fromCents`, `centsToDisplay`, `formatBRL`, `percentFromValue`, `percentOfTotal`, `bytes`/`kb`/`mb`/`gb`
-
-> See the Storybook **Hooks** tab for the canonical reference on every non-component export (signatures, examples, SSR notes).
-
-### Quality posture
-
-- 346 unit/integration tests pass (jsdom + @testing-library/react via vitest)
-- 289 Storybook stories smoke-tested via `@storybook/test-runner` (Chromium real, Axe wcag2aa assertions, 0 serious/critical violations)
-- 96 Playwright E2E tests across desktop + mobile (Pixel 5) + tablet (iPad gen 7) viewports
-- 57 visual regression baselines via `toHaveScreenshot` (Google Fonts blocked for determinism)
-- typecheck clean
-- lint clean (biome)
-- React 19 native `ref` prop pattern across all components (no `forwardRef`)
-- `data-slot` attribute on every primary element
-- WCAG 2.4.7 focus rings on every interactive primitive
-- Radix Dialog title always present (CommandPalette uses sr-only defaults)
-- Image/Video validate src against allowed protocols
-- Sidebar cookie persistence is opt-in (`persistOpenState`)
-- FileUpload documents MIME validation as browser-supplied (server must re-validate)
-- Tree implements full WAI-ARIA tree pattern (roving tabindex, arrow keys, Home/End)
-
-### Post-publication breaking changes folded into 10.0.0
-
-- **Removed `Chart*` family** — consumers use `recharts` directly. The library still ships `--chart-1` … `--chart-5` tokens (see Foundations/Colors).
-- **Removed `Form`, `FormField`, `Field`, `FieldGroup`** — consumers use `react-hook-form` directly. `Combobox`, `DateInput`, etc. already expose `label`/`description`/`error` props, so a `<Field>` wrapper was redundant.
-- **Removed `DropdownMenu`** — no internal consumer and removed Radix `@radix-ui/react-dropdown-menu` from deps. Use `Popover` + `Button` when an action menu is required.
-- **Unexported `Sheet*` subcomponents** — `Sheet` remains exported, but the lower-level Radix subcomponents (`SheetTrigger`/`SheetContent`/etc.) are no longer part of the public API. The flat `<Sheet title description children>` API is the supported entrypoint; `Sidebar` consumes Sheet internals directly.
-
-### Previous private iterations
-
-Versions 1.0–9.0 were never published to npm — they were in-repo iterations. The audit pass that produced this release is documented in `docs/superpowers/specs/2026-05-18-api-simplification-design.md` and `docs/superpowers/plans/2026-05-18-api-simplification.md`.
-
----
-
-## Internal history (pre-public)
-
-> Versions below were in-repo only — never published.
-
-### [v9.0.0 private] — 2026-05-18
-
-### Breaking
-- **`React.forwardRef` removed across the library.** All components now use the React 19 native `ref` prop pattern (function components accepting `ref?: React.Ref<...>`). Consumers wrapping these in `forwardRef`-aware HOCs may see slightly different types. The ref behavior is preserved.
-- **`DateInput`/`DateRangePicker`/`Calendar` — `parseISO` replaced with `parse(value, "yyyy-MM-dd", new Date())`.** Fixes the off-by-one timezone bug where the ISO date was parsed as UTC midnight and reformatted in local time. Stored ISO strings are now interpreted in local time, matching what the user sees.
-- **`Calendar.data-day` now uses ISO `yyyy-MM-dd`** instead of locale-formatted strings. Selectors `[data-day="2025-01-15"]` are now stable across locales.
-- **`InputOTP` defaults `pattern` to `REGEXP_ONLY_DIGITS`.** Non-digit characters are rejected by default. Pass an explicit `pattern` to opt into alphanumeric. `REGEXP_ONLY_DIGITS` is now re-exported from `@am-fernandes/ui`.
-- **`Sidebar` no longer persists state to a cookie by default.** Opt-in via `<SidebarProvider persistOpenState />`. When enabled, the cookie is written with `SameSite=Lax; Secure` and only in uncontrolled mode.
-- **`Sidebar` keyboard shortcut (`Ctrl/Cmd+B`) skips editable elements** and accepts a `keyboardShortcut?: string | null` prop (pass `null` to disable).
-- **`Label` no longer uses `cva`** — it had no variants. The `VariantProps<typeof labelVariants>` type is gone.
-- **`Typography.as` now restricted** to a curated union of intrinsic elements (`div | span | p | h1…h6 | label | small | blockquote`) instead of all `JSX.IntrinsicElements`.
-- **`MultiInput`** added `maxItems?: number` and `onReject?: (reason) => void` props.
-
-### Security
-- **`Chart`** — `ChartStyle` sanitizes config `color` values before interpolating into the inline `<style>` block. Previously a malicious string could inject arbitrary CSS.
-- **`Image` and `Video`** — added `allowedProtocols?: string[]` prop (default `["http:", "https:"]`). `src` values failing the allowlist (e.g. `javascript:`, `data:`) render the error fallback instead of issuing the network request.
-- **`FileUpload`** — JSDoc warning on `accept` documenting that MIME validation is browser-supplied and is NOT a security boundary. Always re-validate on the server with magic-byte sniffing.
-
-### Fixed — correctness
-- **`CurrencyInput`/`PercentageInput`** — input digits clamped to 15 chars to avoid `Number.parseInt` overflowing `MAX_SAFE_INTEGER`.
-- **`PercentageInput`** — values clamped to `[0, max]` (default `max=100`). Out-of-range pastes no longer pass silently.
-- **`TimePicker`** — eliminated the `useEffect` race that could wipe user input mid-typing. Modular arrow-key wrap. Out-of-range blur clears the field instead of silently clamping (typing `25` no longer becomes `23`).
-- **`Progress`** — value clamped to `[0, 100]`. Indeterminate state (when `value` is `undefined`) renders an animated indicator.
-- **`Breadcrumb`** — `aria-current="page"` only on the last item.
-- **`Sidebar.SidebarMenuSkeleton`** — replaced `Math.random()` with a deterministic hash of `useId()`. Fixes hydration mismatch in SSR.
-- **`Tree`** — added `maxDepth?: number` (default `64`) and cycle detection. Recursive structures and overly deep trees no longer crash the renderer.
-- **`Tree`** — implements the WAI-ARIA tree pattern: roving tabindex, arrow-key navigation, Home/End, Enter/Space activation, `aria-selected` on the focused row.
-- **`FileUpload.fileMatchesAccept`** — extension patterns require a non-empty stem (a file literally named `.pdf` no longer matches the `.pdf` filter).
-- **`FileUpload.openInNewTab`** — object URLs tracked in a ref and revoked on unmount; if `window.open` returns `null` (popup blocked) the URL is revoked immediately.
-
-### Fixed — accessibility
-- **`Button`/`Checkbox`/`Switch`/`Textarea`/`Tabs`** — restored `focus-visible` rings (`focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`). Previously `focus-visible:outline-none` was declared without a replacement — WCAG 2.4.7 violation.
-- **`Input`/`Textarea`** — added `aria-invalid` styling.
-- **`Checkbox`** — indeterminate state now renders a Minus icon.
-- **`CommandDialog`** — includes `sr-only` `<DialogTitle>` and `<DialogDescription>`. Customize via `title`/`description` props.
-- **`Combobox`** — added `aria-controls`/`aria-haspopup="listbox"`/`aria-autocomplete="list"` on the trigger. Replaced `__create__` string prefix with a cmdk internal action discriminator.
-- **`Skeleton`** — defaults `role="status"`, `aria-live="polite"`, `aria-busy="true"`.
-- **`DataTable`** — `aria-sort` on `<TableHead>`; sort button `aria-label` checks header type before stringifying.
-- **`ScrollArea`** — added `orientation?: "vertical" | "horizontal" | "both"` prop.
-- **`Calendar`** chevron icons — `aria-hidden="true"` set; SVGs no longer spread arbitrary props.
-
-### Fixed — design
-- **Overlay animation classes deduplicated.** `Dialog`/`AlertDialog`/`Sheet` now share `dialogContentBase` from `src/overlays/_internal/animations.ts`.
-- **`Alert`** — fixed ref/prop generics. `AlertTitle` typed as `HTMLHeadingElement`; `AlertDescription` typed as `HTMLDivElement`. Fixed `[&>svg+*]` selector so icon + title vertical alignment works.
-- **`Dialog`/`Sheet`** — `hideCloseButton?: boolean` and `closeLabel?: string` props (default `"Close"`).
-- **`DateInput`** — `disabled` no longer swaps the DOM element from `<Button>` to `<Input>`. Refs and identity are stable.
-- **`DateRangePicker`** — added `value`/`onChange` controlled API (object `{from, to}`) alongside the split props. Added `disabled` and `numberOfMonths` props.
-- **`DataTable`** — added controlled props: `sorting`/`onSortingChange`, `globalFilter`/`onGlobalFilterChange`, `pageIndex`/`onPaginationChange`/`pageCount`/`manualPagination`. Server-side data tables possible without a fork.
-- **`Sonner`** — extended `toastOptions.classNames` to cover `warning`, `info`, and `loading` variants.
-
-### Fixed — implementation
-- **`Accordion`** — replaced the blanket `as any` cast with a discriminated dispatch on `type`. Last item gets `last:border-b-0`.
-- **`Combobox`** — replaced `||` with `??` in `useComboboxOptions`. Replaced inline placeholder color with `text-muted-foreground`. Renamed `_value` parameter on `onValueChange` to `value`.
-- **`Calendar`** — memoized the `components` map; DayButton/Root/Chevron identities are stable across renders, preventing focus loss on keyboard nav.
-- **`FileUpload`** — added `ref?: React.Ref<HTMLInputElement>` forwarded to the hidden file input.
-- **`MultiInput`** — removed the dead `onKeyDown` handler on the non-focusable wrapper. Badge X-remove fires on `mousedown` (before input blur) to avoid the race where blur committed pending input while the user clicked a token X.
-
-### Tests
-- Coverage increased from 112 → 297 tests across 49 files.
-- Added test files for `lib/currency`, `hooks/use-is-mobile`, and `data/table`.
-- `vitest.setup.ts` stubs `URL.createObjectURL`/`revokeObjectURL` for `FileUpload` tests.
-
-### Internal
-- New file: `src/overlays/_internal/animations.ts` — shared overlay animation constants.
-
-## [9.0.0] — 2026-05-18
-
-### Breaking
-- Removed `DropdownMenu` (component, types, story, test). It was never imported by
-  any consumer app and would have been used for "menu de ações da linha" style UI
-  that we currently don't ship. Removed dep `@radix-ui/react-dropdown-menu`.
-- Removed the `Sheet*` public exports (`Sheet`, `SheetTrigger`, `SheetContent`,
-  `SheetHeader`, `SheetFooter`, `SheetTitle`, `SheetDescription`, `SheetClose`)
-  and the Storybook story/test. The `src/overlays/sheet.tsx` source file remains
-  in-tree because `Sidebar` uses it internally for the mobile drawer — it is no
-  longer part of the public API.
-
-## [8.1.0] — 2026-05-18
+#### Packaging
+- Per-component subpath exports — `import { Button } from "@amfernandesinc/ui/button"` and pay only for what you use. The `exports` map grew from 3 entries to 53 (one per component + hooks + `lib/*` helpers + `./package.json`).
+- `tsup` configured with `splitting: true` so shared helpers (`cn`, `cva`, `FieldShell`, `useFieldIds`, Radix re-exports) live in `chunk-*.js` and are deduped instead of inlined per entry. `sourcemap: false` drops ~354KB of `.map` files from the tarball — published size ~514KB → ~260KB.
+- Subpath exports added for the Brazilian inputs and `./lib/brazil`.
 
 ### Changed
-- Every component's Storybook autodocs now appends a **"Exemplo de uso"** fenced
-  TSX code block showing the import from `@am-fernandes/ui` and a minimal usage
-  snippet. Applied to all 44 stories across Primitives, Overlays, Navigation,
-  Forms, Domain, and Data — matching the pattern that already existed in
-  `Domain/FileUpload` ("Helpers de tamanho").
 
-## [8.0.1] — 2026-05-18
+#### Spacing and density
+- Inputs: vertical padding bumped to `py-3` across `Input`, `Textarea`, `CurrencyInput`, `PercentageInput`, `MultiInput`, `TimePicker`. Fixed `h-9` / `h-11` heights dropped — box height now flows from padding.
+- `DateInput` trigger: aligned to `px-3 py-3`, no fixed height (matches sibling inputs).
+- `Button`: `default` size goes `px-4` → `px-3` so buttons sit flush with inputs; `lg` size goes `px-8` → `px-6` (enterprise tooling, not landing-page hero).
+- `DataTable`: cells move from `px-4 py-4` to `px-3 py-2.5`; footer gains `px-3` so its padding lines up with cells.
+- Menu / tab / sidebar / tree rows unified at `py-1.5` (Tabs trigger: `py-1` → `py-1.5`).
+- `space-y-*` swapped for `flex flex-col gap-*` on DataTable and FileUpload wrappers (matches the rest of the lib).
+- `FileUpload` list rows: `px-3 py-2` → `px-2 py-1.5` (menu-item pattern).
+- Icon spacing: `mr-*` margins removed inside `<Button>` (its base variant already declares `gap-2`); other flex parents gain `gap-2`/`gap-1` and lose per-icon margin (Combobox, CommandPalette, DateInput, DateRangePicker).
+
+#### Tokens
+- `--radius` flattened to `0.25rem` (4px) — every `--radius-{sm,md,lg,xl,2xl,3xl,4xl}` resolves to the same value. `rounded-full` is unaffected.
+- Placeholder color routed through `--input` (the border color) — inputs, textareas, time picker, combobox, command palette all switch `placeholder:text-muted-foreground` → `placeholder:text-input`. The standalone `--placeholder` token introduced during the contrast pass was rolled back in favor of this unified low-emphasis tone.
+
+#### Motion language
+- Killed `transition-all` (anti-pattern: animates every property). `InputOTP` slot, Accordion trigger, Tabs trigger → `transition-colors`. Progress indicator → `transition-[width]`.
+- Removed orphan `transition-[color]` from ScrollArea viewport.
+- Chevron rotations normalized to default 150ms across Accordion, Sidebar, Tree (Accordion and Sidebar previously hardcoded `duration-200`).
+- Added `transition-colors` to Tree rows, Sidebar menu items, Combobox options, CommandPalette items, and DataTable filter rows so every hoverable row in the lib feels consistent.
+- Dialog backdrop and content both run at `--motion-slow` (backdrop was silently 150ms — desynced from 200ms content). Legacy slide classes (`slide-in-from-left-1/2`, `slide-in-from-top-[48%]`) dropped — dialogs are now pure fade + zoom-95.
+- Sheet open and close both `--motion-slowest` (was asymmetric 500/300). Removes dead `ease-in-out` class.
+- Tooltip gains `zoom-in-95` / `zoom-out-95` for parity with Popover.
 
 ### Fixed
-- `FileUpload` camera dialog now shows a "Iniciando câmera…" spinner while
-  `getUserMedia` resolves and the first frame loads (waits for the `<video>`'s
-  `loadeddata` event). The "Tirar foto" button is disabled until the stream is
-  ready, so users can't snapshot a black frame. Improves perceived latency on
-  the inevitable browser-permission + hardware-warmup delay.
 
-## [8.0.0] — 2026-05-18
+#### Accessibility
+- Sidebar disabled links are no longer keyboard-focusable or clickable (drop `href`, `tabIndex={-1}`, `aria-disabled`, `pointer-events-none`, intercept `onClick`). Active items announce `aria-current="page"` (links) / `"true"` (buttons).
+- DataTable: inserts `sr-only role="status"` "Carregando dados…" during loading so VoiceOver/NVDA pick up the state transition. Empty-state text wrapped in `role="status" aria-live="polite"` so filter changes that flip row count to zero are announced.
+- FileUpload: camera "Iniciando câmera…" wrapper gains `role="status"`.
+- DateRangePicker trigger now mirrors `DateInput` (`aria-label`, `aria-describedby` via `useFieldIds`).
+- TimePicker hour/minute inputs receive `aria-invalid` and `aria-describedby` pointing at FieldShell's error/description ids.
+- InputOTP forwards `aria-invalid` and `aria-describedby` to OTPInput.
+- CurrencyInput and PercentageInput forward `required` and `aria-required` to the underlying `<input>` (previously only the visual asterisk was set).
 
-### Breaking
-- `FileUpload` `preview` is now `"thumbnail" | "none"` (the `"list"` mode was removed —
-  it was strictly inferior to `"thumbnail"` since the thumbnail row already shows the
-  filename and size).
+#### Contrast (WCAG AA hardening)
+- `--destructive`: oklch(.628 .258 29.2) → oklch(.55 .19 29.2). Pure red (#ff0000) failed 4.5:1 on white text and on white background; the new deep red (#c93125) clears AA at 5.33:1.
+- `--info`: oklch(.668 .151 236.3) → oklch(.5 .15 236.3). Light blue failed at 2.93:1 on white; the new corporate blue (#006cac) clears AA at 5.61:1.
+- (Interim) introduced a `--placeholder` token at 4.85:1 on white, then folded the same role into `--input` — see _Changed → Tokens_ above.
+- Drops the `color-contrast` a11y override on the `Typography` `WithClassName` story (the underlying issue is now fixed).
 
-### Added
-- **Size helpers** `bytes`, `kb`, `mb`, `gb` exported from `@am-fernandes/ui` (`src/lib/size.ts`).
-  Express byte sizes ergonomically: `<FileUpload maxSize={mb(2)} />` instead of
-  `<FileUpload maxSize={2 * 1024 * 1024} />`. Binary units (KiB/MiB/GiB).
-- `FileUpload` **clickable previews**:
-  - Images: clicking the thumbnail opens the photo in a full-screen lightbox (Dialog).
-  - Documents (PDF, etc.): clicking opens the file in a new tab via `URL.createObjectURL`.
-- `FileUpload` **`camera?: boolean`** prop. When `true`, an extra "Capturar foto" button
-  appears next to the dropzone. Clicking opens a `getUserMedia` video stream in a Dialog
-  with a "Tirar foto" action that snapshots a `image/jpeg` file (uses `facingMode: "environment"`).
-  Falls back with a friendly error message if `getUserMedia` is unavailable or denied.
-  Requires HTTPS or localhost.
-- New Storybook stories on `Domain/FileUpload`: `ComCamera`, `HelpersDeTamanho`.
+#### Focus rings (2-tier system finalized)
+- **Tier 1 (fields)** — single rule across `Input`, `Textarea`, `CurrencyInput`, `PercentageInput`, `MultiInput`: `focus-within:border-primary focus-within:ring-1 focus-within:ring-ring`. Error state collapses to persistent red border + red ring on focus (previously three different behaviors).
+- **Tier 2 (active controls)** — `Sheet` close button (was missing both `ring-ring` and `ring-offset-2` — rendered colorless ring), `Dialog` close button, Collapsible trigger, FileUpload thumbnail all gain `ring-offset-2`.
+- RadioGroup migrated from Radix-v2 soft ring (`ring-[3px] ring-ring/50`) to the Tier 2 standard.
+- ScrollArea viewport moved to Tier 1 (`ring-1`) — it's a content surface, not a control.
+- DataTable interactive rows gain an inset focus ring (`focus-visible:ring-2 ring-ring ring-inset`) — the previous `focus-visible:bg-muted/60` was invisible against zebra stripes or hovered backgrounds.
 
-## [7.1.0] — 2026-05-18
+#### Disabled state
+- FieldShell wrapper and Label peer-disabled normalized to `opacity-50` (was `opacity-60` and `opacity-70` respectively).
+- Removed inner `disabled:opacity-50` duplication on `Input`, `Textarea`, `MultiInput`, `TimePicker`, `CurrencyInput`, `PercentageInput` — FieldShell is now the sole owner of the visual fade (was compounding to 0.25 effective opacity).
+- DateInput dropped `bg-muted` on disabled — every other field just fades; DateInput was the lone outlier painting a grey background.
 
-### Added
-- `DataTable` accepts a `showRowCount?: boolean` prop. When `true`, the footer renders the
-  total row count (`12 registros`) or `<filtrados> de <total> registros` when a search
-  filter is active. Composes with `pagination` — both appear side-by-side. New stories:
-  `WithRowCount`, `WithRowCountAndPagination`.
+#### Interactivity (post-Tailwind-v4 Preflight regression)
+- Tailwind v4 dropped the default `cursor: pointer` on `<button>` — every Button in the lib was rendering the default arrow on hover. Restored on `Button` base (covers all variants), `Checkbox`, `RadioGroup` (parity with `Switch`), DataTable filter menu items + sort header, Combobox tag close + clear-all wrappers, Sidebar item base, Sheet/Dialog close buttons, Collapsible trigger.
+- Hover semantics: Tabs inactive triggers gain `hover:bg-background/50` (previously no hover feedback). Combobox tag close switches to `hover:bg-secondary-foreground/20` for visible feedback over the `bg-muted` Badge. Combobox clear-all gains wrapper hover (was relying on icon-pixel-only `hover:opacity-100`). DataTable sort header gains `transition-colors` for smooth hover.
 
-## [7.0.0] — 2026-05-18
-
-### Added
-- **`FileUpload`** component (`src/domain/file-upload.tsx`) — drag-and-drop + click-to-pick
-  with controlled and uncontrolled modes. Props: `accept` (MIME pattern string or array),
-  `multiple`, `maxSize`, `maxFiles`, `preview` (`"thumbnail" | "list" | "none"`),
-  `value`/`onValueChange`, `onReject` (typed rejection reasons: `"type" | "size" | "max-files"`),
-  `disabled`, `error`, `label`, `description`. Thumbnail preview for images via
-  `URL.createObjectURL`. Default `label` and `description` derive from `accept`/`maxSize`.
-- 7 unit tests covering accept/size/maxFiles paths.
-- Storybook stories: `Playground` (live Controls), `Default`, `ImagensComPreview`,
-  `PDFsListView`, `Controlled`, `ComRejeicaoEToast`, `Disabled`, `ErrorState`.
-
-### Changed
-- **Storybook docs overhaul** — every story across the 7 categories now ships rich
-  autodocs:
-  - `parameters.docs.description.component` paragraph + bulleted prop list (PT-BR).
-  - `argTypes` per documented prop with explicit `control` (radio/select/object/number/text),
-    `description`, and `table.type.summary` / `defaultValue.summary` so the Storybook
-    args table shows the real TypeScript shape.
-  - A `Playground` story driven by `args` so users can tweak props live via the Controls
-    panel (covers Primitives, Overlays, Navigation, Forms, Domain, Data).
-  - **DataTable**: prose now includes an explicit "Como definir colunas" code example
-    showing basic / custom `cell` / `enableSorting: false` patterns and a pointer to
-    the `@tanstack/react-table` `ColumnDef` reference.
-
-## [6.0.0] — 2026-05-18
-
-### Breaking
-- `Breadcrumb`, `Tabs`, `Accordion`, `DropdownMenu` are now **items-only**. All composicional sub-component exports were removed (`BreadcrumbList`/`Item`/`Link`/`Page`/`Separator`/`Ellipsis`, `TabsList`/`Trigger`/`Content`, `AccordionItem`/`Trigger`/`Content`, `DropdownMenuTrigger`/`Content`/`Item`/`CheckboxItem`/`RadioItem`/`Label`/`Separator`/`Shortcut`/`Group`/`Sub`/`SubContent`/`SubTrigger`/`RadioGroup`/`Portal`, and the `DropdownMenuItems` helper).
-- Migration: use the `items` prop. For DropdownMenu, also pass a `trigger` ReactNode. See stories for current API.
-
-### Added
-- `DataTable` supports pagination via `pagination={{ pageSize: 5 }}` prop.
-
-## [5.0.0] — 2026-05-18
-
-### Breaking
-- `MultiNumberInput` renamed to `MultiInput` with a discriminated `type` prop:
-  - `type="string"` (default): free-text tokens, preserves insertion order, deduped.
-  - `type="number"`: positive-integer tokens (sorted asc, deduped) — previous behavior.
-  - Migration: existing `<MultiNumberInput value={[30, 60]}>` becomes `<MultiInput type="number" value={[30, 60]}>`. The string-mode tokenizer splits on commas/newlines only (numbers also accept slashes and whitespace).
-
-### Added
-- `RadioGroup` accepts `orientation="horizontal"` (default `"vertical"`). Passed through to Radix Root so keyboard arrows respect the visual axis and `aria-orientation` is set.
-
-### Fixed
-- MDX tables (Getting Started "Categorias", Typography font comparison) now render correctly. Added `remark-gfm` to `@storybook/addon-docs` so GFM table syntax produces `<table>` instead of literal text.
-
-## [4.0.0] — 2026-05-18
-
-### Breaking
-- `ConfirmButton` removed. Use `AlertDialog` directly when a confirmation flow is needed.
-- `DaysInstallmentInput` renamed to `MultiNumberInput`, now with optional `prefix` and `suffix` per token (generalized beyond the original "days" use case).
-
-### Added
-- `cursor-pointer` + `disabled:cursor-not-allowed` on interactive primitives (Button, Checkbox, RadioGroup, Switch, Tabs, Accordion, Command items, DropdownMenu items, Dialog/Sheet close X).
-- `engines: { node: ">=20", bun: ">=1.1" }` in `package.json` — Node compatibility verified, no Bun-only APIs in published code.
-- Convenience `items` API on **Breadcrumb**, **Tabs**, **Accordion**; new `<DropdownMenuItems items={...}>` helper on **DropdownMenu**. Verbose composicional APIs preserved.
-- **Form** story expanded with multi-field example using `Combobox` via RHF `Controller`.
-- **Chart** stories: Bar, Line, Area, Pie, RadialBar variants + recharts-wrapper description.
-- **DataTable** component: sortable headers + global search filter via `@tanstack/react-table`. Primitive `Table` exports remain available for raw control.
-- Per-component description (`parameters.docs.description.component`) on every story (46 files).
-- **vitest** + **@testing-library/react** + **@vitest/coverage-v8** + **jsdom** infrastructure. 95 smoke tests across 46 files. Scripts: `test`, `test:watch`, `test:coverage`.
-- Storybook **Quality** MDX page documenting testing strategy + coverage commands.
-
-### Changed
-- **Getting Started** rewritten in best-in-market style (install, setup, conceitos, FAQ); absorbs former Migration content.
-- **Typography** foundations page rewritten — variants-only display + rationale for Google Sans Flex vs Inter/Roboto/Nunito Sans.
-- **Colors** foundations page now displays live oklch values next to each swatch name.
+#### DateRangePicker
+- Popover no longer closes prematurely while clicking inside the Calendar grid. Uses the new Popover `onInteractOutside` / `onFocusOutside` callbacks to detect clicks on `role="grid"`, `.rdp`, or `.rdp-root` and keep itself open.
 
 ### Removed
-- `Migration.mdx` (content folded into Getting Started).
-- `Radius.mdx` foundation page (default radius is baked into components).
 
-## [3.1.0] — 2026-05-18
+- Standalone Typography variants `label`, `mono`, `overline` — folded into same-size siblings; use `className` to apply the tonal overrides.
+- `DataTable` `sorting` / `onSortingChange` controlled props (see _Breaking Changes_).
+- Per-column `enableSorting` flag on DataTable columnDefs (see _Breaking Changes_).
+- `bg-muted` disabled background on `DateInput`.
+- Inline `disabled:opacity-50` rules on fields wrapped by FieldShell.
+- Hardcoded Sonner `zIndex: 999999999` (now uses `var(--z-toast)`).
+- `transition-all` from `InputOTP` slot, Accordion trigger, Tabs trigger.
+- `transition-[color]` from ScrollArea viewport.
+- Fixed `h-9` / `h-11` heights on input wrappers.
+- The dead `ease-in-out` transition class on Sheet (never affected `@keyframes`).
+- `sourcemap` output from the published tarball (~354KB saved).
 
-### Added
-- `Collapsible` (Radix primitive) in Overlays.
-- `Image` champion component (lazy, a11y, aspect-ratio, blur/skeleton placeholders) in Data.
-- `Video` champion component (lazy IntersectionObserver, captions track, autoPlay-mute pattern) in Data.
-- `Tree` (recursive, controlled or uncontrolled expand + single-select) in Data.
-- `@radix-ui/react-collapsible` dependency.
+### Internal
 
-## [3.0.1] — 2026-05-17
+- `scripts/oklch-contrast.ts` — one-shot OKLCH → WCAG audit utility for verifying contrast ratios when tweaking the palette.
+- `vitest.config.ts` — added `docs/**` to the exclude list so the component-template skeleton isn't run as a real test.
+- New `CONTRIBUTING.md` (pt-BR) and `docs/component-template/` (copy-paste skeleton for a new field component).
+- New `src/docs/FormIntegration.mdx` + `src/docs/_examples/rhf-form.stories.tsx` — Storybook page documenting react-hook-form integration (controlled-vs-uncontrolled audit, Controller recipes, error wiring, zod snippet, pitfalls).
 
-### Fixed
-- `Alert` semantic variants (`info`, `success`, `warning`, `destructive`) now
-  use the `--status-*-{bg,text,border}` token family designed for tinted-bg
-  containers (Phase 1) instead of `text-{semantic}-foreground` which was
-  white and invisible against the 10% tinted backgrounds. All 4 semantic
-  alerts now meet WCAG AA contrast.
-- `Alert` `Variants` story now renders all 5 variants (default + 4 semantic)
-  instead of only 2. Surface coverage matches the `cva` definition.
+### Migration guide
 
-## [3.0.0] — 2026-05-17
+- **Typography**: `variant="display"` → `variant="heading"` (note: this also shrinks from 36px to 30px). If you specifically need 36px, set the size via `className` on `variant="heading"`.
+- **DataTable sorting**: remove `enableSorting: false` from your `columnDef`s and pass `sortableColumns={["columnId", ...]}` on the `<DataTable>`. Drop any external `sorting` / `onSortingChange` wiring — sort state is now internal.
+- **DateRangePicker**: rename the prop. `<DateRangePicker onChange={fn} />` → `<DateRangePicker onValueChange={fn} />`. Inside react-hook-form `Controller`: `onChange={field.onChange}` → `onValueChange={field.onChange}`.
 
-### Changed (BREAKING)
-- Removed `Select` and `MultiSelect` components. Use `Combobox` with the
-  new `multiple` prop instead. Search is always enabled.
-- Removed `@radix-ui/react-select` dependency.
+## [0.0.2] — 2026-05-19
 
-### Added
-- `Combobox` accepts an `icon` per option (feature parity with the old
-  `MultiSelect`).
+Initial private release. Subsequent history is tracked above.
 
-### Migration
-- See `src/docs/Migration.mdx` v3.0.0 section.
-
-## [2.0.1] — 2026-05-17
-
-### Fixed
-- `TimePicker` (`src/forms/time-picker.tsx`) rewritten as a custom 24h dual-input. Native `<input type="time">` follows the OS/browser locale, so even with `lang="pt-BR"` it could render as 12h AM/PM. The new implementation uses two numeric inputs (HH and MM) separated by `:` inside a single styled container, guaranteeing 24h display regardless of locale. Adds keyboard support (ArrowUp/Down increments with wrapping at the field's bounds; `:` jumps focus to the minute field).
-
-## [2.0.0] — 2026-05-17
-
-### Breaking
-- `Button` no longer supports `size="sm"` or `size="lg"`. Only `default` and `icon` (shape) sizes remain. Migration: drop the prop (defaults to `default`) or replace with custom Tailwind classes via `className`.
-- `SidebarMenuButton` no longer supports `size="sm"` or `size="lg"`. Only `default` remains.
-
-### Added
-- `TimePicker` primitive (`src/forms/time-picker.tsx`): lightweight wrapper around native `<input type="time">` with our Input styling. Defaults to 24h pt-BR via `lang="pt-BR"` and minute precision (`step={60}`). Both overridable.
-- `Typography` primitive (`src/primitives/typography.tsx`): polymorphic component with 5 semantic variants (`display`, `title`, `subtitle`, `body`, `caption`). Each variant has a default semantic element, overridable via `as` prop.
-- `src/docs/Typography.mdx` updated with `## Componente Typography` section documenting the new primitive.
-
-### Changed
-- `Calendar` (`src/forms/calendar.tsx`) now defaults its `locale` prop to `ptBR` (imported from `date-fns/locale`). Consumers can override (e.g., pass `enUS`).
-
-## [1.0.0] — 2026-05-17
-
-### Added
-- First stable release — feature work complete; documentation + migration guide added.
-- `README.md` rewritten with full component inventory, install/setup instructions and migration pointer.
-- `src/docs/Migration.mdx` Storybook page with step-by-step guide for consuming apps (`requerimento-contratos-pf`, `assistencia-tecnica`).
-- `src/docs/GettingStarted.mdx` updated to reflect all 7 categories shipped.
-- `LICENSE` (proprietary, AM Fernandes & Associados).
-
-## [0.6.0] — 2026-05-17
-
-### Added
-- 4 data components: card, chart, scroll-area, table.
-- `// Data` section in barrel and Storybook sidebar.
-- Dependencies: `@tanstack/react-table`, `recharts`, `@radix-ui/react-scroll-area`.
-
-## [0.5.0] — 2026-05-17
-
-### Added
-- 4 AM-domain components: currency-input, percentage-input, days-installment-input, input-otp.
-- Currency helpers exported from barrel: `toCents`, `fromCents`, `percentOfTotal`, `percentFromValue`, `centsToDisplay`, `formatBRL`.
-- Dependency: `input-otp`.
-- `// Domain` section in barrel and Storybook sidebar.
-
-## [0.4.0] — 2026-05-17
-
-### Added
-- 8 forms components: calendar, combobox, date-input, date-range-picker, field, form, multi-select, select.
-- React Hook Form integration via `form` + `field` wrappers.
-- Dependencies: `@radix-ui/react-select`, `react-day-picker`, `react-hook-form`, `date-fns`.
-- `// Forms` section in barrel and Storybook sidebar.
-
-## [0.3.0] — 2026-05-17
-
-### Added
-- 6 navigation components: accordion, breadcrumb, command, dropdown-menu, sidebar, tabs.
-- Hook: `useIsMobile`.
-- Dependencies: `@radix-ui/react-accordion`, `@radix-ui/react-dropdown-menu`, `@radix-ui/react-tabs`, `cmdk`.
-- `// Navigation` section in barrel and Storybook sidebar.
-
-## [0.2.0] — 2026-05-17
-
-### Added
-- 8 overlay components: alert, alert-dialog, dialog, popover, progress, sheet, sonner, tooltip.
-- 1 composed component: confirm-button (extracted from prior `<Button confirm>` API).
-- Dependencies: `@radix-ui/react-alert-dialog`, `@radix-ui/react-dialog`, `@radix-ui/react-popover`, `@radix-ui/react-progress`, `@radix-ui/react-tooltip`, `sonner`.
-- `// Overlays` and `// Composed` sections in barrel and Storybook sidebar.
-
-## [0.1.0] — 2026-05-17
-
-### Added
-- 11 primitive components: avatar, badge, button, checkbox, input, label, radio-group, separator, skeleton, switch, textarea.
-- `// Primitives` section in barrel and Storybook sidebar.
-
-## [0.0.1] — 2026-05-16
-
-### Added
-- Project scaffold: Bun + tsup + Storybook 10 + Tailwind v4 + Biome.
-- Token foundation: `tokens.css` (OKLCH palette, radius scale, light-only) and `fonts.css`.
-- Helper: `cn` (clsx + tailwind-merge).
-- Storybook foundation pages: Colors, Typography, Spacing, Radius, Iconography.
-- Getting Started MDX page.
+[Unreleased]: https://github.com/am-fernandes/ui/compare/v0.0.2...HEAD
+[0.0.2]: https://github.com/am-fernandes/ui/releases/tag/v0.0.2

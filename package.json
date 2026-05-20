@@ -253,7 +253,10 @@
     "test:storybook": "test-storybook --url http://localhost:6006",
     "test:storybook:ci": "concurrently -k -s first -n SB,TR \"http-server storybook-static --port 6006 --silent\" \"wait-on tcp:6006 && test-storybook --url http://localhost:6006\"",
     "sync:coverage": "vitest run --coverage && bun scripts/sync-coverage.ts",
-    "sync:e2e-stats": "bun scripts/sync-e2e-stats.ts"
+    "sync:e2e-stats": "bun scripts/sync-e2e-stats.ts",
+    "changeset": "changeset",
+    "changeset:version": "changeset version",
+    "changeset:publish": "changeset publish"
   },
   "dependencies": {
     "@fontsource/geist": "^5.2.9",
@@ -289,6 +292,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@changesets/cli": "^2.31.0",
     "@playwright/test": "^1.60.0",
     "@storybook/addon-a11y": "^10.2.9",
     "@storybook/addon-docs": "^10.2.9",

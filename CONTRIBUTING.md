@@ -260,4 +260,17 @@ Auditoria de contraste: `bun scripts/oklch-contrast.ts` (utilitário OKLCH → W
 
 ---
 
+## 9. Fluxo de release
+
+A versionagem e o `CHANGELOG.md` são gerenciados via [changesets](https://github.com/changesets/changesets). O fluxo é simples e roda 100% local enquanto a CI não existe.
+
+1. **Em cada PR funcional**, rode `bun run changeset`. O CLI faz três perguntas: qual pacote mudou (só temos `@amfernandesinc/ui`), qual o tipo de bump (`patch` para correções, `minor` para novidades, `major` para breaking — em pre-1.0 vale `minor` para breaking também) e uma frase descrevendo a mudança do ponto de vista do consumidor.
+2. O arquivo gerado em `.changeset/*.md` (nome kebab-case aleatório) **vai commitado junto com o PR**. Ele substitui a necessidade de editar `CHANGELOG.md` manualmente. Se o PR não tem impacto visível pra consumidor (refactor interno, ajuste de teste, doc), pule esta etapa.
+3. **Na hora do release**, rode `bun run changeset:version`. O CLI consome todos os arquivos em `.changeset/`, agrupa por tipo de bump, atualiza `package.json` (bump da versão) e prepende as entradas no `CHANGELOG.md`. Os arquivos `.changeset/*.md` consumidos são apagados — commite tudo num único commit `release: vX.Y.Z`.
+4. **Publicação**: `bun run changeset:publish` empurra para o registro privado. Por enquanto manual; futuramente a CI cuida disso.
+
+`bun x changeset status` mostra a qualquer momento quais changesets estão pendentes para o próximo release.
+
+---
+
 Dúvidas, sugestões ou propostas de mudança estrutural: abra issue antes do PR.
