@@ -1,0 +1,403 @@
+import { Meta } from "@storybook/addon-docs/blocks"
+
+<Meta title="Lib" />
+
+# Utilitários
+
+Funções puras exportadas por `@amfernandesinc/ui`. Sem dependência de React — podem ser usadas em qualquer contexto (componentes, server actions, testes). Para hooks React, veja a página **Hooks**.
+
+## Sumário
+
+| Símbolo | Categoria | O que faz |
+|---|---|---|
+| `cn` | className | merge de `className`s Tailwind via `clsx` + `tailwind-merge` |
+| `buttonVariants`, `badgeVariants`, `alertVariants`, `typographyVariants` | className | CVA factories dos componentes visuais |
+| `tableStyles` | className | classnames para `<table>` HTML cru |
+| `toCents`, `fromCents` | currency | conversão float ↔ centavos inteiros |
+| `centsToDisplay` | currency | centavos → `"1.234,56"` |
+| `formatBRL` | currency | float → `"R$ 1.234,56"` |
+| `toBRLMoney` | currency | float/string → `"1.234,56"` (sem `R$`) |
+| `parseMaskedValue` | currency | `"1.234,56"` → `1234.56` |
+| `percentOfTotal`, `percentFromValue` | currency | cálculos percentuais centavos-safe |
+| `bytes`, `kb`, `mb`, `gb` | size | conversão ergonômica para bytes |
+| `formatCount` | format | contador com cap: `"999+"` |
+| `formatDate` | date | formata Date/string: `brl`, `brl-full`, `us`, `time`, `iso` |
+| `parseDate` | date | cria Date UTC a partir de string |
+| `isValidDate` | date | verifica se o valor é data válida |
+| `addDays`, `subDays`, `addMonths` | date | aritmética UTC-safe |
+| `diffInDays`, `compareDates`, `isSameDay` | date | comparação e diff |
+| `startOfDay`, `endOfDay`, `startOfMonth`, `endOfMonth` | date | limites de período UTC |
+| `isPast`, `isFuture` | date | predicados relativos ao momento atual |
+| `isValidCPF`, `isValidCNPJ`, `isValidCEP`, `isValidPhone` | brazil | validadores com algoritmo DV oficial |
+| `formatCPF`, `formatCNPJ`, `formatPhone`, `formatCEP` | brazil | formatadores para exibição |
+| `defaultDataTableLabels` etc. | i18n | defaults pt-BR dos componentes com `labels` |
+| `REGEXP_ONLY_DIGITS` | const | `/^\d+$/` (re-export de `input-otp`) |
+| `toast` | const | API imperativa de toasts (re-export de `sonner`) |
+
+```ts
+import {
+  cn, buttonVariants, badgeVariants, alertVariants, typographyVariants, tableStyles,
+  toCents, fromCents, centsToDisplay, formatBRL, toBRLMoney, parseMaskedValue,
+  percentOfTotal, percentFromValue,
+  bytes, kb, mb, gb,
+  formatCount,
+  formatDate, parseDate, isValidDate,
+  addDays, subDays, addMonths,
+  diffInDays, compareDates, isSameDay,
+  startOfDay, endOfDay, startOfMonth, endOfMonth,
+  isPast, isFuture,
+  isValidCPF, isValidCNPJ, isValidCEP, isValidPhone,
+  formatCPF, formatCNPJ, formatPhone, formatCEP,
+  REGEXP_ONLY_DIGITS, toast,
+} from "@amfernandesinc/ui"
+```
+
+---
+
+## Helpers de className
+
+### `cn`
+
+Merge inteligente de `className`s Tailwind. Combina `clsx` com `tailwind-merge` — resolve conflitos (`p-2 p-4` vira `p-4`).
+
+```ts
+function cn(...inputs: ClassValue[]): string
+```
+
+```tsx
+import { cn } from "@amfernandesinc/ui"
+
+<div className={cn(
+  "p-4 rounded-md border",
+  isActive && "bg-primary text-primary-foreground",
+  className,
+)} />
+```
+
+**Nota:** sempre passe `className` do consumidor por último — o `tailwind-merge` faz a última classe ganhar.
+
+### `buttonVariants`
+
+CVA factory para os classnames do `Button`. Útil para estilizar `<Link>` ou `<a>` com aparência de botão sem usar `asChild`.
+
+```ts
+function buttonVariants(props?: {
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+  className?: string
+}): string
+```
+
+```tsx
+import { buttonVariants, cn } from "@amfernandesinc/ui"
+import Link from "next/link"
+
+<Link href="/contratos" className={cn(buttonVariants({ variant: "outline" }))}>
+  Ver contratos
+</Link>
+```
+
+### `badgeVariants`
+
+```ts
+function badgeVariants(props?: {
+  variant?: "default" | "secondary" | "destructive" | "outline"
+  className?: string
+}): string
+```
+
+### `alertVariants`
+
+```ts
+function alertVariants(props?: {
+  variant?: "default" | "info" | "success" | "warning" | "destructive"
+  className?: string
+}): string
+```
+
+### `typographyVariants`
+
+```ts
+function typographyVariants(props?: {
+  variant?: "heading" | "title" | "subtitle" | "lead" | "body" | "caption"
+  className?: string
+}): string
+```
+
+### `tableStyles`
+
+Retorna um objeto com classnames para `<table>` HTML crua. Use quando `DataTable` for excessivo.
+
+```ts
+function tableStyles(): {
+  table: string; header: string; body: string; footer: string
+  row: string; head: string; cell: string; caption: string
+}
+```
+
+```tsx
+const t = tableStyles()
+<table className={t.table}>
+  <thead className={t.header}><tr><th className={t.head}>Nome</th></tr></thead>
+  <tbody><tr className={t.row}><td className={t.cell}>Valor</td></tr></tbody>
+</table>
+```
+
+---
+
+## Helpers BRL / financeiros
+
+Toda aritmética financeira é em **centavos inteiros**. Conversões para float acontecem só nas bordas.
+
+### `toCents` / `fromCents`
+
+```ts
+toCents(1234.56)   // 123456
+fromCents(123456)  // 1234.56
+```
+
+`toCents` usa `Math.round` para evitar drift de float.
+
+### `centsToDisplay`
+
+Formata centavos como string BRL **sem** `R$`.
+
+```ts
+centsToDisplay(123456)   // "1.234,56"
+centsToDisplay(-50000)   // "-500,00"
+centsToDisplay(0)        // "0,00"
+```
+
+### `formatBRL`
+
+Formata float em reais **com** prefixo `R$`.
+
+```ts
+formatBRL(1234.56)  // "R$ 1.234,56"
+formatBRL(0)        // "R$ 0,00"
+```
+
+### `toBRLMoney`
+
+Formata number/string para BRL **sem** `R$`. Útil em tabelas e campos onde o símbolo já está no label.
+
+```ts
+toBRLMoney(1234.5)    // "1.234,50"
+toBRLMoney("1234.5")  // "1.234,50"
+toBRLMoney(null)      // ""
+```
+
+| | Entrada | Saída |
+|---|---|---|
+| `formatBRL` | `number` | `"R$ 1.234,50"` |
+| `toBRLMoney` | `string \| number \| null` | `"1.234,50"` |
+
+### `parseMaskedValue`
+
+Reverte string mascarada BRL para `number`. Use ao submeter formulários com `react-imask`.
+
+```ts
+parseMaskedValue("1.234,56")  // 1234.56
+parseMaskedValue("1.000,00")  // 1000
+```
+
+### `percentOfTotal` / `percentFromValue`
+
+```ts
+percentOfTotal(70, 185000)      // 129500
+percentFromValue(129500, 185000) // 70
+percentFromValue(50, 0)          // 0  (guarda contra divisão por zero)
+```
+
+---
+
+## Helpers de bytes
+
+Unidades binárias (1 KiB = 1024 B) — alinhadas com `FileUpload`.
+
+```ts
+import { FileUpload, mb, kb } from "@amfernandesinc/ui"
+
+<FileUpload accept="image/*" maxSize={mb(2)} />
+<FileUpload accept="application/pdf" maxSize={kb(500)} />
+```
+
+---
+
+## `formatCount`
+
+Formata contadores para badges, capando em `max` com sufixo `+`.
+
+```ts
+formatCount(3)      // "3"
+formatCount(1234)   // "999+"
+formatCount(50, 9)  // "9+"
+```
+
+---
+
+## Helpers de data
+
+Funções UTC-safe sem dependência de `date-fns`. Aceitam `Date | string | null | undefined` — nunca lançam exceção.
+
+### `formatDate`
+
+```ts
+type DateFormat = "brl" | "brl-full" | "us" | "time" | "iso"
+
+function formatDate(date: Date | string | null | undefined, format?: DateFormat): string
+```
+
+| Formato | Saída |
+|---|---|
+| `"brl"` (default) | `"15/01/2024"` |
+| `"brl-full"` | `"15/01/2024 14:30"` |
+| `"us"` | `"2024-01-15"` |
+| `"time"` | `"14:30"` |
+| `"iso"` | `"2024-01-15T14:30:00.000Z"` |
+
+```ts
+formatDate("2024-01-15")                        // "15/01/2024"
+formatDate("2024-01-15T14:30:00Z", "brl-full")  // "15/01/2024 14:30"
+formatDate(null)                                 // ""
+```
+
+### `parseDate`
+
+```ts
+parseDate("2024-01-15")          // 2024-01-15T00:00:00.000Z
+parseDate("2024-01-15", "14:30") // 2024-01-15T14:30:00.000Z
+```
+
+### `isValidDate`
+
+```ts
+isValidDate("2024-01-15")  // true
+isValidDate("not-a-date")  // false
+isValidDate(null)           // false
+```
+
+### Aritmética
+
+```ts
+addDays("2024-01-15T00:00:00Z", 5)    // 2024-01-20T00:00:00.000Z
+subDays("2024-01-15T00:00:00Z", 5)    // 2024-01-10T00:00:00.000Z
+addMonths("2024-11-01T00:00:00Z", 3)  // 2025-02-01T00:00:00.000Z
+```
+
+### Comparação e diff
+
+```ts
+compareDates("2024-01-01", "2024-12-31")              // número negativo (a < b)
+diffInDays("2024-01-10T00:00:00Z", "2024-01-01T00:00:00Z")  // 9
+isSameDay("2024-06-15T00:00Z", "2024-06-15T23:59Z")   // true
+```
+
+`compareDates` é compatível com `Array.sort()`.
+
+### Limites de período
+
+```ts
+startOfDay("2024-06-15T14:30Z")  // 2024-06-15T00:00:00.000Z
+endOfDay("2024-06-15T00:00Z")    // 2024-06-15T23:59:59.999Z
+startOfMonth("2024-06-15Z")      // 2024-06-01T00:00:00.000Z
+endOfMonth("2024-06-15Z")        // 2024-06-30T23:59:59.999Z
+```
+
+### Predicados
+
+```ts
+isPast("2000-01-01")    // true
+isFuture("2099-12-31")  // true
+```
+
+---
+
+## Validadores brasileiros
+
+Algoritmos CPF/CNPJ implementam o cálculo oficial de dígitos verificadores (DV) da Receita Federal. Aceitam entrada mascarada ou só dígitos.
+
+```ts
+isValidCPF("123.456.789-09")      // true
+isValidCPF("111.111.111-11")      // false (dígitos repetidos)
+isValidCNPJ("11.222.333/0001-81") // true
+isValidCEP("01310-100")           // true
+isValidPhone("(11) 98765-4321")   // true
+isValidPhone("(05) 98765-4321")   // false (DDD < 11)
+```
+
+**Uso em react-hook-form:**
+
+```ts
+register("cpf", { validate: (v) => isValidCPF(v) || "CPF inválido" })
+```
+
+---
+
+## Formatadores brasileiros
+
+Para **exibição** de dados já salvos (tabelas, cards). Para inputs controlados, use os componentes `CPFInput`, `CNPJInput`, `PhoneInput`, `CEPInput`.
+
+```ts
+formatCPF("12345678900")     // "123.456.789-00"
+formatCNPJ("12345678000190") // "12.345.678/0001-90"
+formatPhone("11987654321")   // "(11) 98765-4321"
+formatPhone("1134567890")    // "(11) 3456-7890"
+formatCEP("01310100")        // "01310-100"
+```
+
+Todas aceitam entrada mascarada ou só dígitos (idempotente).
+
+---
+
+## i18n labels
+
+Três componentes aceitam `labels?: Partial<XLabels>` para overridar strings visíveis. Defaults em **pt-BR**.
+
+| Componente | Type | Default |
+|---|---|---|
+| `DataTable` | `DataTableLabels` | `defaultDataTableLabels` |
+| `FileUpload` | `FileUploadLabels` | `defaultFileUploadLabels` |
+| `CommandPalette` | `CommandPaletteLabels` | `defaultCommandPaletteLabels` |
+
+```tsx
+<DataTable labels={{ empty: "No results.", paginationPrevious: "Previous" }} ... />
+```
+
+---
+
+## Constantes re-exportadas
+
+### `REGEXP_ONLY_DIGITS`
+
+Re-export de `input-otp`. Equivalente a `/^\d+$/`.
+
+```tsx
+<InputOTP length={6} pattern={REGEXP_ONLY_DIGITS} ... />
+```
+
+### `toast`
+
+Re-export do `sonner`. Requer `<Toaster />` no root da app.
+
+```ts
+toast.success("Salvo!")
+toast.error("Algo deu errado.")
+toast.promise(salvar(), { loading: "Salvando…", success: "Salvo!", error: "Erro." })
+```
+
+---
+
+## Tipos exportados (TypeScript)
+
+```ts
+import type {
+  ComboboxOption, ComboboxProps,
+  DateFormat,
+  DateRangeValue,
+  FileUploadRejection, FileUploadRejectionReason,
+  TableStyles,
+  TreeNodeData,
+  TypographyProps,
+  VideoCaptionTrack,
+} from "@amfernandesinc/ui"
+```
