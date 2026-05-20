@@ -71,7 +71,7 @@ function Switch({
 
   return (
     <div data-slot="switch-field" className="flex w-full flex-col gap-1.5">
-      <div className="flex items-center gap-2">
+      <div className="flex min-h-10 items-center gap-2">
         {switchEl}
         {labelEl}
       </div>
