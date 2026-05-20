@@ -262,14 +262,66 @@ Auditoria de contraste: `bun scripts/oklch-contrast.ts` (utilitário OKLCH → W
 
 ## 9. Fluxo de release
 
-A versionagem e o `CHANGELOG.md` são gerenciados via [changesets](https://github.com/changesets/changesets). O fluxo é simples e roda 100% local enquanto a CI não existe.
+A versionagem e o `CHANGELOG.md` são gerenciados via [changesets](https://github.com/changesets/changesets), e o **release roda automatizado pela CI** (ver §10).
 
 1. **Em cada PR funcional**, rode `bun run changeset`. O CLI faz três perguntas: qual pacote mudou (só temos `@amfernandesinc/ui`), qual o tipo de bump (`patch` para correções, `minor` para novidades, `major` para breaking — em pre-1.0 vale `minor` para breaking também) e uma frase descrevendo a mudança do ponto de vista do consumidor.
-2. O arquivo gerado em `.changeset/*.md` (nome kebab-case aleatório) **vai commitado junto com o PR**. Ele substitui a necessidade de editar `CHANGELOG.md` manualmente. Se o PR não tem impacto visível pra consumidor (refactor interno, ajuste de teste, doc), pule esta etapa.
-3. **Na hora do release**, rode `bun run changeset:version`. O CLI consome todos os arquivos em `.changeset/`, agrupa por tipo de bump, atualiza `package.json` (bump da versão) e prepende as entradas no `CHANGELOG.md`. Os arquivos `.changeset/*.md` consumidos são apagados — commite tudo num único commit `release: vX.Y.Z`.
-4. **Publicação**: `bun run changeset:publish` empurra para o registro privado. Por enquanto manual; futuramente a CI cuida disso.
+2. O arquivo gerado em `.changeset/*.md` **vai commitado junto com o PR**. Ele substitui a necessidade de editar `CHANGELOG.md` manualmente. Se o PR não tem impacto visível pra consumidor (refactor interno, ajuste de teste, doc), pule esta etapa.
+3. **Quando seu PR é merged**: o workflow `Release` (`.github/workflows/release.yml`) detecta os changesets pendentes e abre — ou atualiza — um PR chamado **"chore(release): version packages"**. Esse PR consolida todas as entradas em `CHANGELOG.md`, bumpa a versão em `package.json` e remove os arquivos `.changeset/*.md` consumidos.
+4. **Para publicar**: revise e merge o PR "version packages". No próximo run do workflow, ele detecta que não há changesets pendentes e roda `bun run changeset:publish`, empurrando para o registro.
 
-`bun x changeset status` mostra a qualquer momento quais changesets estão pendentes para o próximo release.
+`bun x changeset status` mostra a qualquer momento quais changesets estão pendentes para o próximo release. Para acompanhar o fluxo no GitHub, veja a aba **Actions** → workflow **Release**.
+
+## 10. Continuous Integration (CI)
+
+A CI roda no GitHub Actions. Três workflows:
+
+### `.github/workflows/ci.yml` — em todo PR e merge para `main`
+Seis jobs em paralelo:
+
+| Job | Comando | Falha bloqueia merge? |
+|---|---|---|
+| **Typecheck** | `bun run typecheck` | sim |
+| **Lint** | `bun run lint` (biome) | sim |
+| **Unit tests + coverage gate (95%)** | `bun run test:coverage` + `bun scripts/coverage-gate.ts` | sim |
+| **Build** | `bun run build` | sim |
+| **Build Storybook** | `bun run build-storybook` | sim |
+| **Visual regression** | `bunx playwright install chromium && bun run test:visual` | sim |
+
+Local equivalente: `bun run ci:local` roda todos exceto o visual (que precisa do Chromium headful).
+
+O **coverage gate** falha se `lines`, `statements` ou `functions` ficarem abaixo de 95%. `branches` é reportado mas não bloqueia (métrica volátil). Atualmente estamos em ~97% / ~95% / ~92% — bem acima da margem.
+
+### `.github/workflows/release.yml` — em todo merge para `main`
+Roda `changesets/action@v1`. Comportamento:
+
+- Se há changesets pendentes: abre/atualiza o PR **"chore(release): version packages"** (passo 3 acima).
+- Se não há changesets pendentes (você acabou de mergear esse PR): roda `bun run changeset:publish`.
+
+Secrets requeridos no repo:
+
+- `GITHUB_TOKEN` — automático
+- `NPM_TOKEN` — adicione manualmente em **Settings → Secrets and variables → Actions** antes do primeiro publish. Necessário porque `publishConfig.registry` aponta para o registro npm público. Se mudar para GitHub Packages (`https://npm.pkg.github.com`), o `GITHUB_TOKEN` já cobre.
+
+### `.github/workflows/deploy-storybook.yml` — em todo merge para `main`
+Builda o Storybook e publica em GitHub Pages.
+
+**Setup único requerido** (uma vez):
+
+1. **Settings → Pages** do repo → "Build and deployment" → Source = "GitHub Actions"
+2. Não precisa configurar branch `gh-pages` — o workflow usa o `actions/deploy-pages` moderno.
+
+A URL pública fica em `https://am-fernandes.github.io/ui` (mesmo com repo privado, no plano Team o site Pages é público — decisão consciente, conteúdo é só docs de componentes).
+
+### Cancelamento de runs duplicados
+
+Os workflows usam `concurrency: cancel-in-progress: true` na CI e no deploy do Storybook. Pushes consecutivos para a mesma PR cancelam runs anteriores automaticamente, economizando minutos.
+
+### Como debugar uma falha de CI
+
+1. Click na PR → aba **Checks** → escolha o job.
+2. Para falha do **visual regression**: o artifact `playwright-report` é uploadado e contém HTML report com diff visual.
+3. Para falha do **coverage gate**: o artifact `coverage` contém o report HTML completo (`coverage/index.html`).
+4. Para falha do **build**: o artifact `dist` mostra exatamente o que o tsup gerou (ou não).
 
 ---
 
