@@ -197,13 +197,19 @@ export function formattedColumn<TData, TValue = unknown>(
       if (raw == null || raw === "") return emptyText
       const node = formatter ? formatter(raw, row.original) : (raw as React.ReactNode)
 
-      if (truncate && typeof node === "string" && node.length > truncate.max) {
-        const short = `${node.slice(0, truncate.max).trimEnd()}…`
-        return (
-          <Tooltip content={node} side={truncate.side ?? "bottom"} align={truncate.align}>
-            <span className={className}>{short}</span>
-          </Tooltip>
-        )
+      if (truncate && typeof node === "string") {
+        // Iterate by code points (Array.from) so we don't cut a UTF-16
+        // surrogate pair in half and emit U+FFFD when the source contains
+        // astral-plane characters (emoji, math-italic, etc.).
+        const chars = Array.from(node)
+        if (chars.length > truncate.max) {
+          const short = `${chars.slice(0, truncate.max).join("").trimEnd()}…`
+          return (
+            <Tooltip content={node} side={truncate.side ?? "bottom"} align={truncate.align}>
+              <span className={className}>{short}</span>
+            </Tooltip>
+          )
+        }
       }
 
       return className ? <span className={className}>{node}</span> : node

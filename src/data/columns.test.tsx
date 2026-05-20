@@ -207,6 +207,24 @@ describe("formattedColumn", () => {
     expect(span?.textContent).toBe("LEONA…")
   })
 
+  it("counts code points (not UTF-16 units) so surrogate pairs aren't split", () => {
+    // "𝓒amilly" — first letter is U+1D4D2 (math-italic C, 2 UTF-16 units).
+    // By code points the name is 7 long, by JS string length it is 8.
+    const col = formattedColumn<PhoneRow, string>({
+      accessorKey: "name",
+      header: "Nome",
+      truncate: { max: 7 },
+    })
+    expect(renderFormattedCell(col, "𝓒amilly", sampleRow)).toBe("𝓒amilly")
+    // With max=6, the C stays intact (no replacement char).
+    const col2 = formattedColumn<PhoneRow, string>({
+      accessorKey: "name",
+      header: "Nome",
+      truncate: { max: 6 },
+    })
+    expect(renderFormattedCell(col2, "𝓒amilly", sampleRow)).toBe("𝓒amill…")
+  })
+
   it("does NOT truncate when the formatted value is shorter than `truncate.max`", () => {
     const col = formattedColumn<PhoneRow, string>({
       accessorKey: "name",
