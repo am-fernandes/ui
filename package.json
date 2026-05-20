@@ -35,10 +35,6 @@
       "types": "./dist/primitives/input.d.ts",
       "import": "./dist/primitives/input.js"
     },
-    "./label": {
-      "types": "./dist/primitives/label.d.ts",
-      "import": "./dist/primitives/label.js"
-    },
     "./radio-group": {
       "types": "./dist/primitives/radio-group.d.ts",
       "import": "./dist/primitives/radio-group.js"

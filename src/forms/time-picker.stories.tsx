@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { useState } from "react"
 
-import { Label } from "../primitives/label"
 import { TimePicker } from "./time-picker"
 
 const meta = {
@@ -25,21 +24,18 @@ const meta = {
           "- `value` — string `HH:MM` (24h) ou `''` para vazio.",
           "- `onChange(value)` — emite `HH:MM` quando ambos os campos têm 2 dígitos válidos; emite `''` quando incompleto.",
           "- `disabled` — desabilita ambos os inputs.",
-          "- `id` — encaminhado ao input de horas para integração com `<Label htmlFor>`.",
+          "- `id` — encaminhado ao input de horas (FieldShell associa internamente com a `label`).",
           "- `aria-label` — label do `<fieldset>` (default `'Horário'`).",
           "",
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { Label, TimePicker } from "@amfernandesinc/ui"',
+          'import { TimePicker } from "@amfernandesinc/ui"',
           'import { useState } from "react"',
           "",
           'const [value, setValue] = useState("09:30")',
           "",
-          '<div className="flex flex-col gap-2">',
-          '  <Label htmlFor="start-time">Horário de início</Label>',
-          '  <TimePicker id="start-time" value={value} onChange={setValue} />',
-          "</div>",
+          '<TimePicker label="Horário de início" value={value} onChange={setValue} />',
           "```",
         ].join("\n"),
       },
@@ -58,7 +54,7 @@ const meta = {
     },
     id: {
       control: "text",
-      description: "Forwarded ao input de horas para casar com `<Label htmlFor>`.",
+      description: "Encaminhado ao input de horas (FieldShell associa com a `label` internamente).",
       table: { type: { summary: "string" } },
     },
     "aria-label": {
@@ -84,9 +80,9 @@ export const Playground: Story = {
     const [value, setValue] = useState(args.value ?? "")
     return (
       <div className="flex flex-col gap-2">
-        <Label htmlFor={args.id}>Horário</Label>
         <TimePicker
           id={args.id}
+          label="Horário"
           value={value}
           onChange={setValue}
           disabled={args.disabled}
@@ -103,8 +99,7 @@ export const Default: Story = {
     const [value, setValue] = useState("09:30")
     return (
       <div className="flex flex-col gap-2">
-        <Label htmlFor="start-time">Horário de início</Label>
-        <TimePicker id="start-time" value={value} onChange={setValue} />
+        <TimePicker id="start-time" label="Horário de início" value={value} onChange={setValue} />
         <span className="text-xs text-muted-foreground">Valor: {value || "(vazio)"}</span>
       </div>
     )
@@ -112,12 +107,7 @@ export const Default: Story = {
 }
 
 export const Disabled: Story = {
-  render: () => (
-    <div className="flex flex-col gap-2">
-      <Label>Encerramento</Label>
-      <TimePicker value="18:00" disabled />
-    </div>
-  ),
+  render: () => <TimePicker label="Encerramento" value="18:00" disabled />,
 }
 
 export const Empty: Story = {
@@ -125,8 +115,7 @@ export const Empty: Story = {
     const [value, setValue] = useState("")
     return (
       <div className="flex flex-col gap-2">
-        <Label htmlFor="empty-time">Horário</Label>
-        <TimePicker id="empty-time" value={value} onChange={setValue} />
+        <TimePicker id="empty-time" label="Horário" value={value} onChange={setValue} />
         <span className="text-xs text-muted-foreground">Valor: {value || "(vazio)"}</span>
       </div>
     )

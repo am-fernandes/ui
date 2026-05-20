@@ -89,17 +89,13 @@ export { PhoneInput, type PhoneInputProps } from "./domain/phone-input"
 // Forms
 export {
   Calendar,
-  defaultCalendarLabels,
-  type CalendarLabels,
   type CalendarProps,
   type DisabledDayPreset,
   type DisabledDays,
 } from "./forms/calendar"
 export {
   Combobox,
-  defaultComboboxLabels,
   useComboboxOptions,
-  type ComboboxLabels,
   type ComboboxOption,
   type ComboboxProps,
 } from "./forms/combobox"
@@ -128,7 +124,6 @@ export { Badge, badgeVariants, type BadgeProps } from "./primitives/badge"
 export { Button, buttonVariants, type ButtonProps } from "./primitives/button"
 export { Checkbox, type CheckboxProps } from "./primitives/checkbox"
 export { Input, type InputProps } from "./primitives/input"
-export { Label, type LabelProps } from "./primitives/label"
 export {
   RadioGroup,
   type RadioGroupItemData,
