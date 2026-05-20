@@ -21,6 +21,7 @@ export {
   type DateColumnOptions,
   type DateColumnShowTime,
   type FormattedColumnOptions,
+  type TruncateOption,
 } from "./data/columns"
 export { Image, type ImageProps } from "./data/image"
 export {

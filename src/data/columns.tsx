@@ -2,6 +2,8 @@ import type { ColumnDef, Row } from "@tanstack/react-table"
 import { format } from "date-fns"
 import type * as React from "react"
 
+import { Tooltip, type TooltipProps } from "../overlays/tooltip"
+
 export type DateColumnShowTime = boolean | "auto"
 
 export interface DateColumnOptions<TData> {
@@ -115,6 +117,19 @@ type FormattedColumnAccessor<TData, TValue> =
       id: string
     }
 
+/**
+ * Cap displayed text length and show the full content on hover.
+ * Only applies when the formatted output is a string longer than `max`.
+ */
+export interface TruncateOption {
+  /** Max characters before clipping with "…" and showing a tooltip. */
+  max: number
+  /** Tooltip side. Defaults to `"bottom"`. */
+  side?: TooltipProps["side"]
+  /** Tooltip alignment along its side. */
+  align?: TooltipProps["align"]
+}
+
 export type FormattedColumnOptions<TData, TValue = unknown> = FormattedColumnAccessor<
   TData,
   TValue
@@ -126,9 +141,9 @@ export type FormattedColumnOptions<TData, TValue = unknown> = FormattedColumnAcc
    * `formatBRL(value)`, `\`${row.firstName} ${row.lastName}\``).
    *
    * The xlsx export and the column's sort/filter use the raw value — only the
-   * UI display goes through `format`.
+   * UI display goes through `format`. Optional; omit to render the raw value.
    */
-  format: (value: TValue, row: TData) => React.ReactNode
+  format?: (value: TValue, row: TData) => React.ReactNode
   /** Extra class on the wrapping `<span>`. Omit and we render the value bare. */
   className?: string
   /** Render this string when the raw value is `null`, `undefined`, or `""`. */
@@ -136,6 +151,12 @@ export type FormattedColumnOptions<TData, TValue = unknown> = FormattedColumnAcc
   enableSorting?: boolean
   /** Custom sort. Defaults to TanStack's automatic comparator on the raw value. */
   sortingFn?: ColumnDef<TData>["sortingFn"]
+  /**
+   * Cap the displayed text length and show the full string in a tooltip
+   * on hover. Only kicks in when the formatted value is a string longer
+   * than `truncate.max`.
+   */
+  truncate?: TruncateOption
 }
 
 /**
@@ -153,7 +174,15 @@ export type FormattedColumnOptions<TData, TValue = unknown> = FormattedColumnAcc
 export function formattedColumn<TData, TValue = unknown>(
   opts: FormattedColumnOptions<TData, TValue>,
 ): ColumnDef<TData> {
-  const { header, format: formatter, className, emptyText = "", enableSorting, sortingFn } = opts
+  const {
+    header,
+    format: formatter,
+    className,
+    emptyText = "",
+    enableSorting,
+    sortingFn,
+    truncate,
+  } = opts
   const access =
     opts.accessorKey != null
       ? { accessorKey: opts.accessorKey, ...(opts.id ? { id: opts.id } : {}) }
@@ -166,7 +195,17 @@ export function formattedColumn<TData, TValue = unknown>(
     cell: ({ getValue, row }: { getValue: () => unknown; row: Row<TData> }) => {
       const raw = getValue() as TValue
       if (raw == null || raw === "") return emptyText
-      const node = formatter(raw, row.original)
+      const node = formatter ? formatter(raw, row.original) : (raw as React.ReactNode)
+
+      if (truncate && typeof node === "string" && node.length > truncate.max) {
+        const short = `${node.slice(0, truncate.max).trimEnd()}…`
+        return (
+          <Tooltip content={node} side={truncate.side ?? "bottom"} align={truncate.align}>
+            <span className={className}>{short}</span>
+          </Tooltip>
+        )
+      }
+
       return className ? <span className={className}>{node}</span> : node
     },
   } as ColumnDef<TData>

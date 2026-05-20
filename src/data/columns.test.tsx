@@ -181,6 +181,41 @@ describe("formattedColumn", () => {
     expect(span?.className).toContain("font-mono")
   })
 
+  it("truncates strings longer than `truncate.max` and exposes the full text via tooltip", () => {
+    const col = formattedColumn<PhoneRow, string>({
+      accessorKey: "name",
+      header: "Nome",
+      truncate: { max: 5 },
+    })
+    const cell = (
+      col as unknown as {
+        cell: (ctx: {
+          getValue: () => unknown
+          row: { original: PhoneRow }
+        }) => React.ReactNode
+      }
+    ).cell
+    const { container } = render(
+      <div>{cell({ getValue: () => "LEONARDO ALVES", row: { original: sampleRow } })}</div>,
+    )
+    // The visible span shows the clipped form (5 chars + "…").
+    const trigger = container.querySelector('[data-slot="tooltip-trigger"]')
+    expect(trigger?.textContent).toBe("LEONA…")
+    // The tooltip primitive (Radix) doesn't render the full content until
+    // opened — the trigger's child `span` is what users see at rest.
+    const span = container.querySelector("span")
+    expect(span?.textContent).toBe("LEONA…")
+  })
+
+  it("does NOT truncate when the formatted value is shorter than `truncate.max`", () => {
+    const col = formattedColumn<PhoneRow, string>({
+      accessorKey: "name",
+      header: "Nome",
+      truncate: { max: 20 },
+    })
+    expect(renderFormattedCell(col, "Gisel", sampleRow)).toBe("Gisel")
+  })
+
   it("supports `accessorFn` columns (computed values)", () => {
     interface DeepRow {
       lead: { phone: string }
