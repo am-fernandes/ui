@@ -431,7 +431,7 @@ function DataTable<TData>({
         trigger={
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             disabled={data.length === 0}
             data-slot="data-table-download-trigger"
             className="gap-2"
