@@ -425,7 +425,7 @@ function DataTable<TData>({
       return (
         <div
           data-slot="data-table-download-skeleton"
-          className="h-9 w-40 animate-pulse rounded-md bg-primary/10"
+          className="h-10 w-40 animate-pulse rounded-md bg-primary/10"
         />
       )
     }
@@ -497,7 +497,7 @@ function DataTable<TData>({
             loading ? (
               <div
                 data-slot="data-table-search-skeleton"
-                className="h-9 w-full max-w-sm animate-pulse rounded-md bg-primary/10"
+                className="h-10 w-full max-w-sm animate-pulse rounded-md bg-primary/10"
               />
             ) : (
               <div className="relative w-full max-w-sm">
@@ -589,7 +589,7 @@ function DataTable<TData>({
                       >
                         <div
                           className={cn(
-                            "h-4 animate-pulse rounded-md bg-primary/10",
+                            "h-5 animate-pulse rounded-md bg-primary/10",
                             SKELETON_CELL_WIDTHS[(rowIdx + colIdx) % SKELETON_CELL_WIDTHS.length],
                           )}
                         />
@@ -659,7 +659,7 @@ function DataTable<TData>({
         <div className="-mt-1 flex items-center justify-between gap-2 px-3 pt-1 pb-3">
           {showRowCount ? (
             loading ? (
-              <div className="h-3 w-32 animate-pulse rounded-md bg-primary/10" />
+              <div className="h-4 w-32 animate-pulse rounded-md bg-primary/10" />
             ) : (
               <span className="text-xs text-muted-foreground">
                 {rowCountFn(table.getFilteredRowModel().rows.length, data.length)}
@@ -671,7 +671,7 @@ function DataTable<TData>({
           {paginationEnabled ? (
             <div className="flex items-center gap-2">
               {loading ? (
-                <div className="h-3 w-24 animate-pulse rounded-md bg-primary/10" />
+                <div className="h-4 w-24 animate-pulse rounded-md bg-primary/10" />
               ) : (
                 <span className="text-xs text-muted-foreground">
                   {mergedLabels.pageIndicator(
