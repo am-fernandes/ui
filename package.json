@@ -1,12 +1,16 @@
 {
   "name": "@amfernandesinc/ui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Design system de UI da AM Fernandes.",
   "license": "UNLICENSED",
   "private": false,
   "type": "module",
-  "sideEffects": ["**/*.css"],
-  "files": ["dist"],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

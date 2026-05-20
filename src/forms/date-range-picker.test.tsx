@@ -226,7 +226,7 @@ describe("DateRangePicker", () => {
     expect(screen.queryAllByRole("grid").length).toBeGreaterThan(0)
   })
 
-  it("selects a single day and emits a partial range with only 'from'", async () => {
+  it("selects a single day and emits the range only after confirm", async () => {
     const onChange = vi.fn()
     function Wrapper() {
       const [value, setValue] = React.useState<DateRangeValue>({ from: "", to: "" })
@@ -246,7 +246,7 @@ describe("DateRangePicker", () => {
     const trigger = screen.getByText("Selecione um período").closest("button")
     if (!trigger) throw new Error("trigger not found")
     await userEvent.click(trigger)
-    // Wait for the grid then click a specific day (e.g., day "15" of the visible month).
+    // Wait for the grid then click a specific day.
     await screen.findByRole("grid")
     const dayButtons = screen
       .getAllByRole("gridcell")
@@ -256,9 +256,14 @@ describe("DateRangePicker", () => {
     const target = dayButtons.find((b) => !b.disabled)
     if (target) {
       await userEvent.click(target)
-      expect(onChange).toHaveBeenCalled()
+      // onChange should NOT be called yet — the range is only committed on confirm
+      expect(onChange).not.toHaveBeenCalled()
+      // Click "Confirmar" to commit
+      const confirmBtn = screen.getByText("Confirmar")
+      await userEvent.click(confirmBtn)
+      expect(onChange).toHaveBeenCalledOnce()
       const lastValue = onChange.mock.calls.at(-1)?.[0] as DateRangeValue
-      // A single day click should set 'from' (or both to the same day) — at minimum, from must be set.
+      // After confirm the from (and to, same day) must be set
       expect(lastValue.from).toBeTruthy()
     }
   })
