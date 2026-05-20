@@ -66,7 +66,7 @@ export function formatBRL(value: number): string {
 export function toBRLMoney(value?: string | number | null): string {
   if (value === null || value === undefined || value === "") return ""
   return new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2 }).format(
-    parseFloat(String(value)),
+    Number.parseFloat(String(value)),
   )
 }
 

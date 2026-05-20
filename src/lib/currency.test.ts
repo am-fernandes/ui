@@ -7,8 +7,8 @@ import {
   parseMaskedValue,
   percentFromValue,
   percentOfTotal,
-  toCents,
   toBRLMoney,
+  toCents,
 } from "./currency"
 
 describe("toCents", () => {

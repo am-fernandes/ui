@@ -3,7 +3,7 @@ export type DateFormat = "brl" | "brl-full" | "us" | "time" | "iso"
 const MS_PER_DAY = 86400000
 
 function toUTCDate(value: Date | string | null | undefined): Date {
-  if (!value) return new Date(NaN)
+  if (!value) return new Date(Number.NaN)
   if (value instanceof Date) return value
   return new Date(value)
 }
@@ -19,7 +19,7 @@ export function formatDate(
   format: DateFormat = "brl",
 ): string {
   const d = toUTCDate(date)
-  if (isNaN(d.getTime())) return ""
+  if (Number.isNaN(d.getTime())) return ""
 
   const day = String(d.getUTCDate()).padStart(2, "0")
   const month = String(d.getUTCMonth() + 1).padStart(2, "0")
@@ -54,7 +54,7 @@ export function parseDate(date: string, time?: string): Date {
 /** Retorna true se o valor é uma data válida (não null, não NaN). */
 export function isValidDate(date: Date | string | null | undefined): boolean {
   if (!date) return false
-  return !isNaN(toUTCDate(date).getTime())
+  return !Number.isNaN(toUTCDate(date).getTime())
 }
 
 /** Adiciona dias a uma data. */

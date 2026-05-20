@@ -9,10 +9,7 @@ export function formatCPF(cpf: string): string {
 
 /** "12345678000190" → "12.345.678/0001-90" */
 export function formatCNPJ(cnpj: string): string {
-  return digitsOnly(cnpj).replace(
-    /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
-    "$1.$2.$3/$4-$5",
-  )
+  return digitsOnly(cnpj).replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5")
 }
 
 /**
