@@ -362,6 +362,10 @@ function DataTable<TData>({
         ? { getPaginationRowModel: getPaginationRowModel() }
         : {}),
       ...(manualPagination ? { manualPagination: true, pageCount: pageCount ?? -1 } : {}),
+      // Server-driven sort: never let the cycle land on "unsorted" — the
+      // backend would just fall back to its own default order and the user
+      // sees no change. Keep it ASC ↔ DESC.
+      ...(manualSorting ? { enableSortingRemoval: false } : {}),
       // When `searchableColumns` is provided, scope global filter to those columns;
       // otherwise fall back to TanStack's built-in `includesString` matcher.
       ...(searchableColumns && searchableColumns.length > 0
