@@ -4,7 +4,7 @@ import { Meta } from "@storybook/addon-docs/blocks"
 
 # @amfernandesinc/ui
 
-Design system oficial da AM Fernandes — 47 componentes React acessíveis, theming em OKLCH, fonte Geist self-hosted, light-only.
+Design system oficial da AM Fernandes — 46 componentes React acessíveis, theming em OKLCH, fonte Geist self-hosted, light-only.
 
 ## Pré-requisitos
 
@@ -87,7 +87,7 @@ export function Demo() {
 - **Acessibilidade ≥ AA.** Componentes seguem padrões ARIA; status badges, contraste e foco validados via `addon-a11y` no Storybook e `injectAxe`/`checkA11y` em CI.
 - **API plana por padrão.** Cada componente expõe um único export com `title`/`description`/`children` (overlays) ou `items` (navegação). Slots `headerAction`/`footer`/`trigger`/`action` cobrem os edge cases sem expor subcomponentes Radix.
 - **Forms sem wrapper.** Combine os controles (`Combobox`, `DateInput`, `Calendar`, etc.) com `react-hook-form` direto — todos eles aceitam `label`/`description`/`error` nativamente. `react-hook-form` é uma **devDependency**: o consumer instala a própria versão.
-- **i18n por componente.** `DataTable`, `FileUpload`, `Combobox`, `CommandPalette` e `Calendar` aceitam `labels?: Partial<XLabels>` com defaults em pt-BR. Veja a aba **Hooks** para o pattern de override.
+- **i18n por componente.** `DataTable`, `FileUpload` e `CommandPalette` aceitam `labels?: Partial<XLabels>` com defaults em pt-BR. Veja a aba **Hooks** para o pattern de override.
 
 ## Testes
 
@@ -101,7 +101,7 @@ bun run test
 
 | Categoria | Count | Conteúdo |
 |---|---|---|
-| **Primitives** | 12 | Avatar, Badge, Button, Checkbox, Input, Label, RadioGroup, Separator, Skeleton, Switch, Textarea, Typography |
+| **Primitives** | 11 | Avatar, Badge, Button, Checkbox, Input, RadioGroup, Separator, Skeleton, Switch, Textarea, Typography |
 | **Overlays** | 9 | Alert, AlertDialog, Collapsible, Dialog, Popover, Progress, Sheet, Toaster (Sonner), Tooltip |
 | **Navigation** | 5 | Accordion, Breadcrumb, CommandPalette, Sidebar, Tabs |
 | **Forms** | 5 | Calendar, Combobox, DateInput, DateRangePicker, TimePicker |

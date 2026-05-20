@@ -31,4 +31,4 @@ function Label({ className, children, required, ref, ...props }: InternalLabelPr
   )
 }
 
-export { Label, type InternalLabelProps }
+export { Label }
