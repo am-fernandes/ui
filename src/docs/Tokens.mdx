@@ -1,0 +1,160 @@
+import { Meta } from "@storybook/addon-docs/blocks"
+
+<Meta title="Foundations/Tokens" />
+
+# Tokens
+
+Esta página documenta os **tokens não-cromáticos** declarados em `src/styles/tokens.css`. Para tokens de cor, veja [Colors](?path=/docs/foundations-colors--docs).
+
+A filosofia é simples: cada propriedade visual do design system passa por um token CSS (`var(--*)`) e por um utilitário Tailwind correspondente. Isso permite que o consumidor use `rounded-md`, `duration-fast`, `z-popover` direto no JSX, sem nunca hardcodear valores.
+
+## Radius
+
+A lib é intencionalmente **chata** (flat). Todos os utilitários `rounded-*` do Tailwind resolvem para o mesmo valor — **4 px**. Isso reflete a decisão de design "enterprise robusto": sem cantos exageradamente arredondados, sem variação por componente.
+
+```css
+--radius: 0.25rem; /* base, 4 px */
+
+--radius-sm:  var(--radius);
+--radius-md:  var(--radius);
+--radius-lg:  var(--radius);
+--radius-xl:  var(--radius);
+--radius-2xl: var(--radius);
+--radius-3xl: var(--radius);
+--radius-4xl: var(--radius);
+```
+
+| Utilitário Tailwind | Token CSS | Valor |
+|---|---|---|
+| `rounded-sm`  | `--radius-sm`  | 4 px |
+| `rounded-md`  | `--radius-md`  | 4 px |
+| `rounded-lg`  | `--radius-lg`  | 4 px |
+| `rounded-xl`  | `--radius-xl`  | 4 px |
+| `rounded-2xl` | `--radius-2xl` | 4 px |
+| `rounded-3xl` | `--radius-3xl` | 4 px |
+| `rounded-4xl` | `--radius-4xl` | 4 px |
+
+Para shapes circulares (avatares, dots) use `rounded-full` — esse continua sendo um valor padrão do Tailwind (`9999px`).
+
+export const RadiusSwatch = ({ name }) => (
+  <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 6, margin: 8 }}>
+    <div
+      style={{
+        width: 56,
+        height: 56,
+        background: "var(--primary)",
+        borderRadius: `var(--radius-${name})`,
+      }}
+    />
+    <code style={{ fontSize: 11, color: "var(--muted-foreground)" }}>rounded-{name}</code>
+  </div>
+)
+
+<div style={{ display: "flex", flexWrap: "wrap", padding: 8 }}>
+  <RadiusSwatch name="sm" />
+  <RadiusSwatch name="md" />
+  <RadiusSwatch name="lg" />
+  <RadiusSwatch name="xl" />
+  <RadiusSwatch name="2xl" />
+  <RadiusSwatch name="3xl" />
+  <RadiusSwatch name="4xl" />
+</div>
+
+## Motion durations
+
+Quatro durações cobrem todos os componentes animados. A regra é: **abertura e fechamento usam a mesma duração** — assimetria visual é fonte recorrente de bug perceptivo.
+
+| Token | Valor | Componentes |
+|---|---|---|
+| `--motion-fast`    | `100ms` | Tooltip |
+| `--motion-default` | `150ms` | Popover, Combobox, DateInput, DateRangePicker |
+| `--motion-slow`    | `200ms` | Dialog, AlertDialog, CommandPalette, backdrops |
+| `--motion-slowest` | `300ms` | Sheet (abertura + fechamento simétricos) |
+
+```css
+--motion-fast: 100ms;
+--motion-default: 150ms;
+--motion-slow: 200ms;
+--motion-slowest: 300ms;
+```
+
+### `prefers-reduced-motion`
+
+No fim de `tokens.css` há um override global que respeita `@media (prefers-reduced-motion: reduce)` — todas as animações e transições caem para `0.01ms` quando o sistema operacional pede menos movimento. Isso vale para qualquer componente, incluindo os de terceiros que usem `transition` ou `animation` CSS.
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+```
+
+## Z-index scale
+
+Cinco camadas, cada uma reservada para um tipo de surface. Isso elimina os clássicos "guerras de z-index" que aparecem em codebases que misturam `9999`, `99`, `1`, `-1` ao gosto do dev.
+
+| Token | Valor | Uso |
+|---|---|---|
+| `--z-overlay`  | `40` | Backdrop de modal (camada de escurecimento) |
+| `--z-modal`    | `50` | Dialog, AlertDialog, Sheet (content), CommandPalette |
+| `--z-popover`  | `60` | Popover, Combobox, DateInput |
+| `--z-tooltip`  | `70` | Tooltip |
+| `--z-toast`    | `80` | Sonner Toaster |
+
+A escala é desenhada de baixo para cima:
+
+1. **Overlay (40)** fica acima da página, abaixo de qualquer surface interativo.
+2. **Modal (50)** fica acima do overlay porque o conteúdo do modal precisa receber foco e input.
+3. **Popover (60)** fica acima de modal porque comboboxes e date pickers podem ser abertos *de dentro* de um Dialog.
+4. **Tooltip (70)** fica acima de popover porque tooltips podem aparecer sobre qualquer trigger, inclusive triggers dentro de popovers.
+5. **Toast (80)** é a camada mais alta — notificações precisam aparecer mesmo enquanto um modal está aberto. Isso explicitamente sobrescreve o default do Sonner (`999999999`), unificando a camada com o resto do sistema.
+
+Use os utilitários Tailwind correspondentes: `z-overlay`, `z-modal`, `z-popover`, `z-tooltip`, `z-toast`.
+
+## Fonts
+
+Duas famílias, self-hosted para evitar dependência de CDN externo e qualquer leak de IP do usuário para o Google Fonts:
+
+```css
+--font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+             "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+--font-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono",
+             Menlo, Consolas, "Liberation Mono", monospace;
+```
+
+A fonte é carregada via `@fontsource/geist` + `@fontsource/geist-mono` no entry CSS:
+
+```css
+@import "@amfernandesinc/ui/fonts";
+@import "@amfernandesinc/ui/styles";
+```
+
+**Sem CDN, sem privacy risk.** Os arquivos de fonte vão no bundle final do consumidor, servidos do próprio domínio. A fallback stack cobre o gap durante o load (sem FOIT) e degrada bem em SSR.
+
+Para detalhes de escala tipográfica (variants, line-heights, weights), veja [Typography](?path=/docs/foundations-typography--docs).
+
+## Placeholder
+
+`--placeholder` é um token **separado** de `--input` (a cor da borda do input). Esse é um detalhe importante de acessibilidade:
+
+```css
+--input:       oklch(0.875 0.01 252); /* border do input */
+--placeholder: oklch(0.55 0.005 252); /* texto do placeholder */
+```
+
+A regra aplicada no `@layer base`:
+
+```css
+input::placeholder,
+textarea::placeholder {
+  color: var(--placeholder);
+}
+```
+
+A separação existe porque a cor da borda pode ser clarinha (passar despercebida visualmente), mas o placeholder precisa atingir **contraste WCAG-AA** contra o fundo branco. Com o valor atual, o placeholder atinge **4.85:1** sobre branco — acima do threshold de 4.5:1 para texto normal.
+
+Se você precisar customizar o placeholder em um campo específico, use a classe Tailwind `placeholder:text-*` direto, mas evite reduzir o contraste abaixo de AA.

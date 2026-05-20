@@ -1,0 +1,150 @@
+import { Meta } from "@storybook/addon-docs/blocks"
+
+<Meta title="Foundations/i18n" />
+
+# i18n — pattern de `labels`
+
+## Visão geral
+
+A lib é **pt-BR por padrão**. Cada componente com strings visíveis ao usuário expõe uma prop `labels?: Partial<XLabels>` que permite sobrescrever qualquer string individual sem precisar substituir todas.
+
+Decisões deliberadas:
+
+- **Sem Provider global, sem Context.** A configuração é por instância, via prop. Reduz mágica, evita re-renders desnecessários e mantém o tree-shaking limpo (quem não usa um componente não paga pelos seus defaults).
+- **Defaults exportados.** Cada componente exporta também `defaultXLabels` para que consumers possam compor traduções completas a partir do default pt-BR (útil quando 90% das strings já está OK e você só quer trocar 1 ou 2).
+- **`Partial` na prop.** Você sempre passa só o que quer mudar; o componente faz `merge` interno com o default.
+
+Atualmente 5 componentes implementam esse pattern:
+
+## Tabela de componentes localizáveis
+
+| Componente       | Tipo                    | Default                          | Strings |
+|---               |---                      |---                               |---:     |
+| `DataTable`      | `DataTableLabels`       | `defaultDataTableLabels`         | 12 |
+| `FileUpload`     | `FileUploadLabels`      | `defaultFileUploadLabels`        | 16 |
+| `Combobox`       | `ComboboxLabels`        | `defaultComboboxLabels`          | 7 |
+| `CommandPalette` | `CommandPaletteLabels`  | `defaultCommandPaletteLabels`    | 3 |
+| `Calendar`       | `CalendarLabels`        | `defaultCalendarLabels`          | 0 (reservado) |
+
+Todos os tipos e defaults estão exportados no barrel principal:
+
+```ts
+import {
+  defaultDataTableLabels, type DataTableLabels,
+  defaultFileUploadLabels, type FileUploadLabels,
+  defaultComboboxLabels, type ComboboxLabels,
+  defaultCommandPaletteLabels, type CommandPaletteLabels,
+  defaultCalendarLabels, type CalendarLabels,
+} from "@amfernandesinc/ui"
+```
+
+## Pattern de uso
+
+### Override parcial
+
+Para trocar uma ou duas strings, passe um objeto parcial:
+
+```tsx
+<CommandPalette
+  open={open}
+  onOpenChange={setOpen}
+  title="Quick actions"
+  groups={groups}
+  labels={{ placeholder: "Search...", emptyMessage: "No results" }}
+/>
+```
+
+As demais chaves continuam vindo do default pt-BR — você nunca precisa repetir o que já está OK.
+
+### Override completo (locale en-US)
+
+Para uma tradução full, componha a partir do default e exporte como um objeto reutilizável:
+
+```ts
+import {
+  DataTable,
+  defaultDataTableLabels,
+  type DataTableLabels,
+} from "@amfernandesinc/ui"
+
+export const dataTableLabelsEnUS: DataTableLabels = {
+  ...defaultDataTableLabels,
+  search: "Search...",
+  searchAriaLabel: "Search the table",
+  empty: "No results.",
+  loading: "Loading…",
+  paginationPrevious: "Previous page",
+  paginationNext: "Next page",
+  rowCount: (filtered, total) =>
+    filtered === total
+      ? `${total} record${total === 1 ? "" : "s"}`
+      : `${filtered} of ${total} records`,
+  pageIndicator: (pageIndex, pageCount) => `Page ${pageIndex + 1} of ${pageCount}`,
+  sortBy: (header) => `Sort by ${header}`,
+  exportTrigger: "Export to Excel",
+  exportFiltered: "Export filtered data",
+  exportPage: "Export current page",
+  exportAll: "Export all data",
+}
+
+// uso
+<DataTable data={rows} columns={columns} labels={dataTableLabelsEnUS} />
+```
+
+A vantagem desse padrão: TypeScript exige que o objeto seja **completo** (`DataTableLabels` não é `Partial`), então o compilador acusa se a lib adicionar uma chave nova e o seu pacote de tradução ficar desatualizado.
+
+## Pluralização
+
+Algumas chaves não são strings, são **funções**. Isso permite plural correto, formatação com `Intl.NumberFormat`, e composição com helpers do consumer.
+
+Exemplos:
+
+```ts
+// Combobox — selectedCount(count)
+defaultComboboxLabels.selectedCount = (n) =>
+  `${n} ${n === 1 ? "selecionado" : "selecionados"}`
+
+// DataTable — rowCount(filtered, total)
+defaultDataTableLabels.rowCount = (filtered, total) => {
+  const totalStr = new Intl.NumberFormat("pt-BR").format(total)
+  if (filtered === total) return `${totalStr} registro${total === 1 ? "" : "s"}`
+  return `${new Intl.NumberFormat("pt-BR").format(filtered)} de ${totalStr} registros`
+}
+
+// FileUpload — removeFile(fileName)
+defaultFileUploadLabels.removeFile = (fileName) => `Remover ${fileName}`
+```
+
+Para traduzir, basta sobrescrever a função:
+
+```ts
+labels={{
+  selectedCount: (n) => n === 1 ? "1 selected" : `${n} selected`,
+}}
+```
+
+A regra: **strings simples** quando não há variação; **funções** quando há flexão (plural, gênero, número formatado, nome dinâmico injetado).
+
+## Caveat do Calendar
+
+`Calendar.labels` é uma prop **reservada para uso futuro** — atualmente o tipo `CalendarLabels` só contém um campo opcional `_reserved`. Isso é intencional.
+
+A localização dos dias da semana, nomes de mês e aria-labels dos botões prev/next vem do `react-day-picker`, via a prop `locale`:
+
+```tsx
+import { ptBR } from "date-fns/locale"
+import { enUS } from "date-fns/locale"
+
+<Calendar locale={ptBR} /> // padrão pt-BR
+<Calendar locale={enUS} /> // tradução completa do grid
+```
+
+A separação existe porque o `react-day-picker` já tem um sistema robusto e bem testado de localização — replicar via nossa prop `labels` seria duplicar trabalho e fonte de inconsistência. A prop `labels` fica reservada caso a gente adicione **strings de wrapper** no futuro (ex.: um botão "Hoje" custom, um header com instrução, etc.).
+
+## Quando criar um novo `XLabels`?
+
+Se você está estendendo um componente da lib (ou propondo um novo) que tenha **strings visíveis ao usuário** — incluindo `aria-label` e `placeholder` —, adicione um tipo `XLabels`, um `defaultXLabels`, e a prop `labels?: Partial<XLabels>`. Não hardcode pt-BR no JSX. Isso garante:
+
+1. Apps multi-locale podem usar a lib sem fork.
+2. QA pode escrever testes em qualquer idioma.
+3. O time de produto pode ajustar copy sem PR no design system.
