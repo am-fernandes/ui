@@ -32,7 +32,7 @@ const meta: Meta<typeof AlertDialog> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { AlertDialog, Button } from "@am-fernandes/ui"',
+          'import { AlertDialog, Button } from "@amfernandesinc/ui"',
           "",
           "<AlertDialog",
           '  trigger={<Button variant="destructive">Excluir</Button>}',

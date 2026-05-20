@@ -34,7 +34,7 @@ const meta = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { DateRangePicker, type DateRangeValue } from "@am-fernandes/ui"',
+          'import { DateRangePicker, type DateRangeValue } from "@amfernandesinc/ui"',
           'import { useState } from "react"',
           "",
           'const [range, setRange] = useState<DateRangeValue>({ from: "", to: "" })',

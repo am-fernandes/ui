@@ -46,7 +46,7 @@ const meta: Meta<typeof Toaster> = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { Toaster, toast, Button } from "@am-fernandes/ui"',
+          'import { Toaster, toast, Button } from "@amfernandesinc/ui"',
           "",
           "// monte uma única vez no root da app",
           '<Toaster position="bottom-right" />',

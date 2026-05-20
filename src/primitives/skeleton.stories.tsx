@@ -22,7 +22,7 @@ const meta: Meta<typeof Skeleton> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Skeleton } from "@am-fernandes/ui"',
+          'import { Skeleton } from "@amfernandesinc/ui"',
           "",
           '<div className="flex items-center gap-4">',
           '  <Skeleton className="size-12 rounded-full" />',

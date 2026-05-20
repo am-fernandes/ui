@@ -30,7 +30,7 @@ const meta: Meta<typeof Popover> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Popover, Button } from "@am-fernandes/ui"',
+          'import { Popover, Button } from "@amfernandesinc/ui"',
           "",
           "<Popover trigger={<Button>Abrir</Button>}>",
           "  <p>Conteúdo do popover</p>",

@@ -24,7 +24,7 @@ const meta = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { PercentageInput } from "@am-fernandes/ui"',
+          'import { PercentageInput } from "@amfernandesinc/ui"',
           "",
           "const [value, setValue] = useState(0)",
           "",

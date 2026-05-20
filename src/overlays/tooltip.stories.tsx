@@ -29,7 +29,7 @@ const meta: Meta<typeof Tooltip> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Tooltip, Button } from "@am-fernandes/ui"',
+          'import { Tooltip, Button } from "@amfernandesinc/ui"',
           "",
           '<Tooltip content="Excluir item">',
           '  <Button size="icon" aria-label="Excluir">',

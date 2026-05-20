@@ -37,7 +37,7 @@ const meta: Meta<typeof Accordion> = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { Accordion } from "@am-fernandes/ui"',
+          'import { Accordion } from "@amfernandesinc/ui"',
           "",
           "<Accordion",
           '  type="single"',

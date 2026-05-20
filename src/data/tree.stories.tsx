@@ -36,7 +36,7 @@ const meta = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { Tree, type TreeNodeData } from "@am-fernandes/ui"',
+          'import { Tree, type TreeNodeData } from "@amfernandesinc/ui"',
           'import { File, Folder } from "lucide-react"',
           "",
           "const data: TreeNodeData[] = [",

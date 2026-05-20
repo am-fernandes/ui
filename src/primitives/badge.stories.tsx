@@ -25,7 +25,7 @@ const meta: Meta<typeof Badge> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Badge } from "@am-fernandes/ui"',
+          'import { Badge } from "@amfernandesinc/ui"',
           "",
           "<Badge>Novo</Badge>",
           '<Badge variant="secondary">Rascunho</Badge>',

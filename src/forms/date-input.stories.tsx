@@ -24,7 +24,7 @@ const meta = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { DateInput } from "@am-fernandes/ui"',
+          'import { DateInput } from "@amfernandesinc/ui"',
           'import { useState } from "react"',
           "",
           'const [value, setValue] = useState("")',

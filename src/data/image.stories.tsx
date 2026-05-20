@@ -26,7 +26,7 @@ const meta = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { Image } from "@am-fernandes/ui"',
+          'import { Image } from "@amfernandesinc/ui"',
           "",
           "<Image",
           '  src="https://example.com/foto.jpg"',

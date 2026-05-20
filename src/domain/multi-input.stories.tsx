@@ -36,7 +36,7 @@ const meta = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { MultiInput } from "@am-fernandes/ui"',
+          'import { MultiInput } from "@amfernandesinc/ui"',
           'import { useState } from "react"',
           "",
           "const [tags, setTags] = useState<string[]>([])",

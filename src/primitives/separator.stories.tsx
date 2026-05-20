@@ -24,7 +24,7 @@ const meta: Meta<typeof Separator> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Separator } from "@am-fernandes/ui"',
+          'import { Separator } from "@amfernandesinc/ui"',
           "",
           "<div>",
           "  <p>Acima</p>",
@@ -132,7 +132,7 @@ export const InCard: Story = {
       <div className="flex flex-col gap-1 p-4">
         <span className="text-xs text-muted-foreground">Cabeçalho</span>
         <span className="font-semibold">João da Silva</span>
-        <span className="text-xs text-muted-foreground">joao@am-fernandes.com.br</span>
+        <span className="text-xs text-muted-foreground">usuario@example.com</span>
       </div>
       <Separator />
       <div className="flex flex-col gap-2 p-4 text-sm">

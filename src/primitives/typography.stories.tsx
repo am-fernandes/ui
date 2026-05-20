@@ -30,7 +30,7 @@ const meta: Meta<typeof Typography> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Typography } from "@am-fernandes/ui"',
+          'import { Typography } from "@amfernandesinc/ui"',
           "",
           '<Typography variant="heading">AM Fernandes</Typography>',
           '<Typography variant="title" as="h1">Título principal da página</Typography>',

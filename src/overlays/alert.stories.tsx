@@ -27,7 +27,7 @@ const meta: Meta<typeof Alert> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Alert } from "@am-fernandes/ui"',
+          'import { Alert } from "@amfernandesinc/ui"',
           "",
           '<Alert variant="success" title="Salvo!" description="Suas alterações foram aplicadas." />',
           "```",

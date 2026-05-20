@@ -38,7 +38,7 @@ const meta: Meta<typeof Breadcrumb> = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { Breadcrumb } from "@am-fernandes/ui"',
+          'import { Breadcrumb } from "@amfernandesinc/ui"',
           "",
           "<Breadcrumb",
           "  items={[",

@@ -29,7 +29,7 @@ const meta = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { ScrollArea } from "@am-fernandes/ui"',
+          'import { ScrollArea } from "@amfernandesinc/ui"',
           "",
           '<ScrollArea className="h-[200px] w-[260px] rounded-md border p-4">',
           '  <div className="flex flex-col gap-2">',

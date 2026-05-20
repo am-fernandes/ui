@@ -42,7 +42,7 @@ const meta = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { tableStyles } from "@am-fernandes/ui"',
+          'import { tableStyles } from "@amfernandesinc/ui"',
           "",
           "const t = tableStyles()",
           "",

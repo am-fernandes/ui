@@ -31,7 +31,7 @@ const meta: Meta<typeof Sheet> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Sheet, Button } from "@am-fernandes/ui"',
+          'import { Sheet, Button } from "@amfernandesinc/ui"',
           "",
           "<Sheet",
           "  trigger={<Button>Abrir filtros</Button>}",

@@ -26,7 +26,7 @@ const meta: Meta<typeof Collapsible> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Collapsible } from "@am-fernandes/ui"',
+          'import { Collapsible } from "@amfernandesinc/ui"',
           "",
           '<Collapsible title="Detalhes">',
           "  <p>Conteúdo recolhível</p>",

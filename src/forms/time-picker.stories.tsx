@@ -31,7 +31,7 @@ const meta = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { Label, TimePicker } from "@am-fernandes/ui"',
+          'import { Label, TimePicker } from "@amfernandesinc/ui"',
           'import { useState } from "react"',
           "",
           'const [value, setValue] = useState("09:30")',

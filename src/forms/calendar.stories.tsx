@@ -34,7 +34,7 @@ const meta = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { Calendar } from "@am-fernandes/ui"',
+          'import { Calendar } from "@amfernandesinc/ui"',
           'import { useState } from "react"',
           "",
           "const [date, setDate] = useState<Date | undefined>()",

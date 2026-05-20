@@ -29,7 +29,7 @@ const meta: Meta<typeof Textarea> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Textarea } from "@am-fernandes/ui"',
+          'import { Textarea } from "@amfernandesinc/ui"',
           "",
           '<Textarea label="Mensagem" placeholder="Conte sua história..." maxLength={500} />',
           "```",

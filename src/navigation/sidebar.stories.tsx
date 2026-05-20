@@ -64,7 +64,7 @@ const meta: Meta<typeof Sidebar> = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { Sidebar } from "@am-fernandes/ui"',
+          'import { Sidebar } from "@amfernandesinc/ui"',
           'import { Home, Users, Settings } from "lucide-react"',
           "",
           "<Sidebar",

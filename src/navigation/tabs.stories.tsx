@@ -36,7 +36,7 @@ const meta: Meta<typeof Tabs> = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { Tabs } from "@am-fernandes/ui"',
+          'import { Tabs } from "@amfernandesinc/ui"',
           "",
           "<Tabs",
           '  defaultValue="overview"',

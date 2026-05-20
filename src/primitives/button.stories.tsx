@@ -27,7 +27,7 @@ const meta: Meta<typeof Button> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Button } from "@am-fernandes/ui"',
+          'import { Button } from "@amfernandesinc/ui"',
           "",
           '<Button variant="default">Confirmar</Button>',
           '<Button variant="outline" onClick={handleCancel}>Cancelar</Button>',

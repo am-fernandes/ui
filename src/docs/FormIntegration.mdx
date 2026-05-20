@@ -4,7 +4,7 @@ import { Meta } from "@storybook/addon-docs/blocks"
 
 # Integração com formulários
 
-`@am-fernandes/ui` é deliberadamente **uma biblioteca de UI, não um framework de formulários**. Não enviamos wrappers tipo `<Form>`, `<FormField>` ou um motor próprio de validação — os componentes da família `forms/` e `domain/` expõem APIs controladas simples (`value` + `onValueChange`/`onChange`) que conectam diretamente em qualquer state-manager. A recomendação oficial é **[react-hook-form](https://react-hook-form.com)** (RHF) para o estado e **[zod](https://zod.dev)** para o schema/validação, mas qualquer combinação que respeite o contrato dos componentes funciona.
+`@amfernandesinc/ui` é deliberadamente **uma biblioteca de UI, não um framework de formulários**. Não enviamos wrappers tipo `<Form>`, `<FormField>` ou um motor próprio de validação — os componentes da família `forms/` e `domain/` expõem APIs controladas simples (`value` + `onValueChange`/`onChange`) que conectam diretamente em qualquer state-manager. A recomendação oficial é **[react-hook-form](https://react-hook-form.com)** (RHF) para o estado e **[zod](https://zod.dev)** para o schema/validação, mas qualquer combinação que respeite o contrato dos componentes funciona.
 
 A maioria dos controles é **controlled-only**: você sempre passa `value` e atualiza via callback. Alguns componentes (`Input`, `Textarea`, `Checkbox`, `Switch`, `RadioGroup`) suportam também o modo uncontrolled via `defaultValue`/`defaultChecked` herdado do HTML nativo ou do Radix — útil quando você usa `register()` do RHF, que opera em modo uncontrolled. Veja a tabela abaixo para o detalhe componente-a-componente.
 
@@ -43,7 +43,7 @@ O prop `error: string` em todos os campos é **puramente visual**: ele pinta a b
 
 ```tsx
 import { useForm } from "react-hook-form"
-import { Input, Button } from "@am-fernandes/ui"
+import { Input, Button } from "@amfernandesinc/ui"
 
 type FormValues = {
   nome: string
@@ -448,7 +448,7 @@ bun add zod @hookform/resolvers
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Input, Combobox, CurrencyInput, Switch, Button } from "@am-fernandes/ui"
+import { Input, Combobox, CurrencyInput, Switch, Button } from "@amfernandesinc/ui"
 
 const schema = z.object({
   email: z.string().email("E-mail inválido"),

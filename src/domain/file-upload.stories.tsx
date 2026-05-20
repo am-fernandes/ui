@@ -42,7 +42,7 @@ const meta = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { FileUpload, mb, toast, Toaster } from "@am-fernandes/ui"',
+          'import { FileUpload, mb, toast, Toaster } from "@amfernandesinc/ui"',
           "",
           "<FileUpload",
           '  accept="application/pdf"',

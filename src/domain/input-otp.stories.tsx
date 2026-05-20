@@ -29,7 +29,7 @@ const meta = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { InputOTP } from "@am-fernandes/ui"',
+          'import { InputOTP } from "@amfernandesinc/ui"',
           'import { useState } from "react"',
           "",
           'const [code, setCode] = useState("")',

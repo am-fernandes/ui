@@ -28,7 +28,7 @@ const meta: Meta<typeof Progress> = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { Progress } from "@am-fernandes/ui"',
+          'import { Progress } from "@amfernandesinc/ui"',
           "",
           "<Progress value={60} />",
           "```",

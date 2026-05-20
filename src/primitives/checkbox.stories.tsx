@@ -27,7 +27,7 @@ const meta: Meta<typeof Checkbox> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Checkbox } from "@am-fernandes/ui"',
+          'import { Checkbox } from "@amfernandesinc/ui"',
           "",
           '<Checkbox label="Aceito os termos" required />',
           "```",

@@ -1,5 +1,5 @@
 /**
- * `@am-fernandes/ui` public API.
+ * `@amfernandesinc/ui` public API.
  *
  * Single entry point. Each phase of the API simplification plan adds exports here.
  *

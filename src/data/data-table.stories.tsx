@@ -220,7 +220,7 @@ const meta = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { DataTable } from "@am-fernandes/ui"',
+          'import { DataTable } from "@amfernandesinc/ui"',
           'import type { ColumnDef } from "@tanstack/react-table"',
           "",
           "<DataTable",

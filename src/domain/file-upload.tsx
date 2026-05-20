@@ -73,7 +73,7 @@ export interface FileUploadProps {
   accept?: string | string[]
   /** Allow selecting more than one file. Default `false`. */
   multiple?: boolean
-  /** Maximum bytes per file. Files larger than this are rejected. Compose with the `kb()` / `mb()` / `gb()` helpers from `@am-fernandes/ui`. */
+  /** Maximum bytes per file. Files larger than this are rejected. Compose with the `kb()` / `mb()` / `gb()` helpers from `@amfernandesinc/ui`. */
   maxSize?: number
   /** Maximum number of files when `multiple`. Extra files are rejected. */
   maxFiles?: number

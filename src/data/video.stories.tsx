@@ -28,7 +28,7 @@ const meta = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { Video } from "@am-fernandes/ui"',
+          'import { Video } from "@amfernandesinc/ui"',
           "",
           "<Video",
           '  src="https://example.com/video.mp4"',

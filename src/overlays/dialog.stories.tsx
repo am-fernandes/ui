@@ -32,7 +32,7 @@ const meta: Meta<typeof Dialog> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Dialog, Button, Input } from "@am-fernandes/ui"',
+          'import { Dialog, Button, Input } from "@amfernandesinc/ui"',
           "",
           "<Dialog",
           "  trigger={<Button>Editar perfil</Button>}",

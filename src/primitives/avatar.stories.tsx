@@ -22,7 +22,7 @@ const meta: Meta<typeof Avatar> = {
           "",
           "**Exemplo:**",
           "```tsx",
-          'import { Avatar } from "@am-fernandes/ui"',
+          'import { Avatar } from "@amfernandesinc/ui"',
           "",
           '<Avatar src="https://github.com/shadcn.png" alt="@shadcn" fallback="CN" />',
           "```",

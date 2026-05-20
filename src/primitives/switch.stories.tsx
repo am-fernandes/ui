@@ -27,7 +27,7 @@ const meta: Meta<typeof Switch> = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Switch } from "@am-fernandes/ui"',
+          'import { Switch } from "@amfernandesinc/ui"',
           "",
           '<Switch label="Notificações por e-mail" defaultChecked />',
           "```",

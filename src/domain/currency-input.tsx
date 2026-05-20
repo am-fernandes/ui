@@ -13,7 +13,7 @@ interface CurrencyInputProps
    * The value in **float reais** (BRL).
    *
    * IMPORTANT: do not perform arithmetic on the float. Use `toCents`/`fromCents`
-   * from `@am-fernandes/ui` for any computation (sums, percentages, multiplications).
+   * from `@amfernandesinc/ui` for any computation (sums, percentages, multiplications).
    * The component itself round-trips through cents — assume any value is accurate
    * to 2 decimals only.
    */

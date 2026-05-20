@@ -56,7 +56,7 @@ const meta: Meta<typeof Combobox> = {
           "**Exemplo de uso:**",
           "",
           "```tsx",
-          'import { Combobox } from "@am-fernandes/ui"',
+          'import { Combobox } from "@amfernandesinc/ui"',
           'import { useState } from "react"',
           "",
           "const options = [",
