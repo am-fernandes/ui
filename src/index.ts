@@ -69,9 +69,9 @@ export {
 } from "./navigation/command-palette"
 export {
   Sidebar,
-  type SidebarGroup,
   type SidebarItem,
   type SidebarProps,
+  type SidebarUser,
 } from "./navigation/sidebar"
 export { Tabs, type TabsItemData, type TabsProps } from "./navigation/tabs"
 
