@@ -87,8 +87,7 @@ const RDP_DEFAULTS = getDefaultClassNames()
 // object on every Calendar render, which made DayPicker treat it as a new
 // prop and re-do its own internal work.
 const STATIC_FORMATTERS = {
-  formatMonthDropdown: (date: Date) =>
-    date.toLocaleString(ptBR.code, { month: "short" }),
+  formatMonthDropdown: (date: Date) => date.toLocaleString(ptBR.code, { month: "short" }),
 }
 
 // Static class strings for the DayPicker `classNames` slots, pre-joined once
