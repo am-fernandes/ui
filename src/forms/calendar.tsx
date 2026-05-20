@@ -77,6 +77,44 @@ export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
   ref?: React.Ref<HTMLDivElement>
 }
 
+// Hoisted once at module load: `getDefaultClassNames()` returns a frozen
+// object of react-day-picker's stock per-slot classes — there's no reason to
+// call it on every render.
+const RDP_DEFAULTS = getDefaultClassNames()
+
+// Hoisted formatter (locale and format are static). The previous inline
+// `formatters={{ formatMonthDropdown: ..., ...formatters }}` rebuilt the
+// object on every Calendar render, which made DayPicker treat it as a new
+// prop and re-do its own internal work.
+const STATIC_FORMATTERS = {
+  formatMonthDropdown: (date: Date) =>
+    date.toLocaleString(ptBR.code, { month: "short" }),
+}
+
+// Static class strings for the DayPicker `classNames` slots, pre-joined once
+// instead of going through `cn()` on every render. Only the two button slots
+// depend on `buttonVariant`, so they live in the per-instance memo below.
+const STATIC_CLASS_NAMES = {
+  root: `w-fit ${RDP_DEFAULTS.root}`,
+  months: `relative flex flex-col gap-4 md:flex-row ${RDP_DEFAULTS.months}`,
+  month: `flex w-full flex-col gap-4 ${RDP_DEFAULTS.month}`,
+  nav: `absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1 ${RDP_DEFAULTS.nav}`,
+  month_caption: `flex h-(--cell-size) w-full items-center justify-center px-(--cell-size) ${RDP_DEFAULTS.month_caption}`,
+  caption_label: `text-sm font-medium select-none ${RDP_DEFAULTS.caption_label}`,
+  table: "w-full border-collapse",
+  weekdays: `flex ${RDP_DEFAULTS.weekdays}`,
+  weekday: `flex-1 rounded-(--cell-radius) text-[0.8rem] font-normal text-muted-foreground select-none ${RDP_DEFAULTS.weekday}`,
+  week: `mt-2 flex w-full ${RDP_DEFAULTS.week}`,
+  day: `group/day relative aspect-square h-full w-full rounded-(--cell-radius) p-0 text-center select-none [&:last-child[data-selected=true]_button]:rounded-r-(--cell-radius) [&:first-child[data-selected=true]_button]:rounded-l-(--cell-radius) ${RDP_DEFAULTS.day}`,
+  range_start: `relative isolate z-0 rounded-l-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:right-0 after:w-4 after:bg-muted ${RDP_DEFAULTS.range_start}`,
+  range_middle: `rounded-none ${RDP_DEFAULTS.range_middle}`,
+  range_end: `relative isolate z-0 rounded-r-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:left-0 after:w-4 after:bg-muted ${RDP_DEFAULTS.range_end}`,
+  today: `rounded-(--cell-radius) bg-muted text-foreground data-[selected=true]:rounded-none ${RDP_DEFAULTS.today}`,
+  outside: `text-muted-foreground aria-selected:text-muted-foreground ${RDP_DEFAULTS.outside}`,
+  disabled: `text-muted-foreground opacity-50 ${RDP_DEFAULTS.disabled}`,
+  hidden: `invisible ${RDP_DEFAULTS.hidden}`,
+}
+
 function Calendar({
   className,
   classNames,
@@ -92,7 +130,25 @@ function Calendar({
 }: CalendarProps) {
   const disabledFn = resolveDisabledDays(disabledDays)
   const resolvedDisabled = disabledFn ?? disabled
-  const defaultClassNames = getDefaultClassNames()
+
+  // `button_previous` and `button_next` need the `buttonVariant`-derived
+  // class, so build the final classNames object only when `buttonVariant` or
+  // the user-provided `classNames` override changes — not on every render.
+  const finalClassNames = React.useMemo(() => {
+    const buttonNavClass = "size-(--cell-size) p-0 select-none aria-disabled:opacity-50"
+    const variantClass = buttonVariants({ variant: buttonVariant })
+    return {
+      ...STATIC_CLASS_NAMES,
+      button_previous: `${variantClass} ${buttonNavClass} ${RDP_DEFAULTS.button_previous}`,
+      button_next: `${variantClass} ${buttonNavClass} ${RDP_DEFAULTS.button_next}`,
+      ...classNames,
+    }
+  }, [buttonVariant, classNames])
+
+  const finalFormatters = React.useMemo(
+    () => (formatters ? { ...STATIC_FORMATTERS, ...formatters } : STATIC_FORMATTERS),
+    [formatters],
+  )
 
   const memoizedComponents = React.useMemo(
     () => ({
@@ -136,6 +192,11 @@ function Calendar({
     [ref],
   )
 
+  const finalComponents = React.useMemo(
+    () => (components ? { ...memoizedComponents, ...components } : memoizedComponents),
+    [memoizedComponents, components],
+  )
+
   return (
     <DayPicker
       data-slot="calendar"
@@ -147,69 +208,9 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       locale={ptBR}
-      formatters={{
-        formatMonthDropdown: (date) => date.toLocaleString(ptBR.code, { month: "short" }),
-        ...formatters,
-      }}
-      classNames={{
-        root: cn("w-fit", defaultClassNames.root),
-        months: cn("relative flex flex-col gap-4 md:flex-row", defaultClassNames.months),
-        month: cn("flex w-full flex-col gap-4", defaultClassNames.month),
-        nav: cn(
-          "absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1",
-          defaultClassNames.nav,
-        ),
-        button_previous: cn(
-          buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) p-0 select-none aria-disabled:opacity-50",
-          defaultClassNames.button_previous,
-        ),
-        button_next: cn(
-          buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) p-0 select-none aria-disabled:opacity-50",
-          defaultClassNames.button_next,
-        ),
-        month_caption: cn(
-          "flex h-(--cell-size) w-full items-center justify-center px-(--cell-size)",
-          defaultClassNames.month_caption,
-        ),
-        caption_label: cn("text-sm font-medium select-none", defaultClassNames.caption_label),
-        table: "w-full border-collapse",
-        weekdays: cn("flex", defaultClassNames.weekdays),
-        weekday: cn(
-          "flex-1 rounded-(--cell-radius) text-[0.8rem] font-normal text-muted-foreground select-none",
-          defaultClassNames.weekday,
-        ),
-        week: cn("mt-2 flex w-full", defaultClassNames.week),
-        day: cn(
-          "group/day relative aspect-square h-full w-full rounded-(--cell-radius) p-0 text-center select-none [&:last-child[data-selected=true]_button]:rounded-r-(--cell-radius) [&:first-child[data-selected=true]_button]:rounded-l-(--cell-radius)",
-          defaultClassNames.day,
-        ),
-        range_start: cn(
-          "relative isolate z-0 rounded-l-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:right-0 after:w-4 after:bg-muted",
-          defaultClassNames.range_start,
-        ),
-        range_middle: cn("rounded-none", defaultClassNames.range_middle),
-        range_end: cn(
-          "relative isolate z-0 rounded-r-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:left-0 after:w-4 after:bg-muted",
-          defaultClassNames.range_end,
-        ),
-        today: cn(
-          "rounded-(--cell-radius) bg-muted text-foreground data-[selected=true]:rounded-none",
-          defaultClassNames.today,
-        ),
-        outside: cn(
-          "text-muted-foreground aria-selected:text-muted-foreground",
-          defaultClassNames.outside,
-        ),
-        disabled: cn("text-muted-foreground opacity-50", defaultClassNames.disabled),
-        hidden: cn("invisible", defaultClassNames.hidden),
-        ...classNames,
-      }}
-      components={{
-        ...memoizedComponents,
-        ...components,
-      }}
+      formatters={finalFormatters}
+      classNames={finalClassNames}
+      components={finalComponents}
       {...props}
     />
   )
@@ -225,8 +226,13 @@ const DAY_BUTTON_DEFAULTS = getDefaultClassNames()
 // `cn()` (and tailwind-merge) on every day cell every render. With
 // `numberOfMonths={2}` we render ~138 day buttons, so doing this work per cell
 // adds up — especially under React StrictMode's double-invoke in dev.
+//
+// `transition-colors duration-150` smooths the bg/text shift when a cell
+// becomes selected — combined with React's faster commit, it makes the click
+// feel instant even when the actual JS work is a few frames behind.
 const DAY_BUTTON_BASE_CLASS = [
   "relative isolate z-10 flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 border-0 leading-none font-normal",
+  "transition-colors duration-150",
   "data-[range-end=true]:rounded-(--cell-radius) data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground",
   "data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-muted data-[range-middle=true]:text-foreground",
   "data-[range-start=true]:rounded-(--cell-radius) data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground",
