@@ -54,11 +54,7 @@ function normalizeSegment(raw: string, min: number, max: number) {
   return pad(n)
 }
 
-function emitIfComplete(
-  hour: string,
-  minute: string,
-  onChange: TimePickerProps["onChange"],
-) {
+function emitIfComplete(hour: string, minute: string, onChange: TimePickerProps["onChange"]) {
   if (!onChange || hour === "" || minute === "") return
   const hNum = Number.parseInt(hour, 10)
   const mNum = Number.parseInt(minute, 10)
