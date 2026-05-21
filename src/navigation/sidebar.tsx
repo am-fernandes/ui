@@ -153,7 +153,7 @@ function Sidebar({
         >
           <button
             type="button"
-            className="h-8 w-8 shrink-0 rounded overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="h-8 w-8 shrink-0 rounded overflow-hidden transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             onClick={onBrandClick ?? (() => setCollapsed((v) => !v))}
             aria-label={
               onBrandClick
