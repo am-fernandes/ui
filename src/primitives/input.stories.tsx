@@ -67,7 +67,7 @@ export const WithDescription: Story = {
 }
 
 export const WithError: Story = {
-  args: { label: "E-mail", value: "abc", error: "Formato inválido", type: "email" },
+  args: { label: "E-mail", defaultValue: "abc", error: "Formato inválido", type: "email" },
 }
 
 export const Required: Story = {
