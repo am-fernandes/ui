@@ -47,6 +47,25 @@ function parseValue(value: string | undefined): { hour: string; minute: string }
   return { hour: h.slice(0, 2), minute: m.slice(0, 2) }
 }
 
+function normalizeSegment(raw: string, min: number, max: number) {
+  if (raw === "") return ""
+  const n = Number.parseInt(raw, 10)
+  if (!isInRange(n, min, max)) return ""
+  return pad(n)
+}
+
+function emitIfComplete(
+  hour: string,
+  minute: string,
+  onChange: TimePickerProps["onChange"],
+) {
+  if (!onChange || hour === "" || minute === "") return
+  const hNum = Number.parseInt(hour, 10)
+  const mNum = Number.parseInt(minute, 10)
+  if (!isInRange(hNum, MIN_HOUR, MAX_HOUR) || !isInRange(mNum, MIN_MINUTE, MAX_MINUTE)) return
+  onChange(`${pad(hNum)}:${pad(mNum)}`)
+}
+
 interface TimeFieldProps {
   id?: string
   min: number
@@ -115,110 +134,71 @@ function TimePicker({
 }: TimePickerProps) {
   const ids = useFieldIds(id)
   const minuteRef = React.useRef<HTMLInputElement>(null)
+  const skipHourBlurRef = React.useRef(false)
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
   const describedBy = ids.describedBy({ description: hasDescription, error: hasError })
 
-  // Derive the committed values directly from the prop.
-  const { hour: committedHour, minute: committedMinute } = React.useMemo(
-    () => parseValue(value),
-    [value],
-  )
+  const [hour, setHour] = React.useState(() => parseValue(value).hour)
+  const [minute, setMinute] = React.useState(() => parseValue(value).minute)
 
-  // Draft state is only used while the user is actively typing.
-  const [draft, setDraft] = React.useState<{ hour: string | null; minute: string | null }>({
-    hour: null,
-    minute: null,
-  })
-
-  // Whenever the committed values change, drop the draft.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-init when committed values change.
   React.useEffect(() => {
-    setDraft({ hour: null, minute: null })
-  }, [committedHour, committedMinute])
+    const next = parseValue(value)
+    setHour(next.hour)
+    setMinute(next.minute)
+  }, [value])
 
-  const hour = draft.hour ?? committedHour
-  const minute = draft.minute ?? committedMinute
-
-  const emit = React.useCallback(
-    (h: string, m: string) => {
-      if (!onChange) return
-      if (h === "" || m === "") {
-        onChange("")
-        return
-      }
-      const hNum = Number.parseInt(h, 10)
-      const mNum = Number.parseInt(m, 10)
-      if (!isInRange(hNum, MIN_HOUR, MAX_HOUR) || !isInRange(mNum, MIN_MINUTE, MAX_MINUTE)) {
-        onChange("")
-        return
-      }
-      onChange(`${pad(hNum)}:${pad(mNum)}`)
-    },
-    [onChange],
-  )
+  const focusMinute = () => {
+    skipHourBlurRef.current = true
+    minuteRef.current?.focus()
+    minuteRef.current?.select()
+  }
 
   const handleHourChange = (raw: string) => {
-    setDraft((d) => ({ ...d, hour: raw }))
-    if (raw.length === 2) {
-      const hNum = Number.parseInt(raw, 10)
-      if (isInRange(hNum, MIN_HOUR, MAX_HOUR)) {
-        emit(raw, minute)
-      }
-      minuteRef.current?.focus()
-      minuteRef.current?.select()
-    }
+    setHour(raw)
+    if (raw.length !== 2) return
+    const hNum = Number.parseInt(raw, 10)
+    if (!isInRange(hNum, MIN_HOUR, MAX_HOUR)) return
+    emitIfComplete(raw, minute, onChange)
+    focusMinute()
   }
 
   const handleMinuteChange = (raw: string) => {
-    setDraft((d) => ({ ...d, minute: raw }))
-    if (raw.length === 2) emit(hour, raw)
+    setMinute(raw)
+    if (raw.length === 2) {
+      emitIfComplete(hour, raw, onChange)
+    }
   }
 
   const handleHourBlur = () => {
-    if (hour === "") {
-      emit("", minute)
-      setDraft((d) => ({ ...d, hour: null }))
+    if (skipHourBlurRef.current) {
+      skipHourBlurRef.current = false
       return
     }
-    const hNum = Number.parseInt(hour, 10)
-    if (!isInRange(hNum, MIN_HOUR, MAX_HOUR)) {
-      // Out-of-range -> clear the field rather than clamping.
-      setDraft((d) => ({ ...d, hour: "" }))
-      emit("", minute)
+    const nextHour = normalizeSegment(hour, MIN_HOUR, MAX_HOUR)
+    setHour(nextHour)
+    if (nextHour === "") {
+      onChange?.("")
       return
     }
-    const padded = pad(hNum)
-    setDraft((d) => ({ ...d, hour: null }))
-    emit(padded, minute)
+    emitIfComplete(nextHour, minute, onChange)
   }
 
   const handleMinuteBlur = () => {
-    if (minute === "") {
-      emit(hour, "")
-      setDraft((d) => ({ ...d, minute: null }))
+    const nextMinute = normalizeSegment(minute, MIN_MINUTE, MAX_MINUTE)
+    setMinute(nextMinute)
+    if (nextMinute === "") {
+      onChange?.("")
       return
     }
-    const mNum = Number.parseInt(minute, 10)
-    if (!isInRange(mNum, MIN_MINUTE, MAX_MINUTE)) {
-      setDraft((d) => ({ ...d, minute: "" }))
-      emit(hour, "")
-      return
-    }
-    const padded = pad(mNum)
-    setDraft((d) => ({ ...d, minute: null }))
-    emit(hour, padded)
+    emitIfComplete(hour, nextMinute, onChange)
   }
 
   const handleHourKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === ":") {
       e.preventDefault()
-      // Only honour the colon shortcut once the hour has two digits — otherwise
-      // a single-digit hour like "1" gets silently padded to "01" on focus loss
-      // and the user ends up with 01:HH when they meant 11:HH.
       if (hour.length === 2) {
-        minuteRef.current?.focus()
-        minuteRef.current?.select()
+        focusMinute()
       }
       return
     }
@@ -229,8 +209,12 @@ function TimePicker({
       const span = MAX_HOUR - MIN_HOUR + 1
       const wrapped = ((((current - MIN_HOUR + delta) % span) + span) % span) + MIN_HOUR
       const next = pad(wrapped)
-      setDraft((d) => ({ ...d, hour: null }))
-      emit(next, minute)
+      setHour(next)
+      if (minute === "") {
+        onChange?.("")
+      } else {
+        emitIfComplete(next, minute, onChange)
+      }
     }
   }
 
@@ -242,8 +226,12 @@ function TimePicker({
       const span = MAX_MINUTE - MIN_MINUTE + 1
       const wrapped = ((((current - MIN_MINUTE + delta) % span) + span) % span) + MIN_MINUTE
       const next = pad(wrapped)
-      setDraft((d) => ({ ...d, minute: null }))
-      emit(hour, next)
+      setMinute(next)
+      if (hour === "") {
+        onChange?.("")
+      } else {
+        emitIfComplete(hour, next, onChange)
+      }
       return
     }
     if (e.key === "Backspace" && minute === "") {

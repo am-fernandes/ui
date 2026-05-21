@@ -54,13 +54,31 @@ describe("TimePicker", () => {
     expect(screen.getByLabelText("Minutos")).toHaveValue("")
   })
 
-  it("emits a change when both fields are filled (typed)", async () => {
+  it("typing 2 valid digits in hour with empty minute does not emit", async () => {
     const spy = vi.fn()
     render(<Controlled onChangeSpy={spy} />)
     const hour = screen.getByLabelText("Horas")
     await userEvent.type(hour, "08")
-    // Typing two digits triggers an emit (regardless of final value).
-    expect(spy).toHaveBeenCalled()
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it("typing 15 in hour with empty minute keeps hour and does not leak digits to minute", async () => {
+    const spy = vi.fn()
+    render(<Controlled onChangeSpy={spy} />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
+    await userEvent.type(hour, "15")
+    expect(hour).toHaveValue("15")
+    expect(minute).toHaveValue("")
+    expect(spy).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(minute)
+  })
+
+  it("typing a single digit with empty fields keeps the digit visible", async () => {
+    render(<Controlled />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    await userEvent.type(hour, "7")
+    expect(hour).toHaveValue("7")
   })
 
   it("auto-advances focus from hour to minute once hour has 2 valid digits", () => {
