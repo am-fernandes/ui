@@ -548,18 +548,14 @@ describe("DataTable", () => {
       expect(screen.getByPlaceholderText("Buscar...")).toBeInTheDocument()
       // And the wrapper carries `data-loading` so consumers / styles can
       // react without us unmounting the input.
-      expect(
-        container.querySelector('[data-slot="data-table-search"][data-loading]'),
-      ).toBeTruthy()
+      expect(container.querySelector('[data-slot="data-table-search"][data-loading]')).toBeTruthy()
     })
 
     it("does not flag data-loading on the search wrapper when loading=false", () => {
       const { container } = render(
         <DataTable columns={columns} data={[]} searchableColumns={["name"]} />,
       )
-      expect(
-        container.querySelector('[data-slot="data-table-search"][data-loading]'),
-      ).toBeNull()
+      expect(container.querySelector('[data-slot="data-table-search"][data-loading]')).toBeNull()
     })
 
     it("disables pagination buttons while loading", () => {
