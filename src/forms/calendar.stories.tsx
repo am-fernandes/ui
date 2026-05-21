@@ -221,12 +221,7 @@ export const DisabledMixed: Story = {
     const mixedDisabled = ["past", holiday1, holiday2] as unknown as Date[]
     return (
       <div className="flex flex-col gap-3">
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={setDate}
-          disabledDays={mixedDisabled}
-        />
+        <Calendar mode="single" selected={date} onSelect={setDate} disabledDays={mixedDisabled} />
         <p className="text-xs text-muted-foreground">
           Bloqueado: dias passados + {holiday1.toLocaleDateString("pt-BR")} +{" "}
           {holiday2.toLocaleDateString("pt-BR")}.
