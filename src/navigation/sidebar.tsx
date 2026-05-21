@@ -146,7 +146,9 @@ function Sidebar({
           </button>
         </Tooltip>
         {!collapsed && brandText ? (
-          <span className="truncate text-2xl font-semibold leading-8">{brandText}</span>
+          <span className="truncate text-[32px] font-semibold leading-none">
+            {brandText}
+          </span>
         ) : null}
       </div>
 
