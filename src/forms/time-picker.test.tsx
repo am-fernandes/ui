@@ -81,13 +81,30 @@ describe("TimePicker", () => {
     expect(spy).toHaveBeenLastCalledWith("14:30")
   })
 
-  it("colon key in hour field jumps focus to minute", async () => {
+  it("colon key in hour field jumps focus to minute when hour has 2 digits", async () => {
     render(<Controlled initial="14:30" />)
     const hour = screen.getByLabelText("Horas")
     const minute = screen.getByLabelText("Minutos")
     hour.focus()
     await userEvent.keyboard(":")
     expect(document.activeElement).toBe(minute)
+  })
+
+  it("colon key is ignored when hour has fewer than 2 digits (prevents 1 -> 01 padding)", async () => {
+    const spy = vi.fn()
+    render(<Controlled onChangeSpy={spy} />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos")
+    // Type a single digit then press the colon shortcut with focus on hour.
+    setInputValue(hour, "1")
+    hour.focus()
+    await userEvent.keyboard(":")
+    // Focus stays on hour; no padding/jump.
+    expect(document.activeElement).toBe(hour)
+    expect(hour.value).toBe("1")
+    expect(minute).toHaveValue("")
+    // No emit fired with a padded "01" hour either.
+    expect(spy.mock.calls.some(([v]) => typeof v === "string" && v.startsWith("01"))).toBe(false)
   })
 
   it("hour ArrowUp wraps modular: 23 -> 0", async () => {

@@ -213,8 +213,13 @@ function TimePicker({
   const handleHourKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === ":") {
       e.preventDefault()
-      minuteRef.current?.focus()
-      minuteRef.current?.select()
+      // Only honour the colon shortcut once the hour has two digits — otherwise
+      // a single-digit hour like "1" gets silently padded to "01" on focus loss
+      // and the user ends up with 01:HH when they meant 11:HH.
+      if (hour.length === 2) {
+        minuteRef.current?.focus()
+        minuteRef.current?.select()
+      }
       return
     }
     if (e.key === "ArrowUp" || e.key === "ArrowDown") {
