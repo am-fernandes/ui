@@ -539,17 +539,27 @@ describe("DataTable", () => {
       expect(firstRow?.querySelectorAll("td")).toHaveLength(columns.length)
     })
 
-    it("replaces the search input with a skeleton when searchableColumns is provided", () => {
+    it("keeps the search input mounted while loading (prevents focus loss across debounce)", () => {
       const { container } = render(
         <DataTable columns={columns} data={[]} loading searchableColumns={["name"]} />,
       )
-      expect(screen.queryByPlaceholderText("Buscar...")).not.toBeInTheDocument()
-      expect(container.querySelector('[data-slot="data-table-search-skeleton"]')).toBeTruthy()
+      // Input stays in the DOM with the same identity — that's what keeps
+      // the user's keyboard focus across the loading flip.
+      expect(screen.getByPlaceholderText("Buscar...")).toBeInTheDocument()
+      // And the wrapper carries `data-loading` so consumers / styles can
+      // react without us unmounting the input.
+      expect(
+        container.querySelector('[data-slot="data-table-search"][data-loading]'),
+      ).toBeTruthy()
     })
 
-    it("does not render a search skeleton when searchableColumns is omitted", () => {
-      const { container } = render(<DataTable columns={columns} data={[]} loading />)
-      expect(container.querySelector('[data-slot="data-table-search-skeleton"]')).toBeNull()
+    it("does not flag data-loading on the search wrapper when loading=false", () => {
+      const { container } = render(
+        <DataTable columns={columns} data={[]} searchableColumns={["name"]} />,
+      )
+      expect(
+        container.querySelector('[data-slot="data-table-search"][data-loading]'),
+      ).toBeNull()
     })
 
     it("disables pagination buttons while loading", () => {

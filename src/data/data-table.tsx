@@ -603,32 +603,32 @@ function DataTable<TData>({
       {hasSearch || hasDownload || hasClearFilters ? (
         <div className="flex items-center justify-between gap-2">
           {hasSearch ? (
-            loading ? (
-              <div
-                data-slot="data-table-search-skeleton"
+            // Always-mounted input. Previously the loading state swapped the
+            // input for a skeleton div, which made React unmount + remount the
+            // <Input> and the user's keyboard focus jumped out every time the
+            // debounce fired. Now we keep the input stable and pulse the
+            // search icon as a subtle loading cue — the table body skeleton
+            // below already communicates "fetching".
+            <div
+              data-slot="data-table-search"
+              data-loading={loading || undefined}
+              className={cn("relative w-full max-w-sm", searchClassName)}
+            >
+              <Search
                 className={cn(
-                  "h-10 w-full max-w-sm animate-pulse rounded-md bg-primary/10",
-                  searchClassName,
+                  "pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground",
+                  loading && "animate-pulse",
                 )}
+                aria-hidden
               />
-            ) : (
-              <div
-                data-slot="data-table-search"
-                className={cn("relative w-full max-w-sm", searchClassName)}
-              >
-                <Search
-                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                  aria-hidden
-                />
-                <Input
-                  value={globalFilter}
-                  onChange={(e) => handleGlobalFilterChange(e.target.value)}
-                  placeholder={resolvedSearchPlaceholder}
-                  className="pl-9"
-                  aria-label={mergedLabels.searchAriaLabel}
-                />
-              </div>
-            )
+              <Input
+                value={globalFilter}
+                onChange={(e) => handleGlobalFilterChange(e.target.value)}
+                placeholder={resolvedSearchPlaceholder}
+                className="pl-9"
+                aria-label={mergedLabels.searchAriaLabel}
+              />
+            </div>
           ) : (
             <span aria-hidden />
           )}
