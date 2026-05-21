@@ -75,6 +75,10 @@ function DateRangePicker({
   const [pendingRange, setPendingRange] = React.useState<DateRange | undefined>(committedRange)
 
   // Sync pending range from the committed value each time the popover opens.
+  // We intentionally only re-sync on the closed→open transition; if the parent
+  // mutates `value` while the popover is open we don't want to clobber the
+  // user's in-progress selection.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
   React.useEffect(() => {
     if (open) setPendingRange(committedRange)
   }, [open])
@@ -116,11 +120,7 @@ function DateRangePicker({
         description: hasDescription,
         error: hasError,
       })}
-      className={cn(
-        "w-full justify-start text-left",
-        !fromDate && "text-muted-foreground",
-        className,
-      )}
+      className={cn("w-full justify-start text-left", !fromDate && "text-placeholder", className)}
     >
       <CalendarIcon className="size-4" aria-hidden="true" />
       {display}
@@ -159,6 +159,11 @@ function DateRangePicker({
           selected={pendingRange}
           onSelect={handleSelect}
           numberOfMonths={numberOfMonths}
+          // Hide previous/next-month days inside each calendar pane.
+          // Otherwise the range_end day (e.g. June 1) renders twice when the
+          // range spans two months: once as range_end in its own pane, and
+          // once as the outside-day of the previous month's pane.
+          showOutsideDays={false}
         />
         <div className="flex justify-end gap-2 border-t p-3">
           <Button variant="ghost" onClick={handleClear}>

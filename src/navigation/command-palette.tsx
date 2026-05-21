@@ -94,7 +94,7 @@ function CommandPalette({
           <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
           <CommandPrimitive.Input
             placeholder={resolvedPlaceholder}
-            className="flex w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-input"
+            className="flex w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-placeholder"
           />
         </div>
         <CommandPrimitive.List
