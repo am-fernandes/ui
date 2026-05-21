@@ -41,7 +41,7 @@ function Switch({
       aria-invalid={hasError ? true : undefined}
       aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
       className={cn(
-        "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent",
+        "peer mt-0.5 inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "disabled:cursor-not-allowed disabled:opacity-50",
         "data-[state=checked]:bg-primary data-[state=unchecked]:bg-input",
@@ -76,7 +76,7 @@ function Switch({
 
   return (
     <div data-slot="switch-field" className="flex flex-col gap-1.5">
-      <div className="flex min-h-10 items-center gap-2">
+      <div className="flex min-h-10 items-start gap-2">
         {switchEl}
         {labelEl}
       </div>
