@@ -50,6 +50,12 @@ export interface SidebarProps {
    * content: a logo `<img>` or a small monogram `<div>`.
    */
   brand: React.ReactNode
+  /**
+   * Optional wordmark shown next to the brand logo when the sidebar is
+   * expanded. Hidden in the collapsed (icon-rail) state. Use for the
+   * product name (e.g. "Dash"); leave empty for logo-only.
+   */
+  brandText?: React.ReactNode
   /** Accessible label fragment for the brand toggle button. Defaults to "menu". */
   brandLabel?: string
   user: SidebarUser
@@ -78,6 +84,7 @@ const STORAGE_KEY = "amf-ui:sidebar:collapsed"
 
 function Sidebar({
   brand,
+  brandText,
   brandLabel = "menu",
   user,
   items,
@@ -138,6 +145,9 @@ function Sidebar({
             {brand}
           </button>
         </Tooltip>
+        {!collapsed && brandText ? (
+          <span className="truncate text-base font-semibold">{brandText}</span>
+        ) : null}
       </div>
 
       {/* Nav */}
