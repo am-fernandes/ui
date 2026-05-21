@@ -15,6 +15,7 @@ import { Sidebar, type SidebarItem } from "./sidebar"
 const meta: Meta<typeof Sidebar> = {
   title: "Navigation/Sidebar",
   component: Sidebar,
+  tags: ["autodocs"],
   parameters: {
     layout: "fullscreen",
     docs: {
