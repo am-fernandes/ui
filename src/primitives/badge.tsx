@@ -12,6 +12,12 @@ const badgeVariants = cva(
         default: "border-transparent bg-primary text-primary-foreground",
         secondary: "border-transparent bg-secondary text-secondary-foreground",
         destructive: "border-transparent bg-destructive text-destructive-foreground",
+        // Semantic chips. Solid fill + token foreground so they read like
+        // `default` and `destructive` already do — the soft Alert-style
+        // palette stays Alert's territory.
+        info: "border-transparent bg-info text-info-foreground",
+        success: "border-transparent bg-success text-success-foreground",
+        warning: "border-transparent bg-warning text-warning-foreground",
         outline: "text-foreground",
       },
     },

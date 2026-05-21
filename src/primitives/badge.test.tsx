@@ -21,6 +21,24 @@ describe("Badge", () => {
     expect(screen.getByText("Destructive")).toHaveClass("bg-destructive")
   })
 
+  it("renders info variant", () => {
+    render(<Badge variant="info">Info</Badge>)
+    expect(screen.getByText("Info")).toHaveClass("bg-info")
+    expect(screen.getByText("Info")).toHaveClass("text-info-foreground")
+  })
+
+  it("renders success variant", () => {
+    render(<Badge variant="success">Success</Badge>)
+    expect(screen.getByText("Success")).toHaveClass("bg-success")
+    expect(screen.getByText("Success")).toHaveClass("text-success-foreground")
+  })
+
+  it("renders warning variant", () => {
+    render(<Badge variant="warning">Warning</Badge>)
+    expect(screen.getByText("Warning")).toHaveClass("bg-warning")
+    expect(screen.getByText("Warning")).toHaveClass("text-warning-foreground")
+  })
+
   it("renders outline variant", () => {
     render(<Badge variant="outline">Outline</Badge>)
     expect(screen.getByText("Outline")).toHaveClass("border")

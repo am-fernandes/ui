@@ -17,7 +17,7 @@ const meta: Meta<typeof Badge> = {
           "Etiqueta compacta para status, tags ou contadores.",
           "",
           "**API:**",
-          "- `variant` — controla a cor: `default` (primary), `secondary`, `destructive`, `outline`.",
+          "- `variant` — controla a cor: `default` (primary), `secondary`, `destructive`, `info`, `success`, `warning`, `outline`.",
           "- `children` — texto, número ou JSX (incluindo ícones).",
           "- `className` — para ajustes pontuais (raio, padding, cores).",
           "- Aceita todos os atributos HTML de `<div>` (`onClick`, `role`, etc.).",
@@ -39,10 +39,13 @@ const meta: Meta<typeof Badge> = {
   argTypes: {
     variant: {
       control: "inline-radio",
-      options: ["default", "secondary", "destructive", "outline"],
+      options: ["default", "secondary", "destructive", "info", "success", "warning", "outline"],
       description: "Cor/estilo do badge.",
       table: {
-        type: { summary: "'default' | 'secondary' | 'destructive' | 'outline'" },
+        type: {
+          summary:
+            "'default' | 'secondary' | 'destructive' | 'info' | 'success' | 'warning' | 'outline'",
+        },
         defaultValue: { summary: "'default'" },
       },
     },
@@ -85,19 +88,36 @@ export const Outline: Story = {
   args: { variant: "outline", children: "Beta" },
 }
 
+export const Info: Story = {
+  args: { variant: "info", children: "Em andamento" },
+}
+
+export const Success: Story = {
+  args: { variant: "success", children: "Vendido" },
+}
+
+export const Warning: Story = {
+  args: { variant: "warning", children: "Atenção" },
+}
+
 export const AllVariants: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-2">
       <Badge variant="default">default</Badge>
       <Badge variant="secondary">secondary</Badge>
       <Badge variant="destructive">destructive</Badge>
+      <Badge variant="info">info</Badge>
+      <Badge variant="success">success</Badge>
+      <Badge variant="warning">warning</Badge>
       <Badge variant="outline">outline</Badge>
     </div>
   ),
   parameters: {
     a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
-      description: { story: "Galeria com as 4 variantes lado a lado para comparação visual." },
+      description: {
+        story: "Galeria com todas as 7 variantes lado a lado para comparação visual.",
+      },
     },
   },
 }
