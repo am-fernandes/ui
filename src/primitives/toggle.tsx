@@ -29,35 +29,41 @@ const toggleVariants = cva(
   {
     variants: {
       variant: {
-        // Pressed = filled accent (solid). Off = plain outline.
+        // Off = plain outline (`border-input bg-background`, same as
+        // Button's `outline` variant so a Toggle in its idle state lines
+        // up next to outline buttons without looking thinner).
+        // On = solid fill in the variant colour, mirroring Button's
+        // `default` / `destructive` solid look — at-a-glance the on-state
+        // reads as "this is engaged".
         default: [
           "border-input bg-background hover:bg-accent hover:text-accent-foreground",
           "data-[state=on]:bg-accent data-[state=on]:text-accent-foreground data-[state=on]:border-accent",
         ].join(" "),
-        // Semantic variants. Pressed = border + text in the variant
-        // colour with a soft hover fill (10% alpha). Off = same outline
-        // base as `default` so the colour change is the on-signal.
         info: [
           "border-input bg-background hover:bg-accent hover:text-accent-foreground",
-          "data-[state=on]:border-info data-[state=on]:text-info data-[state=on]:hover:bg-info/10 data-[state=on]:bg-background",
+          "data-[state=on]:bg-info data-[state=on]:text-info-foreground data-[state=on]:border-info data-[state=on]:hover:bg-info/90",
         ].join(" "),
         success: [
           "border-input bg-background hover:bg-accent hover:text-accent-foreground",
-          "data-[state=on]:border-success data-[state=on]:text-success data-[state=on]:hover:bg-success/10 data-[state=on]:bg-background",
+          "data-[state=on]:bg-success data-[state=on]:text-success-foreground data-[state=on]:border-success data-[state=on]:hover:bg-success/90",
         ].join(" "),
         warning: [
           "border-input bg-background hover:bg-accent hover:text-accent-foreground",
-          "data-[state=on]:border-warning data-[state=on]:text-warning data-[state=on]:hover:bg-warning/10 data-[state=on]:bg-background",
+          "data-[state=on]:bg-warning data-[state=on]:text-warning-foreground data-[state=on]:border-warning data-[state=on]:hover:bg-warning/90",
         ].join(" "),
         destructive: [
           "border-input bg-background hover:bg-accent hover:text-accent-foreground",
-          "data-[state=on]:border-destructive data-[state=on]:text-destructive data-[state=on]:hover:bg-destructive/10 data-[state=on]:bg-background",
+          "data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground data-[state=on]:border-destructive data-[state=on]:hover:bg-destructive/90",
         ].join(" "),
       },
+      // No explicit height: padding + border resolve the box exactly the
+      // way Button does, so Toggle and Button at the same `size` line up
+      // pixel-for-pixel (the previous `h-10` clamped Toggle to 40px while
+      // outline-style Buttons came out at 42px because of their border).
       size: {
-        sm: "h-9 px-2.5",
-        default: "h-10 px-3 py-2.5",
-        lg: "h-11 px-4",
+        sm: "px-2.5 py-1.5",
+        default: "px-3 py-2.5",
+        lg: "px-4 py-3",
       },
     },
     defaultVariants: {

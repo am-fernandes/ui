@@ -73,6 +73,7 @@ describe("Toggle", () => {
   it("applies size=sm classes", () => {
     render(<Toggle size="sm">Small</Toggle>)
     const btn = screen.getByRole("button")
-    expect(btn.className).toContain("h-9")
+    expect(btn.className).toContain("px-2.5")
+    expect(btn.className).toContain("py-1.5")
   })
 })
