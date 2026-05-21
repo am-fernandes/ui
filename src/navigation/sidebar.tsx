@@ -212,7 +212,7 @@ function SidebarItemRender({
 
   const inner = (
     <>
-      {Icon ? <Icon className="h-5 w-5 shrink-0" strokeWidth={2} /> : null}
+      {Icon ? <Icon className="h-4 w-4 shrink-0" strokeWidth={2} /> : null}
       {!collapsed ? <span className="flex-1 truncate">{item.label}</span> : null}
       {!collapsed && item.badge ? <span data-slot="sidebar-item-badge">{item.badge}</span> : null}
       {!collapsed && hasChildren ? (
