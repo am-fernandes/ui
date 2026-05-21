@@ -58,7 +58,7 @@ function Tabs({
         data-slot="tabs-list"
         className={cn(
           "inline-flex items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
-          isVertical ? "flex-col items-stretch h-auto" : "h-9",
+          isVertical ? "flex-col items-stretch" : undefined,
         )}
       >
         {items.map((item) => (
