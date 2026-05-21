@@ -4,6 +4,7 @@ import { ChevronDown, LogOut, UserCog } from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { AlertDialog } from "../overlays/alert-dialog"
 import { Tooltip } from "../overlays/tooltip"
 import { Avatar } from "../primitives/avatar"
 import { Button } from "../primitives/button"
@@ -55,8 +56,15 @@ export interface SidebarProps {
   items: SidebarItem[]
   /** Called when the user clicks the avatar or the "Editar perfil" icon. */
   onProfileClick: () => void
-  /** Called when the user clicks the logout icon. */
+  /**
+   * Called when the user confirms the sign-out action. By default the
+   * sidebar shows an `AlertDialog` asking "Tem certeza que deseja sair?"
+   * and only calls this when the user accepts; pass
+   * `disableSignOutConfirm` to skip the dialog and fire on first click.
+   */
   onSignOut: () => void
+  /** Skip the confirmation dialog before calling `onSignOut`. */
+  disableSignOutConfirm?: boolean
   /** Mark the matching item as active (background + foreground accent token). */
   isActive?: (item: SidebarItem) => boolean
   /**
@@ -75,9 +83,18 @@ function Sidebar({
   items,
   onProfileClick,
   onSignOut,
+  disableSignOutConfirm,
   isActive,
   defaultCollapsed = true,
 }: SidebarProps) {
+  const [signOutOpen, setSignOutOpen] = React.useState(false)
+  const handleSignOutClick = () => {
+    if (disableSignOutConfirm) {
+      onSignOut()
+    } else {
+      setSignOutOpen(true)
+    }
+  }
   const [collapsed, setCollapsed] = React.useState<boolean>(() => {
     if (typeof window === "undefined") return defaultCollapsed
     const stored = window.localStorage.getItem(STORAGE_KEY)
@@ -170,7 +187,7 @@ function Sidebar({
               <Button
                 variant="ghost"
                 className="size-8 shrink-0 p-0"
-                onClick={onSignOut}
+                onClick={handleSignOutClick}
                 aria-label="Sair"
               >
                 <LogOut className="h-4 w-4" />
@@ -179,6 +196,18 @@ function Sidebar({
           </div>
         </div>
       </div>
+
+      {disableSignOutConfirm ? null : (
+        <AlertDialog
+          open={signOutOpen}
+          onOpenChange={setSignOutOpen}
+          title="Sair da conta"
+          description="Tem certeza que deseja sair? Você precisará fazer login novamente para acessar o sistema."
+          confirmLabel="Sair"
+          cancelLabel="Cancelar"
+          onConfirm={onSignOut}
+        />
+      )}
     </aside>
   )
 }

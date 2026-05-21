@@ -103,11 +103,41 @@ describe("Sidebar", () => {
     expect(onProfileClick).toHaveBeenCalledTimes(1)
   })
 
-  it("fires onSignOut from the logout icon", async () => {
+  it("opens the confirmation dialog when clicking Sair", async () => {
     const onSignOut = vi.fn()
     render(<Sidebar {...baseProps} items={items} defaultCollapsed={false} onSignOut={onSignOut} />)
     await userEvent.click(screen.getByRole("button", { name: /sair/i }))
+    expect(onSignOut).not.toHaveBeenCalled()
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument()
+    expect(screen.getByText(/tem certeza que deseja sair/i)).toBeInTheDocument()
+  })
+
+  it("fires onSignOut when the confirmation is accepted", async () => {
+    const onSignOut = vi.fn()
+    render(<Sidebar {...baseProps} items={items} defaultCollapsed={false} onSignOut={onSignOut} />)
+    await userEvent.click(screen.getByRole("button", { name: /sair/i }))
+    const dialog = screen.getByRole("alertdialog")
+    const confirmBtn = Array.from(dialog.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "Sair",
+    )
+    if (confirmBtn) await userEvent.click(confirmBtn)
     expect(onSignOut).toHaveBeenCalledTimes(1)
+  })
+
+  it("skips the dialog when disableSignOutConfirm is set", async () => {
+    const onSignOut = vi.fn()
+    render(
+      <Sidebar
+        {...baseProps}
+        items={items}
+        defaultCollapsed={false}
+        disableSignOutConfirm
+        onSignOut={onSignOut}
+      />,
+    )
+    await userEvent.click(screen.getByRole("button", { name: /sair/i }))
+    expect(onSignOut).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
   })
 
   it("renders item.badge when expanded", () => {
