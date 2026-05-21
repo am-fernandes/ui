@@ -152,7 +152,7 @@ export const WithIcon: Story = {
 export const AsCounter: Story = {
   render: () => (
     <div className="flex items-center gap-4">
-      {[3, 42, 999, 1234].map((n) => (
+      {[3, 42, 999, 9999, 12345].map((n) => (
         <div key={n} className="relative inline-flex">
           <BellIcon className="size-6 text-muted-foreground" />
           <Badge
@@ -172,15 +172,15 @@ export const AsCounter: Story = {
         story: [
           "Pattern de contador sobreposto a um ícone — útil para notificações, mensagens, carrinho.",
           "",
-          "Use o helper `formatCount(count, max?)` (exportado da lib) para limitar o número exibido — default cap em **999+**. Acima do max vira `${max}+`; valores negativos/non-finite são clamped para `0`.",
+          "Use o helper `formatCount(count, max?)` (exportado da lib) para limitar o número exibido — default cap em **9999+**. Acima do max vira `${max}+`; valores negativos/non-finite são clamped para `0`.",
           "",
           "```tsx",
           'import { Badge, formatCount } from "@amfernandesinc/ui"',
           "",
           '<Badge variant="destructive">{formatCount(unreadCount)}</Badge>',
-          '// 3      → "3"',
-          '// 999    → "999"',
-          '// 1234   → "999+"',
+          '// 3       → "3"',
+          '// 9999    → "9999"',
+          '// 12345   → "9999+"',
           '// custom: formatCount(1234, 99) → "99+"',
           "```",
         ].join("\n"),

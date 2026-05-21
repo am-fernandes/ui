@@ -8,11 +8,12 @@ describe("formatCount", () => {
     expect(formatCount(1)).toBe("1")
     expect(formatCount(42)).toBe("42")
     expect(formatCount(999)).toBe("999")
+    expect(formatCount(9999)).toBe("9999")
   })
 
-  it("caps at the default max of 999 with `+` suffix", () => {
-    expect(formatCount(1000)).toBe("999+")
-    expect(formatCount(12345)).toBe("999+")
+  it("caps at the default max of 9999 with `+` suffix", () => {
+    expect(formatCount(10000)).toBe("9999+")
+    expect(formatCount(123456)).toBe("9999+")
   })
 
   it("respects a custom max", () => {
@@ -34,7 +35,7 @@ describe("formatCount", () => {
 
   it("floors fractional counts", () => {
     expect(formatCount(3.7)).toBe("3")
-    expect(formatCount(999.999)).toBe("999")
-    expect(formatCount(1000.5)).toBe("999+")
+    expect(formatCount(9999.999)).toBe("9999")
+    expect(formatCount(10000.5)).toBe("9999+")
   })
 })
