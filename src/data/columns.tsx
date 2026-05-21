@@ -2,6 +2,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table"
 import { format } from "date-fns"
 import type * as React from "react"
 
+import { cn } from "@/lib/utils"
 import { Tooltip, type TooltipProps } from "../overlays/tooltip"
 
 export type DateColumnShowTime = boolean | "auto"
@@ -197,6 +198,14 @@ export function formattedColumn<TData, TValue = unknown>(
       if (raw == null || raw === "") return emptyText
       const node = formatter ? formatter(raw, row.original) : (raw as React.ReactNode)
 
+      // Cells produced by a `format` callback are nearly always numeric or
+      // numeric-like (phone, date, currency, percentage). Wrap them with
+      // `tabular-nums` so digits align vertically across rows — the typeface
+      // stays the same (no Geist Mono swap), only the `tnum` OpenType feature
+      // is enabled.
+      const baseClass = formatter ? "tabular-nums" : undefined
+      const mergedClass = cn(baseClass, className)
+
       if (truncate && typeof node === "string") {
         // Iterate by code points (Array.from) so we don't cut a UTF-16
         // surrogate pair in half and emit U+FFFD when the source contains
@@ -206,13 +215,13 @@ export function formattedColumn<TData, TValue = unknown>(
           const short = `${chars.slice(0, truncate.max).join("").trimEnd()}…`
           return (
             <Tooltip content={node} side={truncate.side ?? "bottom"} align={truncate.align}>
-              <span className={className}>{short}</span>
+              <span className={mergedClass}>{short}</span>
             </Tooltip>
           )
         }
       }
 
-      return className ? <span className={className}>{node}</span> : node
+      return mergedClass ? <span className={mergedClass}>{node}</span> : node
     },
   } as ColumnDef<TData>
 }
