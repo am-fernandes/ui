@@ -58,6 +58,14 @@ export interface SidebarProps {
   brandText?: React.ReactNode
   /** Accessible label fragment for the brand toggle button. Defaults to "menu". */
   brandLabel?: string
+  /**
+   * Override the brand button's click behaviour. By default the brand
+   * button toggles collapse ↔ expand. When provided, it calls this
+   * callback instead — useful for contextual views (e.g. a detail page
+   * where the sidebar swaps to entity-specific items and the brand
+   * doubles as a "back to parent" button).
+   */
+  onBrandClick?: () => void
   user: SidebarUser
   items: SidebarItem[]
   /** Called when the user clicks the avatar or the "Editar perfil" icon. */
@@ -86,6 +94,7 @@ function Sidebar({
   brand,
   brandText,
   brandLabel = "menu",
+  onBrandClick,
   user,
   items,
   onProfileClick,
@@ -133,14 +142,26 @@ function Sidebar({
           the width animation — only the aside grows around it. */}
       <div className="border-b px-3 py-4 flex items-center gap-2 justify-start">
         <Tooltip
-          content={collapsed ? `Expandir ${brandLabel}` : `Recolher ${brandLabel}`}
+          content={
+            onBrandClick
+              ? "Voltar"
+              : collapsed
+                ? `Expandir ${brandLabel}`
+                : `Recolher ${brandLabel}`
+          }
           side="right"
         >
           <button
             type="button"
             className="h-8 w-8 shrink-0 rounded overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            onClick={() => setCollapsed((v) => !v)}
-            aria-label={collapsed ? `Expandir ${brandLabel}` : `Recolher ${brandLabel}`}
+            onClick={onBrandClick ?? (() => setCollapsed((v) => !v))}
+            aria-label={
+              onBrandClick
+                ? "Voltar"
+                : collapsed
+                  ? `Expandir ${brandLabel}`
+                  : `Recolher ${brandLabel}`
+            }
           >
             {brand}
           </button>
