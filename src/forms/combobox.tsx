@@ -53,6 +53,20 @@ interface ComboboxMultipleProps extends ComboboxBaseProps {
   value?: string[]
   onValueChange?: (value: string[]) => void
   maxBadges?: number
+  /**
+   * Hide the chip row that sits above the trigger. With many selections
+   * the chips wrap and push surrounding rows around — set `false` for
+   * a compact filter row where only the count in the trigger matters.
+   * Defaults to `true` to preserve existing behaviour.
+   */
+  showBadges?: boolean
+  /**
+   * Override the trigger label when the user has selected at least one
+   * option. Receives the current count; return the full string. Default
+   * is "N selecionado" / "N selecionados". Useful for noun agreement
+   * (e.g. `n => n === 1 ? "1 jornada selecionada" : ${n} jornadas selecionadas`).
+   */
+  selectedCountLabel?: (count: number) => string
 }
 
 export type ComboboxProps = ComboboxSingleProps | ComboboxMultipleProps
@@ -147,7 +161,10 @@ export function Combobox(props: ComboboxProps) {
         return <span className="text-placeholder">{resolvedPlaceholder}</span>
       }
       const count = values.length
-      const countText = `${count} ${count === 1 ? "selecionado" : "selecionados"}`
+      const formatter = (props as ComboboxMultipleProps).selectedCountLabel
+      const countText = formatter
+        ? formatter(count)
+        : `${count} ${count === 1 ? "selecionado" : "selecionados"}`
       return <span className="text-foreground">{countText}</span>
     }
     const selectedOption = options.find((o) => o.value === props.value)
@@ -167,6 +184,7 @@ export function Combobox(props: ComboboxProps) {
 
   const multiBadges = (() => {
     if (!isMultiple) return null
+    if ((props as ComboboxMultipleProps).showBadges === false) return null
     const values = toArray(props.value)
     if (values.length === 0) return null
     const maxBadges = (props as ComboboxMultipleProps).maxBadges ?? 2
