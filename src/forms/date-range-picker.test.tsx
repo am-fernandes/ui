@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
@@ -164,7 +164,69 @@ describe("DateRangePicker", () => {
     expect(trigger).toHaveAttribute("aria-invalid", "true")
   })
 
-  it("selects a single day and emits a partial range with only 'from'", async () => {
+  it("keeps the popover open on pointer-down inside an outside element with role=grid", async () => {
+    // Exercises the onPointerDownOutside handler: when the event target lives
+    // inside an element matching '[role="grid"], .rdp, .rdp-root', the handler
+    // calls preventDefault() so Radix does not auto-dismiss the popover.
+    render(
+      <div>
+        {/* biome-ignore lint/a11y/useSemanticElements: mock grid container for testing */}
+        <div role="grid" data-testid="outside-grid">
+          <button type="button" data-testid="outside-grid-cell">
+            cell
+          </button>
+        </div>
+        <Controlled />
+      </div>,
+    )
+    const trigger = screen.getByText("Selecione um período").closest("button")
+    if (!trigger) throw new Error("trigger not found")
+    await userEvent.click(trigger)
+    // Wait for the popover content to be in the DOM.
+    const openedGrids = await screen.findAllByRole("grid")
+    expect(openedGrids.length).toBeGreaterThan(0)
+
+    // Dispatch a pointerdown on an element OUTSIDE the popover whose ancestor
+    // matches the grid selector. Radix will fire onPointerDownOutside, our
+    // handler will detect the grid ancestor and call preventDefault, leaving
+    // the popover open.
+    const outsideCell = screen.getByTestId("outside-grid-cell")
+    fireEvent.pointerDown(outsideCell, { button: 0, ctrlKey: false })
+
+    // The popover content (Calendar grid) must still be in the document.
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.queryAllByRole("grid").length).toBeGreaterThan(1)
+  })
+
+  it("keeps the popover open when focus moves outside (onFocusOutside preventDefault)", async () => {
+    // Exercises onFocusOutside: the handler unconditionally calls
+    // preventDefault, so when focus escapes the popover Radix should NOT
+    // auto-dismiss it.
+    render(
+      <div>
+        <input data-testid="outside-input" />
+        <Controlled />
+      </div>,
+    )
+    const trigger = screen.getByText("Selecione um período").closest("button")
+    if (!trigger) throw new Error("trigger not found")
+    await userEvent.click(trigger)
+    await screen.findAllByRole("grid")
+
+    // Move focus to an element OUTSIDE the popover. Radix's DismissableLayer
+    // listens for focusin on the document and dispatches a focusOutside event;
+    // the picker's handler preventDefaults it.
+    const outsideInput = screen.getByTestId("outside-input") as HTMLInputElement
+    outsideInput.focus()
+    // Some Radix builds rely on a focusin event bubbling to document; ensure it fires.
+    fireEvent.focusIn(outsideInput)
+
+    await new Promise((r) => setTimeout(r, 20))
+    // Popover content (calendar grid) must still be present.
+    expect(screen.queryAllByRole("grid").length).toBeGreaterThan(0)
+  })
+
+  it("selects a single day and emits the range only after confirm", async () => {
     const onChange = vi.fn()
     function Wrapper() {
       const [value, setValue] = React.useState<DateRangeValue>({ from: "", to: "" })
@@ -184,7 +246,7 @@ describe("DateRangePicker", () => {
     const trigger = screen.getByText("Selecione um período").closest("button")
     if (!trigger) throw new Error("trigger not found")
     await userEvent.click(trigger)
-    // Wait for the grid then click a specific day (e.g., day "15" of the visible month).
+    // Wait for the grid then click a specific day.
     await screen.findByRole("grid")
     const dayButtons = screen
       .getAllByRole("gridcell")
@@ -194,9 +256,14 @@ describe("DateRangePicker", () => {
     const target = dayButtons.find((b) => !b.disabled)
     if (target) {
       await userEvent.click(target)
-      expect(onChange).toHaveBeenCalled()
+      // onChange should NOT be called yet — the range is only committed on confirm
+      expect(onChange).not.toHaveBeenCalled()
+      // Click "Confirmar" to commit
+      const confirmBtn = screen.getByText("Confirmar")
+      await userEvent.click(confirmBtn)
+      expect(onChange).toHaveBeenCalledOnce()
       const lastValue = onChange.mock.calls.at(-1)?.[0] as DateRangeValue
-      // A single day click should set 'from' (or both to the same day) — at minimum, from must be set.
+      // After confirm the from (and to, same day) must be set
       expect(lastValue.from).toBeTruthy()
     }
   })

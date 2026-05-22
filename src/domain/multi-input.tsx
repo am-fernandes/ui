@@ -189,7 +189,7 @@ function MultiInput(props: MultiInputProps) {
         data-type={props.type === "number" ? "number" : "string"}
         onClick={focusInput}
         className={cn(
-          "flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-3 text-sm transition-colors",
+          "flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-2.5 text-sm transition-colors",
           "focus-within:border-primary focus-within:ring-1 focus-within:ring-ring cursor-text",
           disabled && "cursor-not-allowed",
           hasError && "border-destructive",

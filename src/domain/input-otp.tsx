@@ -1,7 +1,7 @@
 "use client"
 
-import { OTPInput, OTPInputContext, REGEXP_ONLY_DIGITS } from "input-otp"
-import * as React from "react"
+import { OTPInput, REGEXP_ONLY_DIGITS, type SlotProps } from "input-otp"
+import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
@@ -24,13 +24,7 @@ export interface InputOTPProps {
   ref?: React.Ref<HTMLInputElement>
 }
 
-function Slot({ index }: { index: number }) {
-  const ctx = React.useContext(OTPInputContext)
-  const slot = ctx?.slots?.[index] ?? {
-    char: undefined,
-    hasFakeCaret: false,
-    isActive: false,
-  }
+function Slot({ slot }: { slot: SlotProps }) {
   return (
     <div
       data-slot="input-otp-slot"
@@ -41,7 +35,7 @@ function Slot({ index }: { index: number }) {
         "data-[active=true]:z-10 data-[active=true]:ring-2 data-[active=true]:ring-ring",
       )}
     >
-      {slot.char}
+      {slot.char ?? slot.placeholderChar}
       {slot.hasFakeCaret ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="h-4 w-px animate-caret-blink bg-foreground duration-1000" />
@@ -68,7 +62,6 @@ function InputOTP({
   ref,
 }: InputOTPProps) {
   const ids = useFieldIds(id)
-  const slots = Array.from({ length }, (_, i) => i)
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
 
@@ -98,10 +91,11 @@ function InputOTP({
         aria-invalid={hasError ? true : undefined}
         aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
         containerClassName={cn("flex items-center has-disabled:opacity-50", className)}
-        render={() => (
+        render={({ slots }) => (
           <div className="flex items-center">
-            {slots.map((i) => (
-              <Slot key={i} index={i} />
+            {slots.map((slot, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: slots are positional and fixed-length
+              <Slot key={i} slot={slot} />
             ))}
           </div>
         )}

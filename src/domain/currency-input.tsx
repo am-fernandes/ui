@@ -79,7 +79,7 @@ function CurrencyInput({
           required={required}
           aria-required={required ? true : undefined}
           className={cn(
-            "flex w-full rounded-md border border-input bg-transparent pl-9 pr-3 py-3 text-sm tabular-nums transition-colors focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed",
+            "flex w-full rounded-md border border-input bg-transparent pl-9 pr-3 py-2.5 text-sm tabular-nums transition-colors focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed",
             hasError && "border-destructive focus-visible:ring-1 focus-visible:ring-destructive",
             className,
           )}

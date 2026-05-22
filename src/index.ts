@@ -15,7 +15,14 @@ export {
   type DataTableLabels,
   type DataTableProps,
 } from "./data/data-table"
-export { dateColumn, type DateColumnOptions, type DateColumnShowTime } from "./data/columns"
+export {
+  dateColumn,
+  formattedColumn,
+  type DateColumnOptions,
+  type DateColumnShowTime,
+  type FormattedColumnOptions,
+  type TruncateOption,
+} from "./data/columns"
 export { Image, type ImageProps } from "./data/image"
 export {
   ScrollArea,
@@ -85,9 +92,9 @@ export {
 } from "./navigation/command-palette"
 export {
   Sidebar,
-  type SidebarGroup,
   type SidebarItem,
   type SidebarProps,
+  type SidebarUser,
 } from "./navigation/sidebar"
 export { Tabs, type TabsItemData, type TabsProps } from "./navigation/tabs"
 
@@ -156,6 +163,7 @@ export { Separator, type SeparatorProps } from "./primitives/separator"
 export { Skeleton, type SkeletonProps } from "./primitives/skeleton"
 export { Switch, type SwitchProps } from "./primitives/switch"
 export { Textarea, type TextareaProps } from "./primitives/textarea"
+export { Toggle, type ToggleProps, toggleVariants } from "./primitives/toggle"
 export {
   Typography,
   typographyVariants,

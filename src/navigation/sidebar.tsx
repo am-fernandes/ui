@@ -1,260 +1,296 @@
 "use client"
 
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, LogOut, UserCog } from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { useIsMobile } from "../hooks/use-is-mobile"
-import { Sheet } from "../overlays/sheet"
+import { AlertDialog } from "../overlays/alert-dialog"
+import { Tooltip } from "../overlays/tooltip"
+import { Avatar } from "../primitives/avatar"
+import { Button } from "../primitives/button"
 
+/**
+ * Single shape for a sidebar entry.
+ *
+ * - `items` (children) turns the entry into an expandable group: clicking
+ *   toggles a submenu of links indented below it. Only one nesting level is
+ *   supported by design.
+ * - `href` makes it a navigation anchor; `onClick` makes it a button-style
+ *   item. Mutually exclusive in practice.
+ * - `badge` renders as a chip on the right when expanded; hidden in the
+ *   collapsed (icon-only) state.
+ */
 export interface SidebarItem {
-  id?: string
-  label: React.ReactNode
-  icon?: React.ComponentType<{ className?: string }>
+  /** Stable identity (React key + `isActive` lookups). */
+  id: string
+  label: string
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>
   href?: string
   onClick?: () => void
   badge?: React.ReactNode
   disabled?: boolean
+  /** Nested children — turns the item into an expandable group. */
   items?: SidebarItem[]
-  tooltip?: React.ReactNode
-  /**
-   * When the item has children (`items`), controls the initial submenu state.
-   * `true` opens the submenu at mount; `false` (default) keeps it collapsed.
-   * Ignored when the item has no children.
-   */
+  /** Expand the submenu on mount when this item has children. */
   defaultOpen?: boolean
 }
 
-export interface SidebarGroup {
-  label?: React.ReactNode
-  items: SidebarItem[]
+export interface SidebarUser {
+  name: string
+  /** Optional avatar image. Falls back to `initials`. */
+  avatarUrl?: string
+  /** Initials shown when there's no avatar image. Defaults to first letter of `name`. */
+  initials?: string
 }
 
 export interface SidebarProps {
-  items?: SidebarItem[]
-  groups?: SidebarGroup[]
-  header?: React.ReactNode
-  footer?: React.ReactNode
-  collapsible?: "offcanvas" | "icon" | "none"
-  defaultOpen?: boolean
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-  persistOpenState?: boolean
-  keyboardShortcut?: string | null
+  /**
+   * Rendered inside the brand button at the top of the sidebar. Clicking the
+   * button toggles collapsed (icon-only) and expanded states. Typical
+   * content: a logo `<img>` or a small monogram `<div>`.
+   */
+  brand: React.ReactNode
+  /**
+   * Optional wordmark shown next to the brand logo when the sidebar is
+   * expanded. Hidden in the collapsed (icon-rail) state. Use for the
+   * product name (e.g. "Dash"); leave empty for logo-only.
+   */
+  brandText?: React.ReactNode
+  /** Accessible label fragment for the brand toggle button. Defaults to "menu". */
+  brandLabel?: string
+  /**
+   * Override the brand button's click behaviour. By default the brand
+   * button toggles collapse ↔ expand. When provided, it calls this
+   * callback instead — useful for contextual views (e.g. a detail page
+   * where the sidebar swaps to entity-specific items and the brand
+   * doubles as a "back to parent" button).
+   */
+  onBrandClick?: () => void
+  user: SidebarUser
+  items: SidebarItem[]
+  /** Called when the user clicks the avatar or the "Editar perfil" icon. */
+  onProfileClick: () => void
+  /**
+   * Called when the user confirms the sign-out action. By default the
+   * sidebar shows an `AlertDialog` asking "Tem certeza que deseja sair?"
+   * and only calls this when the user accepts; pass
+   * `disableSignOutConfirm` to skip the dialog and fire on first click.
+   */
+  onSignOut: () => void
+  /** Skip the confirmation dialog before calling `onSignOut`. */
+  disableSignOutConfirm?: boolean
+  /** Mark the matching item as active (background + foreground accent token). */
   isActive?: (item: SidebarItem) => boolean
-  className?: string
+  /**
+   * Initial collapsed state when no localStorage value is present.
+   * Default `true` (collapsed to icon rail).
+   */
+  defaultCollapsed?: boolean
 }
 
-const SIDEBAR_COOKIE_NAME = "amf-ui:sidebar:state"
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-const SIDEBAR_WIDTH = "16rem"
-const SIDEBAR_WIDTH_ICON = "3rem"
-
-function getCookieValue(): boolean | undefined {
-  if (typeof document === "undefined") return undefined
-  const match = document.cookie.match(new RegExp(`(^|; )${SIDEBAR_COOKIE_NAME}=([^;]+)`))
-  if (!match) return undefined
-  return match[2] === "true"
-}
+const STORAGE_KEY = "amf-ui:sidebar:collapsed"
 
 function Sidebar({
+  brand,
+  brandText,
+  brandLabel = "menu",
+  onBrandClick,
+  user,
   items,
-  groups,
-  header,
-  footer,
-  collapsible = "icon",
-  defaultOpen = true,
-  open,
-  onOpenChange,
-  persistOpenState = false,
-  keyboardShortcut = "b",
+  onProfileClick,
+  onSignOut,
+  disableSignOutConfirm,
   isActive,
-  className,
+  defaultCollapsed = true,
 }: SidebarProps) {
-  const isMobile = useIsMobile()
-  const isControlled = open !== undefined
-  const [internalOpen, setInternalOpen] = React.useState<boolean>(() => {
-    if (persistOpenState) {
-      const persisted = getCookieValue()
-      if (persisted !== undefined) return persisted
+  const [signOutOpen, setSignOutOpen] = React.useState(false)
+  const handleSignOutClick = () => {
+    if (disableSignOutConfirm) {
+      onSignOut()
+    } else {
+      setSignOutOpen(true)
     }
-    return defaultOpen
+  }
+  const [collapsed, setCollapsed] = React.useState<boolean>(() => {
+    if (typeof window === "undefined") return defaultCollapsed
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+    if (stored != null) return stored === "true"
+    return defaultCollapsed
   })
-  const isOpen = isControlled ? open : internalOpen
-
-  const setOpen = React.useCallback(
-    (next: boolean) => {
-      if (!isControlled) setInternalOpen(next)
-      onOpenChange?.(next)
-      if (persistOpenState && !isControlled && typeof document !== "undefined") {
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${next}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}; SameSite=Lax; Secure`
-      }
-    },
-    [isControlled, onOpenChange, persistOpenState],
-  )
 
   React.useEffect(() => {
-    if (!keyboardShortcut) return
-    const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null
-      const isEditable =
-        target &&
-        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
-      if (isEditable) return
-      if ((event.metaKey || event.ctrlKey) && event.key === keyboardShortcut) {
-        event.preventDefault()
-        setOpen(!isOpen)
-      }
-    }
-    window.addEventListener("keydown", onKeyDown)
-    return () => window.removeEventListener("keydown", onKeyDown)
-  }, [keyboardShortcut, isOpen, setOpen])
+    if (typeof window === "undefined") return
+    window.localStorage.setItem(STORAGE_KEY, String(collapsed))
+  }, [collapsed])
 
-  const resolvedGroups: SidebarGroup[] = React.useMemo(() => {
-    if (groups) return groups
-    if (items) return [{ items }]
-    return []
-  }, [groups, items])
-
-  if (isMobile && collapsible !== "none") {
-    return (
-      <Sheet
-        open={isOpen}
-        onOpenChange={setOpen}
-        title="Sidebar"
-        description="Menu principal"
-        side="left"
-        className="w-[--sidebar-width] p-0"
-      >
-        <div
-          data-slot="sidebar"
-          data-mobile="true"
-          style={{ "--sidebar-width": SIDEBAR_WIDTH } as React.CSSProperties}
-          className={cn("flex h-full flex-col", className)}
-        >
-          {header ? <div data-slot="sidebar-header">{header}</div> : null}
-          <div data-slot="sidebar-body" className="flex-1 overflow-auto">
-            {resolvedGroups.map((g, gi) => (
-              <SidebarGroupRender
-                // biome-ignore lint/suspicious/noArrayIndexKey: groups are positional
-                key={gi}
-                group={g}
-                isActive={isActive}
-                collapsedToIcon={false}
-              />
-            ))}
-          </div>
-          {footer ? <div data-slot="sidebar-footer">{footer}</div> : null}
-        </div>
-      </Sheet>
-    )
-  }
-
-  const collapsedToIcon = collapsible === "icon" && !isOpen
+  const initials = user.initials ?? user.name.slice(0, 1).toUpperCase()
 
   return (
     <aside
       data-slot="sidebar"
-      data-collapsible={collapsible}
-      data-state={isOpen ? "expanded" : "collapsed"}
-      style={
-        {
-          "--sidebar-width": SIDEBAR_WIDTH,
-          "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
-          width: collapsedToIcon ? SIDEBAR_WIDTH_ICON : SIDEBAR_WIDTH,
-        } as React.CSSProperties
-      }
+      data-state={collapsed ? "collapsed" : "expanded"}
       className={cn(
-        "flex h-full flex-col border-r bg-background transition-[width] duration-200",
-        className,
+        // `overflow-hidden` keeps the in-flight content (item labels growing
+        // from 0 → full width) from bumping into the rail's right edge and
+        // briefly exposing a horizontal scrollbar while the width animates.
+        "shrink-0 overflow-hidden border-r bg-sidebar flex flex-col transition-[width] duration-200",
+        collapsed ? "w-16" : "w-64",
       )}
     >
-      {header ? <div data-slot="sidebar-header">{header}</div> : null}
-      <div data-slot="sidebar-body" className="flex-1 overflow-auto">
-        {resolvedGroups.map((g, gi) => (
-          <SidebarGroupRender
-            // biome-ignore lint/suspicious/noArrayIndexKey: groups are positional
-            key={gi}
-            group={g}
-            isActive={isActive}
-            collapsedToIcon={collapsedToIcon}
-          />
-        ))}
+      {/* Brand + collapse toggle. `justify-start` is constant across both
+          states so the 32px brand square never shifts horizontally during
+          the width animation — only the aside grows around it. */}
+      <div className="border-b px-3 py-4 flex items-center gap-2 justify-start">
+        <Tooltip
+          content={
+            onBrandClick
+              ? "Voltar"
+              : collapsed
+                ? `Expandir ${brandLabel}`
+                : `Recolher ${brandLabel}`
+          }
+          side="right"
+        >
+          <button
+            type="button"
+            className="h-8 w-8 shrink-0 cursor-pointer rounded overflow-hidden transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            onClick={onBrandClick ?? (() => setCollapsed((v) => !v))}
+            aria-label={
+              onBrandClick
+                ? "Voltar"
+                : collapsed
+                  ? `Expandir ${brandLabel}`
+                  : `Recolher ${brandLabel}`
+            }
+          >
+            {brand}
+          </button>
+        </Tooltip>
+        {!collapsed && brandText ? (
+          <span className="truncate font-mono text-[32px] font-semibold leading-none">
+            {brandText}
+          </span>
+        ) : null}
       </div>
-      {footer ? <div data-slot="sidebar-footer">{footer}</div> : null}
+
+      {/* Nav */}
+      <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+        {items.map((item) => (
+          <SidebarItemRender key={item.id} item={item} collapsed={collapsed} isActive={isActive} />
+        ))}
+      </nav>
+
+      {/* User row */}
+      <div className="border-t px-3 py-3">
+        <div className={cn("flex items-center gap-2", collapsed && "flex-col")}>
+          <Tooltip content="Editar perfil" side={collapsed ? "right" : "top"}>
+            <button
+              type="button"
+              className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={onProfileClick}
+              aria-label="Editar perfil"
+            >
+              <Avatar
+                src={user.avatarUrl}
+                alt={user.name}
+                fallback={initials}
+                className="size-8 text-xs"
+              />
+            </button>
+          </Tooltip>
+          {!collapsed ? (
+            <div className="flex-1 min-w-0">
+              <span className="text-sm font-medium truncate block">{user.name}</span>
+            </div>
+          ) : null}
+          <div className={cn("flex", collapsed ? "flex-col gap-1" : "flex-row")}>
+            {!collapsed ? (
+              <Tooltip content="Editar perfil" side="top">
+                <Button
+                  variant="ghost"
+                  className="size-8 shrink-0 p-0"
+                  onClick={onProfileClick}
+                  aria-label="Editar perfil"
+                >
+                  <UserCog className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+            ) : null}
+            <Tooltip content="Sair" side={collapsed ? "right" : "top"}>
+              <Button
+                variant="ghost"
+                className="size-8 shrink-0 p-0"
+                onClick={handleSignOutClick}
+                aria-label="Sair"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </Tooltip>
+          </div>
+        </div>
+      </div>
+
+      {disableSignOutConfirm ? null : (
+        <AlertDialog
+          open={signOutOpen}
+          onOpenChange={setSignOutOpen}
+          title="Sair da conta"
+          description="Tem certeza que deseja sair? Você precisará fazer login novamente para acessar o sistema."
+          confirmLabel="Sair"
+          cancelLabel="Cancelar"
+          onConfirm={onSignOut}
+        />
+      )}
     </aside>
   )
 }
 
-function SidebarGroupRender({
-  group,
-  isActive,
-  collapsedToIcon,
-}: {
-  group: SidebarGroup
-  isActive?: SidebarProps["isActive"]
-  collapsedToIcon: boolean
-}) {
-  return (
-    <div data-slot="sidebar-group" className="px-2 py-1.5">
-      {group.label && !collapsedToIcon ? (
-        <div
-          data-slot="sidebar-group-label"
-          className="px-2 py-1.5 text-xs font-medium text-muted-foreground"
-        >
-          {group.label}
-        </div>
-      ) : null}
-      <ul data-slot="sidebar-menu" className="flex flex-col gap-0.5">
-        {group.items.map((item, ii) => (
-          <SidebarItemRender
-            key={item.id ?? `${ii}-${typeof item.label === "string" ? item.label : ""}`}
-            item={item}
-            isActive={isActive}
-            collapsedToIcon={collapsedToIcon}
-            depth={0}
-          />
-        ))}
-      </ul>
-    </div>
-  )
-}
-
-function SidebarItemRender({
+// Memoized so a parent re-render with a stable {item, isActive, collapsed}
+// triple skips the whole render — the cn() composition and recursive children
+// were rebuilding every time the consumer's parent updated, regardless of
+// whether the sidebar tree itself had changed.
+const SidebarItemRender = React.memo(function SidebarItemRender({
   item,
+  collapsed,
   isActive,
-  collapsedToIcon,
-  depth,
+  depth = 0,
 }: {
   item: SidebarItem
-  isActive?: SidebarProps["isActive"]
-  collapsedToIcon: boolean
-  depth: number
+  collapsed: boolean
+  isActive?: (item: SidebarItem) => boolean
+  depth?: number
 }) {
   const active = isActive?.(item) ?? false
   const Icon = item.icon
   const hasChildren = !!item.items?.length
-  const submenuId = React.useId()
   const [expanded, setExpanded] = React.useState<boolean>(item.defaultOpen ?? false)
-
-  const showSubmenu = hasChildren && !collapsedToIcon && expanded
-
-  const labelAndBadge = (
-    <>
-      {Icon ? <Icon className="size-4 shrink-0" /> : null}
-      {!collapsedToIcon ? <span className="flex-1 truncate">{item.label}</span> : null}
-      {!collapsedToIcon && item.badge ? (
-        <span data-slot="sidebar-item-badge">{item.badge}</span>
-      ) : null}
-    </>
-  )
+  const showSubmenu = hasChildren && !collapsed && expanded
 
   const baseClass = cn(
-    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors cursor-pointer",
+    "flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors w-full cursor-pointer",
     "hover:bg-accent hover:text-accent-foreground",
-    "disabled:pointer-events-none disabled:opacity-50",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
     active && "bg-accent text-accent-foreground",
-    depth > 0 && "pl-7",
+    collapsed && "justify-center",
+    item.disabled && "pointer-events-none opacity-50",
+    depth > 0 && "pl-9",
+  )
+
+  const inner = (
+    <>
+      {Icon ? <Icon className="h-4 w-4 shrink-0" strokeWidth={2} /> : null}
+      {!collapsed ? <span className="flex-1 truncate">{item.label}</span> : null}
+      {!collapsed && item.badge ? <span data-slot="sidebar-item-badge">{item.badge}</span> : null}
+      {!collapsed && hasChildren ? (
+        <ChevronDown
+          aria-hidden
+          className={cn(
+            "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+            expanded ? "rotate-0" : "-rotate-90",
+          )}
+        />
+      ) : null}
+    </>
   )
 
   let trigger: React.ReactNode
@@ -267,43 +303,32 @@ function SidebarItemRender({
         disabled={item.disabled}
         className={baseClass}
         aria-expanded={expanded}
-        aria-controls={submenuId}
         onClick={() => {
           setExpanded((v) => !v)
           item.onClick?.()
         }}
       >
-        {labelAndBadge}
-        {!collapsedToIcon ? (
-          <ChevronDown
-            aria-hidden
-            className={cn(
-              "size-4 shrink-0 text-muted-foreground transition-transform",
-              expanded ? "rotate-0" : "-rotate-90",
-            )}
-          />
-        ) : null}
+        {inner}
       </button>
     )
   } else if (item.href) {
-    const disabled = !!item.disabled
     trigger = (
       <a
-        href={disabled ? undefined : item.href}
+        href={item.disabled ? undefined : item.href}
         data-active={active ? "true" : undefined}
-        aria-disabled={disabled ? "true" : undefined}
+        aria-disabled={item.disabled ? "true" : undefined}
         aria-current={active ? "page" : undefined}
-        tabIndex={disabled ? -1 : undefined}
-        className={cn(baseClass, disabled && "pointer-events-none opacity-50")}
+        tabIndex={item.disabled ? -1 : undefined}
+        className={baseClass}
         onClick={(e) => {
-          if (disabled) {
+          if (item.disabled) {
             e.preventDefault()
             return
           }
           item.onClick?.()
         }}
       >
-        {labelAndBadge}
+        {inner}
       </a>
     )
   } else {
@@ -311,40 +336,44 @@ function SidebarItemRender({
       <button
         type="button"
         data-active={active ? "true" : undefined}
-        aria-current={active ? "true" : undefined}
         disabled={item.disabled}
         className={baseClass}
         onClick={item.onClick}
       >
-        {labelAndBadge}
+        {inner}
       </button>
     )
   }
 
+  // In the collapsed rail, top-level items show their label via tooltip
+  // on hover (children are inaccessible until the rail is expanded).
+  if (collapsed && depth === 0) {
+    return (
+      <Tooltip content={item.label} side="right">
+        <div>{trigger}</div>
+      </Tooltip>
+    )
+  }
+
   return (
-    <li data-slot="sidebar-item">
+    <>
       {trigger}
-      {showSubmenu ? (
-        <ul
-          id={submenuId}
-          data-slot="sidebar-submenu"
-          data-state="open"
-          className="mt-0.5 flex flex-col gap-0.5"
-        >
-          {item.items?.map((child, ci) => (
+      {showSubmenu && item.items ? (
+        <div className="mt-1 space-y-1">
+          {item.items.map((child) => (
             <SidebarItemRender
-              key={child.id ?? `${ci}-${typeof child.label === "string" ? child.label : ""}`}
+              key={child.id}
               item={child}
+              collapsed={collapsed}
               isActive={isActive}
-              collapsedToIcon={collapsedToIcon}
               depth={depth + 1}
             />
           ))}
-        </ul>
+        </div>
       ) : null}
-    </li>
+    </>
   )
-}
+})
 
 Sidebar.displayName = "Sidebar"
 

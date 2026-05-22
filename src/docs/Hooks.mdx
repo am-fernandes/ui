@@ -466,7 +466,10 @@ subDays("2024-01-15T00:00:00Z", 5)    // 2024-01-10T00:00:00.000Z
 addMonths("2024-11-01T00:00:00Z", 3)  // 2025-02-01T00:00:00.000Z
 ```
 
-### Comparação e diff
+- Default `max = 9999`.
+- `count <= max` → `String(count)`.
+- `count > max` → `"${max}+"` (e.g. `"9999+"`).
+- `count < 0`, `NaN`, `Infinity` → `"0"` (clamped — contadores são não-negativos).
 
 ```ts
 compareDates("2024-01-01", "2024-12-31")                           // número negativo (a < b)
@@ -476,7 +479,10 @@ isSameDay("2024-06-15T00:00Z", "2024-06-15T23:59Z")               // true
 
 `compareDates` é compatível com `Array.sort()`.
 
-### Limites de período
+formatCount(3)         // "3"
+formatCount(9999)      // "9999"
+formatCount(12345)     // "9999+"
+formatCount(50, 9)     // "9+"
 
 ```ts
 startOfDay("2024-06-15T14:30Z")   // 2024-06-15T00:00:00.000Z

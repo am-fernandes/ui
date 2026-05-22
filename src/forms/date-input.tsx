@@ -9,7 +9,7 @@ import { Popover } from "../overlays/popover"
 import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Button } from "../primitives/button"
-import { Calendar } from "./calendar"
+import { Calendar, type DisabledDays } from "./calendar"
 
 function parseIsoDate(value: string): Date | undefined {
   if (!value) return undefined
@@ -36,6 +36,14 @@ export interface DateInputProps {
   error?: string
   labelPosition?: LabelPosition
   required?: boolean
+  /**
+   * Forwarded to the underlying Calendar's `disabledDays` — accepts a
+   * preset ("past" | "future" | "weekends" | "weekdays" | "today"), a
+   * Date / Date[], or a custom predicate. Use this to lock the picker
+   * to a valid range (e.g. `disabledDays="future"` for birthdates or
+   * event entry dates).
+   */
+  disabledDays?: DisabledDays
   "aria-label"?: string
   ref?: React.Ref<HTMLButtonElement>
 }
@@ -52,6 +60,7 @@ function DateInput({
   error,
   labelPosition,
   required,
+  disabledDays,
   "aria-label": ariaLabel,
   ref,
 }: DateInputProps) {
@@ -77,8 +86,8 @@ function DateInput({
       })}
       disabled={disabled}
       className={cn(
-        "w-full justify-start text-left font-normal h-auto px-3 py-3",
-        !hasValidValue && "text-muted-foreground",
+        "w-full justify-start text-left font-normal h-auto px-3 py-2.5",
+        !hasValidValue && "text-placeholder",
         className,
       )}
     >
@@ -115,6 +124,7 @@ function DateInput({
             setOpen(false)
           }}
           defaultMonth={selected}
+          disabledDays={disabledDays}
         />
       </Popover>
     </FieldShell>

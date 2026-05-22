@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  FilterX,
   Search,
 } from "lucide-react"
 import * as React from "react"
@@ -113,16 +114,22 @@ export interface DataTableLabels {
   exportPage: string
   /** "Export all data" menu item label. */
   exportAll: string
+  /** "Clear filters" toolbar button label. */
+  clearFilters: string
 }
 
-const rowCountFormatter = new Intl.NumberFormat("pt-BR")
+const numberFormatter = new Intl.NumberFormat("pt-BR")
 
 function defaultRowCount(filtered: number, total: number): string {
-  const totalStr = rowCountFormatter.format(total)
+  const totalStr = numberFormatter.format(total)
   if (filtered === total) {
     return `${totalStr} registro${total === 1 ? "" : "s"}`
   }
-  return `${rowCountFormatter.format(filtered)} de ${totalStr} registros`
+  return `${numberFormatter.format(filtered)} de ${totalStr} registros`
+}
+
+function defaultPageIndicator(pageIndex: number, pageCount: number): string {
+  return `Página ${numberFormatter.format(pageIndex + 1)} de ${numberFormatter.format(pageCount)}`
 }
 
 export const defaultDataTableLabels: DataTableLabels = {
@@ -133,12 +140,13 @@ export const defaultDataTableLabels: DataTableLabels = {
   paginationPrevious: "Página anterior",
   paginationNext: "Próxima página",
   rowCount: defaultRowCount,
-  pageIndicator: (pageIndex, pageCount) => `Página ${pageIndex + 1} de ${pageCount}`,
+  pageIndicator: defaultPageIndicator,
   sortBy: (headerText) => `Ordenar por ${headerText}`,
   exportTrigger: "Exportar para Excel",
   exportFiltered: "Exportar dados filtrados",
   exportPage: "Exportar página atual",
   exportAll: "Exportar todos os dados",
+  clearFilters: "Limpar filtros",
 }
 
 export interface DataTableProps<TData> {
@@ -154,6 +162,15 @@ export interface DataTableProps<TData> {
   sortableColumns?: string[]
   /** Placeholder for the search input. */
   searchPlaceholder?: string
+  /**
+   * Extra classes for the search input's wrapper. Use to override the
+   * default `w-full max-w-sm` width when you want the search to align
+   * with an external filter grid.
+   *
+   * Tip: pass `"w-full max-w-none"` to make it span all available space,
+   * or `"max-w-[200px]"` to clamp to a specific cell width.
+   */
+  searchClassName?: string
   /** Render this when data + filters result in zero rows. */
   emptyMessage?: React.ReactNode
   /** Additional class on the outer wrapper. */
@@ -168,6 +185,15 @@ export interface DataTableProps<TData> {
   globalFilter?: string
   /** Controlled global filter change handler. */
   onGlobalFilterChange?: OnChangeFn<string>
+  /**
+   * Whether filtering is server-driven. When `true`, the table skips its
+   * own client-side filtering pass — the row set you pass in `data` is
+   * rendered as-is. Use this when you refetch on every keystroke and
+   * don't want the visible page locally filtered first (which causes a
+   * brief mismatch between filtered-local rows and the next server
+   * response).
+   */
+  manualFiltering?: boolean
   /** Controlled page index (0-based). */
   pageIndex?: number
   /** Controlled pagination change handler. */
@@ -176,6 +202,13 @@ export interface DataTableProps<TData> {
   pageCount?: number
   /** Whether pagination is server-driven. */
   manualPagination?: boolean
+  /** Controlled sorting state. When provided, parent owns the sort. */
+  sorting?: SortingState
+  /** Controlled sorting change handler. */
+  onSortingChange?: OnChangeFn<SortingState>
+  /** Whether sort is server-driven. When true, the table skips its own sort
+   *  pass and just propagates state via `onSortingChange`. */
+  manualSorting?: boolean
   /** Overridable copy. All keys optional — defaults are pt-BR. */
   labels?: Partial<DataTableLabels>
   /** Callback fired when a body row is clicked. Adds button-like a11y (role, tabIndex, keydown). */
@@ -196,6 +229,18 @@ export interface DataTableProps<TData> {
    * name / row mapping.
    */
   downloadable?: boolean | DataTableDownloadable<TData>
+  /**
+   * Render a "Limpar filtros" button on the toolbar (left of the export
+   * button). The lib doesn't own the filter state, so the parent decides
+   * what to reset in the callback.
+   */
+  onClearFilters?: () => void
+  /** Disable the clear-filters button (e.g. when no filters are active). */
+  clearFiltersDisabled?: boolean
+  /** Extra classes for the clear-filters button (e.g. width override). */
+  clearFiltersClassName?: string
+  /** Extra classes for the export trigger button (e.g. width override). */
+  downloadTriggerClassName?: string
 }
 
 export interface DataTableDownloadable<TData> {
@@ -206,9 +251,10 @@ export interface DataTableDownloadable<TData> {
   /**
    * Custom row → record mapping. Defaults to one column per visible leaf column,
    * using the column's `header` (when it's a string) as the key and the resolved
-   * cell value as the cell content.
+   * cell value as the cell content. The default resolver supports both
+   * `accessorKey` and `accessorFn` columns.
    */
-  rowToRecord?: (row: TData) => Record<string, unknown>
+  rowToRecord?: (row: TData, rowIndex: number) => Record<string, unknown>
 }
 
 type ExportScope = "filtered" | "page" | "all"
@@ -222,6 +268,7 @@ function DataTable<TData>({
   searchableColumns,
   sortableColumns,
   searchPlaceholder,
+  searchClassName,
   emptyMessage,
   className,
   pagination,
@@ -237,11 +284,21 @@ function DataTable<TData>({
   rowClassName,
   loading = false,
   downloadable,
+  onClearFilters,
+  clearFiltersDisabled,
+  clearFiltersClassName,
+  downloadTriggerClassName,
+  sorting: sortingProp,
+  onSortingChange: onSortingChangeProp,
+  manualSorting,
+  manualFiltering,
 }: DataTableProps<TData>) {
   const isGlobalFilterControlled = globalFilterProp !== undefined
   const isPaginationControlled = pageIndexProp !== undefined || onPaginationChangeProp !== undefined
+  const isSortingControlled = sortingProp !== undefined
 
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [internalSorting, setInternalSorting] = React.useState<SortingState>([])
+  const sorting = isSortingControlled ? sortingProp : internalSorting
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [internalGlobalFilter, setInternalGlobalFilter] = React.useState("")
   const [paginationState, setPaginationState] = React.useState<PaginationState>({
@@ -296,6 +353,20 @@ function DataTable<TData>({
     [isPaginationControlled, onPaginationChangeProp, paginationState],
   )
 
+  const handleSortingChange: OnChangeFn<SortingState> = React.useCallback(
+    (updater) => {
+      const next =
+        typeof updater === "function"
+          ? (updater as (old: SortingState) => SortingState)(sorting)
+          : updater
+      if (!isSortingControlled) {
+        setInternalSorting(next)
+      }
+      onSortingChangeProp?.(next)
+    },
+    [isSortingControlled, onSortingChangeProp, sorting],
+  )
+
   const globalFilterFn = React.useCallback(
     (row: { getValue: (id: string) => unknown }, _columnId: string, filterValue: unknown) => {
       if (!filterValue) return true
@@ -318,14 +389,38 @@ function DataTable<TData>({
         columnFilters,
         globalFilter,
         ...(paginationEnabled ? { pagination: paginationState } : {}),
+        // Columns flagged `meta.exportOnly: true` are removed from the
+        // rendered table but kept in `getAllLeafColumns()` so the xlsx
+        // export still includes them.
+        columnVisibility: Object.fromEntries(
+          columns
+            .filter((col) => {
+              const meta = (col as { meta?: { exportOnly?: boolean } }).meta
+              return meta?.exportOnly === true
+            })
+            .map((col) => [
+              ((col as { id?: string; accessorKey?: string }).id ??
+                (col as { accessorKey?: string }).accessorKey ??
+                "") as string,
+              false,
+            ])
+            .filter(([id]) => id !== ""),
+        ),
       },
-      onSortingChange: setSorting,
+      onSortingChange: handleSortingChange,
+      manualSorting,
       onColumnFiltersChange: setColumnFilters,
       onGlobalFilterChange: handleGlobalFilterChange,
       onPaginationChange: paginationEnabled ? handlePaginationChange : undefined,
       getCoreRowModel: getCoreRowModel(),
       getSortedRowModel: getSortedRowModel(),
-      getFilteredRowModel: getFilteredRowModel(),
+      // Skip the client-side filter pass when the server is filtering.
+      // Without this, typing in the search would briefly show locally
+      // filtered rows from the current page before the next server
+      // response arrives — a visible mismatch.
+      ...(manualFiltering
+        ? { manualFiltering: true }
+        : { getFilteredRowModel: getFilteredRowModel() }),
       ...(paginationEnabled && !manualPagination
         ? { getPaginationRowModel: getPaginationRowModel() }
         : {}),
@@ -346,7 +441,10 @@ function DataTable<TData>({
       paginationEnabled,
       handleGlobalFilterChange,
       handlePaginationChange,
+      handleSortingChange,
       manualPagination,
+      manualSorting,
+      manualFiltering,
       pageCount,
       searchableColumns,
       globalFilterFn,
@@ -361,25 +459,43 @@ function DataTable<TData>({
   const rowCountFn = mergedLabels.rowCount
 
   const skeletonRowCount = pagination?.pageSize ?? 5
-  const skeletonColumnCount = columns.length
+  // Skip `meta.exportOnly` columns: they're absent from the rendered header,
+  // so the skeleton body shouldn't render placeholder cells for them either —
+  // otherwise the body row is wider than the header and rows misalign.
+  const skeletonColumnCount = columns.filter(
+    (col) => !(col as { meta?: { exportOnly?: boolean } }).meta?.exportOnly,
+  ).length
 
   const hasSearch = !!(searchableColumns && searchableColumns.length > 0)
   const hasDownload = !!downloadable
+  const hasClearFilters = typeof onClearFilters === "function"
   const downloadConfig: DataTableDownloadable<TData> | undefined =
     downloadable && typeof downloadable === "object" ? downloadable : undefined
 
   const defaultRowToRecord = React.useCallback(
-    (row: TData): Record<string, unknown> => {
+    (row: TData, rowIndex: number): Record<string, unknown> => {
       const record: Record<string, unknown> = {}
-      const leafCols = table.getVisibleLeafColumns()
+      // Use ALL leaf cols (not just visible) so columns flagged
+      // `meta.exportOnly: true` — hidden from the table UI — still appear
+      // in the xlsx output.
+      const leafCols = table.getAllLeafColumns()
       for (const col of leafCols) {
         const headerDef = col.columnDef.header
         const label = typeof headerDef === "string" && headerDef.length > 0 ? headerDef : col.id
-        const accessorKey = (col.columnDef as { accessorKey?: string }).accessorKey
-        const rawValue =
-          accessorKey != null
-            ? (row as Record<string, unknown>)[accessorKey]
-            : (row as Record<string, unknown>)[col.id]
+        const def = col.columnDef as {
+          accessorKey?: string
+          accessorFn?: (row: TData, rowIndex: number) => unknown
+        }
+        // Resolve in priority order: explicit accessorKey > accessorFn (covers
+        // computed/nested values) > fallback to col.id as a property.
+        let rawValue: unknown
+        if (def.accessorKey != null) {
+          rawValue = (row as Record<string, unknown>)[def.accessorKey]
+        } else if (typeof def.accessorFn === "function") {
+          rawValue = def.accessorFn(row, rowIndex)
+        } else {
+          rawValue = (row as Record<string, unknown>)[col.id]
+        }
         record[label] = rawValue ?? ""
       }
       return record
@@ -406,25 +522,38 @@ function DataTable<TData>({
     [data, defaultRowToRecord, downloadConfig, table],
   )
 
+  const [downloadMenuOpen, setDownloadMenuOpen] = React.useState(false)
+  const runExport = React.useCallback(
+    (scope: ExportScope) => {
+      setDownloadMenuOpen(false)
+      void handleExport(scope)
+    },
+    [handleExport],
+  )
   const renderDownloadMenu = () => {
     if (loading) {
       return (
         <div
           data-slot="data-table-download-skeleton"
-          className="h-9 w-40 animate-pulse rounded-md bg-primary/10"
+          className={cn(
+            "h-10 w-40 animate-pulse rounded-md bg-primary/10",
+            downloadTriggerClassName,
+          )}
         />
       )
     }
     return (
       <Popover
         align="end"
+        open={downloadMenuOpen}
+        onOpenChange={setDownloadMenuOpen}
         trigger={
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             disabled={data.length === 0}
             data-slot="data-table-download-trigger"
-            className="gap-2"
+            className={cn("gap-2", downloadTriggerClassName)}
           >
             <Download className="size-4" aria-hidden />
             {mergedLabels.exportTrigger}
@@ -438,9 +567,7 @@ function DataTable<TData>({
             role="menuitem"
             data-slot="data-table-download-filtered"
             className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              void handleExport("filtered")
-            }}
+            onClick={() => runExport("filtered")}
           >
             {mergedLabels.exportFiltered}
           </button>
@@ -449,9 +576,7 @@ function DataTable<TData>({
             role="menuitem"
             data-slot="data-table-download-page"
             className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              void handleExport("page")
-            }}
+            onClick={() => runExport("page")}
           >
             {mergedLabels.exportPage}
           </button>
@@ -460,9 +585,7 @@ function DataTable<TData>({
             role="menuitem"
             data-slot="data-table-download-all"
             className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              void handleExport("all")
-            }}
+            onClick={() => runExport("all")}
           >
             {mergedLabels.exportAll}
           </button>
@@ -477,33 +600,58 @@ function DataTable<TData>({
       data-slot="data-table"
       aria-busy={loading || undefined}
     >
-      {hasSearch || hasDownload ? (
+      {hasSearch || hasDownload || hasClearFilters ? (
         <div className="flex items-center justify-between gap-2">
           {hasSearch ? (
-            loading ? (
-              <div
-                data-slot="data-table-search-skeleton"
-                className="h-9 w-full max-w-sm animate-pulse rounded-md bg-primary/10"
+            // Always-mounted input. Previously the loading state swapped the
+            // input for a skeleton div, which made React unmount + remount the
+            // <Input> and the user's keyboard focus jumped out every time the
+            // debounce fired. Now we keep the input stable and pulse the
+            // search icon as a subtle loading cue — the table body skeleton
+            // below already communicates "fetching".
+            <div
+              data-slot="data-table-search"
+              data-loading={loading || undefined}
+              className={cn("relative w-full max-w-sm", searchClassName)}
+            >
+              <Search
+                className={cn(
+                  "pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground",
+                  loading && "animate-pulse",
+                )}
+                aria-hidden
               />
-            ) : (
-              <div className="relative w-full max-w-sm">
-                <Search
-                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                  aria-hidden
-                />
-                <Input
-                  value={globalFilter}
-                  onChange={(e) => handleGlobalFilterChange(e.target.value)}
-                  placeholder={resolvedSearchPlaceholder}
-                  className="pl-9"
-                  aria-label={mergedLabels.searchAriaLabel}
-                />
-              </div>
-            )
+              <Input
+                value={globalFilter}
+                onChange={(e) => handleGlobalFilterChange(e.target.value)}
+                placeholder={resolvedSearchPlaceholder}
+                className="pl-9"
+                aria-label={mergedLabels.searchAriaLabel}
+              />
+            </div>
           ) : (
             <span aria-hidden />
           )}
-          {hasDownload ? renderDownloadMenu() : null}
+          <div className="flex items-center gap-2">
+            {hasClearFilters ? (
+              <Button
+                type="button"
+                // Outline when no filters are active (subtle, idle), destructive
+                // when there's actually something to clear (draws attention to
+                // the "undo your filtered view" affordance without using red
+                // permanently — which would dilute its meaning).
+                variant={clearFiltersDisabled ? "outline" : "destructive"}
+                disabled={loading || clearFiltersDisabled}
+                onClick={onClearFilters}
+                data-slot="data-table-clear-filters"
+                className={cn("gap-2", clearFiltersClassName)}
+              >
+                <FilterX className="size-4" aria-hidden />
+                {mergedLabels.clearFilters}
+              </Button>
+            ) : null}
+            {hasDownload ? renderDownloadMenu() : null}
+          </div>
         </div>
       ) : null}
 
@@ -575,7 +723,7 @@ function DataTable<TData>({
                       >
                         <div
                           className={cn(
-                            "h-4 animate-pulse rounded-md bg-primary/10",
+                            "h-5 animate-pulse rounded-md bg-primary/10",
                             SKELETON_CELL_WIDTHS[(rowIdx + colIdx) % SKELETON_CELL_WIDTHS.length],
                           )}
                         />
@@ -638,10 +786,14 @@ function DataTable<TData>({
       </div>
 
       {paginationEnabled || showRowCount ? (
-        <div className="flex items-center justify-between gap-2 px-3 py-3">
+        // Tight footer: `-mt-1` trims the parent `gap-3` to 8px, plus `pt-1`
+        // gives the footer only 4px of internal top padding (was 12px). The
+        // row count / pagination read as part of the table block instead of
+        // floating below it; pb-3 keeps a normal bottom breath at the edge.
+        <div className="-mt-1 flex items-center justify-between gap-2 px-3 pt-1 pb-3">
           {showRowCount ? (
             loading ? (
-              <div className="h-3 w-32 animate-pulse rounded-md bg-primary/10" />
+              <div className="h-4 w-32 animate-pulse rounded-md bg-primary/10" />
             ) : (
               <span className="text-xs text-muted-foreground">
                 {rowCountFn(table.getFilteredRowModel().rows.length, data.length)}
@@ -653,7 +805,7 @@ function DataTable<TData>({
           {paginationEnabled ? (
             <div className="flex items-center gap-2">
               {loading ? (
-                <div className="h-3 w-24 animate-pulse rounded-md bg-primary/10" />
+                <div className="h-4 w-24 animate-pulse rounded-md bg-primary/10" />
               ) : (
                 <span className="text-xs text-muted-foreground">
                   {mergedLabels.pageIndicator(

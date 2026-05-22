@@ -74,7 +74,7 @@ function RadioGroup({
           const itemId = `${ids.controlId}-${item.value}`
           const Icon = item.icon
           return (
-            <div key={item.value} className="flex items-start gap-2">
+            <div key={item.value} className="flex items-center gap-2">
               <RadioGroupPrimitive.Item
                 id={itemId}
                 value={item.value}

@@ -8,3 +8,5 @@ storybook-static/
 coverage/
 playwright-report/
 test-results/
+.antigravitycli/
+pnpm-lock.yaml

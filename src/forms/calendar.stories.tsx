@@ -215,20 +215,13 @@ export const DisabledMixed: Story = {
   },
   render: () => {
     const [date, setDate] = useState<Date | undefined>()
-    const holiday1 = addDays(FIXED_MONTH, 10)
-    const holiday2 = addDays(FIXED_MONTH, 14)
-    // Cast: implementação aceita arrays mistos de presets + Date,
-    // mas o tipo público é union de arrays homogêneos.
+    const today = new Date()
+    const holiday1 = addDays(today, 5)
+    const holiday2 = addDays(today, 9)
     const mixedDisabled = ["past", holiday1, holiday2] as unknown as Date[]
     return (
       <div className="flex flex-col gap-3">
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={setDate}
-          disabledDays={mixedDisabled}
-          defaultMonth={FIXED_MONTH}
-        />
+        <Calendar mode="single" selected={date} onSelect={setDate} disabledDays={mixedDisabled} />
         <p className="text-xs text-muted-foreground">
           Bloqueado: dias passados + {holiday1.toLocaleDateString("pt-BR")} +{" "}
           {holiday2.toLocaleDateString("pt-BR")}.
