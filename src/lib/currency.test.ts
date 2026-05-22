@@ -4,8 +4,10 @@ import {
   centsToDisplay,
   formatBRL,
   fromCents,
+  parseMaskedValue,
   percentFromValue,
   percentOfTotal,
+  toBRLMoney,
   toCents,
 } from "./currency"
 
@@ -111,5 +113,40 @@ describe("formatBRL", () => {
 
   it("handles negatives", () => {
     expect(formatBRL(-1234.56)).toBe("R$ -1.234,56")
+  })
+})
+
+describe("toBRLMoney", () => {
+  it("formats number without R$ prefix", () => {
+    expect(toBRLMoney(1234.5)).toBe("1.234,50")
+    expect(toBRLMoney(1234.56)).toBe("1.234,56")
+  })
+
+  it("formats string number", () => {
+    expect(toBRLMoney("1234.5")).toBe("1.234,50")
+  })
+
+  it("formats zero", () => {
+    expect(toBRLMoney(0)).toBe("0,00")
+  })
+
+  it("returns empty string for null/undefined/empty", () => {
+    expect(toBRLMoney(null)).toBe("")
+    expect(toBRLMoney(undefined)).toBe("")
+    expect(toBRLMoney("")).toBe("")
+  })
+})
+
+describe("parseMaskedValue", () => {
+  it("parses masked BRL string to number", () => {
+    expect(parseMaskedValue("1.234,56")).toBe(1234.56)
+  })
+
+  it("handles values without thousands separator", () => {
+    expect(parseMaskedValue("1,50")).toBe(1.5)
+  })
+
+  it("handles whole numbers", () => {
+    expect(parseMaskedValue("1.000,00")).toBe(1000)
   })
 })
