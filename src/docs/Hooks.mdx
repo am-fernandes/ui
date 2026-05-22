@@ -475,9 +475,9 @@ Formata um inteiro para uso em badges/contadores de notificação, capando em `m
 function formatCount(count: number, max?: number): string
 ```
 
-- Default `max = 999`.
+- Default `max = 9999`.
 - `count <= max` → `String(count)`.
-- `count > max` → `"${max}+"` (e.g. `"999+"`).
+- `count > max` → `"${max}+"` (e.g. `"9999+"`).
 - `count < 0`, `NaN`, `Infinity` → `"0"` (clamped — contadores são não-negativos).
 
 **Exemplo:**
@@ -486,8 +486,8 @@ function formatCount(count: number, max?: number): string
 import { Badge, formatCount } from "@amfernandesinc/ui"
 
 formatCount(3)         // "3"
-formatCount(999)       // "999"
-formatCount(1234)      // "999+"
+formatCount(9999)      // "9999"
+formatCount(12345)     // "9999+"
 formatCount(50, 9)     // "9+"
 
 <Badge variant="secondary">{formatCount(unreadCount)}</Badge>

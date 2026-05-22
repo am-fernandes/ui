@@ -12,18 +12,26 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const alertVariants = cva("relative w-full rounded-lg border p-4 [&>svg]:size-4 [&>svg]:shrink-0", {
-  variants: {
-    variant: {
-      default: "bg-background text-foreground",
-      info: "border-status-info-border bg-status-info-bg text-status-info-text",
-      success: "border-status-success-border bg-status-success-bg text-status-success-text",
-      warning: "border-status-warning-border bg-status-warning-bg text-status-warning-text",
-      destructive: "border-destructive/50 bg-destructive/10 text-destructive",
+const alertVariants = cva(
+  // `[&_svg]:size-4` (descendant) instead of `[&>svg]:size-4` (direct
+  // child): the rendered icon lives inside the `<span>` wrapper below,
+  // so the old direct-child selector never matched and lucide icons
+  // rendered at their intrinsic 24px — visually off centre from the
+  // 16px title baseline.
+  "relative w-full rounded-lg border p-4 [&_svg]:size-4 [&_svg]:shrink-0",
+  {
+    variants: {
+      variant: {
+        default: "bg-background text-foreground",
+        info: "border-status-info-border bg-status-info-bg text-status-info-text",
+        success: "border-status-success-border bg-status-success-bg text-status-success-text",
+        warning: "border-status-warning-border bg-status-warning-bg text-status-warning-text",
+        destructive: "border-destructive/50 bg-destructive/10 text-destructive",
+      },
     },
+    defaultVariants: { variant: "default" },
   },
-  defaultVariants: { variant: "default" },
-})
+)
 
 const DEFAULT_ICONS: Record<
   NonNullable<VariantProps<typeof alertVariants>["variant"]>,

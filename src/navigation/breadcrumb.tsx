@@ -45,7 +45,7 @@ function Breadcrumb({
                   <span
                     data-slot="breadcrumb-page"
                     aria-current={isCurrent ? "page" : undefined}
-                    className="font-normal text-foreground"
+                    className="font-semibold text-foreground"
                   >
                     {item.label}
                   </span>

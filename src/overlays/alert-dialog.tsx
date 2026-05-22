@@ -60,12 +60,12 @@ function AlertDialog({
           {children}
           <div className="flex justify-end gap-2">
             <AlertDialogPrimitive.Cancel asChild>
-              <Button variant="outline" onClick={onCancel}>
+              <Button variant="outline" className="min-w-24" onClick={onCancel}>
                 {cancelLabel}
               </Button>
             </AlertDialogPrimitive.Cancel>
             <AlertDialogPrimitive.Action asChild>
-              <Button variant={confirmVariant} onClick={onConfirm}>
+              <Button variant={confirmVariant} className="min-w-24" onClick={onConfirm}>
                 {confirmLabel}
               </Button>
             </AlertDialogPrimitive.Action>

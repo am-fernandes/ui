@@ -105,10 +105,11 @@ function CommandPalette({
             <CommandPrimitive.Loading className="py-6 text-center text-sm text-muted-foreground">
               {mergedLabels.loading}
             </CommandPrimitive.Loading>
-          ) : null}
-          <CommandPrimitive.Empty className="py-6 text-center text-sm text-muted-foreground">
-            {resolvedEmptyMessage}
-          </CommandPrimitive.Empty>
+          ) : (
+            <CommandPrimitive.Empty className="py-6 text-center text-sm text-muted-foreground">
+              {resolvedEmptyMessage}
+            </CommandPrimitive.Empty>
+          )}
           {groups.map((group, gi) => (
             <CommandPrimitive.Group
               // biome-ignore lint/suspicious/noArrayIndexKey: groups are positional in the prop array

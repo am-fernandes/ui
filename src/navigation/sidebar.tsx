@@ -245,7 +245,11 @@ function Sidebar({
   )
 }
 
-function SidebarItemRender({
+// Memoized so a parent re-render with a stable {item, isActive, collapsed}
+// triple skips the whole render — the cn() composition and recursive children
+// were rebuilding every time the consumer's parent updated, regardless of
+// whether the sidebar tree itself had changed.
+const SidebarItemRender = React.memo(function SidebarItemRender({
   item,
   collapsed,
   isActive,
@@ -369,7 +373,7 @@ function SidebarItemRender({
       ) : null}
     </>
   )
-}
+})
 
 Sidebar.displayName = "Sidebar"
 

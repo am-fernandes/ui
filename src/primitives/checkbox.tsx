@@ -37,7 +37,7 @@ function Checkbox({
 
   return (
     <div data-slot="checkbox-field" className="flex w-full flex-col gap-1.5">
-      <div className="flex items-start gap-2">
+      <div className={cn("flex gap-2", hasDescription ? "items-start" : "items-center")}>
         <CheckboxPrimitive.Root
           ref={ref}
           id={ids.controlId}
@@ -48,7 +48,8 @@ function Checkbox({
           aria-invalid={hasError ? true : undefined}
           aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
           className={cn(
-            "peer mt-0.5 size-4 shrink-0 cursor-pointer rounded-sm border border-primary",
+            "peer size-4 shrink-0 cursor-pointer rounded-sm border border-primary",
+            hasDescription && "mt-0.5",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
             "disabled:cursor-not-allowed disabled:opacity-50",
             "data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",

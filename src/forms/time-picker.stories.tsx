@@ -17,7 +17,7 @@ const meta = {
           "**Comportamento:**",
           "- Digitar 2 dígitos em horas avança o foco automaticamente para minutos.",
           "- `ArrowUp` / `ArrowDown` incrementa/decrementa o campo focado (clamp em 0–23 / 0–59).",
-          "- `:` no campo de horas pula direto para minutos.",
+          "- `:` em horas pula para minutos **apenas quando horas já tem 2 dígitos** — caso contrário é ignorado (evita o pad silencioso de `1` → `01` ao digitar `1:11`).",
           "- Valores fora do range são clampados ao perder o foco.",
           "",
           "**Props principais:**",

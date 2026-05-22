@@ -15,19 +15,25 @@ import { Sidebar, type SidebarItem } from "./sidebar"
 const meta: Meta<typeof Sidebar> = {
   title: "Navigation/Sidebar",
   component: Sidebar,
+  tags: ["autodocs"],
   parameters: {
     layout: "fullscreen",
     docs: {
       description: {
         component: [
-          "Opinionated single-column navigation rail.",
+          "Barra de navegação lateral em coluna única.",
           "",
-          "- Top: brand button that toggles collapsed (icon-only) ↔ expanded.",
-          "- Middle: flat list of items, with optional one-level submenus.",
-          "- Bottom: avatar + user name + edit-profile / sign-out icons.",
+          "- Topo: botão da marca que alterna entre modo recolhido (só ícone) e expandido.",
+          "- Meio: lista plana de itens, com suporte a submenus de um nível.",
+          "- Rodapé: avatar + nome do usuário + ícones de editar perfil e sair.",
           "",
-          "API is locked: no header/footer slots, no variants. Pass `brand`,",
-          "`user`, `items`, plus `onProfileClick` / `onSignOut` callbacks.",
+          "**API:**",
+          "- `brand` — logo/ícone da marca exibido no topo.",
+          "- `items` — array de `SidebarItem`, cada um com `id`, `label`, `icon`, `href` e `items[]` opcional para submenu.",
+          "- `user` — objeto `{ name, avatarUrl? }` exibido no rodapé.",
+          "- `onProfileClick` / `onSignOut` — callbacks das ações do rodapé.",
+          "- `isActive` — função `(item) => boolean` para marcar o item ativo.",
+          "- `defaultCollapsed` — estado inicial recolhido ou expandido.",
         ].join("\n"),
       },
     },

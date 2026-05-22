@@ -255,13 +255,14 @@ const CalendarDayButton = React.memo(function CalendarDayButton({
       data-slot="calendar-day-button"
       {...(!isOutside && { "data-day": format(day.date, "yyyy-MM-dd") })}
       data-selected-single={
+        !isOutside &&
         modifiers.selected &&
         !modifiers.range_start &&
         !modifiers.range_end &&
         !modifiers.range_middle
       }
-      data-range-start={modifiers.range_start}
-      data-range-end={modifiers.range_end}
+      data-range-start={!isOutside && modifiers.range_start}
+      data-range-end={!isOutside && modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={className ? cn(DAY_BUTTON_BASE_CLASS, className) : DAY_BUTTON_BASE_CLASS}
       {...props}

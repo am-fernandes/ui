@@ -41,6 +41,51 @@ const SIZE_CLASSES = {
   xl: "max-w-4xl",
 } as const
 
+// Nested Radix poppers (Combobox/Select/DropdownMenu/DateInput) live in
+// their own portal OUTSIDE the Dialog's DOM tree. When the user clicks
+// an option, the option's onSelect triggers setOpen(false) on the
+// popper, which unmounts the option element synchronously — so by the
+// time the Dialog's outside detection fires, e.target is already the
+// document/HTML and `closest()` finds nothing. Three complementary
+// signals catch this:
+//
+//   1. `e.detail.originalEvent.target` — Radix stores the underlying
+//      PointerEvent in the synthetic outside event's detail.
+//   2. A capture-phase `pointerdown` listener that remembers the last
+//      real target before the popper unmounts.
+//   3. Any popper-content wrapper still mounted in the DOM at the
+//      moment the outside event fires (React batches state updates,
+//      so the portal is still there during the synchronous handler).
+//
+// Any of them is enough to recognise "this click came from a nested
+// popper" and keep the parent Dialog open.
+const NESTED_OVERLAY_SELECTOR =
+  '[data-radix-popper-content-wrapper], [role="grid"], .rdp, .rdp-root, [cmdk-list], [cmdk-root]'
+
+let lastPointerDownTarget: HTMLElement | null = null
+if (typeof window !== "undefined") {
+  document.addEventListener(
+    "pointerdown",
+    (ev) => {
+      lastPointerDownTarget = ev.target as HTMLElement | null
+    },
+    true,
+  )
+}
+
+function isFromNestedPopper(e: {
+  detail?: { originalEvent?: { target?: EventTarget | null } }
+  target: EventTarget | null
+}): boolean {
+  const orig = e.detail?.originalEvent?.target as HTMLElement | null
+  if (orig?.closest?.(NESTED_OVERLAY_SELECTOR)) return true
+  if (lastPointerDownTarget?.closest?.(NESTED_OVERLAY_SELECTOR)) return true
+  if (typeof document !== "undefined" && document.querySelector(NESTED_OVERLAY_SELECTOR)) {
+    return true
+  }
+  return false
+}
+
 function Dialog({
   trigger,
   title,
@@ -74,10 +119,18 @@ function Dialog({
             if (!dismissible) e.preventDefault()
           }}
           onPointerDownOutside={(e) => {
-            if (!dismissible) e.preventDefault()
+            if (!dismissible) {
+              e.preventDefault()
+              return
+            }
+            if (isFromNestedPopper(e)) e.preventDefault()
           }}
           onInteractOutside={(e) => {
-            if (!dismissible) e.preventDefault()
+            if (!dismissible) {
+              e.preventDefault()
+              return
+            }
+            if (isFromNestedPopper(e)) e.preventDefault()
           }}
         >
           <DialogPrimitive.Title
