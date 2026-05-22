@@ -100,6 +100,10 @@ export interface DataTableLabels {
   paginationPrevious: string
   /** aria-label of the next-page button. */
   paginationNext: string
+  /** Visible label of the page-size select (when pageSizeOptions is set). */
+  pageSize: string
+  /** aria-label of the page-size select (when pageSizeOptions is set). */
+  pageSizeAriaLabel: string
   /** Render the row-count line, given filtered + total counts. */
   rowCount: (filtered: number, total: number) => string
   /** Render the "page X of Y" indicator. */
@@ -139,6 +143,8 @@ export const defaultDataTableLabels: DataTableLabels = {
   loading: "Carregando dados…",
   paginationPrevious: "Página anterior",
   paginationNext: "Próxima página",
+  pageSize: "Linhas",
+  pageSizeAriaLabel: "Linhas por página",
   rowCount: defaultRowCount,
   pageIndicator: defaultPageIndicator,
   sortBy: (headerText) => `Ordenar por ${headerText}`,
@@ -178,6 +184,13 @@ export interface DataTableProps<TData> {
   /** Enable pagination. When set, footer shows previous/next + page indicator. Default: not paginated. */
   pagination?: {
     pageSize?: number
+    /**
+     * When provided, renders a "Linhas por página" select in the footer
+     * (left of the page indicator). Selecting an option resets the cursor
+     * to page 0 and propagates the new pageSize through onPaginationChange.
+     * Example: `pageSizeOptions: [10, 20, 50, 100]`.
+     */
+    pageSizeOptions?: number[]
   }
   /** Show row count in the footer (e.g. `12 registros` or `5 de 12 registros` when filtered). Default `false`. */
   showRowCount?: boolean
@@ -841,6 +854,32 @@ function DataTable<TData>({
           )}
           {paginationEnabled ? (
             <div className="flex items-center gap-2">
+              {pagination?.pageSizeOptions && pagination.pageSizeOptions.length > 0 ? (
+                loading ? (
+                  <div className="h-9 w-28 animate-pulse rounded-md bg-primary/10" />
+                ) : (
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{mergedLabels.pageSize}</span>
+                    <select
+                      aria-label={mergedLabels.pageSizeAriaLabel}
+                      value={table.getState().pagination.pageSize}
+                      onChange={(e) => {
+                        const next = Number(e.target.value)
+                        if (!Number.isFinite(next) || next <= 0) return
+                        table.setPageIndex(0)
+                        table.setPageSize(next)
+                      }}
+                      className="h-9 rounded-md border border-input bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {pagination.pageSizeOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )
+              ) : null}
               {loading ? (
                 <div className="h-4 w-24 animate-pulse rounded-md bg-primary/10" />
               ) : (
