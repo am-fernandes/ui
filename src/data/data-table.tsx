@@ -255,6 +255,25 @@ export interface DataTableDownloadable<TData> {
    * `accessorKey` and `accessorFn` columns.
    */
   rowToRecord?: (row: TData, rowIndex: number) => Record<string, unknown>
+  /**
+   * When the parent uses `manualPagination` / `manualFiltering`, the
+   * `data` prop is only the current server page — exporting it ships
+   * 10 of 22k rows, which is misleading. Pass `fetchAll` to load the
+   * whole unfiltered server-side set just for export; the menu item
+   * "Exportar todos os dados" will call it and stream the result into
+   * the xlsx without touching the table state.
+   *
+   * Resolved rows go through the same `rowToRecord` mapping as the
+   * regular export paths.
+   */
+  fetchAll?: () => Promise<TData[]>
+  /**
+   * Same idea as `fetchAll`, but for "Exportar dados filtrados" when
+   * filtering is server-side. The consumer is responsible for forwarding
+   * its current filters into the fetch. Omit when you only need the
+   * "all" variant.
+   */
+  fetchFiltered?: () => Promise<TData[]>
 }
 
 type ExportScope = "filtered" | "page" | "all"
@@ -503,14 +522,26 @@ function DataTable<TData>({
     [table],
   )
 
+  const [exportingScope, setExportingScope] = React.useState<ExportScope | null>(null)
+
   const handleExport = React.useCallback(
     async (scope: ExportScope) => {
-      const rows: TData[] =
-        scope === "filtered"
-          ? table.getFilteredRowModel().rows.map((r) => r.original)
-          : scope === "page"
-            ? table.getRowModel().rows.map((r) => r.original)
-            : data
+      // When the parent runs paginated/filtered on the server, the
+      // table only holds the current page in `data`. Defer to the
+      // consumer-supplied fetchers so "Exportar todos"/"filtrados"
+      // hit the full server set instead of silently truncating.
+      let rows: TData[]
+      if (scope === "all" && downloadConfig?.fetchAll) {
+        rows = await downloadConfig.fetchAll()
+      } else if (scope === "filtered" && downloadConfig?.fetchFiltered) {
+        rows = await downloadConfig.fetchFiltered()
+      } else if (scope === "filtered") {
+        rows = table.getFilteredRowModel().rows.map((r) => r.original)
+      } else if (scope === "page") {
+        rows = table.getRowModel().rows.map((r) => r.original)
+      } else {
+        rows = data
+      }
       const mapper = downloadConfig?.rowToRecord ?? defaultRowToRecord
       const records = rows.map(mapper)
       await downloadXlsx(
@@ -524,9 +555,14 @@ function DataTable<TData>({
 
   const [downloadMenuOpen, setDownloadMenuOpen] = React.useState(false)
   const runExport = React.useCallback(
-    (scope: ExportScope) => {
+    async (scope: ExportScope) => {
       setDownloadMenuOpen(false)
-      void handleExport(scope)
+      setExportingScope(scope)
+      try {
+        await handleExport(scope)
+      } finally {
+        setExportingScope(null)
+      }
     },
     [handleExport],
   )
@@ -551,11 +587,12 @@ function DataTable<TData>({
           <Button
             type="button"
             variant="outline"
-            disabled={data.length === 0}
+            disabled={data.length === 0 || exportingScope !== null}
+            loading={exportingScope !== null}
             data-slot="data-table-download-trigger"
             className={cn("gap-2", downloadTriggerClassName)}
           >
-            <Download className="size-4" aria-hidden />
+            {exportingScope === null && <Download className="size-4" aria-hidden />}
             {mergedLabels.exportTrigger}
           </Button>
         }
