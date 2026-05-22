@@ -4,26 +4,69 @@ import { Meta } from "@storybook/addon-docs/blocks"
 
 # Hooks
 
-`@amfernandesinc/ui` exporta quatro hooks React reutilizáveis. Para utilitários e funções puras (formatação, datas, validação), veja a página **Lib**.
+Além dos componentes, `@amfernandesinc/ui` exporta um conjunto pequeno e estável de hooks React, utilitários de classes Tailwind, helpers financeiros (BRL/centavos), helpers de data, conversores de bytes, validadores e formatadores brasileiros, e constantes re-exportadas de libs upstream.
 
 ## Sumário
 
-| Hook | O que faz |
-|---|---|
-| `useIsMobile` | `true` quando a viewport é menor que 768 px (reativo a resize) |
-| `useDebounce` | atrasa atualização de um valor até que o input pare por `delay` ms |
-| `useCopyToClipboard` | copia texto para a área de transferência com feedback via toast |
-| `useComboboxOptions` | converte `Array<{ id, nome }>` em `ComboboxOption[]` memoizado |
+| Símbolo | Tipo | O que faz |
+|---|---|---|
+| `useIsMobile` | hook | `true` quando a viewport é menor que 768 px (reativo a resize) |
+| `useDebounce` | hook | atrasa atualização de um valor até que o input pare por `delay` ms |
+| `useCopyToClipboard` | hook | copia texto para a área de transferência com feedback via toast |
+| `useComboboxOptions` | hook | converte `Array<{ id, nome }>` em `ComboboxOption[]` memoizado |
+| `cn` | function | merge de `className`s Tailwind via `clsx` + `tailwind-merge` |
+| `buttonVariants` | function (CVA) | classnames do `Button` por `variant` |
+| `badgeVariants` | function (CVA) | classnames do `Badge` por `variant` |
+| `alertVariants` | function (CVA) | classnames do `Alert` por `variant` |
+| `typographyVariants` | function (CVA) | classnames do `Typography` por `variant` |
+| `tableStyles` | function | objeto com classnames para `<table>` cru |
+| `toCents`, `fromCents` | function | conversão float ↔ centavos inteiros |
+| `centsToDisplay` | function | centavos → string `"1.234,56"` |
+| `formatBRL` | function | float → string `"R$ 1.234,56"` |
+| `toBRLMoney` | function | float/string/null → `"1.234,56"` (sem `R$`) |
+| `parseMaskedValue` | function | `"1.234,56"` → `1234.56` |
+| `percentOfTotal`, `percentFromValue` | function | cálculos percentuais centavos-safe |
+| `bytes`, `kb`, `mb`, `gb` | function | conversão ergonômica para bytes (binário) |
+| `formatCount` | function | formata contadores capando em `max` (`"999+"`) |
+| `formatDate` | function | formata Date/string: `brl`, `brl-full`, `us`, `time`, `iso` |
+| `parseDate` | function | cria Date UTC a partir de string |
+| `isValidDate` | function | verifica se o valor é data válida |
+| `addDays`, `subDays`, `addMonths` | function | aritmética UTC-safe |
+| `diffInDays`, `compareDates`, `isSameDay` | function | comparação e diff de datas |
+| `startOfDay`, `endOfDay`, `startOfMonth`, `endOfMonth` | function | limites de período UTC |
+| `isPast`, `isFuture` | function | predicados relativos ao momento atual |
+| `isValidCPF`, `isValidCNPJ`, `isValidCEP`, `isValidPhone` | function | validadores brasileiros (DV oficial p/ CPF/CNPJ) |
+| `formatCPF`, `formatCNPJ`, `formatPhone`, `formatCEP` | function | formatadores para exibição |
+| `defaultDataTableLabels` etc. | const | defaults pt-BR dos componentes com prop `labels` |
+| `REGEXP_ONLY_DIGITS` | const | regex `/^\d+$/` (re-export de `input-otp`) |
+| `toast` | function | API imperativa de toasts (re-export de `sonner`) |
+
+Importação genérica:
 
 ```ts
 import {
   useIsMobile, useDebounce, useCopyToClipboard, useComboboxOptions,
+  cn, buttonVariants, badgeVariants, alertVariants, typographyVariants, tableStyles,
+  toCents, fromCents, centsToDisplay, formatBRL, toBRLMoney, parseMaskedValue,
+  percentOfTotal, percentFromValue,
+  bytes, kb, mb, gb,
+  formatCount,
+  formatDate, parseDate, isValidDate,
+  addDays, subDays, addMonths,
+  diffInDays, compareDates, isSameDay,
+  startOfDay, endOfDay, startOfMonth, endOfMonth,
+  isPast, isFuture,
+  isValidCPF, isValidCNPJ, isValidCEP, isValidPhone,
+  formatCPF, formatCNPJ, formatPhone, formatCEP,
+  REGEXP_ONLY_DIGITS, toast,
 } from "@amfernandesinc/ui"
 ```
 
 ---
 
-## `useIsMobile`
+## State hooks
+
+### `useIsMobile`
 
 Retorna `true` quando a viewport está abaixo do breakpoint mobile (768 px). Reativo a redimensionamento via `matchMedia` listener.
 
@@ -52,7 +95,7 @@ function ResponsiveNav() {
 
 ---
 
-## `useDebounce`
+### `useDebounce`
 
 Atrasa a propagação de um valor até que ele pare de mudar por `delay` milissegundos. Ideal para evitar chamadas de API a cada keystroke em campos de busca.
 
@@ -87,7 +130,7 @@ function SearchInput() {
 
 ---
 
-## `useCopyToClipboard`
+### `useCopyToClipboard`
 
 Copia texto para a área de transferência via `navigator.clipboard.writeText`. Inclui feedback automático via `toast.success` / `toast.error` (requer `<Toaster />` montado no root).
 
@@ -120,9 +163,11 @@ function CopiableCode({ value }: { value: string }) {
 
 ---
 
-## `useComboboxOptions`
+## Helpers de dados
 
-Memoiza a transformação de um array de entidades (e.g. retorno de query) em `ComboboxOption[]`. Útil quando você consome `Combobox` com dados vindos da API no formato `{ id, nome }`.
+### `useComboboxOptions`
+
+Memoiza a transformação de um array de entidades (e.g. retorno de query) em `ComboboxOption[]`. Útil quando você consome `Combobox` com dados vindos da API no formato `{ id, nome }` (ou outro campo de label).
 
 **Signature:**
 
@@ -152,5 +197,443 @@ function ClienteSelect({ clientes, value, onChange }: {
 **Notas:**
 
 - O `labelKey` default é `"nome"` (convenção AM). Passe outro campo se a entidade usar nome diferente: `useComboboxOptions(usuarios, "fullName")`.
-- Retorna `[]` quando `data` é `undefined` (estado de loading).
+- Retorna `[]` quando `data` é `undefined` (estado de loading) — `Combobox` aceita lista vazia normalmente.
 - Memoizado por `data` + `labelKey`. Re-renders do componente pai não recriam o array.
+- `value` é coercido para `string` via `String(item.id)` para suportar tanto `id: number` quanto `id: string`.
+
+---
+
+## Helpers de className
+
+### `cn`
+
+Merge inteligente de `className`s Tailwind. Combina `clsx` (concatena + descarta `false`/`null`/`undefined`) com `tailwind-merge` (resolve conflitos de classes do Tailwind — `p-2 p-4` vira `p-4`).
+
+**Signature:**
+
+```ts
+function cn(...inputs: ClassValue[]): string
+```
+
+**Exemplo:**
+
+```tsx
+import { cn } from "@amfernandesinc/ui"
+
+function Card({ isActive, className }: { isActive?: boolean; className?: string }) {
+  return (
+    <div className={cn(
+      "p-4 rounded-md border",
+      isActive && "bg-primary text-primary-foreground",
+      className,
+    )} />
+  )
+}
+```
+
+**Notas:** sempre passe `className` do consumidor por último — o `tailwind-merge` faz a última classe ganhar.
+
+### `buttonVariants`
+
+CVA factory que gera os classnames do `Button`. Útil para estilizar elementos não-`<button>` com a aparência de botão (e.g. `<Link>` do Next.js, `<a>` cru) sem usar `asChild`.
+
+**Signature:**
+
+```ts
+function buttonVariants(props?: {
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+  className?: string
+}): string
+```
+
+```tsx
+import { buttonVariants, cn } from "@amfernandesinc/ui"
+import Link from "next/link"
+
+<Link href="/contratos" className={cn(buttonVariants({ variant: "outline" }))}>
+  Ver contratos
+</Link>
+```
+
+### `badgeVariants`
+
+```ts
+function badgeVariants(props?: {
+  variant?: "default" | "secondary" | "destructive" | "outline"
+  className?: string
+}): string
+```
+
+### `alertVariants`
+
+```ts
+function alertVariants(props?: {
+  variant?: "default" | "info" | "success" | "warning" | "destructive"
+  className?: string
+}): string
+```
+
+### `typographyVariants`
+
+```ts
+function typographyVariants(props?: {
+  variant?: "heading" | "title" | "subtitle" | "lead" | "body" | "caption"
+  className?: string
+}): string
+```
+
+### `tableStyles`
+
+Retorna um objeto com classnames para cada parte de uma `<table>` HTML crua. Use quando `DataTable` for excessivo (e.g. tabela puramente decorativa).
+
+**Signature:**
+
+```ts
+function tableStyles(): {
+  table: string; header: string; body: string; footer: string
+  row: string; head: string; cell: string; caption: string
+}
+```
+
+```tsx
+const t = tableStyles()
+
+<table className={t.table}>
+  <thead className={t.header}>
+    <tr><th className={t.head}>Nome</th><th className={t.head}>Valor</th></tr>
+  </thead>
+  <tbody>
+    <tr className={t.row}>
+      <td className={t.cell}>Contrato A</td>
+      <td className={t.cell}>R$ 1.234,56</td>
+    </tr>
+  </tbody>
+</table>
+```
+
+---
+
+## Helpers BRL / financeiros
+
+Toda aritmética financeira na lib é em **centavos inteiros**. Conversões para float acontecem só nas bordas (display ou input do usuário). Isso elimina os erros clássicos de float (`0.1 + 0.2 !== 0.3`).
+
+### `toCents` / `fromCents`
+
+```ts
+toCents(1234.56)   // 123456
+fromCents(123456)  // 1234.56
+```
+
+`toCents` usa `Math.round` para evitar drift de float.
+
+### `centsToDisplay`
+
+Formata centavos como string BRL **sem** o prefixo `R$`.
+
+```ts
+centsToDisplay(123456)   // "1.234,56"
+centsToDisplay(-50000)   // "-500,00"
+centsToDisplay(0)        // "0,00"
+```
+
+### `formatBRL`
+
+Formata float em reais **com** o prefixo `R$`.
+
+```ts
+formatBRL(1234.56)  // "R$ 1.234,56"
+formatBRL(0)        // "R$ 0,00"
+formatBRL(-99.9)    // "R$ -99,90"
+```
+
+### `toBRLMoney`
+
+Formata number/string para BRL **sem** `R$`. Aceita `null` (retorna `""`). Útil em tabelas e campos onde o símbolo já está no label.
+
+```ts
+toBRLMoney(1234.5)    // "1.234,50"
+toBRLMoney("1234.5")  // "1.234,50"
+toBRLMoney(null)      // ""
+```
+
+| | Entrada | Saída |
+|---|---|---|
+| `formatBRL` | `number` | `"R$ 1.234,50"` |
+| `toBRLMoney` | `string \| number \| null` | `"1.234,50"` |
+
+### `parseMaskedValue`
+
+Reverte string mascarada BRL para `number`. Use ao submeter formulários com `react-imask`.
+
+```ts
+parseMaskedValue("1.234,56")  // 1234.56
+parseMaskedValue("1.000,00")  // 1000
+```
+
+### `percentOfTotal` / `percentFromValue`
+
+```ts
+percentOfTotal(70, 185000)       // 129500
+percentFromValue(129500, 185000) // 70
+percentFromValue(50, 0)          // 0  (guarda contra divisão por zero)
+```
+
+---
+
+## Helpers de bytes
+
+Façam expressões de tamanho de arquivo ergonômicas. Unidades **binárias** (1 KiB = 1024 B) — alinhadas com o formatter usado por `FileUpload`.
+
+```ts
+import { FileUpload, mb, kb, gb } from "@amfernandesinc/ui"
+
+<FileUpload accept="image/*" maxSize={mb(2)} />
+<FileUpload accept="application/pdf" maxSize={kb(500)} />
+<FileUpload multiple maxSize={gb(1)} maxFiles={50} />
+```
+
+---
+
+## `formatCount`
+
+Formata um inteiro para uso em badges/contadores de notificação, capando em `max` com sufixo `+`.
+
+**Signature:**
+
+```ts
+function formatCount(count: number, max?: number): string
+```
+
+- Default `max = 999`.
+- `count <= max` → `String(count)`.
+- `count > max` → `"${max}+"` (e.g. `"999+"`).
+- `count < 0`, `NaN`, `Infinity` → `"0"` (contadores são não-negativos).
+
+```ts
+formatCount(3)      // "3"
+formatCount(1234)   // "999+"
+formatCount(50, 9)  // "9+"
+```
+
+---
+
+## Helpers de data
+
+Funções UTC-safe sem dependência de `date-fns`. Aceitam `Date | string | null | undefined` — nunca lançam exceção.
+
+### `formatDate`
+
+```ts
+type DateFormat = "brl" | "brl-full" | "us" | "time" | "iso"
+
+function formatDate(date: Date | string | null | undefined, format?: DateFormat): string
+```
+
+| Formato | Saída |
+|---|---|
+| `"brl"` (default) | `"15/01/2024"` |
+| `"brl-full"` | `"15/01/2024 14:30"` |
+| `"us"` | `"2024-01-15"` |
+| `"time"` | `"14:30"` |
+| `"iso"` | `"2024-01-15T14:30:00.000Z"` |
+
+```ts
+formatDate("2024-01-15")                        // "15/01/2024"
+formatDate("2024-01-15T14:30:00Z", "brl-full")  // "15/01/2024 14:30"
+formatDate(null)                                 // ""
+```
+
+### `parseDate`
+
+```ts
+parseDate("2024-01-15")           // 2024-01-15T00:00:00.000Z
+parseDate("2024-01-15", "14:30")  // 2024-01-15T14:30:00.000Z
+```
+
+### `isValidDate`
+
+```ts
+isValidDate("2024-01-15")  // true
+isValidDate("not-a-date")  // false
+isValidDate(null)           // false
+```
+
+### Aritmética
+
+```ts
+addDays("2024-01-15T00:00:00Z", 5)    // 2024-01-20T00:00:00.000Z
+subDays("2024-01-15T00:00:00Z", 5)    // 2024-01-10T00:00:00.000Z
+addMonths("2024-11-01T00:00:00Z", 3)  // 2025-02-01T00:00:00.000Z
+```
+
+### Comparação e diff
+
+```ts
+compareDates("2024-01-01", "2024-12-31")                           // número negativo (a < b)
+diffInDays("2024-01-10T00:00:00Z", "2024-01-01T00:00:00Z")        // 9
+isSameDay("2024-06-15T00:00Z", "2024-06-15T23:59Z")               // true
+```
+
+`compareDates` é compatível com `Array.sort()`.
+
+### Limites de período
+
+```ts
+startOfDay("2024-06-15T14:30Z")   // 2024-06-15T00:00:00.000Z
+endOfDay("2024-06-15T00:00Z")     // 2024-06-15T23:59:59.999Z
+startOfMonth("2024-06-15Z")       // 2024-06-01T00:00:00.000Z
+endOfMonth("2024-06-15Z")         // 2024-06-30T23:59:59.999Z
+```
+
+### Predicados
+
+```ts
+isPast("2000-01-01")    // true
+isFuture("2099-12-31")  // true
+```
+
+---
+
+## Validadores brasileiros
+
+Algoritmos CPF/CNPJ implementam o cálculo oficial dos dígitos verificadores (DV) definido pela Receita Federal — não são apenas regexes de formato. Todos normalizam o input removendo caracteres não-numéricos antes de validar.
+
+```ts
+function isValidCPF(value: string): boolean
+function isValidCNPJ(value: string): boolean
+function isValidCEP(value: string): boolean
+function isValidPhone(value: string): boolean
+```
+
+```ts
+isValidCPF("123.456.789-09")       // true
+isValidCPF("111.111.111-11")       // false (dígitos repetidos)
+isValidCNPJ("11.222.333/0001-81")  // true
+isValidCEP("01310-100")            // true
+isValidPhone("(11) 98765-4321")    // true
+isValidPhone("(05) 98765-4321")    // false (DDD < 11)
+```
+
+**Uso em react-hook-form:**
+
+```ts
+register("cpf", { validate: (v) => isValidCPF(v) || "CPF inválido" })
+```
+
+---
+
+## Formatadores brasileiros
+
+Para **exibição** de dados já salvos (tabelas, cards). Para inputs controlados, use os componentes `CPFInput`, `CNPJInput`, `PhoneInput`, `CEPInput`.
+
+```ts
+formatCPF("12345678900")      // "123.456.789-00"
+formatCNPJ("12345678000190")  // "12.345.678/0001-90"
+formatPhone("11987654321")    // "(11) 98765-4321"
+formatPhone("1134567890")     // "(11) 3456-7890"
+formatCEP("01310100")         // "01310-100"
+```
+
+Todas aceitam entrada mascarada ou só dígitos (idempotente).
+
+---
+
+## i18n labels
+
+Três componentes da lib aceitam um prop `labels?: Partial<XLabels>` para overridar strings visíveis (incluindo `aria-label`s e mensagens de estado). Defaults são em **pt-BR**.
+
+| Componente | Type | Default constant |
+|---|---|---|
+| `DataTable` | `DataTableLabels` | `defaultDataTableLabels` |
+| `FileUpload` | `FileUploadLabels` | `defaultFileUploadLabels` |
+| `CommandPalette` | `CommandPaletteLabels` | `defaultCommandPaletteLabels` |
+
+**Override parcial:**
+
+```tsx
+import { DataTable } from "@amfernandesinc/ui"
+
+<DataTable
+  columns={...}
+  data={...}
+  labels={{
+    empty: "No results.",
+    paginationPrevious: "Previous",
+  }}
+/>
+```
+
+**Override total:**
+
+```ts
+import { defaultDataTableLabels, type DataTableLabels } from "@amfernandesinc/ui"
+
+export const enDataTableLabels: DataTableLabels = {
+  ...defaultDataTableLabels,
+  search: "Search…",
+  empty: "No results.",
+  paginationPrevious: "Previous page",
+  paginationNext: "Next page",
+  rowCount: (filtered, total) =>
+    filtered === total
+      ? `${total} record${total === 1 ? "" : "s"}`
+      : `${filtered} of ${total} records`,
+}
+```
+
+---
+
+## Constantes re-exportadas
+
+### `REGEXP_ONLY_DIGITS`
+
+Re-export da constante de mesmo nome do package `input-otp`. Equivalente a `/^\d+$/`.
+
+```tsx
+import { InputOTP, REGEXP_ONLY_DIGITS } from "@amfernandesinc/ui"
+
+<InputOTP length={6} value={code} onValueChange={setCode} pattern={REGEXP_ONLY_DIGITS} />
+```
+
+### `toast`
+
+Re-export do `toast` do `sonner`. API imperativa para disparar notificações. Funciona em par com o componente `<Toaster />` (que deve estar montado no root da app).
+
+```ts
+toast.success("Salvo com sucesso!")
+toast.error("Algo deu errado.")
+toast.promise(salvar(), { loading: "Salvando…", success: "Salvo!", error: "Erro." })
+toast.dismiss(id)
+```
+
+```tsx
+import { Toaster, toast, Button } from "@amfernandesinc/ui"
+
+function Page() {
+  return (
+    <>
+      <Toaster />
+      <Button onClick={() => toast.success("Salvo!")}>Salvar</Button>
+    </>
+  )
+}
+```
+
+---
+
+## Tipos exportados (TypeScript)
+
+```ts
+import type {
+  ComboboxOption,
+  ComboboxProps,
+  DateFormat,
+  DateRangeValue,
+  FileUploadRejection,
+  FileUploadRejectionReason,
+  TableStyles,
+  TreeNodeData,
+  TypographyProps,
+  VideoCaptionTrack,
+} from "@amfernandesinc/ui"
+```
