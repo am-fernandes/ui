@@ -73,16 +73,14 @@ if (typeof window !== "undefined") {
   )
 }
 
-function isFromNestedPopper(
-  e: { detail?: { originalEvent?: { target?: EventTarget | null } }; target: EventTarget | null },
-): boolean {
+function isFromNestedPopper(e: {
+  detail?: { originalEvent?: { target?: EventTarget | null } }
+  target: EventTarget | null
+}): boolean {
   const orig = e.detail?.originalEvent?.target as HTMLElement | null
   if (orig?.closest?.(NESTED_OVERLAY_SELECTOR)) return true
   if (lastPointerDownTarget?.closest?.(NESTED_OVERLAY_SELECTOR)) return true
-  if (
-    typeof document !== "undefined" &&
-    document.querySelector(NESTED_OVERLAY_SELECTOR)
-  ) {
+  if (typeof document !== "undefined" && document.querySelector(NESTED_OVERLAY_SELECTOR)) {
     return true
   }
   return false
