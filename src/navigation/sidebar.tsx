@@ -3,6 +3,7 @@
 import { ChevronDown, LogOut, UserCog } from "lucide-react"
 import * as React from "react"
 
+import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
 import { AlertDialog } from "../overlays/alert-dialog"
 import { Tooltip } from "../overlays/tooltip"
@@ -25,6 +26,12 @@ export interface SidebarItem {
   id: string
   label: string
   icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  /**
+   * Navigation URL. Values that don't resolve to an `http:`/`https:`/
+   * `mailto:`/`tel:` URL (e.g. `javascript:` or `vbscript:`) are dropped —
+   * the item then renders as a non-anchor button. `onClick` still fires
+   * if provided.
+   */
   href?: string
   onClick?: () => void
   badge?: React.ReactNode
@@ -293,6 +300,18 @@ const SidebarItemRender = React.memo(function SidebarItemRender({
     </>
   )
 
+  const hrefIsSafe = item.href != null && isAllowedUrl(item.href, DEFAULT_ALLOWED_LINK_PROTOCOLS)
+  if (
+    process.env.NODE_ENV !== "production" &&
+    item.href != null &&
+    item.href !== "" &&
+    !hrefIsSafe
+  ) {
+    console.warn(
+      `[Sidebar] href "${item.href}" was blocked because its protocol is not on the allowlist. Rendering the item as a button.`,
+    )
+  }
+
   let trigger: React.ReactNode
   if (hasChildren) {
     trigger = (
@@ -311,7 +330,7 @@ const SidebarItemRender = React.memo(function SidebarItemRender({
         {inner}
       </button>
     )
-  } else if (item.href) {
+  } else if (hrefIsSafe) {
     trigger = (
       <a
         href={item.disabled ? undefined : item.href}

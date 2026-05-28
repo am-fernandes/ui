@@ -1,8 +1,9 @@
 "use client"
 
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
-import type * as React from "react"
+import * as React from "react"
 
+import { DEFAULT_ALLOWED_RESOURCE_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
 
 export interface AvatarProps
@@ -10,10 +11,28 @@ export interface AvatarProps
   src?: string
   alt: string
   fallback: React.ReactNode
+  /**
+   * Allowed URL protocols for `src`. Defaults to `["http:", "https:"]`.
+   * Pass `["data:"]` to opt in to base64 thumbnails. `javascript:` is
+   * always blocked, regardless of allowlist.
+   */
+  allowedProtocols?: string[]
   ref?: React.Ref<HTMLSpanElement>
 }
 
-function Avatar({ src, alt, fallback, className, ref, ...props }: AvatarProps) {
+function Avatar({ src, alt, fallback, className, allowedProtocols, ref, ...props }: AvatarProps) {
+  const allowed = allowedProtocols ?? DEFAULT_ALLOWED_RESOURCE_PROTOCOLS
+  const srcIsValid = src != null && src !== "" && isAllowedUrl(src, allowed)
+
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === "production") return
+    if (src != null && src !== "" && !srcIsValid) {
+      console.warn(
+        `[Avatar] src "${src}" was blocked because its protocol is not on the allowlist. Falling back to the avatar's fallback content.`,
+      )
+    }
+  }, [src, srcIsValid])
+
   return (
     <AvatarPrimitive.Root
       ref={ref}
@@ -21,7 +40,7 @@ function Avatar({ src, alt, fallback, className, ref, ...props }: AvatarProps) {
       className={cn("relative flex size-10 shrink-0 overflow-hidden rounded-full", className)}
       {...props}
     >
-      {src ? (
+      {srcIsValid ? (
         <AvatarPrimitive.Image
           data-slot="avatar-image"
           src={src}

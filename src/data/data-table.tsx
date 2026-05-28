@@ -515,7 +515,10 @@ function DataTable<TData>({
 
   const defaultRowToRecord = React.useCallback(
     (row: TData, rowIndex: number): Record<string, unknown> => {
-      const record: Record<string, unknown> = {}
+      // Null-prototype object so a column header literally named
+      // `__proto__` / `constructor` assigns to a plain key instead of
+      // mutating the record's prototype chain on its way into xlsx.
+      const record = Object.create(null) as Record<string, unknown>
       // Use ALL leaf cols (not just visible) so columns flagged
       // `meta.exportOnly: true` — hidden from the table UI — still appear
       // in the xlsx output.

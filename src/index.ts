@@ -73,6 +73,11 @@ export {
 export { formatCount } from "./lib/format-count"
 export { formatCEP, formatCNPJ, formatCPF, formatPhone } from "./lib/format"
 export { bytes, gb, kb, mb } from "./lib/size"
+export {
+  DEFAULT_ALLOWED_LINK_PROTOCOLS,
+  DEFAULT_ALLOWED_RESOURCE_PROTOCOLS,
+  isAllowedUrl,
+} from "./lib/url"
 export { cn } from "./lib/utils"
 
 // Navigation

@@ -5,9 +5,6 @@ Component library para softwares enterprise da AM Fernandes Incorporadora. React
 ## Instalação
 
 ```bash
-# .npmrc (uma vez por projeto)
-@amfernandesinc:registry=https://npm.pkg.github.com
-
 bun add @amfernandesinc/ui
 ```
 

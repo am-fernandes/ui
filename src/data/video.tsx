@@ -2,21 +2,10 @@
 
 import * as React from "react"
 
+import { DEFAULT_ALLOWED_RESOURCE_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
 
 const LAZY_LOAD_ROOT_MARGIN = "200px"
-const DEFAULT_ALLOWED_PROTOCOLS = ["http:", "https:"] as const
-
-function isAllowedSrc(src: string, allowed: readonly string[]): boolean {
-  if (/^\s*javascript:/i.test(src)) return false
-  try {
-    const base = typeof window !== "undefined" ? window.location.href : "http://localhost/"
-    const u = new URL(src, base)
-    return allowed.includes(u.protocol)
-  } catch {
-    return !/^\s*(javascript|data|vbscript|file):/i.test(src)
-  }
-}
 
 export interface VideoCaptionTrack {
   src: string
@@ -65,8 +54,8 @@ function Video({
   React.useImperativeHandle(forwardedRef, () => localRef.current as HTMLVideoElement, [])
   const [inView, setInView] = React.useState(false)
 
-  const allowed = allowedProtocols ?? DEFAULT_ALLOWED_PROTOCOLS
-  const srcIsValid = isAllowedSrc(src, allowed)
+  const allowed = allowedProtocols ?? DEFAULT_ALLOWED_RESOURCE_PROTOCOLS
+  const srcIsValid = isAllowedUrl(src, allowed)
 
   React.useEffect(() => {
     const node = localRef.current
