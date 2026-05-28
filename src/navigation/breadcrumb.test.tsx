@@ -153,12 +153,7 @@ describe("Breadcrumb", () => {
     it("warns in dev when an unsafe href is blocked", () => {
       const spy = console.warn as unknown as ReturnType<typeof vi.fn>
       render(
-        <Breadcrumb
-          items={[
-            { label: "Bad", href: "javascript:void(0)" },
-            { label: "Last" },
-          ]}
-        />,
+        <Breadcrumb items={[{ label: "Bad", href: "javascript:void(0)" }, { label: "Last" }]} />,
       )
       expect(spy).toHaveBeenCalled()
       const message = String(spy.mock.calls[0]?.[0] ?? "")

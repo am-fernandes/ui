@@ -20,15 +20,7 @@ export interface AvatarProps
   ref?: React.Ref<HTMLSpanElement>
 }
 
-function Avatar({
-  src,
-  alt,
-  fallback,
-  className,
-  allowedProtocols,
-  ref,
-  ...props
-}: AvatarProps) {
+function Avatar({ src, alt, fallback, className, allowedProtocols, ref, ...props }: AvatarProps) {
   const allowed = allowedProtocols ?? DEFAULT_ALLOWED_RESOURCE_PROTOCOLS
   const srcIsValid = src != null && src !== "" && isAllowedUrl(src, allowed)
 

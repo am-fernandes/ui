@@ -110,9 +110,7 @@ describe("Avatar", () => {
     })
 
     it("does NOT render <img> when src has a vbscript: or file: protocol", () => {
-      const { container, rerender } = render(
-        <Avatar src="vbscript:msgbox" alt="V" fallback="V" />,
-      )
+      const { container, rerender } = render(<Avatar src="vbscript:msgbox" alt="V" fallback="V" />)
       expect(container.querySelector('[data-slot="avatar-image"]')).toBeNull()
 
       rerender(<Avatar src="file:///etc/passwd" alt="F" fallback="F" />)

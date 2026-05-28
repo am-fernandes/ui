@@ -360,9 +360,7 @@ describe("Sidebar", () => {
         <Sidebar
           {...baseProps}
           defaultCollapsed={false}
-          items={[
-            { id: "evil", label: "Evil", href: "javascript:alert(1)", onClick: handler },
-          ]}
+          items={[{ id: "evil", label: "Evil", href: "javascript:alert(1)", onClick: handler }]}
         />,
       )
       await userEvent.click(screen.getByText("Evil"))

@@ -300,8 +300,7 @@ const SidebarItemRender = React.memo(function SidebarItemRender({
     </>
   )
 
-  const hrefIsSafe =
-    item.href != null && isAllowedUrl(item.href, DEFAULT_ALLOWED_LINK_PROTOCOLS)
+  const hrefIsSafe = item.href != null && isAllowedUrl(item.href, DEFAULT_ALLOWED_LINK_PROTOCOLS)
   if (
     process.env.NODE_ENV !== "production" &&
     item.href != null &&

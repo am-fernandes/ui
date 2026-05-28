@@ -20,12 +20,7 @@ export const DEFAULT_ALLOWED_RESOURCE_PROTOCOLS = ["http:", "https:"] as const
  * through the page origin's protocol, so they're already covered by the
  * `http:` / `https:` entries.
  */
-export const DEFAULT_ALLOWED_LINK_PROTOCOLS = [
-  "http:",
-  "https:",
-  "mailto:",
-  "tel:",
-] as const
+export const DEFAULT_ALLOWED_LINK_PROTOCOLS = ["http:", "https:", "mailto:", "tel:"] as const
 
 /**
  * Returns true when `value` resolves to a URL with a protocol on the
