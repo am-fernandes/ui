@@ -171,7 +171,7 @@ const meta = {
           "- `sortableColumns?: string[]` — `accessorKey`s das colunas com header ordenável. Sem isso, **nenhum** header é ordenável — mesma semântica opt-in de `searchableColumns`.",
           "- `searchPlaceholder?: string` — placeholder do input de busca (default `Buscar...`).",
           "- `emptyMessage?: ReactNode` — conteúdo exibido quando `data` filtrado fica vazio (default `Nenhum resultado.`).",
-          "- `pagination?: { pageSize?: number }` — habilita paginação.",
+          "- `pagination?: { pageSize?: number; pageSizeOptions?: number[] }` — habilita paginação. Quando `pageSizeOptions` é informado (ex.: `[10, 20, 50, 100]`), o footer mostra um `<select>` 'Linhas por página' que ao mudar reseta o cursor pra página 1 e propaga via `onPaginationChange`. Sem `pageSize` explícito, o tamanho inicial vira `pageSizeOptions[0]`.",
           "- `showRowCount?: boolean` — mostra a contagem de registros no footer.",
           "- `globalFilter` / `onGlobalFilterChange` — filtro de busca controlado.",
           "- `pageIndex` / `onPaginationChange` / `pageCount` / `manualPagination` — paginação server-side.",
@@ -279,8 +279,8 @@ const meta = {
     pagination: {
       control: "object",
       description:
-        "Habilita paginação com tamanho de página configurável. Omita para listar todas as linhas.",
-      table: { type: { summary: "{ pageSize?: number }" } },
+        "Habilita paginação. `pageSize` define o tamanho inicial. `pageSizeOptions` (opcional) renderiza um `<select>` no footer com tamanhos pré-definidos — trocar reseta para a página 1 e propaga via `onPaginationChange` (funciona em client- e server-side). Quando `pageSizeOptions` é definido e `pageSize` não, o tamanho inicial vira `pageSizeOptions[0]`.",
+      table: { type: { summary: "{ pageSize?: number; pageSizeOptions?: number[] }" } },
     },
     showRowCount: {
       control: "boolean",
@@ -383,6 +383,93 @@ export const Paginated: Story = {
     docs: {
       description: {
         story: "Paginação com 5 linhas por página + contagem no footer.",
+      },
+    },
+  },
+}
+
+export const PaginatedWithPageSizeSelector: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        columns={columns}
+        data={contratos}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+        pagination={{ pageSize: 5, pageSizeOptions: [5, 10, 20, 50] }}
+        showRowCount
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: [
+          "Passe `pagination.pageSizeOptions` para renderizar um `<select>` 'Linhas por página' no footer.",
+          "Trocar a opção reseta o cursor pra página 1 (de forma atômica via `setPagination`) e propaga via `onPaginationChange`. Funciona em client- e server-side.",
+          "",
+          "```tsx",
+          "<DataTable",
+          "  columns={columns}",
+          "  data={contratos}",
+          "  pagination={{ pageSize: 5, pageSizeOptions: [5, 10, 20, 50] }}",
+          "  showRowCount",
+          "/>",
+          "```",
+        ].join("\n"),
+      },
+    },
+  },
+}
+
+export const PaginatedWithPageSizeSelectorServerSide: Story = {
+  render: () => {
+    function Wrapper() {
+      const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
+        pageIndex: 0,
+        pageSize: 5,
+      })
+      const total = contratos.length
+      const pageCount = Math.ceil(total / pageSize)
+      const visible = contratos.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize)
+      return (
+        <div className="space-y-2 p-6">
+          <p className="text-muted-foreground text-xs">
+            Server-side com seletor de tamanho de página. Página{" "}
+            <strong className="text-foreground">{pageIndex + 1}</strong> de {pageCount} ·{" "}
+            <strong className="text-foreground">{pageSize}</strong> linhas/página.
+          </p>
+          <DataTable
+            columns={columns}
+            data={visible}
+            sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+            manualPagination
+            pageIndex={pageIndex}
+            pageCount={pageCount}
+            pagination={{ pageSize, pageSizeOptions: [5, 10, 20] }}
+            onPaginationChange={(updater) => {
+              const next =
+                typeof updater === "function"
+                  ? (updater as (old: PaginationState) => PaginationState)({ pageIndex, pageSize })
+                  : updater
+              // O consumer recebe `{pageIndex: 0, pageSize: novo}` atomicamente
+              // quando o usuário troca o tamanho — sem fetch da página errada.
+              setPagination(next)
+            }}
+            showRowCount
+            labels={{
+              rowCount: () => `${total} registros (server-side)`,
+            }}
+          />
+        </div>
+      )
+    }
+    return <Wrapper />
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Mesma feature em modo manual/server-side: o `onPaginationChange` recebe `{pageIndex: 0, pageSize: novo}` em uma única chamada quando o usuário troca o tamanho — basta o consumer refazer o fetch com a nova fatia. O reset pra página 1 é garantido por `setPagination` atômico (em vez de duas chamadas encadeadas que perdiam o reset quando `pageIndex` ≠ 0).",
       },
     },
   },
