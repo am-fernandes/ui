@@ -577,4 +577,182 @@ describe("DataTable", () => {
       expect(screen.queryByText("Should not appear")).not.toBeInTheDocument()
     })
   })
+
+  describe("pageSizeOptions", () => {
+    const makeMany = (n: number): Row[] =>
+      Array.from({ length: n }, (_, i) => ({ name: `Row ${i + 1}`, age: 20 + i }))
+
+    it("does not render the page-size select when pageSizeOptions is omitted", () => {
+      render(<DataTable columns={columns} data={makeMany(12)} pagination={{ pageSize: 5 }} />)
+      expect(screen.queryByRole("combobox", { name: /Linhas por página/i })).not.toBeInTheDocument()
+    })
+
+    it("does not render the page-size select when pageSizeOptions is an empty array", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={makeMany(12)}
+          pagination={{ pageSize: 5, pageSizeOptions: [] }}
+        />,
+      )
+      expect(screen.queryByRole("combobox", { name: /Linhas por página/i })).not.toBeInTheDocument()
+    })
+
+    it("renders the select with the configured options when pageSizeOptions is set", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={makeMany(60)}
+          pagination={{ pageSize: 10, pageSizeOptions: [10, 20, 50] }}
+        />,
+      )
+      const select = screen.getByRole("combobox", { name: /Linhas por página/i })
+      expect(select).toBeInTheDocument()
+      const options = Array.from((select as HTMLSelectElement).options).map((o) => o.value)
+      expect(options).toEqual(["10", "20", "50"])
+      expect((select as HTMLSelectElement).value).toBe("10")
+    })
+
+    it("falls back to the first pageSizeOptions entry when pagination.pageSize is omitted", () => {
+      // Default pageSize is 10; if 10 isn't in pageSizeOptions, the <select>
+      // would otherwise have a value matching no option (React warning + no
+      // visible selection). The component should default to options[0].
+      render(
+        <DataTable
+          columns={columns}
+          data={makeMany(60)}
+          pagination={{ pageSizeOptions: [20, 50, 100] }}
+        />,
+      )
+      const select = screen.getByRole("combobox", {
+        name: /Linhas por página/i,
+      }) as HTMLSelectElement
+      expect(select.value).toBe("20")
+      // First page renders the first 20 rows.
+      expect(screen.getByText("Row 1")).toBeInTheDocument()
+      expect(screen.getByText("Row 20")).toBeInTheDocument()
+      expect(screen.queryByText("Row 21")).not.toBeInTheDocument()
+    })
+
+    it("changing the size resets to page 1 and shrinks the visible window (uncontrolled)", async () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={makeMany(60)}
+          pagination={{ pageSize: 10, pageSizeOptions: [10, 20, 50] }}
+        />,
+      )
+      // Advance to page 3 (rows 21–30) first.
+      const nextBtn = screen.getByRole("button", { name: "Próxima página" })
+      await userEvent.click(nextBtn)
+      await userEvent.click(nextBtn)
+      expect(screen.getByText(/Página 3 de 6/)).toBeInTheDocument()
+
+      const select = screen.getByRole("combobox", { name: /Linhas por página/i })
+      await userEvent.selectOptions(select, "20")
+
+      // After resize, cursor MUST be back on page 1 (not preserved at row 21).
+      expect(screen.getByText(/Página 1 de 3/)).toBeInTheDocument()
+      expect(screen.getByText("Row 1")).toBeInTheDocument()
+      expect(screen.getByText("Row 20")).toBeInTheDocument()
+      expect(screen.queryByText("Row 21")).not.toBeInTheDocument()
+    })
+
+    it("propagates {pageIndex: 0, pageSize: next} via onPaginationChange when user is past page 0", async () => {
+      // Regression guard: before the atomic setPagination fix, TanStack's
+      // setPageSize internally recomputed pageIndex from the OLD pageIndex
+      // (topRowIndex / newPageSize), landing on a non-zero page. This test
+      // asserts the documented contract — page resets to 0.
+      const onPaginationChange = vi.fn()
+      function Wrapper() {
+        const [state, setState] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
+        return (
+          <DataTable
+            columns={columns}
+            data={makeMany(60)}
+            pagination={{ pageSize: state.pageSize, pageSizeOptions: [10, 20, 50] }}
+            pageIndex={state.pageIndex}
+            onPaginationChange={(updater) => {
+              const next =
+                typeof updater === "function"
+                  ? (updater as (old: PaginationState) => PaginationState)(state)
+                  : updater
+              onPaginationChange(next)
+              setState(next)
+            }}
+          />
+        )
+      }
+      render(<Wrapper />)
+      // Move to page 4 (pageIndex = 3) via next button so old.pageIndex !== 0.
+      const nextBtn = screen.getByRole("button", { name: "Próxima página" })
+      await userEvent.click(nextBtn)
+      await userEvent.click(nextBtn)
+      await userEvent.click(nextBtn)
+      onPaginationChange.mockClear()
+
+      const select = screen.getByRole("combobox", { name: /Linhas por página/i })
+      await userEvent.selectOptions(select, "20")
+
+      expect(onPaginationChange).toHaveBeenCalled()
+      const lastCall = onPaginationChange.mock.calls.at(-1)?.[0] as PaginationState
+      expect(lastCall).toEqual({ pageIndex: 0, pageSize: 20 })
+    })
+
+    it("rejects non-finite / non-positive option values without firing onPaginationChange", async () => {
+      // Guard test for the input-validation branch in the onChange handler.
+      // We force an invalid value by injecting an extra option, then changing
+      // to it via the underlying DOM (userEvent.selectOptions enforces presence).
+      const onPaginationChange = vi.fn()
+      render(
+        <DataTable
+          columns={columns}
+          data={makeMany(20)}
+          pagination={{ pageSize: 10, pageSizeOptions: [10, 20] }}
+          onPaginationChange={onPaginationChange}
+        />,
+      )
+      const select = screen.getByRole("combobox", {
+        name: /Linhas por página/i,
+      }) as HTMLSelectElement
+      // Append a malformed option and dispatch change to exercise the guard.
+      const bogus = document.createElement("option")
+      bogus.value = "not-a-number"
+      select.appendChild(bogus)
+      onPaginationChange.mockClear()
+      select.value = "not-a-number"
+      select.dispatchEvent(new Event("change", { bubbles: true }))
+      expect(onPaginationChange).not.toHaveBeenCalled()
+    })
+
+    it("renders a skeleton in place of the select while loading", () => {
+      const { container } = render(
+        <DataTable
+          columns={columns}
+          data={makeMany(20)}
+          loading
+          pagination={{ pageSize: 10, pageSizeOptions: [10, 20] }}
+        />,
+      )
+      expect(screen.queryByRole("combobox", { name: /Linhas por página/i })).not.toBeInTheDocument()
+      expect(container.querySelector('[data-slot="data-table-page-size-skeleton"]')).toBeTruthy()
+    })
+
+    it("uses custom labels.pageSize for the visible label (and accessible name)", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={makeMany(20)}
+          pagination={{ pageSize: 10, pageSizeOptions: [10, 20] }}
+          labels={{ pageSize: "Rows per page" }}
+        />,
+      )
+      // Visible text and accessible name both come from the wrapping <label>,
+      // so they match by construction — WCAG 2.5.3 (Label in Name).
+      expect(screen.getByText("Rows per page")).toBeInTheDocument()
+      const select = screen.getByRole("combobox", { name: "Rows per page" })
+      expect(select).toBeInTheDocument()
+      expect(select.getAttribute("aria-label")).toBeNull()
+    })
+  })
 })
