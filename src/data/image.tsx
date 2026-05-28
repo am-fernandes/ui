@@ -2,6 +2,7 @@
 
 import * as React from "react"
 
+import { DEFAULT_ALLOWED_RESOURCE_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "../primitives/skeleton"
 
@@ -20,24 +21,6 @@ const roundedMap = {
   lg: "rounded-lg",
   full: "rounded-full",
 } as const
-
-const DEFAULT_ALLOWED_PROTOCOLS = ["http:", "https:"] as const
-
-function isAllowedSrc(src: string, allowed: readonly string[]): boolean {
-  // Always block javascript: pseudo URLs.
-  if (/^\s*javascript:/i.test(src)) return false
-  try {
-    // For absolute URLs (with a scheme), URL() will succeed.
-    // For relative URLs, this resolves against the document base.
-    const base = typeof window !== "undefined" ? window.location.href : "http://localhost/"
-    const u = new URL(src, base)
-    return allowed.includes(u.protocol)
-  } catch {
-    // If parsing fails for some exotic input, fall back to a conservative
-    // string check: only allow if not a known dangerous scheme.
-    return !/^\s*(javascript|data|vbscript|file):/i.test(src)
-  }
-}
 
 export interface ImageProps
   extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "loading" | "decoding"> {
@@ -82,8 +65,8 @@ function Image({
   const [isLoaded, setIsLoaded] = React.useState(false)
   const [hasError, setHasError] = React.useState(false)
 
-  const allowed = allowedProtocols ?? DEFAULT_ALLOWED_PROTOCOLS
-  const srcIsValid = isAllowedSrc(src, allowed)
+  const allowed = allowedProtocols ?? DEFAULT_ALLOWED_RESOURCE_PROTOCOLS
+  const srcIsValid = isAllowedUrl(src, allowed)
 
   // Reset loading/error state whenever the source changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: deliberate — only re-run when `src` changes; the setters are stable.
