@@ -293,4 +293,95 @@ describe("Sidebar", () => {
     expect(preventDefaultSpy).toHaveBeenCalled()
     expect(itemOnClick).not.toHaveBeenCalled()
   })
+
+  describe("href protocol safety", () => {
+    const originalWarn = console.warn
+    beforeEach(() => {
+      console.warn = vi.fn()
+    })
+    afterEach(() => {
+      console.warn = originalWarn
+    })
+
+    it("renders javascript: hrefs as a button (no anchor)", () => {
+      render(
+        <Sidebar
+          {...baseProps}
+          defaultCollapsed={false}
+          items={[
+            {
+              id: "evil",
+              label: "Evil",
+              href: "javascript:alert(document.cookie)",
+            },
+          ]}
+        />,
+      )
+      const evil = screen.getByText("Evil")
+      const anchor = evil.closest("a")
+      const button = evil.closest("button")
+      expect(anchor).toBeNull()
+      expect(button).not.toBeNull()
+    })
+
+    it("blocks vbscript: and file: hrefs", () => {
+      const { container } = render(
+        <Sidebar
+          {...baseProps}
+          defaultCollapsed={false}
+          items={[
+            { id: "vbs", label: "VBS", href: "vbscript:msgbox" },
+            { id: "file", label: "File", href: "file:///etc/passwd" },
+          ]}
+        />,
+      )
+      const anchors = container.querySelectorAll("nav a")
+      expect(anchors).toHaveLength(0)
+    })
+
+    it("keeps mailto: and tel: hrefs as anchors", () => {
+      render(
+        <Sidebar
+          {...baseProps}
+          defaultCollapsed={false}
+          items={[
+            { id: "mail", label: "Email", href: "mailto:foo@bar.com" },
+            { id: "tel", label: "Phone", href: "tel:+5511999999999" },
+          ]}
+        />,
+      )
+      expect(screen.getByText("Email").closest("a")).not.toBeNull()
+      expect(screen.getByText("Phone").closest("a")).not.toBeNull()
+    })
+
+    it("still fires onClick from the button fallback when href is unsafe", async () => {
+      const handler = vi.fn()
+      render(
+        <Sidebar
+          {...baseProps}
+          defaultCollapsed={false}
+          items={[
+            { id: "evil", label: "Evil", href: "javascript:alert(1)", onClick: handler },
+          ]}
+        />,
+      )
+      await userEvent.click(screen.getByText("Evil"))
+      expect(handler).toHaveBeenCalledTimes(1)
+    })
+
+    it("warns in dev when an unsafe href is blocked", () => {
+      const spy = console.warn as unknown as ReturnType<typeof vi.fn>
+      render(
+        <Sidebar
+          {...baseProps}
+          defaultCollapsed={false}
+          items={[{ id: "evil", label: "Evil", href: "javascript:void(0)" }]}
+        />,
+      )
+      expect(spy).toHaveBeenCalled()
+      const message = String(spy.mock.calls[0]?.[0] ?? "")
+      expect(message).toContain("Sidebar")
+      expect(message).toContain("javascript:void(0)")
+    })
+  })
 })
