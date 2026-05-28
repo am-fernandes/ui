@@ -5,12 +5,8 @@
   "license": "Apache-2.0",
   "private": false,
   "type": "module",
-  "sideEffects": [
-    "**/*.css"
-  ],
-  "files": [
-    "dist"
-  ],
+  "sideEffects": ["**/*.css"],
+  "files": ["dist"],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -259,7 +255,7 @@
     "sync:coverage": "vitest run --coverage && bun scripts/sync-coverage.ts",
     "sync:e2e-stats": "bun scripts/sync-e2e-stats.ts",
     "changeset": "changeset",
-    "changeset:version": "changeset version",
+    "changeset:version": "changeset version && biome check --write package.json CHANGELOG.md",
     "changeset:publish": "changeset publish",
     "coverage:gate": "bun scripts/coverage-gate.ts",
     "ci:local": "bun run lint && bun run typecheck && bun run test:coverage && bun run coverage:gate && bun run build && bun run build-storybook"
