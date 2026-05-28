@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { Breadcrumb } from "./breadcrumb"
 
@@ -97,5 +97,73 @@ describe("Breadcrumb", () => {
     for (const sep of separators) {
       expect(sep.hasAttribute("aria-hidden")).toBe(false)
     }
+  })
+
+  describe("href protocol safety", () => {
+    const originalWarn = console.warn
+    beforeEach(() => {
+      console.warn = vi.fn()
+    })
+    afterEach(() => {
+      console.warn = originalWarn
+    })
+
+    it("renders javascript: hrefs as a span (no anchor)", () => {
+      render(
+        <Breadcrumb
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Evil", href: "javascript:alert(document.cookie)" },
+            { label: "Last" },
+          ]}
+        />,
+      )
+      const evil = screen.getByText("Evil")
+      expect(evil.tagName).toBe("SPAN")
+    })
+
+    it("renders vbscript: and file: hrefs as a span", () => {
+      render(
+        <Breadcrumb
+          items={[
+            { label: "VBS", href: "vbscript:msgbox" },
+            { label: "File", href: "file:///etc/passwd" },
+            { label: "Last" },
+          ]}
+        />,
+      )
+      expect(screen.getByText("VBS").tagName).toBe("SPAN")
+      expect(screen.getByText("File").tagName).toBe("SPAN")
+    })
+
+    it("keeps mailto: and tel: hrefs as anchors", () => {
+      render(
+        <Breadcrumb
+          items={[
+            { label: "Email", href: "mailto:foo@bar.com" },
+            { label: "Phone", href: "tel:+5511999999999" },
+            { label: "Last" },
+          ]}
+        />,
+      )
+      expect(screen.getByText("Email").tagName).toBe("A")
+      expect(screen.getByText("Phone").tagName).toBe("A")
+    })
+
+    it("warns in dev when an unsafe href is blocked", () => {
+      const spy = console.warn as unknown as ReturnType<typeof vi.fn>
+      render(
+        <Breadcrumb
+          items={[
+            { label: "Bad", href: "javascript:void(0)" },
+            { label: "Last" },
+          ]}
+        />,
+      )
+      expect(spy).toHaveBeenCalled()
+      const message = String(spy.mock.calls[0]?.[0] ?? "")
+      expect(message).toContain("Breadcrumb")
+      expect(message).toContain("javascript:void(0)")
+    })
   })
 })
