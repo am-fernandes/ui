@@ -287,7 +287,7 @@ export const QuickNavYearMonth: Story = {
     docs: {
       description: {
         story:
-          "Clicar no título (\"junho 2025\") abre a seleção rápida de **ano** e depois de **mês** — sem precisar avançar mês a mês. Ativo por padrão em `Calendar`, `DateInput` e `DateRangePicker`; `Esc` volta para os dias. Com `startMonth`/`endMonth`, só os anos/meses dentro do intervalo ficam disponíveis.",
+          'Clicar no título ("junho 2025") abre a seleção rápida de **ano** e depois de **mês** — sem precisar avançar mês a mês. Ativo por padrão em `Calendar`, `DateInput` e `DateRangePicker`; `Esc` volta para os dias. Com `startMonth`/`endMonth`, só os anos/meses dentro do intervalo ficam disponíveis.',
       },
     },
   },

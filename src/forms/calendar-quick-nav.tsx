@@ -92,6 +92,16 @@ export function CalendarQuickNav({
     return false
   }
 
+  // Which month gets keyboard focus when the months panel opens: the selected
+  // one if we're on its year, otherwise the first enabled month — so jumping to
+  // a different year doesn't drop focus to <body>. -1 means every month is out
+  // of range, in which case the "back" button takes focus instead.
+  const firstEnabledMonth = MONTH_LABELS.findIndex((_, i) => !isMonthDisabled(i))
+  const anchorMonthIndex =
+    pendingYear === selectedYear && !isMonthDisabled(selectedMonthIndex)
+      ? selectedMonthIndex
+      : firstEnabledMonth
+
   return (
     <div
       data-slot="calendar"
@@ -118,6 +128,7 @@ export function CalendarQuickNav({
             return (
               <Button
                 key={year}
+                type="button"
                 variant="ghost"
                 ref={year === anchorYear ? anchorYearRef : undefined}
                 autoFocus={year === anchorYear}
@@ -139,6 +150,7 @@ export function CalendarQuickNav({
         <div role="group" aria-label="Escolher mês" className="w-[calc(var(--cell-size)*7)]">
           <div className="flex h-(--cell-size) items-center justify-center">
             <Button
+              type="button"
               variant="ghost"
               aria-label={`${pendingYear} — voltar para a seleção de ano`}
               className="h-(--cell-size) gap-1 px-2 text-sm font-medium"
@@ -154,9 +166,10 @@ export function CalendarQuickNav({
               return (
                 <Button
                   key={label}
+                  type="button"
                   variant="ghost"
                   disabled={isMonthDisabled(monthIndex)}
-                  autoFocus={isSelected}
+                  autoFocus={monthIndex === anchorMonthIndex}
                   aria-current={isSelected ? "date" : undefined}
                   className={cn(
                     "h-(--cell-size) px-0 text-sm font-normal",

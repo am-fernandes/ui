@@ -162,6 +162,18 @@ function Calendar({
     [onMonthChange],
   )
 
+  // Returning to the day grid (month picked or Escape) remounts the caption as
+  // a fresh element, so move focus back to it — otherwise keyboard focus drops
+  // to <body> and the keyboard flow breaks.
+  const captionButtonRef = React.useRef<HTMLButtonElement | null>(null)
+  const wasQuickNavOpenRef = React.useRef(false)
+  React.useEffect(() => {
+    if (wasQuickNavOpenRef.current && quickNavView === "days") {
+      captionButtonRef.current?.focus()
+    }
+    wasQuickNavOpenRef.current = quickNavView !== "days"
+  }, [quickNavView])
+
   // `button_previous` and `button_next` need the `buttonVariant`-derived
   // class, so build the final classNames object only when `buttonVariant` or
   // the user-provided `classNames` override changes — not on every render.
@@ -222,6 +234,8 @@ function Calendar({
       ...(quickNavEnabled && {
         CaptionLabel: ({ className, children }: React.ComponentProps<"span">) => (
           <Button
+            ref={captionButtonRef}
+            type="button"
             variant="ghost"
             data-slot="calendar-caption-button"
             aria-expanded={false}
