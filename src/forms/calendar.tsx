@@ -98,7 +98,11 @@ const STATIC_CLASS_NAMES = {
   root: `w-fit ${RDP_DEFAULTS.root}`,
   months: `relative flex flex-col gap-4 md:flex-row ${RDP_DEFAULTS.months}`,
   month: `flex w-full flex-col gap-4 ${RDP_DEFAULTS.month}`,
-  nav: `absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1 ${RDP_DEFAULTS.nav}`,
+  // The nav is absolutely positioned full-width over the caption row. Its empty
+  // middle would otherwise swallow clicks meant for the (now interactive)
+  // caption beneath it, so let clicks pass through the container and re-enable
+  // pointer events only on the prev/next buttons themselves (see finalClassNames).
+  nav: `pointer-events-none absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1 ${RDP_DEFAULTS.nav}`,
   month_caption: `flex h-(--cell-size) w-full items-center justify-center px-(--cell-size) ${RDP_DEFAULTS.month_caption}`,
   caption_label: `text-sm font-medium select-none ${RDP_DEFAULTS.caption_label}`,
   table: "w-full border-collapse",
@@ -178,7 +182,8 @@ function Calendar({
   // class, so build the final classNames object only when `buttonVariant` or
   // the user-provided `classNames` override changes — not on every render.
   const finalClassNames = React.useMemo(() => {
-    const buttonNavClass = "size-(--cell-size) p-0 select-none aria-disabled:opacity-50"
+    const buttonNavClass =
+      "pointer-events-auto size-(--cell-size) p-0 select-none aria-disabled:opacity-50"
     const variantClass = buttonVariants({ variant: buttonVariant })
     return {
       ...STATIC_CLASS_NAMES,
