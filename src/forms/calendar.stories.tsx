@@ -280,3 +280,19 @@ export const TwoMonthsCompact: Story = {
     )
   },
 }
+
+export const QuickNavYearMonth: Story = {
+  name: "Quick nav (ano/mês pelo título)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Clicar no título (\"junho 2025\") abre a seleção rápida de **ano** e depois de **mês** — sem precisar avançar mês a mês. Ativo por padrão em `Calendar`, `DateInput` e `DateRangePicker`; `Esc` volta para os dias. Com `startMonth`/`endMonth`, só os anos/meses dentro do intervalo ficam disponíveis.",
+      },
+    },
+  },
+  render: () => {
+    const [date, setDate] = useState<Date | undefined>()
+    return <Calendar mode="single" selected={date} onSelect={setDate} defaultMonth={FIXED_MONTH} />
+  },
+}

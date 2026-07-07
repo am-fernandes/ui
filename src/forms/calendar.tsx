@@ -8,6 +8,7 @@ import { type DayButton, DayPicker, getDefaultClassNames } from "react-day-picke
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "../primitives/button"
+import { CalendarQuickNav, type CalendarQuickNavView } from "./calendar-quick-nav"
 
 /** Preset matchers that translate to a date-fns predicate at render time. */
 export type DisabledDayPreset = "past" | "future" | "weekends" | "weekdays" | "today"
@@ -124,11 +125,42 @@ function Calendar({
   components,
   disabledDays,
   disabled,
+  month,
+  defaultMonth,
+  onMonthChange,
   ref,
   ...props
 }: CalendarProps) {
   const disabledFn = resolveDisabledDays(disabledDays)
   const resolvedDisabled = disabledFn ?? disabled
+
+  // ── Quick nav (jump to a year/month, MUI-style) ────────────────────────────
+  // Clicking the caption swaps the day grid for a years panel, then a months
+  // panel. Active only for the default caption; `captionLayout="dropdown"`
+  // keeps react-day-picker's native dropdowns.
+  const quickNavEnabled = captionLayout === "label"
+  const [quickNavView, setQuickNavView] = React.useState<"days" | CalendarQuickNavView>("days")
+  const [pendingYear, setPendingYear] = React.useState<number>(() =>
+    (month ?? defaultMonth ?? new Date()).getFullYear(),
+  )
+
+  // The displayed month becomes controllable here so a year/month pick can
+  // jump the grid. A consumer-controlled `month` keeps working: picks are
+  // forwarded through their `onMonthChange`.
+  const [internalMonth, setInternalMonth] = React.useState<Date>(
+    () => month ?? defaultMonth ?? new Date(),
+  )
+  const displayedMonth = month ?? internalMonth
+  const displayedMonthRef = React.useRef(displayedMonth)
+  displayedMonthRef.current = displayedMonth
+
+  const handleMonthChange = React.useCallback(
+    (next: Date) => {
+      setInternalMonth(next)
+      onMonthChange?.(next)
+    },
+    [onMonthChange],
+  )
 
   // `button_previous` and `button_next` need the `buttonVariant`-derived
   // class, so build the final classNames object only when `buttonVariant` or
@@ -187,14 +219,54 @@ function Calendar({
       DayButton: (dayButtonProps: React.ComponentProps<typeof DayButton>) => (
         <CalendarDayButton {...dayButtonProps} />
       ),
+      ...(quickNavEnabled && {
+        CaptionLabel: ({ className, children }: React.ComponentProps<"span">) => (
+          <Button
+            variant="ghost"
+            data-slot="calendar-caption-button"
+            aria-expanded={false}
+            className={cn("h-(--cell-size) gap-1 px-2 select-none", className)}
+            onClick={() => {
+              setPendingYear(displayedMonthRef.current.getFullYear())
+              setQuickNavView("years")
+            }}
+          >
+            {children}
+            <ChevronDownIcon aria-hidden="true" className="size-4 text-muted-foreground" />
+          </Button>
+        ),
+      }),
     }),
-    [ref],
+    [ref, quickNavEnabled],
   )
 
   const finalComponents = React.useMemo(
     () => (components ? { ...memoizedComponents, ...components } : memoizedComponents),
     [memoizedComponents, components],
   )
+
+  if (quickNavEnabled && quickNavView !== "days") {
+    return (
+      <CalendarQuickNav
+        view={quickNavView}
+        displayedMonth={displayedMonth}
+        pendingYear={pendingYear}
+        startMonth={props.startMonth}
+        endMonth={props.endMonth}
+        className={className}
+        onSelectYear={(year) => {
+          setPendingYear(year)
+          setQuickNavView("months")
+        }}
+        onSelectMonth={(monthIndex) => {
+          handleMonthChange(new Date(pendingYear, monthIndex, 1))
+          setQuickNavView("days")
+        }}
+        onBackToYears={() => setQuickNavView("years")}
+        onCancel={() => setQuickNavView("days")}
+      />
+    )
+  }
 
   return (
     <DayPicker
@@ -210,6 +282,9 @@ function Calendar({
       formatters={finalFormatters}
       classNames={finalClassNames}
       components={finalComponents}
+      {...(quickNavEnabled
+        ? { month: displayedMonth, onMonthChange: handleMonthChange }
+        : { month, defaultMonth, onMonthChange })}
       {...props}
     />
   )
