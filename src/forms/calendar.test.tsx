@@ -195,4 +195,20 @@ describe("Calendar", () => {
     const selects = document.querySelectorAll("select")
     expect(selects.length).toBeGreaterThanOrEqual(1)
   })
+
+  it("lets clicks pass through the nav overlay to the caption beneath it", () => {
+    // The nav is absolutely positioned full-width over the caption row. jsdom
+    // can't reproduce real hit-testing, so guard the fix structurally: the nav
+    // container must not capture pointer events (its empty middle would swallow
+    // clicks meant for the interactive caption), while the prev/next buttons
+    // must keep them.
+    render(<Calendar mode="single" defaultMonth={FIXED_MONTH} />)
+    const nav = document.querySelector('[class*="rdp-nav"]')
+    expect(nav?.className).toContain("pointer-events-none")
+    for (const btn of screen.getAllByRole("button", {
+      name: /(previous|next|próx|anterior)/i,
+    })) {
+      expect(btn.className).toContain("pointer-events-auto")
+    }
+  })
 })
