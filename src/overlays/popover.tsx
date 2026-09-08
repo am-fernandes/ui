@@ -16,6 +16,8 @@ export interface PopoverProps {
   align?: "start" | "center" | "end"
   side?: "top" | "right" | "bottom" | "left"
   sideOffset?: number
+  /** Minimum distance in px kept between the content and the viewport edges when it flips or shifts on collision. Default `16`. */
+  collisionPadding?: PopoverContentProps["collisionPadding"]
   modal?: boolean
   className?: string
   onInteractOutside?: PopoverContentProps["onInteractOutside"]
@@ -33,6 +35,7 @@ function Popover({
   align = "center",
   side,
   sideOffset = 4,
+  collisionPadding = 16,
   modal,
   className,
   onInteractOutside,
@@ -58,6 +61,7 @@ function Popover({
           align={align}
           side={side}
           sideOffset={sideOffset}
+          collisionPadding={collisionPadding}
           onInteractOutside={onInteractOutside}
           onPointerDownOutside={onPointerDownOutside}
           onFocusOutside={onFocusOutside}
