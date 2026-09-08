@@ -442,6 +442,20 @@ describe("DataTable", () => {
       expect(records[0]).toEqual({ NOME_CUSTOM: "BRAVO" })
     })
 
+    it("resolves filename from a function passing the export scope", async () => {
+      const filename = vi.fn((scope: string) => `contratos-${scope}.xlsx`)
+      render(<DataTable columns={columns} data={data} downloadable={{ filename }} />)
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
+      expect(filename).toHaveBeenCalledWith("all")
+      const [, resolved] = downloadXlsxMock.mock.calls[0] as unknown as [
+        Record<string, unknown>[],
+        string,
+        string,
+      ]
+      expect(resolved).toBe("contratos-all.xlsx")
+    })
+
     it("replaces the export button with a skeleton when loading", () => {
       const { container } = render(<DataTable columns={columns} data={data} downloadable loading />)
       expect(screen.queryByText("Exportar para Excel")).not.toBeInTheDocument()

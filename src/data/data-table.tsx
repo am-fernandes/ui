@@ -261,8 +261,12 @@ export interface DataTableProps<TData> {
 }
 
 export interface DataTableDownloadable<TData> {
-  /** Filename for the downloaded xlsx. Default `"export.xlsx"`. */
-  filename?: string
+  /**
+   * Filename for the downloaded xlsx. Default `"export.xlsx"`. Pass a function to
+   * derive the name from the export scope (e.g. reflect active filters or the
+   * current page); returning a falsy value falls back to `"export.xlsx"`.
+   */
+  filename?: string | ((scope: ExportScope) => string)
   /** Sheet name inside the workbook. Default `"Dados"`. */
   sheetName?: string
   /**
@@ -569,11 +573,11 @@ function DataTable<TData>({
       }
       const mapper = downloadConfig?.rowToRecord ?? defaultRowToRecord
       const records = rows.map(mapper)
-      await downloadXlsx(
-        records,
-        downloadConfig?.filename ?? "export.xlsx",
-        downloadConfig?.sheetName ?? "Dados",
-      )
+      const filename =
+        typeof downloadConfig?.filename === "function"
+          ? downloadConfig.filename(scope)
+          : downloadConfig?.filename
+      await downloadXlsx(records, filename || "export.xlsx", downloadConfig?.sheetName ?? "Dados")
     },
     [data, defaultRowToRecord, downloadConfig, table],
   )
