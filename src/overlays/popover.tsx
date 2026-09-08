@@ -20,6 +20,8 @@ export interface PopoverProps {
   collisionPadding?: PopoverContentProps["collisionPadding"]
   modal?: boolean
   className?: string
+  "aria-label"?: string
+  "aria-labelledby"?: string
   onInteractOutside?: PopoverContentProps["onInteractOutside"]
   onPointerDownOutside?: PopoverContentProps["onPointerDownOutside"]
   onFocusOutside?: PopoverContentProps["onFocusOutside"]
@@ -38,6 +40,8 @@ function Popover({
   collisionPadding = 16,
   modal,
   className,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledby,
   onInteractOutside,
   onPointerDownOutside,
   onFocusOutside,
@@ -62,6 +66,8 @@ function Popover({
           side={side}
           sideOffset={sideOffset}
           collisionPadding={collisionPadding}
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledby}
           onInteractOutside={onInteractOutside}
           onPointerDownOutside={onPointerDownOutside}
           onFocusOutside={onFocusOutside}

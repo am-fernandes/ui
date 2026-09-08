@@ -53,6 +53,7 @@ type Story = StoryObj<typeof Popover>
 
 export const Default: Story = {
   args: {
+    "aria-label": "Informações do popover",
     trigger: <Button variant="outline">Abrir popover</Button>,
     children: (
       <div className="flex flex-col gap-2">
@@ -75,6 +76,7 @@ export const Default: Story = {
 
 export const AlignStart: Story = {
   args: {
+    "aria-label": "Popover alinhado ao início",
     trigger: <Button variant="outline">align=start</Button>,
     align: "start",
     children: <p className="text-sm">Alinhado ao início do trigger.</p>,
@@ -83,6 +85,7 @@ export const AlignStart: Story = {
 
 export const AlignEnd: Story = {
   args: {
+    "aria-label": "Popover alinhado ao fim",
     trigger: <Button variant="outline">align=end</Button>,
     align: "end",
     children: <p className="text-sm">Alinhado ao fim do trigger.</p>,
@@ -91,6 +94,7 @@ export const AlignEnd: Story = {
 
 export const SideTop: Story = {
   args: {
+    "aria-label": "Popover acima",
     trigger: <Button variant="outline">side=top</Button>,
     side: "top",
     children: <p className="text-sm">Aparece acima.</p>,
@@ -99,6 +103,7 @@ export const SideTop: Story = {
 
 export const SideBottom: Story = {
   args: {
+    "aria-label": "Popover abaixo",
     trigger: <Button variant="outline">side=bottom (default)</Button>,
     side: "bottom",
     children: <p className="text-sm">Aparece abaixo (default).</p>,
@@ -107,6 +112,7 @@ export const SideBottom: Story = {
 
 export const WithForm: Story = {
   args: {
+    "aria-labelledby": "popover-form-title",
     trigger: (
       <Button variant="outline" className="size-9 p-0" aria-label="Configurações">
         <SettingsIcon className="size-4" />
@@ -120,7 +126,9 @@ export const WithForm: Story = {
           console.log("submitted")
         }}
       >
-        <h4 className="text-sm font-medium">Renomear documento</h4>
+        <h4 id="popover-form-title" className="text-sm font-medium">
+          Renomear documento
+        </h4>
         <Input label="Nome" labelPosition="hidden" placeholder="Novo nome..." />
         <Button type="submit">Salvar</Button>
       </form>
@@ -144,6 +152,7 @@ export const ControlledOpen: Story = {
         <Popover
           open={open}
           onOpenChange={setOpen}
+          aria-label="Popover controlado"
           trigger={<Button variant="outline">Trigger</Button>}
         >
           <p className="text-sm">open = {String(open)}</p>
