@@ -305,7 +305,7 @@ function FileUpload({
             variant="outline"
             disabled={disabled}
             onClick={() => setCameraOpen(true)}
-            className="sm:h-auto sm:min-h-[6.5rem] sm:flex-col sm:gap-2 sm:px-6"
+            className="sm:h-auto sm:min-h-26 sm:flex-col sm:gap-2 sm:px-6"
           >
             <Camera className="size-5" aria-hidden />
             <span>{mergedLabels.cameraButton}</span>

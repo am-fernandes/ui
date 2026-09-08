@@ -320,7 +320,7 @@ export function Combobox(props: ComboboxProps) {
             <CommandPrimitive.List
               id={listboxId}
               onWheel={(e) => e.stopPropagation()}
-              className="max-h-[300px] overflow-y-auto overflow-x-hidden p-1"
+              className="max-h-75 overflow-y-auto overflow-x-hidden p-1"
             >
               {!showCreateOption ? (
                 <CommandPrimitive.Empty className="py-6 text-center text-sm text-muted-foreground">
