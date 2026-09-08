@@ -140,6 +140,19 @@ describe("FileUpload", () => {
     expect(onValueChange).toHaveBeenLastCalledWith([b])
   })
 
+  it("removable={false} keeps the row visible but drops the Remover button", () => {
+    render(<FileUpload multiple removable={false} value={[makeFile("a.txt", "text/plain")]} />)
+    expect(screen.getByText("a.txt")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Remover a\.txt/ })).not.toBeInTheDocument()
+  })
+
+  it("image lightbox exposes explicit download and close buttons", () => {
+    render(<FileUpload accept="image/*" value={[makeFile("photo.png", "image/png", 100)]} />)
+    fireEvent.click(screen.getByRole("button", { name: /Ampliar photo\.png/ }))
+    expect(screen.getByRole("button", { name: "Baixar imagem" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Fechar" })).toBeInTheDocument()
+  })
+
   it("renders an image preview thumbnail (img element) for image files", () => {
     render(<FileUpload accept="image/*" />)
     const input = document.querySelector("input[type=file]") as HTMLInputElement

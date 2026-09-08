@@ -1,10 +1,19 @@
 "use client"
 
-import { Camera, File as FileIcon, ImageIcon, Loader2, UploadCloud, X } from "lucide-react"
+import {
+  Camera,
+  Download,
+  File as FileIcon,
+  ImageIcon,
+  Loader2,
+  UploadCloud,
+  X,
+} from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Dialog } from "../overlays/dialog"
+import { toast } from "../overlays/sonner"
 import { Button } from "../primitives/button"
 
 export type FileUploadRejectionReason = "type" | "size" | "max-files"
@@ -41,6 +50,14 @@ export interface FileUploadLabels {
   fileListAriaLabel: string
   /** Lightbox title fallback when the image has no name. */
   imageFallbackName: string
+  /** Lightbox "download image" button. */
+  imageDownload: string
+  /** Toast shown after the image is saved. */
+  imageDownloadSuccess: string
+  /** Toast shown when the image could not be saved. */
+  imageDownloadError: string
+  /** Lightbox "close" button. */
+  imageClose: string
   /** Aria-label of the lightbox-open button for image rows: `(fileName) => ...`. */
   zoomImage: (fileName: string) => string
   /** Aria-label of the open-in-new-tab button for non-image rows. */
@@ -63,6 +80,10 @@ export const defaultFileUploadLabels: FileUploadLabels = {
   cameraAccessFailed: "Não foi possível acessar a câmera. Verifique as permissões do navegador.",
   fileListAriaLabel: "Arquivos selecionados",
   imageFallbackName: "Imagem",
+  imageDownload: "Baixar imagem",
+  imageDownloadSuccess: "Download concluído",
+  imageDownloadError: "Não foi possível baixar a imagem",
+  imageClose: "Fechar",
   zoomImage: (fileName) => `Ampliar ${fileName}`,
   openFile: (fileName) => `Abrir ${fileName} em nova aba`,
   removeFile: (fileName) => `Remover ${fileName}`,
@@ -99,6 +120,8 @@ export interface FileUploadProps {
   className?: string
   /** Class on the dropzone clickable area. */
   dropzoneClassName?: string
+  /** Show the per-row remove button. Set `false` for a read-only list that can still be opened/previewed. Default `true`. */
+  removable?: boolean
   /** Override individual UI strings. Defaults are pt-BR. */
   labels?: Partial<FileUploadLabels>
 }
@@ -161,6 +184,7 @@ function FileUpload({
   description,
   className,
   dropzoneClassName,
+  removable = true,
   labels,
 }: FileUploadProps) {
   const mergedLabels: FileUploadLabels = { ...defaultFileUploadLabels, ...labels }
@@ -312,6 +336,7 @@ function FileUpload({
               key={`${file.name}-${file.lastModified}-${index}`}
               file={file}
               disabled={disabled}
+              removable={removable}
               onRemove={() => removeAt(index)}
               onOpenImage={() => setLightboxFile(file)}
               labels={mergedLabels}
@@ -339,12 +364,14 @@ function FileUpload({
 function FileRow({
   file,
   disabled,
+  removable,
   onRemove,
   onOpenImage,
   labels,
 }: {
   file: File
   disabled: boolean
+  removable: boolean
   onRemove: () => void
   onOpenImage: () => void
   labels: FileUploadLabels
@@ -390,16 +417,18 @@ function FileRow({
         <span className="truncate font-medium">{file.name}</span>
         <span className="text-xs text-muted-foreground">{formatBytes(file.size)}</span>
       </span>
-      <Button
-        type="button"
-        variant="ghost"
-        className="size-9 p-0"
-        disabled={disabled}
-        onClick={onRemove}
-        aria-label={labels.removeFile(file.name)}
-      >
-        <X className="size-4" />
-      </Button>
+      {removable ? (
+        <Button
+          type="button"
+          variant="ghost"
+          className="size-9 p-0"
+          disabled={disabled}
+          onClick={onRemove}
+          aria-label={labels.removeFile(file.name)}
+        >
+          <X className="size-4" />
+        </Button>
+      ) : null}
     </li>
   )
 }
@@ -425,6 +454,39 @@ function ImageLightbox({
     return () => URL.revokeObjectURL(u)
   }, [file])
 
+  async function handleDownload() {
+    if (!file) return
+    const name = file.name || labels.imageFallbackName
+    try {
+      const picker = (
+        window as unknown as {
+          showSaveFilePicker?: (opts: { suggestedName?: string }) => Promise<{
+            createWritable: () => Promise<{
+              write: (data: Blob) => Promise<void>
+              close: () => Promise<void>
+            }>
+          }>
+        }
+      ).showSaveFilePicker
+      if (picker) {
+        const handle = await picker({ suggestedName: name })
+        const writable = await handle.createWritable()
+        await writable.write(file)
+        await writable.close()
+      } else {
+        const a = document.createElement("a")
+        a.href = URL.createObjectURL(file)
+        a.download = name
+        a.click()
+        setTimeout(() => URL.revokeObjectURL(a.href), 60_000)
+      }
+      toast.success(labels.imageDownloadSuccess)
+    } catch (err) {
+      if ((err as Error)?.name === "AbortError") return
+      toast.error(labels.imageDownloadError)
+    }
+  }
+
   return (
     <Dialog
       open={file != null}
@@ -434,6 +496,15 @@ function ImageLightbox({
       className="border-0 bg-transparent p-0"
       hideCloseButton
     >
+      <div className="flex items-center justify-end gap-2 pb-2">
+        <Button type="button" variant="secondary" onClick={handleDownload}>
+          <Download className="size-4" />
+          {labels.imageDownload}
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+          {labels.imageClose}
+        </Button>
+      </div>
       {url ? (
         <img
           src={url}
