@@ -300,9 +300,10 @@ export function Combobox(props: ComboboxProps) {
           <CommandPrimitive
             filter={
               creatable
-                ? (value, searchText) => {
+                ? (value, searchText, keywords) => {
                     if (value === CREATE_ACTION_VALUE) return 1
-                    return value.toLowerCase().includes(searchText.toLowerCase()) ? 1 : 0
+                    const haystack = [value, ...(keywords ?? [])].join(" ").toLowerCase()
+                    return haystack.includes(searchText.toLowerCase()) ? 1 : 0
                   }
                 : undefined
             }
@@ -318,6 +319,7 @@ export function Combobox(props: ComboboxProps) {
             </div>
             <CommandPrimitive.List
               id={listboxId}
+              onWheel={(e) => e.stopPropagation()}
               className="max-h-[300px] overflow-y-auto overflow-x-hidden p-1"
             >
               {!showCreateOption ? (
@@ -345,6 +347,7 @@ export function Combobox(props: ComboboxProps) {
                     <CommandPrimitive.Item
                       key={option.value}
                       value={option.value}
+                      keywords={[option.label]}
                       disabled={option.disabled}
                       onSelect={() => {
                         if (isMultiple) handleMultipleSelect(option.value)

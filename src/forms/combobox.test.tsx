@@ -150,6 +150,28 @@ describe("Combobox", () => {
     expect(await screen.findByText("Nenhum item disponível")).toBeInTheDocument()
   })
 
+  it("filters by the visible label when value is an opaque id", async () => {
+    const idOptions: ComboboxOption[] = [
+      { value: "7f3a", label: "Alpha" },
+      { value: "9b2c", label: "Bravo" },
+    ]
+    render(<Combobox options={idOptions} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    const searchInput = await screen.findByPlaceholderText("Buscar...")
+    await userEvent.type(searchInput, "brav")
+    expect(await screen.findByRole("option", { name: /Bravo/ })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /Alpha/ })).not.toBeInTheDocument()
+  })
+
+  it("creatable: filters existing options by label, not just value", async () => {
+    const idOptions: ComboboxOption[] = [{ value: "7f3a", label: "Alpha" }]
+    render(<Combobox creatable options={idOptions} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    const searchInput = await screen.findByPlaceholderText("Buscar...")
+    await userEvent.type(searchInput, "alph")
+    expect(await screen.findByRole("option", { name: /Alpha/ })).toBeInTheDocument()
+  })
+
   it("creatable: types a new value and clicks the Usar option to create it", async () => {
     const onValueChange = vi.fn()
     render(
