@@ -51,13 +51,13 @@ export interface FileUploadLabels {
   /** Lightbox title fallback when the image has no name. */
   imageFallbackName: string
   /** Lightbox "download image" button. */
-  imageDownload: string
+  imageDownload?: string
   /** Toast shown after the image is saved. */
-  imageDownloadSuccess: string
+  imageDownloadSuccess?: string
   /** Toast shown when the image could not be saved. */
-  imageDownloadError: string
+  imageDownloadError?: string
   /** Lightbox "close" button. */
-  imageClose: string
+  imageClose?: string
   /** Aria-label of the lightbox-open button for image rows: `(fileName) => ...`. */
   zoomImage: (fileName: string) => string
   /** Aria-label of the open-in-new-tab button for non-image rows. */
@@ -66,7 +66,9 @@ export interface FileUploadLabels {
   removeFile: (fileName: string) => string
 }
 
-export const defaultFileUploadLabels: FileUploadLabels = {
+type ResolvedFileUploadLabels = Required<FileUploadLabels>
+
+export const defaultFileUploadLabels: ResolvedFileUploadLabels = {
   dropzoneSingle: "Arraste um arquivo ou clique para selecionar",
   dropzoneMultiple: "Arraste arquivos ou clique para selecionar",
   dropzoneAriaLabel: "Selecionar arquivos",
@@ -187,7 +189,7 @@ function FileUpload({
   removable = true,
   labels,
 }: FileUploadProps) {
-  const mergedLabels: FileUploadLabels = { ...defaultFileUploadLabels, ...labels }
+  const mergedLabels: ResolvedFileUploadLabels = { ...defaultFileUploadLabels, ...labels }
   const resolvedLabel: React.ReactNode =
     label ?? (multiple ? mergedLabels.dropzoneMultiple : mergedLabels.dropzoneSingle)
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -374,7 +376,7 @@ function FileRow({
   removable: boolean
   onRemove: () => void
   onOpenImage: () => void
-  labels: FileUploadLabels
+  labels: ResolvedFileUploadLabels
 }) {
   const isImage = file.type.startsWith("image/")
   const [thumb, setThumb] = React.useState<string | null>(null)
@@ -440,9 +442,10 @@ function ImageLightbox({
 }: {
   file: File | null
   onOpenChange: (open: boolean) => void
-  labels: FileUploadLabels
+  labels: ResolvedFileUploadLabels
 }) {
   const [url, setUrl] = React.useState<string | null>(null)
+  const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
     if (!file) {
@@ -455,35 +458,47 @@ function ImageLightbox({
   }, [file])
 
   async function handleDownload() {
-    if (!file) return
+    if (!file || saving) return
+    setSaving(true)
     const name = file.name || labels.imageFallbackName
-    try {
-      const picker = (
-        window as unknown as {
-          showSaveFilePicker?: (opts: { suggestedName?: string }) => Promise<{
-            createWritable: () => Promise<{
-              write: (data: Blob) => Promise<void>
-              close: () => Promise<void>
-            }>
+    const saveWithAnchor = () => {
+      const objectUrl = URL.createObjectURL(file)
+      const a = document.createElement("a")
+      a.href = objectUrl
+      a.download = name
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
+    }
+    const picker = (
+      window as unknown as {
+        showSaveFilePicker?: (opts: { suggestedName?: string }) => Promise<{
+          createWritable: () => Promise<{
+            write: (data: Blob) => Promise<void>
+            close: () => Promise<void>
           }>
-        }
-      ).showSaveFilePicker
+        }>
+      }
+    ).showSaveFilePicker
+    try {
       if (picker) {
-        const handle = await picker({ suggestedName: name })
-        const writable = await handle.createWritable()
-        await writable.write(file)
-        await writable.close()
+        try {
+          const handle = await picker({ suggestedName: name })
+          const writable = await handle.createWritable()
+          await writable.write(file)
+          await writable.close()
+        } catch (err) {
+          if ((err as Error)?.name === "AbortError") return
+          if ((err as Error)?.name !== "SecurityError") throw err
+          saveWithAnchor()
+        }
       } else {
-        const a = document.createElement("a")
-        a.href = URL.createObjectURL(file)
-        a.download = name
-        a.click()
-        setTimeout(() => URL.revokeObjectURL(a.href), 60_000)
+        saveWithAnchor()
       }
       toast.success(labels.imageDownloadSuccess)
-    } catch (err) {
-      if ((err as Error)?.name === "AbortError") return
+    } catch {
       toast.error(labels.imageDownloadError)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -497,7 +512,7 @@ function ImageLightbox({
       hideCloseButton
     >
       <div className="flex items-center justify-end gap-2 pb-2">
-        <Button type="button" variant="secondary" onClick={handleDownload}>
+        <Button type="button" variant="secondary" onClick={handleDownload} disabled={saving}>
           <Download className="size-4" />
           {labels.imageDownload}
         </Button>
@@ -525,7 +540,7 @@ function CameraDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
   onCapture: (file: File) => void
-  labels: FileUploadLabels
+  labels: ResolvedFileUploadLabels
 }) {
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const streamRef = React.useRef<MediaStream | null>(null)
