@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { LayoutDashboard, Users } from "lucide-react"
+import { CirclePlay, LayoutDashboard, Users } from "lucide-react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { Sidebar, type SidebarItem } from "./sidebar"
@@ -101,6 +101,42 @@ describe("Sidebar", () => {
     const profileButtons = screen.getAllByRole("button", { name: /editar perfil/i })
     await userEvent.click(profileButtons[0]!)
     expect(onProfileClick).toHaveBeenCalledTimes(1)
+  })
+
+  it("keeps the default 'Editar perfil' label and icon button", () => {
+    render(<Sidebar {...baseProps} items={items} defaultCollapsed={false} />)
+    expect(screen.getAllByRole("button", { name: "Editar perfil" })).toHaveLength(2)
+  })
+
+  it("uses `profileLabel` and `profileIcon` for the avatar and the profile button", () => {
+    render(
+      <Sidebar
+        {...baseProps}
+        items={items}
+        defaultCollapsed={false}
+        profileLabel="Ver tutorial"
+        profileIcon={CirclePlay}
+      />,
+    )
+    expect(screen.getAllByRole("button", { name: "Ver tutorial" })).toHaveLength(2)
+    expect(screen.queryByRole("button", { name: "Editar perfil" })).not.toBeInTheDocument()
+  })
+
+  it("renders the user name as a button only when `onNameClick` is provided", async () => {
+    const onNameClick = vi.fn()
+    const { rerender } = render(<Sidebar {...baseProps} items={items} defaultCollapsed={false} />)
+    expect(screen.queryByRole("button", { name: "Matheus Sena" })).not.toBeInTheDocument()
+
+    rerender(
+      <Sidebar {...baseProps} items={items} defaultCollapsed={false} onNameClick={onNameClick} />,
+    )
+    await userEvent.click(screen.getByRole("button", { name: "Matheus Sena" }))
+    expect(onNameClick).toHaveBeenCalledTimes(1)
+  })
+
+  it("omits the Sair button and dialog when `onSignOut` is not provided", () => {
+    render(<Sidebar {...baseProps} onSignOut={undefined} items={items} defaultCollapsed={false} />)
+    expect(screen.queryByRole("button", { name: "Sair" })).not.toBeInTheDocument()
   })
 
   it("opens the confirmation dialog when clicking Sair", async () => {
