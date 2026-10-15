@@ -147,7 +147,7 @@ export const Caption: Story = {
 
 export const AllVariants: Story = {
   render: () => (
-    <div className="flex w-[480px] flex-col gap-6">
+    <div className="flex w-120 flex-col gap-6">
       <div className="flex flex-col gap-1">
         <span className="text-xs text-muted-foreground">heading → h1</span>
         <Typography variant="heading">{COPY}</Typography>
@@ -185,7 +185,7 @@ export const AllVariants: Story = {
 
 export const PolymorphicAs: Story = {
   render: () => (
-    <div className="flex w-[480px] flex-col gap-4">
+    <div className="flex w-120 flex-col gap-4">
       <div className="flex flex-col gap-1">
         <span className="text-xs text-muted-foreground">
           variant=&quot;title&quot; (default: &lt;h2&gt;)
@@ -243,7 +243,7 @@ export const PolymorphicAs: Story = {
 
 export const WithClassName: Story = {
   render: () => (
-    <div className="flex w-[480px] flex-col gap-3">
+    <div className="flex w-120 flex-col gap-3">
       <Typography variant="title" className="text-primary">
         Cor primária via className
       </Typography>
