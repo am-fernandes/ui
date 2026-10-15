@@ -23,6 +23,10 @@ describe("downloadXlsx", () => {
     ["contratos.xlsx", "contratos.xlsx"],
     ["Contratos.filtrados", "Contratos.filtrados.xlsx"],
     ["REL.XLSX", "REL.XLSX"],
+    ["relatorio.csv", "relatorio.csv"],
+    ["dados.v2", "dados.v2.xlsx"],
+    ["Contratos.filtrados", "Contratos.filtrados.xlsx"],
+    ["relatorio.xls", "relatorio.xls"],
   ])("writes %s as %s", async (input, expected) => {
     await downloadXlsx([{ a: 1 }], input, "Dados")
     expect(writeFile).toHaveBeenCalledTimes(1)

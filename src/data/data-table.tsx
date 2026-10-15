@@ -265,7 +265,7 @@ export interface DataTableDownloadable<TData> {
    * Filename for the downloaded xlsx. Default `"export.xlsx"`. Pass a function to
    * derive the name from the export scope (e.g. reflect active filters or the
    * current page); returning a falsy value falls back to `"export.xlsx"`. The function
-   * must not throw: an exception aborts the export. `.xlsx` is appended when missing.
+   * must not throw: an exception aborts the export. `.xlsx` is appended unless the name ends in a spreadsheet or CSV extension.
    */
   filename?: string | ((scope: ExportScope) => string)
   /** Sheet name inside the workbook. Default `"Dados"`. */

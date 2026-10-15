@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": patch
+"@amfernandesinc/ui": minor
 ---
 
 **Combobox**: a busca passa a considerar o `label` das opções, além do `value`, e ignora acentos (`coracao` encontra `Coração`).

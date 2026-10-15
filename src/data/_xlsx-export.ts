@@ -8,9 +8,9 @@ export async function downloadXlsx(
   filename: string,
   sheetName: string,
 ): Promise<void> {
-  // `XLSX.writeFile` deriva o tipo do arquivo da extensão: sem `.xlsx` o browser
-  // baixa sem extensão, e com outra extensão lança `Unrecognized bookType`.
-  const safeFilename = filename.toLowerCase().endsWith(".xlsx") ? filename : `${filename}.xlsx`
+  const safeFilename = /\.(xlsx|xlsm|xlsb|xls|csv|ods|txt)$/i.test(filename)
+    ? filename
+    : `${filename}.xlsx`
   const XLSX = await import("xlsx")
   const worksheet = XLSX.utils.json_to_sheet(records)
   const workbook = XLSX.utils.book_new()
