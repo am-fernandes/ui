@@ -28,6 +28,8 @@ export interface DialogProps {
   dismissible?: boolean
   hideCloseButton?: boolean
   closeLabel?: string
+  /** Handler do auto-focus do Radix ao abrir (ex.: direcionar o foco inicial). */
+  onOpenAutoFocus?: (event: Event) => void
   /** Visual size of the modal. */
   size?: "sm" | "md" | "lg" | "xl"
   /** Extra class on the content element. */
@@ -98,6 +100,7 @@ function Dialog({
   dismissible = true,
   hideCloseButton = false,
   closeLabel = "Close",
+  onOpenAutoFocus,
   size = "md",
   className,
 }: DialogProps) {
@@ -115,6 +118,7 @@ function Dialog({
         <DialogPrimitive.Content
           data-slot="dialog-content"
           className={cn(dialogContentBase, SIZE_CLASSES[size], className)}
+          onOpenAutoFocus={onOpenAutoFocus}
           onEscapeKeyDown={(e) => {
             if (!dismissible) e.preventDefault()
           }}

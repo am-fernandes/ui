@@ -395,7 +395,7 @@ function FileRow({
   function openInNewTab() {
     const url = URL.createObjectURL(file)
     window.open(url, "_blank", "noopener,noreferrer")
-    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    setTimeout(() => URL.revokeObjectURL(url), OBJECT_URL_REVOKE_MS)
   }
 
   return (
@@ -447,6 +447,8 @@ type SaveFilePicker = (options: { suggestedName?: string }) => Promise<{
   }>
 }>
 
+const OBJECT_URL_REVOKE_MS = 60_000
+
 function downloadWithAnchor(file: File, name: string) {
   const objectUrl = URL.createObjectURL(file)
   const a = document.createElement("a")
@@ -455,7 +457,14 @@ function downloadWithAnchor(file: File, name: string) {
   document.body.appendChild(a)
   a.click()
   a.remove()
-  setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
+  setTimeout(() => URL.revokeObjectURL(objectUrl), OBJECT_URL_REVOKE_MS)
+}
+
+/** Download name for nameless files: falls back to `<fallback>.<ext from MIME>` so the OS keeps an extension. */
+function resolveDownloadName(file: File, fallback: string) {
+  if (file.name) return file.name
+  const ext = file.type.split("/")[1]?.split("+")[0]
+  return ext ? `${fallback}.${ext}` : fallback
 }
 
 async function writeWithPicker(picker: SaveFilePicker, file: File, name: string) {
@@ -497,7 +506,7 @@ function ImageLightbox({
   async function handleDownload() {
     if (!file || saving) return
     setSaving(true)
-    const name = file.name || labels.imageFallbackName
+    const name = resolveDownloadName(file, labels.imageFallbackName)
     const picker = (window as unknown as { showSaveFilePicker?: SaveFilePicker }).showSaveFilePicker
     try {
       if (!picker) {
@@ -509,7 +518,9 @@ function ImageLightbox({
     } catch (err) {
       const errorName = (err as Error | undefined)?.name
       if (errorName === "AbortError") return
-      if (errorName === "SecurityError") {
+      // Picker bloqueado por contexto (iframe sem permissão) ou política:
+      // o download simples via anchor ainda funciona.
+      if (errorName === "SecurityError" || errorName === "NotAllowedError") {
         downloadWithAnchor(file, name)
         return
       }
@@ -519,6 +530,8 @@ function ImageLightbox({
     }
   }
 
+  const closeButtonRef = React.useRef<HTMLButtonElement>(null)
+
   return (
     <Dialog
       open={file != null}
@@ -527,6 +540,11 @@ function ImageLightbox({
       size="xl"
       className="border-0 bg-transparent p-0"
       hideCloseButton
+      // Enter/Espaço imediato não deve disparar o download: o foco inicial vai para Fechar.
+      onOpenAutoFocus={(e) => {
+        e.preventDefault()
+        closeButtonRef.current?.focus()
+      }}
     >
       <div className="flex items-center justify-end gap-2 pb-2">
         {downloadable ? (
@@ -535,7 +553,12 @@ function ImageLightbox({
             {labels.imageDownload}
           </Button>
         ) : null}
-        <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+        <Button
+          ref={closeButtonRef}
+          type="button"
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
           {labels.imageClose}
         </Button>
       </div>

@@ -109,7 +109,7 @@ describe("Sidebar", () => {
   })
 
   it("uses `profileLabel` and `profileIcon` for the avatar and the profile button", () => {
-    render(
+    const { container } = render(
       <Sidebar
         {...baseProps}
         items={items}
@@ -120,6 +120,7 @@ describe("Sidebar", () => {
     )
     expect(screen.getAllByRole("button", { name: "Ver tutorial" })).toHaveLength(2)
     expect(screen.queryByRole("button", { name: "Editar perfil" })).not.toBeInTheDocument()
+    expect(container.querySelector("svg.lucide-circle-play")).not.toBeNull()
   })
 
   it("renders the user name as a button only when `onNameClick` is provided", async () => {

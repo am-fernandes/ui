@@ -190,8 +190,8 @@ export function Combobox(props: ComboboxProps) {
   const showCreateOption =
     creatable &&
     trimmedSearch.length > 0 &&
-    !options.some((o) => o.value.toLowerCase() === trimmedSearch.toLowerCase()) &&
-    !options.some((o) => o.label.toLowerCase() === trimmedSearch.toLowerCase())
+    !options.some((o) => normalizeSearch(o.value) === normalizeSearch(trimmedSearch)) &&
+    !options.some((o) => normalizeSearch(o.label) === normalizeSearch(trimmedSearch))
 
   const hasValue = isMultiple ? toArray(props.value).length > 0 : Boolean(props.value)
 

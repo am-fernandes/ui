@@ -276,7 +276,7 @@ A versionagem e o `CHANGELOG.md` são gerenciados via [changesets](https://githu
 A CI roda no GitHub Actions. Três workflows:
 
 ### `.github/workflows/ci.yml` — em todo PR e merge para `main`
-Seis jobs em paralelo:
+Sete jobs em paralelo:
 
 | Job | Comando | Falha bloqueia merge? |
 |---|---|---|
@@ -286,6 +286,7 @@ Seis jobs em paralelo:
 | **Build** | `bun run build` | sim |
 | **Build Storybook** | `bun run build-storybook` | sim |
 | **Visual regression** | `bunx playwright install chromium && bun run test:visual` | sim |
+| **Storybook tests (interaction + a11y)** | `bun run build-storybook` + `bun run test:storybook:ci` | sim |
 
 Local equivalente: `bun run ci:local` roda todos exceto o visual (que precisa do Chromium headful).
 

@@ -88,7 +88,8 @@ export interface SidebarProps {
    * sidebar shows an `AlertDialog` asking "Tem certeza que deseja sair?"
    * and only calls this when the user accepts; pass
    * `disableSignOutConfirm` to skip the dialog and fire on first click.
-   * When omitted, the "Sair" button and its dialog are not rendered.
+   * When omitted, the "Sair" button and its dialog are not rendered:
+   * provide an alternative visible logout flow in the app.
    */
   onSignOut?: () => void
   /** Skip the confirmation dialog before calling `onSignOut`. */

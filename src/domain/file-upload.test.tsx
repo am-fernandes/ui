@@ -620,6 +620,18 @@ describe("FileUpload", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
   })
 
+  it("moves initial focus to Fechar so Enter does not trigger the download", async () => {
+    render(
+      <FileUpload
+        accept="image/*"
+        downloadable
+        value={[makeFile("photo.png", "image/png", 100)]}
+      />,
+    )
+    fireEvent.click(screen.getByRole("button", { name: /Ampliar photo\.png/ }))
+    await waitFor(() => expect(screen.getByRole("button", { name: "Fechar" })).toHaveFocus())
+  })
+
   describe("image download from the lightbox", () => {
     const png = makeFile("photo.png", "image/png", 100)
 
@@ -694,6 +706,28 @@ describe("FileUpload", () => {
       fireEvent.click(openDownloadButton())
       await waitFor(() => expect(names).toEqual(["photo.png"]))
       expect(toast.success).not.toHaveBeenCalled()
+    })
+
+    it("NotAllowedError (picker denied by policy) falls back to an anchor download", async () => {
+      stubSavePicker(rejectWith("NotAllowedError"))
+      const names = captureAnchorDownloads()
+      fireEvent.click(openDownloadButton())
+      await waitFor(() => expect(names).toEqual(["photo.png"]))
+      expect(toast.success).not.toHaveBeenCalled()
+    })
+
+    it("uses the fallback name with the MIME extension when the file has no name", async () => {
+      const nameless = new File(["x".repeat(100)], "", { type: "image/png" })
+      const write = vi.fn().mockResolvedValue(undefined)
+      const close = vi.fn().mockResolvedValue(undefined)
+      const picker = vi
+        .fn()
+        .mockResolvedValue({ createWritable: vi.fn().mockResolvedValue({ write, close }) })
+      stubSavePicker(picker)
+      render(<FileUpload accept="image/*" downloadable value={[nameless]} />)
+      fireEvent.click(screen.getByRole("button", { name: /Ampliar/ }))
+      fireEvent.click(screen.getByRole("button", { name: "Baixar imagem" }))
+      await waitFor(() => expect(picker).toHaveBeenCalledWith({ suggestedName: "Imagem.png" }))
     })
 
     it("a write failure aborts the writable and shows the error toast", async () => {

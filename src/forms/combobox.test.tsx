@@ -183,6 +183,7 @@ describe("Combobox", () => {
     await userEvent.click(screen.getByRole("combobox"))
     await userEvent.type(await screen.findByPlaceholderText("Buscar..."), "coracao")
     expect(await screen.findByRole("option", { name: /Coração/ })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /Usar/ })).not.toBeInTheDocument()
   })
 
   it("keeps the dropdown list from scrolling its ancestors (overscroll contained)", async () => {
