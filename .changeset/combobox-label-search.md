@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **Combobox**: a busca passa a considerar o `label`, não só o `value`.

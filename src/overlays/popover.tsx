@@ -16,7 +16,7 @@ export interface PopoverProps {
   align?: "start" | "center" | "end"
   side?: "top" | "right" | "bottom" | "left"
   sideOffset?: number
-  /** Minimum distance in px kept between the content and the viewport edges when it flips or shifts on collision. Default `16`. */
+  /** Minimum distance in px kept between the content and the viewport edges when it flips or shifts on collision. Uses the Radix default (`0`) when omitted. */
   collisionPadding?: PopoverContentProps["collisionPadding"]
   modal?: boolean
   className?: string
@@ -37,7 +37,7 @@ function Popover({
   align = "center",
   side,
   sideOffset = 4,
-  collisionPadding = 16,
+  collisionPadding,
   modal,
   className,
   "aria-label": ariaLabel,
