@@ -124,6 +124,8 @@ export interface FileUploadProps {
   dropzoneClassName?: string
   /** Show the per-row remove button. Set `false` for a read-only list that can still be opened/previewed. Default `true`. */
   removable?: boolean
+  /** Show the download button in the image lightbox. Set `false` to let the user only view the image. Default `true`. */
+  downloadable?: boolean
   /** Override individual UI strings. Defaults are pt-BR. */
   labels?: Partial<FileUploadLabels>
 }
@@ -187,6 +189,7 @@ function FileUpload({
   className,
   dropzoneClassName,
   removable = true,
+  downloadable = true,
   labels,
 }: FileUploadProps) {
   const mergedLabels: ResolvedFileUploadLabels = { ...defaultFileUploadLabels, ...labels }
@@ -357,6 +360,7 @@ function FileUpload({
       <ImageLightbox
         file={lightboxFile}
         onOpenChange={() => setLightboxFile(null)}
+        downloadable={downloadable}
         labels={mergedLabels}
       />
     </div>
@@ -438,10 +442,12 @@ function FileRow({
 function ImageLightbox({
   file,
   onOpenChange,
+  downloadable,
   labels,
 }: {
   file: File | null
   onOpenChange: (open: boolean) => void
+  downloadable: boolean
   labels: ResolvedFileUploadLabels
 }) {
   const [url, setUrl] = React.useState<string | null>(null)
@@ -512,10 +518,12 @@ function ImageLightbox({
       hideCloseButton
     >
       <div className="flex items-center justify-end gap-2 pb-2">
-        <Button type="button" variant="secondary" onClick={handleDownload} disabled={saving}>
-          <Download className="size-4" />
-          {labels.imageDownload}
-        </Button>
+        {downloadable ? (
+          <Button type="button" variant="secondary" onClick={handleDownload} disabled={saving}>
+            <Download className="size-4" />
+            {labels.imageDownload}
+          </Button>
+        ) : null}
         <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
           {labels.imageClose}
         </Button>

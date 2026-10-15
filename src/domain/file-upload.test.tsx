@@ -153,6 +153,19 @@ describe("FileUpload", () => {
     expect(screen.getByRole("button", { name: "Fechar" })).toBeInTheDocument()
   })
 
+  it("downloadable={false} hides the lightbox download button but keeps close", () => {
+    render(
+      <FileUpload
+        accept="image/*"
+        downloadable={false}
+        value={[makeFile("photo.png", "image/png", 100)]}
+      />,
+    )
+    fireEvent.click(screen.getByRole("button", { name: /Ampliar photo\.png/ }))
+    expect(screen.queryByRole("button", { name: "Baixar imagem" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Fechar" })).toBeInTheDocument()
+  })
+
   it("renders an image preview thumbnail (img element) for image files", () => {
     render(<FileUpload accept="image/*" />)
     const input = document.querySelector("input[type=file]") as HTMLInputElement
