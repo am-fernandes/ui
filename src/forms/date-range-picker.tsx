@@ -145,6 +145,7 @@ function DateRangePicker({
         onOpenChange={(next) => !disabled && setOpen(next)}
         align="start"
         trigger={trigger}
+        aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
         className="w-auto p-0"
         onPointerDownOutside={(event) => {
           const target = event.target as HTMLElement | null

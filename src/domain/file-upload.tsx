@@ -122,7 +122,7 @@ export interface FileUploadProps {
   className?: string
   /** Class on the dropzone clickable area. */
   dropzoneClassName?: string
-  /** Show the per-row remove button. Set `false` for a read-only list that can still be opened/previewed. Default `true`. */
+  /** Show the per-row remove button. Set `false` to hide it: files can still be opened/previewed and new ones added through the dropzone (append-only). Default `true`. */
   removable?: boolean
   /** Show the download button in the image lightbox. Default `false` (view only). */
   downloadable?: boolean
@@ -439,6 +439,37 @@ function FileRow({
   )
 }
 
+type SaveFilePicker = (options: { suggestedName?: string }) => Promise<{
+  createWritable: () => Promise<{
+    write: (data: Blob) => Promise<void>
+    close: () => Promise<void>
+    abort: () => Promise<void>
+  }>
+}>
+
+function downloadWithAnchor(file: File, name: string) {
+  const objectUrl = URL.createObjectURL(file)
+  const a = document.createElement("a")
+  a.href = objectUrl
+  a.download = name
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
+}
+
+async function writeWithPicker(picker: SaveFilePicker, file: File, name: string) {
+  const handle = await picker({ suggestedName: name })
+  const writable = await handle.createWritable()
+  try {
+    await writable.write(file)
+    await writable.close()
+  } catch (err) {
+    await writable.abort()
+    throw err
+  }
+}
+
 function ImageLightbox({
   file,
   onOpenChange,
@@ -467,41 +498,21 @@ function ImageLightbox({
     if (!file || saving) return
     setSaving(true)
     const name = file.name || labels.imageFallbackName
-    const saveWithAnchor = () => {
-      const objectUrl = URL.createObjectURL(file)
-      const a = document.createElement("a")
-      a.href = objectUrl
-      a.download = name
-      a.click()
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
-    }
-    const picker = (
-      window as unknown as {
-        showSaveFilePicker?: (opts: { suggestedName?: string }) => Promise<{
-          createWritable: () => Promise<{
-            write: (data: Blob) => Promise<void>
-            close: () => Promise<void>
-          }>
-        }>
-      }
-    ).showSaveFilePicker
+    const picker = (window as unknown as { showSaveFilePicker?: SaveFilePicker }).showSaveFilePicker
     try {
-      if (picker) {
-        try {
-          const handle = await picker({ suggestedName: name })
-          const writable = await handle.createWritable()
-          await writable.write(file)
-          await writable.close()
-        } catch (err) {
-          if ((err as Error)?.name === "AbortError") return
-          if ((err as Error)?.name !== "SecurityError") throw err
-          saveWithAnchor()
-        }
-      } else {
-        saveWithAnchor()
+      if (!picker) {
+        downloadWithAnchor(file, name)
+        return
       }
+      await writeWithPicker(picker, file, name)
       toast.success(labels.imageDownloadSuccess)
-    } catch {
+    } catch (err) {
+      const errorName = (err as Error | undefined)?.name
+      if (errorName === "AbortError") return
+      if (errorName === "SecurityError") {
+        downloadWithAnchor(file, name)
+        return
+      }
       toast.error(labels.imageDownloadError)
     } finally {
       setSaving(false)

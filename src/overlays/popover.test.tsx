@@ -6,6 +6,22 @@ import { describe, expect, it, vi } from "vitest"
 import { Popover } from "./popover"
 
 describe("Popover", () => {
+  it("names the content through aria-label and aria-labelledby", () => {
+    render(
+      <>
+        <span id="popover-title">Período</span>
+        <Popover open aria-label="Filtros">
+          <p>a</p>
+        </Popover>
+        <Popover open aria-labelledby="popover-title">
+          <p>b</p>
+        </Popover>
+      </>,
+    )
+    expect(screen.getByRole("dialog", { name: "Filtros" })).toBeInTheDocument()
+    expect(screen.getByRole("dialog", { name: "Período" })).toBeInTheDocument()
+  })
+
   it("opens on trigger click", async () => {
     render(
       <Popover trigger={<button type="button">Open</button>}>

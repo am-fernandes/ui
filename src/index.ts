@@ -14,6 +14,7 @@ export {
   type DataTableDownloadable,
   type DataTableLabels,
   type DataTableProps,
+  type ExportScope,
 } from "./data/data-table"
 export {
   dateColumn,

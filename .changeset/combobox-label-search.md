@@ -2,10 +2,10 @@
 "@amfernandesinc/ui": patch
 ---
 
-**Combobox**: a busca passa a considerar o `label`, não só o `value`.
+**Combobox**: a busca passa a considerar o `label` das opções, além do `value`, e ignora acentos (`coracao` encontra `Coração`).
 
-- `keywords={[option.label]}` em cada item corrige o filtro default do cmdk quando `value` é um id opaco.
-- No modo `creatable`, o `filter` recebe `keywords` e monta o haystack com `value + keywords`.
-- `onWheel` com `stopPropagation` na `Command.List` para o scroll do dropdown não vazar para o container pai (Sheet/página).
+- Vale para o modo normal e para o `creatable`, que usam o mesmo filtro. A busca é por trecho, sem o ranqueamento fuzzy do cmdk: a ordem das opções é mantida.
+- O `value` continua pesquisável.
+- A lista do dropdown não propaga o scroll para o container pai (página, Sheet ou Dialog) nem em desktop nem em toque.
 
 Sem mudança de tipos públicos.

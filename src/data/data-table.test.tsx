@@ -442,18 +442,52 @@ describe("DataTable", () => {
       expect(records[0]).toEqual({ NOME_CUSTOM: "BRAVO" })
     })
 
-    it("resolves filename from a function passing the export scope", async () => {
-      const filename = vi.fn((scope: string) => `contratos-${scope}.xlsx`)
+    it.each([
+      ["Exportar dados filtrados", "filtered"],
+      ["Exportar página atual", "page"],
+      ["Exportar todos os dados", "all"],
+    ])("resolves filename from a function passing the scope of '%s'", async (menuItem, scope) => {
+      const filename = vi.fn((exportScope: string) => `contratos-${exportScope}.xlsx`)
       render(<DataTable columns={columns} data={data} downloadable={{ filename }} />)
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
-      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
-      expect(filename).toHaveBeenCalledWith("all")
+      await userEvent.click(screen.getByRole("menuitem", { name: menuItem }))
+      expect(filename).toHaveBeenCalledWith(scope)
       const [, resolved] = downloadXlsxMock.mock.calls[0] as unknown as [
         Record<string, unknown>[],
         string,
         string,
       ]
-      expect(resolved).toBe("contratos-all.xlsx")
+      expect(resolved).toBe(`contratos-${scope}.xlsx`)
+    })
+
+    it("falls back to export.xlsx when the filename function returns an empty string", async () => {
+      render(<DataTable columns={columns} data={data} downloadable={{ filename: () => "" }} />)
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
+      const [, resolved] = downloadXlsxMock.mock.calls[0] as unknown as [
+        Record<string, unknown>[],
+        string,
+        string,
+      ]
+      expect(resolved).toBe("export.xlsx")
+    })
+
+    it("treats an empty string filename as the default export.xlsx", async () => {
+      render(<DataTable columns={columns} data={data} downloadable={{ filename: "" }} />)
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
+      const [, resolved] = downloadXlsxMock.mock.calls[0] as unknown as [
+        Record<string, unknown>[],
+        string,
+        string,
+      ]
+      expect(resolved).toBe("export.xlsx")
+    })
+
+    it("names the export menu after its trigger", async () => {
+      render(<DataTable columns={columns} data={data} downloadable />)
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      expect(screen.getByRole("dialog", { name: "Exportar para Excel" })).toBeInTheDocument()
     })
 
     it("replaces the export button with a skeleton when loading", () => {

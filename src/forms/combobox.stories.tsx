@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 
+import { Dialog } from "../overlays/dialog"
+import { Button } from "../primitives/button"
 import { Combobox, type ComboboxOption } from "./combobox"
 
 const sampleOptions: ComboboxOption[] = [
@@ -387,4 +389,19 @@ export const WithRHF: Story = {
       </form>
     )
   },
+}
+
+const manyOptions: ComboboxOption[] = Array.from({ length: 40 }, (_, i) => ({
+  value: `opcao-${i + 1}`,
+  label: `Opção ${i + 1}`,
+}))
+
+export const InsideDialog: Story = {
+  render: () => (
+    <Dialog trigger={<Button>Abrir dialog</Button>} title="Escolher opção" size="md">
+      <div className="w-[320px]">
+        <Combobox options={manyOptions} label="Opção" placeholder="Selecione..." />
+      </div>
+    </Dialog>
+  ),
 }

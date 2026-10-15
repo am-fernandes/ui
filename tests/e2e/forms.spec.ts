@@ -63,3 +63,17 @@ test.describe("DateInput", () => {
     await expect(grid).not.toBeVisible({ timeout: 3000 })
   })
 })
+
+test.describe("Combobox dentro de Dialog", () => {
+  test("wheel rola a lista do dropdown e mantém o dialog aberto", async ({ page }) => {
+    await page.goto(story("forms-combobox--inside-dialog"))
+    await page.getByRole("button", { name: "Abrir dialog" }).click()
+    await page.getByRole("combobox").click()
+    const list = page.getByRole("listbox")
+    await expect(list).toBeVisible()
+    await list.hover()
+    await page.mouse.wheel(0, 200)
+    await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+    await expect(page.getByRole("dialog")).toBeVisible()
+  })
+})

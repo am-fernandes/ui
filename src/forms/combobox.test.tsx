@@ -172,6 +172,26 @@ describe("Combobox", () => {
     expect(await screen.findByRole("option", { name: /Alpha/ })).toBeInTheDocument()
   })
 
+  it("matches accented labels when searching without diacritics, in both modes", async () => {
+    const accentOptions: ComboboxOption[] = [{ value: "c1", label: "Coração" }]
+    const { unmount } = render(<Combobox options={accentOptions} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.type(await screen.findByPlaceholderText("Buscar..."), "coracao")
+    expect(await screen.findByRole("option", { name: /Coração/ })).toBeInTheDocument()
+    unmount()
+    render(<Combobox creatable options={accentOptions} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.type(await screen.findByPlaceholderText("Buscar..."), "coracao")
+    expect(await screen.findByRole("option", { name: /Coração/ })).toBeInTheDocument()
+  })
+
+  it("keeps the dropdown list from scrolling its ancestors (overscroll contained)", async () => {
+    render(<Combobox options={[{ value: "a", label: "Alpha" }]} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    const list = await screen.findByRole("listbox")
+    expect(list.className).toMatch(/overscroll-y-contain/)
+  })
+
   it("creatable: types a new value and clicks the Usar option to create it", async () => {
     const onValueChange = vi.fn()
     render(

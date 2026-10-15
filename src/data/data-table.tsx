@@ -264,7 +264,8 @@ export interface DataTableDownloadable<TData> {
   /**
    * Filename for the downloaded xlsx. Default `"export.xlsx"`. Pass a function to
    * derive the name from the export scope (e.g. reflect active filters or the
-   * current page); returning a falsy value falls back to `"export.xlsx"`.
+   * current page); returning a falsy value falls back to `"export.xlsx"`. The function
+   * must not throw: an exception aborts the export.
    */
   filename?: string | ((scope: ExportScope) => string)
   /** Sheet name inside the workbook. Default `"Dados"`. */
@@ -297,7 +298,7 @@ export interface DataTableDownloadable<TData> {
   fetchFiltered?: () => Promise<TData[]>
 }
 
-type ExportScope = "filtered" | "page" | "all"
+export type ExportScope = "filtered" | "page" | "all"
 
 /** Width classes used to vary skeleton cell widths so rows don't look uniform. */
 const SKELETON_CELL_WIDTHS = ["w-3/4", "w-1/2", "w-2/3", "w-5/6", "w-3/5"] as const
@@ -610,6 +611,7 @@ function DataTable<TData>({
     return (
       <Popover
         align="end"
+        aria-label={mergedLabels.exportTrigger}
         open={downloadMenuOpen}
         onOpenChange={setDownloadMenuOpen}
         trigger={
