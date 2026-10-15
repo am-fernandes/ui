@@ -146,23 +146,23 @@ describe("FileUpload", () => {
     expect(screen.queryByRole("button", { name: /Remover a\.txt/ })).not.toBeInTheDocument()
   })
 
-  it("image lightbox exposes explicit download and close buttons", () => {
+  it("image lightbox has no download button by default but exposes close", () => {
     render(<FileUpload accept="image/*" value={[makeFile("photo.png", "image/png", 100)]} />)
     fireEvent.click(screen.getByRole("button", { name: /Ampliar photo\.png/ }))
-    expect(screen.getByRole("button", { name: "Baixar imagem" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Baixar imagem" })).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Fechar" })).toBeInTheDocument()
   })
 
-  it("downloadable={false} hides the lightbox download button but keeps close", () => {
+  it("downloadable shows the lightbox download button alongside close", () => {
     render(
       <FileUpload
         accept="image/*"
-        downloadable={false}
+        downloadable
         value={[makeFile("photo.png", "image/png", 100)]}
       />,
     )
     fireEvent.click(screen.getByRole("button", { name: /Ampliar photo\.png/ }))
-    expect(screen.queryByRole("button", { name: "Baixar imagem" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Baixar imagem" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Fechar" })).toBeInTheDocument()
   })
 

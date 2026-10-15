@@ -2,4 +2,4 @@
 "@amfernandesinc/ui": minor
 ---
 
-**FileUpload**: nova prop `downloadable` (default `true`). Com `false`, o lightbox de imagem não exibe o botão de download e o app decide se o arquivo pode ser baixado.
+**FileUpload**: nova prop `downloadable` (default `false`). Com `true`, o lightbox de imagem exibe o botão de download; sem ela, o lightbox continua só de visualização, como antes.

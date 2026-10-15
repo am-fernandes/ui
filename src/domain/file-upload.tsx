@@ -124,7 +124,7 @@ export interface FileUploadProps {
   dropzoneClassName?: string
   /** Show the per-row remove button. Set `false` for a read-only list that can still be opened/previewed. Default `true`. */
   removable?: boolean
-  /** Show the download button in the image lightbox. Set `false` to let the user only view the image. Default `true`. */
+  /** Show the download button in the image lightbox. Default `false` (view only). */
   downloadable?: boolean
   /** Override individual UI strings. Defaults are pt-BR. */
   labels?: Partial<FileUploadLabels>
@@ -189,7 +189,7 @@ function FileUpload({
   className,
   dropzoneClassName,
   removable = true,
-  downloadable = true,
+  downloadable = false,
   labels,
 }: FileUploadProps) {
   const mergedLabels: ResolvedFileUploadLabels = { ...defaultFileUploadLabels, ...labels }
