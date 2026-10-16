@@ -202,6 +202,47 @@ export const Disabled: Story = {
   ),
 }
 
+export const ReadOnly: Story = {
+  render: () => {
+    const [files] = useState(() => [
+      new File(["conteúdo"], "contrato.pdf", { type: "application/pdf" }),
+    ])
+    return (
+      <div className="w-[460px]">
+        <FileUpload multiple removable={false} value={files} label="Anexos do processo" />
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`removable={false}` esconde o botão de remover (append-only): a linha continua abrível e o dropzone aceita novos arquivos.",
+      },
+    },
+  },
+}
+
+export const WithDownload: Story = {
+  render: () => {
+    const [files] = useState(() => [new File(["x"], "foto.png", { type: "image/png" })])
+    return (
+      <div className="w-[460px]">
+        <FileUpload downloadable accept="image/*" value={files} label="Evidências" />
+        <Toaster />
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`downloadable` exibe o botão de download no lightbox (`showSaveFilePicker` com fallback `<a download>`). Sem a prop, o lightbox é só visualização.",
+      },
+    },
+  },
+}
+
 export const WithCamera: Story = {
   args: {
     accept: "image/*",

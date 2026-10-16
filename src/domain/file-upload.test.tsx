@@ -1,8 +1,11 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
+import { toast } from "../overlays/sonner"
 import { FileUpload } from "./file-upload"
+
+vi.mock("../overlays/sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 function makeFile(name: string, type = "text/plain", size = 10) {
   const file = new File(["x".repeat(size)], name, { type })
@@ -138,6 +141,45 @@ describe("FileUpload", () => {
     const remove = screen.getByRole("button", { name: /Remover a\.txt/ })
     fireEvent.click(remove)
     expect(onValueChange).toHaveBeenLastCalledWith([b])
+  })
+
+  it("removable={false} keeps the row visible but drops the Remover button", () => {
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null)
+    render(<FileUpload multiple removable={false} value={[makeFile("a.txt", "text/plain")]} />)
+    expect(screen.getByText("a.txt")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Remover a\.txt/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /Abrir a\.txt/ }))
+    expect(openSpy).toHaveBeenCalledTimes(1)
+    openSpy.mockRestore()
+  })
+
+  it("removable={false} keeps the dropzone accepting files (append-only)", () => {
+    const onValueChange = vi.fn()
+    render(<FileUpload multiple removable={false} onValueChange={onValueChange} />)
+    const input = document.querySelector("input[type=file]") as HTMLInputElement
+    const file = makeFile("new.txt", "text/plain")
+    fireEvent.change(input, { target: { files: [file] } })
+    expect(onValueChange).toHaveBeenCalledWith([file])
+  })
+
+  it("image lightbox has no download button by default but exposes close", () => {
+    render(<FileUpload accept="image/*" value={[makeFile("photo.png", "image/png", 100)]} />)
+    fireEvent.click(screen.getByRole("button", { name: /Ampliar photo\.png/ }))
+    expect(screen.queryByRole("button", { name: "Baixar imagem" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Fechar" })).toBeInTheDocument()
+  })
+
+  it("downloadable shows the lightbox download button alongside close", () => {
+    render(
+      <FileUpload
+        accept="image/*"
+        downloadable
+        value={[makeFile("photo.png", "image/png", 100)]}
+      />,
+    )
+    fireEvent.click(screen.getByRole("button", { name: /Ampliar photo\.png/ }))
+    expect(screen.getByRole("button", { name: "Baixar imagem" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Fechar" })).toBeInTheDocument()
   })
 
   it("renders an image preview thumbnail (img element) for image files", () => {
@@ -569,5 +611,139 @@ describe("FileUpload", () => {
     fireEvent.change(input, { target: { files: [makeFile("foo.txt", "text/plain")] } })
     expect(screen.getByRole("list", { name: "Selected files" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Remove foo.txt" })).toBeInTheDocument()
+  })
+
+  it("the lightbox close button dismisses the image", async () => {
+    render(<FileUpload accept="image/*" value={[makeFile("photo.png", "image/png", 100)]} />)
+    fireEvent.click(screen.getByRole("button", { name: /Ampliar photo\.png/ }))
+    fireEvent.click(screen.getByRole("button", { name: "Fechar" }))
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
+  })
+
+  it("moves initial focus to Fechar so Enter does not trigger the download", async () => {
+    render(
+      <FileUpload
+        accept="image/*"
+        downloadable
+        value={[makeFile("photo.png", "image/png", 100)]}
+      />,
+    )
+    fireEvent.click(screen.getByRole("button", { name: /Ampliar photo\.png/ }))
+    await waitFor(() => expect(screen.getByRole("button", { name: "Fechar" })).toHaveFocus())
+  })
+
+  describe("image download from the lightbox", () => {
+    const png = makeFile("photo.png", "image/png", 100)
+
+    function openDownloadButton() {
+      render(<FileUpload accept="image/*" downloadable value={[png]} />)
+      fireEvent.click(screen.getByRole("button", { name: /Ampliar photo\.png/ }))
+      return screen.getByRole("button", { name: "Baixar imagem" })
+    }
+
+    function stubSavePicker(impl: unknown) {
+      ;(window as unknown as { showSaveFilePicker?: unknown }).showSaveFilePicker = impl
+    }
+
+    function rejectWith(name: string) {
+      return vi.fn().mockRejectedValue(Object.assign(new Error(name), { name }))
+    }
+
+    function captureAnchorDownloads() {
+      const names: string[] = []
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+        this: HTMLAnchorElement,
+      ) {
+        names.push(this.download)
+      })
+      return names
+    }
+
+    afterEach(() => {
+      stubSavePicker(undefined)
+      vi.restoreAllMocks()
+      vi.mocked(toast.success).mockClear()
+      vi.mocked(toast.error).mockClear()
+    })
+
+    it("falls back to an anchor download without a success toast when the picker is unavailable", async () => {
+      const names = captureAnchorDownloads()
+      fireEvent.click(openDownloadButton())
+      await waitFor(() => expect(names).toEqual(["photo.png"]))
+      expect(toast.success).not.toHaveBeenCalled()
+    })
+
+    it("saves through the picker with the file name and shows success", async () => {
+      const write = vi.fn().mockResolvedValue(undefined)
+      const close = vi.fn().mockResolvedValue(undefined)
+      const abort = vi.fn().mockResolvedValue(undefined)
+      const picker = vi
+        .fn()
+        .mockResolvedValue({ createWritable: vi.fn().mockResolvedValue({ write, close, abort }) })
+      stubSavePicker(picker)
+      fireEvent.click(openDownloadButton())
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Download concluído"))
+      expect(picker).toHaveBeenCalledWith({ suggestedName: "photo.png" })
+      expect(write).toHaveBeenCalledWith(png)
+      expect(close).toHaveBeenCalled()
+      expect(abort).not.toHaveBeenCalled()
+    })
+
+    it("AbortError (user cancelled the picker) shows no toast and re-enables the button", async () => {
+      const picker = rejectWith("AbortError")
+      stubSavePicker(picker)
+      const button = openDownloadButton()
+      fireEvent.click(button)
+      await waitFor(() => expect(picker).toHaveBeenCalled())
+      await waitFor(() => expect(button).not.toBeDisabled())
+      expect(toast.success).not.toHaveBeenCalled()
+      expect(toast.error).not.toHaveBeenCalled()
+    })
+
+    it("SecurityError (picker blocked in an iframe) falls back to an anchor download", async () => {
+      stubSavePicker(rejectWith("SecurityError"))
+      const names = captureAnchorDownloads()
+      fireEvent.click(openDownloadButton())
+      await waitFor(() => expect(names).toEqual(["photo.png"]))
+      expect(toast.success).not.toHaveBeenCalled()
+    })
+
+    it("NotAllowedError (picker denied by policy) falls back to an anchor download", async () => {
+      stubSavePicker(rejectWith("NotAllowedError"))
+      const names = captureAnchorDownloads()
+      fireEvent.click(openDownloadButton())
+      await waitFor(() => expect(names).toEqual(["photo.png"]))
+      expect(toast.success).not.toHaveBeenCalled()
+    })
+
+    it("uses the fallback name with the MIME extension when the file has no name", async () => {
+      const nameless = new File(["x".repeat(100)], "", { type: "image/png" })
+      const write = vi.fn().mockResolvedValue(undefined)
+      const close = vi.fn().mockResolvedValue(undefined)
+      const picker = vi
+        .fn()
+        .mockResolvedValue({ createWritable: vi.fn().mockResolvedValue({ write, close }) })
+      stubSavePicker(picker)
+      render(<FileUpload accept="image/*" downloadable value={[nameless]} />)
+      fireEvent.click(screen.getByRole("button", { name: /Ampliar/ }))
+      fireEvent.click(screen.getByRole("button", { name: "Baixar imagem" }))
+      await waitFor(() => expect(picker).toHaveBeenCalledWith({ suggestedName: "Imagem.png" }))
+    })
+
+    it("a write failure aborts the writable and shows the error toast", async () => {
+      const abort = vi.fn().mockResolvedValue(undefined)
+      const write = vi.fn().mockRejectedValue(new Error("disk full"))
+      stubSavePicker(
+        vi.fn().mockResolvedValue({
+          createWritable: vi.fn().mockResolvedValue({ write, close: vi.fn(), abort }),
+        }),
+      )
+      fireEvent.click(openDownloadButton())
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith("Não foi possível baixar a imagem"),
+      )
+      expect(abort).toHaveBeenCalled()
+      expect(toast.success).not.toHaveBeenCalled()
+    })
   })
 })

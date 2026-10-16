@@ -75,15 +75,23 @@ export interface SidebarProps {
   onBrandClick?: () => void
   user: SidebarUser
   items: SidebarItem[]
-  /** Called when the user clicks the avatar or the "Editar perfil" icon. */
+  /** Called when the user clicks the avatar or the profile icon button. */
   onProfileClick: () => void
+  /** Accessible label and tooltip of the avatar and profile icon button. Default `"Editar perfil"`. */
+  profileLabel?: string
+  /** Icon of the profile button shown next to the user name. Default `UserCog`. */
+  profileIcon?: SidebarItem["icon"]
+  /** When provided, the user name becomes a button that calls this callback. */
+  onNameClick?: () => void
   /**
    * Called when the user confirms the sign-out action. By default the
    * sidebar shows an `AlertDialog` asking "Tem certeza que deseja sair?"
    * and only calls this when the user accepts; pass
    * `disableSignOutConfirm` to skip the dialog and fire on first click.
+   * When omitted, the "Sair" button and its dialog are not rendered:
+   * provide an alternative visible logout flow in the app.
    */
-  onSignOut: () => void
+  onSignOut?: () => void
   /** Skip the confirmation dialog before calling `onSignOut`. */
   disableSignOutConfirm?: boolean
   /** Mark the matching item as active (background + foreground accent token). */
@@ -105,6 +113,9 @@ function Sidebar({
   user,
   items,
   onProfileClick,
+  profileLabel = "Editar perfil",
+  profileIcon: ProfileIcon = UserCog,
+  onNameClick,
   onSignOut,
   disableSignOutConfirm,
   isActive,
@@ -113,7 +124,7 @@ function Sidebar({
   const [signOutOpen, setSignOutOpen] = React.useState(false)
   const handleSignOutClick = () => {
     if (disableSignOutConfirm) {
-      onSignOut()
+      onSignOut?.()
     } else {
       setSignOutOpen(true)
     }
@@ -190,12 +201,12 @@ function Sidebar({
       {/* User row */}
       <div className="border-t px-3 py-3">
         <div className={cn("flex items-center gap-2", collapsed && "flex-col")}>
-          <Tooltip content="Editar perfil" side={collapsed ? "right" : "top"}>
+          <Tooltip content={profileLabel} side={collapsed ? "right" : "top"}>
             <button
               type="button"
               className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={onProfileClick}
-              aria-label="Editar perfil"
+              aria-label={profileLabel}
             >
               <Avatar
                 src={user.avatarUrl}
@@ -207,37 +218,49 @@ function Sidebar({
           </Tooltip>
           {!collapsed ? (
             <div className="flex-1 min-w-0">
-              <span className="text-sm font-medium truncate block">{user.name}</span>
+              {onNameClick ? (
+                <button
+                  type="button"
+                  className="block w-full truncate text-left text-sm font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={onNameClick}
+                >
+                  {user.name}
+                </button>
+              ) : (
+                <span className="text-sm font-medium truncate block">{user.name}</span>
+              )}
             </div>
           ) : null}
           <div className={cn("flex", collapsed ? "flex-col gap-1" : "flex-row")}>
             {!collapsed ? (
-              <Tooltip content="Editar perfil" side="top">
+              <Tooltip content={profileLabel} side="top">
                 <Button
                   variant="ghost"
                   className="size-8 shrink-0 p-0"
                   onClick={onProfileClick}
-                  aria-label="Editar perfil"
+                  aria-label={profileLabel}
                 >
-                  <UserCog className="h-4 w-4" />
+                  <ProfileIcon className="h-4 w-4" />
                 </Button>
               </Tooltip>
             ) : null}
-            <Tooltip content="Sair" side={collapsed ? "right" : "top"}>
-              <Button
-                variant="ghost"
-                className="size-8 shrink-0 p-0"
-                onClick={handleSignOutClick}
-                aria-label="Sair"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </Tooltip>
+            {onSignOut ? (
+              <Tooltip content="Sair" side={collapsed ? "right" : "top"}>
+                <Button
+                  variant="ghost"
+                  className="size-8 shrink-0 p-0"
+                  onClick={handleSignOutClick}
+                  aria-label="Sair"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+            ) : null}
           </div>
         </div>
       </div>
 
-      {disableSignOutConfirm ? null : (
+      {!onSignOut || disableSignOutConfirm ? null : (
         <AlertDialog
           open={signOutOpen}
           onOpenChange={setSignOutOpen}

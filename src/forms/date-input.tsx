@@ -114,6 +114,7 @@ function DateInput({
         onOpenChange={(next) => !disabled && setOpen(next)}
         align="start"
         trigger={trigger}
+        aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
         className="w-auto p-0"
       >
         <Calendar

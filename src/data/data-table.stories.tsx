@@ -346,6 +346,29 @@ export const Default: Story = {
   },
 }
 
+export const FilenameByScope: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        columns={columns}
+        data={contratos}
+        searchableColumns={["numero", "cliente"]}
+        downloadable={{
+          filename: (scope) => `contratos-${scope}.xlsx`,
+        }}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`downloadable.filename` aceita uma função que recebe o escopo (`filtered` | `page` | `all`). Retorno falsy cai em `export.xlsx`; a função não deve lançar.",
+      },
+    },
+  },
+}
+
 export const Searchable: Story = {
   render: () => (
     <div className="p-6">

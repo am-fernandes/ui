@@ -1,10 +1,19 @@
 "use client"
 
-import { Camera, File as FileIcon, ImageIcon, Loader2, UploadCloud, X } from "lucide-react"
+import {
+  Camera,
+  Download,
+  File as FileIcon,
+  ImageIcon,
+  Loader2,
+  UploadCloud,
+  X,
+} from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Dialog } from "../overlays/dialog"
+import { toast } from "../overlays/sonner"
 import { Button } from "../primitives/button"
 
 export type FileUploadRejectionReason = "type" | "size" | "max-files"
@@ -41,6 +50,14 @@ export interface FileUploadLabels {
   fileListAriaLabel: string
   /** Lightbox title fallback when the image has no name. */
   imageFallbackName: string
+  /** Lightbox "download image" button. */
+  imageDownload?: string
+  /** Toast shown after the image is saved. */
+  imageDownloadSuccess?: string
+  /** Toast shown when the image could not be saved. */
+  imageDownloadError?: string
+  /** Lightbox "close" button. */
+  imageClose?: string
   /** Aria-label of the lightbox-open button for image rows: `(fileName) => ...`. */
   zoomImage: (fileName: string) => string
   /** Aria-label of the open-in-new-tab button for non-image rows. */
@@ -49,7 +66,9 @@ export interface FileUploadLabels {
   removeFile: (fileName: string) => string
 }
 
-export const defaultFileUploadLabels: FileUploadLabels = {
+type ResolvedFileUploadLabels = Required<FileUploadLabels>
+
+export const defaultFileUploadLabels: ResolvedFileUploadLabels = {
   dropzoneSingle: "Arraste um arquivo ou clique para selecionar",
   dropzoneMultiple: "Arraste arquivos ou clique para selecionar",
   dropzoneAriaLabel: "Selecionar arquivos",
@@ -63,6 +82,10 @@ export const defaultFileUploadLabels: FileUploadLabels = {
   cameraAccessFailed: "Não foi possível acessar a câmera. Verifique as permissões do navegador.",
   fileListAriaLabel: "Arquivos selecionados",
   imageFallbackName: "Imagem",
+  imageDownload: "Baixar imagem",
+  imageDownloadSuccess: "Download concluído",
+  imageDownloadError: "Não foi possível baixar a imagem",
+  imageClose: "Fechar",
   zoomImage: (fileName) => `Ampliar ${fileName}`,
   openFile: (fileName) => `Abrir ${fileName} em nova aba`,
   removeFile: (fileName) => `Remover ${fileName}`,
@@ -99,6 +122,10 @@ export interface FileUploadProps {
   className?: string
   /** Class on the dropzone clickable area. */
   dropzoneClassName?: string
+  /** Show the per-row remove button. Set `false` to hide it: files can still be opened/previewed and new ones added through the dropzone (append-only). Default `true`. */
+  removable?: boolean
+  /** Show the download button in the image lightbox. Default `false` (view only). */
+  downloadable?: boolean
   /** Override individual UI strings. Defaults are pt-BR. */
   labels?: Partial<FileUploadLabels>
 }
@@ -161,9 +188,11 @@ function FileUpload({
   description,
   className,
   dropzoneClassName,
+  removable = true,
+  downloadable = false,
   labels,
 }: FileUploadProps) {
-  const mergedLabels: FileUploadLabels = { ...defaultFileUploadLabels, ...labels }
+  const mergedLabels: ResolvedFileUploadLabels = { ...defaultFileUploadLabels, ...labels }
   const resolvedLabel: React.ReactNode =
     label ?? (multiple ? mergedLabels.dropzoneMultiple : mergedLabels.dropzoneSingle)
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -281,7 +310,7 @@ function FileUpload({
             variant="outline"
             disabled={disabled}
             onClick={() => setCameraOpen(true)}
-            className="sm:h-auto sm:min-h-[6.5rem] sm:flex-col sm:gap-2 sm:px-6"
+            className="sm:h-auto sm:min-h-26 sm:flex-col sm:gap-2 sm:px-6"
           >
             <Camera className="size-5" aria-hidden />
             <span>{mergedLabels.cameraButton}</span>
@@ -312,6 +341,7 @@ function FileUpload({
               key={`${file.name}-${file.lastModified}-${index}`}
               file={file}
               disabled={disabled}
+              removable={removable}
               onRemove={() => removeAt(index)}
               onOpenImage={() => setLightboxFile(file)}
               labels={mergedLabels}
@@ -330,6 +360,7 @@ function FileUpload({
       <ImageLightbox
         file={lightboxFile}
         onOpenChange={() => setLightboxFile(null)}
+        downloadable={downloadable}
         labels={mergedLabels}
       />
     </div>
@@ -339,15 +370,17 @@ function FileUpload({
 function FileRow({
   file,
   disabled,
+  removable,
   onRemove,
   onOpenImage,
   labels,
 }: {
   file: File
   disabled: boolean
+  removable: boolean
   onRemove: () => void
   onOpenImage: () => void
-  labels: FileUploadLabels
+  labels: ResolvedFileUploadLabels
 }) {
   const isImage = file.type.startsWith("image/")
   const [thumb, setThumb] = React.useState<string | null>(null)
@@ -362,7 +395,7 @@ function FileRow({
   function openInNewTab() {
     const url = URL.createObjectURL(file)
     window.open(url, "_blank", "noopener,noreferrer")
-    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    setTimeout(() => URL.revokeObjectURL(url), OBJECT_URL_REVOKE_MS)
   }
 
   return (
@@ -390,30 +423,75 @@ function FileRow({
         <span className="truncate font-medium">{file.name}</span>
         <span className="text-xs text-muted-foreground">{formatBytes(file.size)}</span>
       </span>
-      <Button
-        type="button"
-        variant="ghost"
-        className="size-9 p-0"
-        disabled={disabled}
-        onClick={onRemove}
-        aria-label={labels.removeFile(file.name)}
-      >
-        <X className="size-4" />
-      </Button>
+      {removable ? (
+        <Button
+          type="button"
+          variant="ghost"
+          className="size-9 p-0"
+          disabled={disabled}
+          onClick={onRemove}
+          aria-label={labels.removeFile(file.name)}
+        >
+          <X className="size-4" />
+        </Button>
+      ) : null}
     </li>
   )
+}
+
+type SaveFilePicker = (options: { suggestedName?: string }) => Promise<{
+  createWritable: () => Promise<{
+    write: (data: Blob) => Promise<void>
+    close: () => Promise<void>
+    abort: () => Promise<void>
+  }>
+}>
+
+const OBJECT_URL_REVOKE_MS = 60_000
+
+function downloadWithAnchor(file: File, name: string) {
+  const objectUrl = URL.createObjectURL(file)
+  const a = document.createElement("a")
+  a.href = objectUrl
+  a.download = name
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(objectUrl), OBJECT_URL_REVOKE_MS)
+}
+
+/** Download name for nameless files: falls back to `<fallback>.<ext from MIME>` so the OS keeps an extension. */
+function resolveDownloadName(file: File, fallback: string) {
+  if (file.name) return file.name
+  const ext = file.type.split("/")[1]?.split("+")[0]
+  return ext ? `${fallback}.${ext}` : fallback
+}
+
+async function writeWithPicker(picker: SaveFilePicker, file: File, name: string) {
+  const handle = await picker({ suggestedName: name })
+  const writable = await handle.createWritable()
+  try {
+    await writable.write(file)
+    await writable.close()
+  } catch (err) {
+    await writable.abort()
+    throw err
+  }
 }
 
 function ImageLightbox({
   file,
   onOpenChange,
+  downloadable,
   labels,
 }: {
   file: File | null
   onOpenChange: (open: boolean) => void
-  labels: FileUploadLabels
+  downloadable: boolean
+  labels: ResolvedFileUploadLabels
 }) {
   const [url, setUrl] = React.useState<string | null>(null)
+  const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
     if (!file) {
@@ -425,6 +503,35 @@ function ImageLightbox({
     return () => URL.revokeObjectURL(u)
   }, [file])
 
+  async function handleDownload() {
+    if (!file || saving) return
+    setSaving(true)
+    const name = resolveDownloadName(file, labels.imageFallbackName)
+    const picker = (window as unknown as { showSaveFilePicker?: SaveFilePicker }).showSaveFilePicker
+    try {
+      if (!picker) {
+        downloadWithAnchor(file, name)
+        return
+      }
+      await writeWithPicker(picker, file, name)
+      toast.success(labels.imageDownloadSuccess)
+    } catch (err) {
+      const errorName = (err as Error | undefined)?.name
+      if (errorName === "AbortError") return
+      // Picker bloqueado por contexto (iframe sem permissão) ou política:
+      // o download simples via anchor ainda funciona.
+      if (errorName === "SecurityError" || errorName === "NotAllowedError") {
+        downloadWithAnchor(file, name)
+        return
+      }
+      toast.error(labels.imageDownloadError)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const closeButtonRef = React.useRef<HTMLButtonElement>(null)
+
   return (
     <Dialog
       open={file != null}
@@ -433,7 +540,28 @@ function ImageLightbox({
       size="xl"
       className="border-0 bg-transparent p-0"
       hideCloseButton
+      // Enter/Espaço imediato não deve disparar o download: o foco inicial vai para Fechar.
+      onOpenAutoFocus={(e) => {
+        e.preventDefault()
+        closeButtonRef.current?.focus()
+      }}
     >
+      <div className="flex items-center justify-end gap-2 pb-2">
+        {downloadable ? (
+          <Button type="button" variant="secondary" onClick={handleDownload} disabled={saving}>
+            <Download className="size-4" />
+            {labels.imageDownload}
+          </Button>
+        ) : null}
+        <Button
+          ref={closeButtonRef}
+          type="button"
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {labels.imageClose}
+        </Button>
+      </div>
       {url ? (
         <img
           src={url}
@@ -454,7 +582,7 @@ function CameraDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
   onCapture: (file: File) => void
-  labels: FileUploadLabels
+  labels: ResolvedFileUploadLabels
 }) {
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const streamRef = React.useRef<MediaStream | null>(null)

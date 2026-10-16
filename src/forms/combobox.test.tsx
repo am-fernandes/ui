@@ -150,6 +150,49 @@ describe("Combobox", () => {
     expect(await screen.findByText("Nenhum item disponível")).toBeInTheDocument()
   })
 
+  it("filters by the visible label when value is an opaque id", async () => {
+    const idOptions: ComboboxOption[] = [
+      { value: "7f3a", label: "Alpha" },
+      { value: "9b2c", label: "Bravo" },
+    ]
+    render(<Combobox options={idOptions} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    const searchInput = await screen.findByPlaceholderText("Buscar...")
+    await userEvent.type(searchInput, "brav")
+    expect(await screen.findByRole("option", { name: /Bravo/ })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /Alpha/ })).not.toBeInTheDocument()
+  })
+
+  it("creatable: filters existing options by label, not just value", async () => {
+    const idOptions: ComboboxOption[] = [{ value: "7f3a", label: "Alpha" }]
+    render(<Combobox creatable options={idOptions} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    const searchInput = await screen.findByPlaceholderText("Buscar...")
+    await userEvent.type(searchInput, "alph")
+    expect(await screen.findByRole("option", { name: /Alpha/ })).toBeInTheDocument()
+  })
+
+  it("matches accented labels when searching without diacritics, in both modes", async () => {
+    const accentOptions: ComboboxOption[] = [{ value: "c1", label: "Coração" }]
+    const { unmount } = render(<Combobox options={accentOptions} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.type(await screen.findByPlaceholderText("Buscar..."), "coracao")
+    expect(await screen.findByRole("option", { name: /Coração/ })).toBeInTheDocument()
+    unmount()
+    render(<Combobox creatable options={accentOptions} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.type(await screen.findByPlaceholderText("Buscar..."), "coracao")
+    expect(await screen.findByRole("option", { name: /Coração/ })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /Usar/ })).not.toBeInTheDocument()
+  })
+
+  it("keeps the dropdown list from scrolling its ancestors (overscroll contained)", async () => {
+    render(<Combobox options={[{ value: "a", label: "Alpha" }]} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    const list = await screen.findByRole("listbox")
+    expect(list.className).toMatch(/overscroll-y-contain/)
+  })
+
   it("creatable: types a new value and clicks the Usar option to create it", async () => {
     const onValueChange = vi.fn()
     render(

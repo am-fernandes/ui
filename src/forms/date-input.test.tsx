@@ -6,6 +6,12 @@ import { describe, expect, it, vi } from "vitest"
 import { DateInput } from "./date-input"
 
 describe("DateInput", () => {
+  it("names the calendar popover after the label", async () => {
+    render(<DateInput label="Data de entrega" value="" />)
+    await userEvent.click(screen.getByRole("button", { name: "Data de entrega" }))
+    expect(await screen.findByRole("dialog", { name: "Data de entrega" })).toBeInTheDocument()
+  })
+
   it("renders placeholder when value is empty", () => {
     render(<DateInput value="" placeholder="Escolha a data" />)
     expect(screen.getByText("Escolha a data")).toBeInTheDocument()

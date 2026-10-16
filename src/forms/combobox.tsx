@@ -13,6 +13,19 @@ import { Button } from "../primitives/button"
 
 const CREATE_ACTION_VALUE = "__create_action__"
 
+function normalizeSearch(text: string) {
+  return text
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+}
+
+function filterOption(value: string, search: string, keywords?: string[]) {
+  if (value === CREATE_ACTION_VALUE) return 1
+  const haystack = normalizeSearch([value, ...(keywords ?? [])].join(" "))
+  return haystack.includes(normalizeSearch(search)) ? 1 : 0
+}
+
 function toArray<T>(v: T | T[] | undefined | null): T[] {
   if (v == null) return []
   return Array.isArray(v) ? v : [v]
@@ -177,8 +190,8 @@ export function Combobox(props: ComboboxProps) {
   const showCreateOption =
     creatable &&
     trimmedSearch.length > 0 &&
-    !options.some((o) => o.value.toLowerCase() === trimmedSearch.toLowerCase()) &&
-    !options.some((o) => o.label.toLowerCase() === trimmedSearch.toLowerCase())
+    !options.some((o) => normalizeSearch(o.value) === normalizeSearch(trimmedSearch)) &&
+    !options.some((o) => normalizeSearch(o.label) === normalizeSearch(trimmedSearch))
 
   const hasValue = isMultiple ? toArray(props.value).length > 0 : Boolean(props.value)
 
@@ -295,19 +308,10 @@ export function Combobox(props: ComboboxProps) {
           }}
           align="start"
           trigger={trigger}
+          aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
           className={cn("p-0", popoverWidth || "w-[--radix-popover-trigger-width]")}
         >
-          <CommandPrimitive
-            filter={
-              creatable
-                ? (value, searchText) => {
-                    if (value === CREATE_ACTION_VALUE) return 1
-                    return value.toLowerCase().includes(searchText.toLowerCase()) ? 1 : 0
-                  }
-                : undefined
-            }
-            className="flex h-full w-full flex-col"
-          >
+          <CommandPrimitive filter={filterOption} className="flex h-full w-full flex-col">
             <div className="flex items-center gap-2 border-b px-3" cmdk-input-wrapper="">
               <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
               <CommandPrimitive.Input
@@ -318,7 +322,8 @@ export function Combobox(props: ComboboxProps) {
             </div>
             <CommandPrimitive.List
               id={listboxId}
-              className="max-h-[300px] overflow-y-auto overflow-x-hidden p-1"
+              onTouchMove={(e) => e.stopPropagation()}
+              className="max-h-75 overflow-y-auto overflow-x-hidden overscroll-y-contain p-1"
             >
               {!showCreateOption ? (
                 <CommandPrimitive.Empty className="py-6 text-center text-sm text-muted-foreground">
@@ -345,6 +350,7 @@ export function Combobox(props: ComboboxProps) {
                     <CommandPrimitive.Item
                       key={option.value}
                       value={option.value}
+                      keywords={[option.label]}
                       disabled={option.disabled}
                       onSelect={() => {
                         if (isMultiple) handleMultipleSelect(option.value)

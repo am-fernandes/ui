@@ -16,8 +16,12 @@ export interface PopoverProps {
   align?: "start" | "center" | "end"
   side?: "top" | "right" | "bottom" | "left"
   sideOffset?: number
+  /** Minimum distance in px kept between the content and the viewport edges when it flips or shifts on collision. Uses the Radix default (`0`) when omitted. */
+  collisionPadding?: PopoverContentProps["collisionPadding"]
   modal?: boolean
   className?: string
+  "aria-label"?: string
+  "aria-labelledby"?: string
   onInteractOutside?: PopoverContentProps["onInteractOutside"]
   onPointerDownOutside?: PopoverContentProps["onPointerDownOutside"]
   onFocusOutside?: PopoverContentProps["onFocusOutside"]
@@ -33,8 +37,11 @@ function Popover({
   align = "center",
   side,
   sideOffset = 4,
+  collisionPadding,
   modal,
   className,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledby,
   onInteractOutside,
   onPointerDownOutside,
   onFocusOutside,
@@ -58,17 +65,20 @@ function Popover({
           align={align}
           side={side}
           sideOffset={sideOffset}
+          collisionPadding={collisionPadding}
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledby}
           onInteractOutside={onInteractOutside}
           onPointerDownOutside={onPointerDownOutside}
           onFocusOutside={onFocusOutside}
           onEscapeKeyDown={onEscapeKeyDown}
           className={cn(
-            "z-[var(--z-popover)] w-72 rounded-md border bg-popover p-4 text-popover-foreground outline-none",
-            "duration-[var(--motion-default)]",
+            "z-(--z-popover) w-72 rounded-md border bg-popover p-4 text-popover-foreground outline-none",
+            "duration-(--motion-default)",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
             "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-            "origin-[var(--radix-popover-content-transform-origin)]",
+            "origin-(--radix-popover-content-transform-origin)",
             className,
           )}
         >

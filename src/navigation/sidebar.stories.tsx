@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import {
   BarChart3,
+  CirclePlay,
   CreditCard,
   FileText,
   Home,
@@ -130,5 +131,39 @@ export const ActiveItem: Story = {
     defaultCollapsed: false,
     items: baseItems,
     isActive: (item) => item.id === "dash",
+  },
+}
+
+export const CustomProfile: Story = {
+  args: {
+    defaultCollapsed: false,
+    items: baseItems,
+    profileLabel: "Ver tutorial",
+    profileIcon: CirclePlay,
+    onNameClick: () => {},
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`profileLabel` troca o rótulo/tooltip do avatar e do botão de perfil, `profileIcon` troca o ícone e `onNameClick` transforma o nome do usuário em botão.",
+      },
+    },
+  },
+}
+
+export const WithoutSignOut: Story = {
+  args: {
+    defaultCollapsed: false,
+    items: baseItems,
+    onSignOut: undefined,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Sem `onSignOut`, o botão “Sair” e o diálogo de confirmação não são renderizados — preveja um fluxo alternativo de logout no app.",
+      },
+    },
   },
 }

@@ -8,9 +8,12 @@ export async function downloadXlsx(
   filename: string,
   sheetName: string,
 ): Promise<void> {
+  const safeFilename = /\.(xlsx|xlsm|xlsb|xls|csv|ods|txt)$/i.test(filename)
+    ? filename
+    : `${filename}.xlsx`
   const XLSX = await import("xlsx")
   const worksheet = XLSX.utils.json_to_sheet(records)
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName)
-  XLSX.writeFile(workbook, filename)
+  XLSX.writeFile(workbook, safeFilename)
 }
