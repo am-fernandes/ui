@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.5.0
+
+### Minor Changes
+
+- 8174bf9: **Combobox**: a busca passa a considerar o `label` das opções, além do `value`, e ignora acentos (`coracao` encontra `Coração`).
+
+  - Vale para o modo normal e para o `creatable`, que usam o mesmo filtro. A busca é por trecho, sem o ranqueamento fuzzy do cmdk: a ordem das opções é mantida.
+  - O `value` continua pesquisável.
+  - A lista do dropdown não propaga o scroll para o container pai (página, Sheet ou Dialog) nem em desktop nem em toque.
+
+  Sem mudança de tipos públicos.
+
+- b725af6: **DataTable**: `downloadable.filename` aceita `(scope: "filtered" | "page" | "all") => string`, permitindo refletir filtros ativos ou a página atual no nome do `.xlsx`. String continua funcionando igual; retorno falsy cai no default `"export.xlsx"`. A função não deve lançar: uma exceção interrompe a exportação. O tipo `ExportScope` passa a ser exportado para anotar a função. `.xlsx` é acrescentado ao final quando o nome resolvido não termina em extensão de planilha ou CSV (`.xlsx`, `.xlsm`, `.xlsb`, `.xls`, `.csv`, `.ods`, `.txt`). Nomes com essas extensões são salvos como informados, como antes.
+- 2386f31: **FileUpload**: nova prop `downloadable` (default `false`). Com `true`, o lightbox de imagem exibe o botão de download; sem ela, o lightbox continua só de visualização, como antes.
+- 15e0bd3: **FileUpload**:
+
+  - Nova prop `removable` (default `true`). Com `false`, o botão de remover some, mas a linha continua abrível e novos arquivos ainda podem ser adicionados pelo dropzone (append-only).
+  - `ImageLightbox` ganha botão "Fechar" explícito e, com a prop `downloadable`, botão "Baixar imagem" (`showSaveFilePicker` com fallback `<a download>`; `AbortError` é ignorado).
+  - O toast de sucesso aparece só quando o picker salva o arquivo. No fallback `<a download>` não há toast, porque o navegador não confirma o início do download.
+  - O botão de download fica desabilitado durante o salvamento e cai no `<a download>` quando `showSaveFilePicker` lança `SecurityError` (ex.: iframe) ou `NotAllowedError` (política negada).
+  - O foco inicial do lightbox vai para o botão "Fechar", para que Enter/Espaço imediato não dispare o download.
+  - Novos labels opcionais: `imageDownload`, `imageDownloadSuccess`, `imageDownloadError`, `imageClose` (defaults pt-BR), sem quebrar quem tipa `FileUploadLabels` completo.
+
+- 6ee1e2c: **Popover**:
+
+  - Nova prop opcional `collisionPadding`, repassada ao `PopoverPrimitive.Content`, para manter uma distância mínima das bordas da viewport ao dar flip/shift. Sem a prop, o comportamento é o mesmo de antes (padrão do Radix).
+  - Novas props `aria-label` e `aria-labelledby`, repassadas ao conteúdo para dar nome acessível ao popover.
+
+- bc276c7: **Sidebar**:
+
+  - Novas props `profileLabel` (default `"Editar perfil"`) e `profileIcon` (default `UserCog`) para o rótulo/tooltip do avatar e o ícone do botão de perfil.
+  - Nova prop `onNameClick`: quando informada, o nome do usuário vira um botão.
+  - `onSignOut` passa a ser opcional: sem ela o botão "Sair" e o diálogo de confirmação não são renderizados. Nesse caso a lib não oferece logout: o app precisa ter um fluxo próprio de saída.
+
+  Sem mudança de comportamento para quem não usa as novas props.
+
 ## 0.4.1
 
 ### Patch Changes
