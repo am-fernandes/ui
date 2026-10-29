@@ -191,8 +191,11 @@ export function formattedColumn<TData, TValue = unknown>(
   return {
     ...access,
     header,
-    enableSorting,
-    sortingFn,
+    // Only emit these keys when set: TanStack merges `{ ...defaults, ...columnDef }`,
+    // so an own `sortingFn: undefined` would clobber the `"auto"` default and crash
+    // `getSortingFn()` with "sortingFn is not a function".
+    ...(enableSorting !== undefined ? { enableSorting } : {}),
+    ...(sortingFn !== undefined ? { sortingFn } : {}),
     cell: ({ getValue, row }: { getValue: () => unknown; row: Row<TData> }) => {
       const raw = getValue() as TValue
       if (raw == null || raw === "") return emptyText

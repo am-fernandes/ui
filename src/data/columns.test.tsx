@@ -1,4 +1,10 @@
-import type { ColumnDef, Row } from "@tanstack/react-table"
+import {
+  type ColumnDef,
+  type Row,
+  createTable,
+  getCoreRowModel,
+  getSortedRowModel,
+} from "@tanstack/react-table"
 import { render } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
@@ -261,5 +267,57 @@ describe("formattedColumn", () => {
       </div>,
     )
     expect(container.textContent).toBe("+55 11944951458")
+  })
+
+  describe("sorting defaults", () => {
+    interface SortRow {
+      name: string
+    }
+    const rows: SortRow[] = [{ name: "b" }, { name: "c" }, { name: "a" }]
+
+    function sortedNames(col: ColumnDef<SortRow>, desc = false): string[] {
+      const table = createTable<SortRow>({
+        data: rows,
+        columns: [col],
+        state: { sorting: [{ id: "name", desc }] },
+        onStateChange: () => {},
+        renderFallbackValue: null,
+        getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+      })
+      return table.getSortedRowModel().rows.map((r) => r.original.name)
+    }
+
+    it("does not emit `sortingFn`/`enableSorting` keys when they are not provided", () => {
+      const col = formattedColumn<SortRow, string>({ accessorKey: "name", header: "Nome" })
+      expect("sortingFn" in col).toBe(false)
+      expect("enableSorting" in col).toBe(false)
+    })
+
+    it("keeps TanStack's automatic comparator when `sortingFn` is omitted", () => {
+      const col = formattedColumn<SortRow, string>({ accessorKey: "name", header: "Nome" })
+      expect(sortedNames(col)).toEqual(["a", "b", "c"])
+      expect(sortedNames(col, true)).toEqual(["c", "b", "a"])
+    })
+
+    it("still honours an explicit `sortingFn`", () => {
+      const col = formattedColumn<SortRow, string>({
+        accessorKey: "name",
+        header: "Nome",
+        sortingFn: (a, b) => b.original.name.localeCompare(a.original.name),
+      })
+      expect(typeof (col as { sortingFn?: unknown }).sortingFn).toBe("function")
+      expect(sortedNames(col)).toEqual(["c", "b", "a"])
+    })
+
+    it("still honours an explicit `enableSorting: false`", () => {
+      const col = formattedColumn<SortRow, string>({
+        accessorKey: "name",
+        header: "Nome",
+        enableSorting: false,
+      })
+      expect(col).toMatchObject({ enableSorting: false })
+      expect(sortedNames(col)).toEqual(["b", "c", "a"])
+    })
   })
 })
