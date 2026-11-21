@@ -34,7 +34,7 @@ describe("IconButton", () => {
 
   it("is a ghost button by default and supports the Button variants", () => {
     const { rerender } = render(<IconButton icon={<Bell />} label="A" />)
-    expect(screen.getByRole("button")).toHaveClass("hover:bg-accent")
+    expect(screen.getByRole("button")).toHaveClass("state-layer")
     expect(screen.getByRole("button")).not.toHaveClass("bg-primary")
 
     rerender(<IconButton icon={<Trash2 />} label="A" variant="destructive" />)

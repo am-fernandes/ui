@@ -128,7 +128,7 @@ export function ScheduleEventButton({
   switch (variant) {
     case "chip":
       variantClass =
-        "flex w-full min-w-0 items-center gap-1 overflow-hidden rounded-sm px-1 text-xs leading-5 hover:bg-accent"
+        "flex w-full min-w-0 items-center gap-1 overflow-hidden rounded-sm px-1 text-xs leading-5 state-layer"
       content = (
         <>
           <span aria-hidden="true" className={cn("size-2 shrink-0 rounded-full", colors.dot)} />
@@ -147,7 +147,7 @@ export function ScheduleEventButton({
       break
     case "bar":
       variantClass = cn(
-        "flex w-full min-w-0 items-center rounded-sm border-l-[3px] px-1.5 text-xs font-medium leading-5 hover:brightness-95",
+        "flex w-full min-w-0 items-center rounded-sm border-l-[3px] px-1.5 text-xs font-medium leading-5 state-layer",
         colors.surface,
         colors.border,
         continuesBefore && "rounded-l-none border-l-0 pl-2",
@@ -161,7 +161,7 @@ export function ScheduleEventButton({
       break
     case "block":
       variantClass = cn(
-        "absolute flex flex-col overflow-hidden rounded-sm border-l-[3px] px-1.5 py-0.5 text-xs leading-4 hover:brightness-95",
+        "absolute flex flex-col overflow-hidden rounded-sm border-l-[3px] px-1.5 py-0.5 text-xs leading-4 state-layer",
         colors.surface,
         colors.border,
       )
@@ -180,7 +180,7 @@ export function ScheduleEventButton({
       break
     default:
       variantClass =
-        "flex w-full min-w-0 items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent"
+        "flex w-full min-w-0 items-center gap-3 rounded-md px-3 py-2 text-sm state-layer"
       content = (
         <>
           <span aria-hidden="true" className="w-28 shrink-0 tabular-nums text-muted-foreground">

@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils"
  * standard.
  */
 const toggleVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium cursor-pointer transition active:scale-[0.98] focus-visible:focus-outline disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium cursor-pointer transition focus-visible:focus-outline state-layer motion-safe:pointer-fine:active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border",
   {
     variants: {
       variant: {
@@ -36,24 +36,24 @@ const toggleVariants = cva(
         // `default` / `destructive` solid look — at-a-glance the on-state
         // reads as "this is engaged".
         default: [
-          "border-input bg-background hover:bg-accent hover:text-accent-foreground",
+          "border-input bg-background",
           "data-[state=on]:bg-accent data-[state=on]:text-accent-foreground data-[state=on]:border-accent",
         ].join(" "),
         info: [
-          "border-input bg-background hover:bg-accent hover:text-accent-foreground",
-          "data-[state=on]:bg-info data-[state=on]:text-info-foreground data-[state=on]:border-info data-[state=on]:hover:bg-info/90",
+          "border-input bg-background",
+          "data-[state=on]:bg-info data-[state=on]:text-info-foreground data-[state=on]:border-info",
         ].join(" "),
         success: [
-          "border-input bg-background hover:bg-accent hover:text-accent-foreground",
-          "data-[state=on]:bg-success data-[state=on]:text-success-foreground data-[state=on]:border-success data-[state=on]:hover:bg-success/90",
+          "border-input bg-background",
+          "data-[state=on]:bg-success data-[state=on]:text-success-foreground data-[state=on]:border-success",
         ].join(" "),
         warning: [
-          "border-input bg-background hover:bg-accent hover:text-accent-foreground",
-          "data-[state=on]:bg-warning data-[state=on]:text-warning-foreground data-[state=on]:border-warning data-[state=on]:hover:bg-warning/90",
+          "border-input bg-background",
+          "data-[state=on]:bg-warning data-[state=on]:text-warning-foreground data-[state=on]:border-warning",
         ].join(" "),
         destructive: [
-          "border-input bg-background hover:bg-accent hover:text-accent-foreground",
-          "data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground data-[state=on]:border-destructive data-[state=on]:hover:bg-destructive/90",
+          "border-input bg-background",
+          "data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground data-[state=on]:border-destructive",
         ].join(" "),
       },
       // No explicit height: padding + border resolve the box exactly the

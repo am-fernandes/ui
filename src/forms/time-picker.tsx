@@ -15,7 +15,7 @@ const containerClasses =
   "inline-flex items-center gap-1 rounded-md border border-input bg-transparent px-3 py-3 text-base field-states md:text-sm"
 
 const fieldClasses =
-  "w-7 bg-transparent text-center tabular-nums outline-none placeholder:text-placeholder disabled:cursor-not-allowed"
+  "w-7 bg-transparent text-center tabular-nums outline-none placeholder:text-placeholder disabled:cursor-default"
 
 export interface TimePickerProps {
   value?: string
@@ -259,7 +259,7 @@ function TimePicker({
         aria-label={ariaLabel ?? (typeof label === "string" ? label : "Horário")}
         data-slot="time-picker"
         data-disabled={disabled ? "true" : undefined}
-        className={cn(containerClasses, disabled && "cursor-not-allowed", className)}
+        className={cn(containerClasses, disabled && "cursor-default", className)}
       >
         <TimeField
           ref={ref}

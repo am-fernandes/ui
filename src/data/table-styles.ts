@@ -16,7 +16,7 @@ export function tableStyles() {
     header: "[&_tr]:border-b",
     body: "[&_tr:last-child]:border-0",
     footer: "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
-    row: "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+    row: "border-b transition-colors hover:state-hover data-[state=selected]:bg-muted",
     head: "px-4 py-4 text-left align-middle font-medium text-muted-foreground",
     cell: "px-4 py-4 align-middle",
     caption: "mt-4 text-sm text-muted-foreground",

@@ -222,7 +222,7 @@ export function Combobox(props: ComboboxProps) {
               <button
                 type="button"
                 aria-label={`Remover ${labelText}`}
-                className="rounded-sm cursor-pointer transition-colors hover:bg-secondary-foreground/20 focus-visible:focus-outline"
+                className="rounded-sm cursor-pointer state-layer focus-visible:focus-outline"
                 onClick={(e) => handleRemoveValue(val, e)}
               >
                 <X className="h-3 w-3 text-muted-foreground" />
@@ -272,7 +272,7 @@ export function Combobox(props: ComboboxProps) {
             role="button"
             tabIndex={0}
             aria-label="Limpar seleção"
-            className="inline-flex cursor-pointer rounded-sm transition-colors hover:bg-secondary-foreground/20 focus-visible:focus-outline"
+            className="inline-flex cursor-pointer rounded-sm state-layer focus-visible:focus-outline"
             onClick={handleClearAll}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -341,7 +341,7 @@ export function Combobox(props: ComboboxProps) {
                     value={CREATE_ACTION_VALUE}
                     keywords={[trimmedSearch]}
                     onSelect={() => handleCreate(trimmedSearch)}
-                    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors aria-selected:bg-accent aria-selected:text-accent-foreground"
+                    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover"
                   >
                     Usar: &ldquo;{trimmedSearch}&rdquo;
                   </CommandPrimitive.Item>
@@ -361,7 +361,7 @@ export function Combobox(props: ComboboxProps) {
                         if (isMultiple) handleMultipleSelect(option.value)
                         else handleSingleSelect(option.value)
                       }}
-                      className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
+                      className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
                     >
                       <div
                         className={cn(

@@ -290,11 +290,11 @@ function FileUpload({
           }
           className={cn(
             "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
-            "hover:bg-accent/40",
+            "state-layer",
             "focus-visible:focus-outline",
             isDragging && "border-primary bg-accent/60",
             hasError && "border-destructive",
-            disabled && "cursor-not-allowed opacity-50",
+            disabled && "cursor-default opacity-50",
             dropzoneClassName,
           )}
         >
@@ -408,7 +408,7 @@ function FileRow({
         className={cn(
           "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-muted-foreground cursor-pointer transition-opacity",
           "hover:opacity-80 focus-visible:focus-outline",
-          disabled && "cursor-not-allowed opacity-50",
+          disabled && "cursor-default opacity-50",
         )}
       >
         {thumb ? (

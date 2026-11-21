@@ -130,7 +130,7 @@ function CommandPalette({
                   }}
                   className={cn(
                     "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
-                    "aria-selected:bg-accent aria-selected:text-accent-foreground",
+                    "aria-selected:state-hover",
                     "data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50",
                   )}
                 >

@@ -138,6 +138,22 @@ Input, Textarea, os inputs brasileiros, MultiInput, TimePicker, os selects de pa
 
 O `field-states` vai no elemento que desenha a borda: a caixa, quando o `<input>` fica dentro dela, ou o próprio `<input>`. Com toque, a troca é instantânea (sem fade enquanto o teclado sobe).
 
+## Estados
+
+Hover e pressed são uma **camada translúcida** da cor do texto do próprio controle, pintada por cima do fundo. A mesma regra serve para qualquer variante: escurece um fundo claro e clareia um fundo escuro.
+
+```css
+--state-hover-opacity: 5%;
+--state-pressed-opacity: 10%;
+```
+
+| Utilitário | Uso |
+|---|---|
+| `state-layer` | hover (só em dispositivo com mouse) e pressed; nunca num controle desabilitado |
+| `state-hover` / `state-pressed` | a mesma camada para estados que não são o ponteiro: `focus:state-hover` num item de menu, `aria-selected:state-hover` num item de combobox |
+
+Pressed também encolhe o botão para 98% (`motion-safe:pointer-fine:active:scale-[0.98]`): só com mouse, nunca no toque nem com movimento reduzido. **Desabilitado** é `opacity-50` com cursor normal (`cursor-default`), sem reação a hover ou clique.
+
 ## Bordas
 
 `--border` (divisores, cards, tabelas, menus) é **10% da cor primária, translúcida**: `color-mix(in oklch, var(--primary) 10%, transparent)`. Ela lê igual sobre qualquer superfície, e no tema escuro vira 10% de branco sozinha. `--input`, a borda dos campos, continua sólida, como no Astryx: um campo precisa ser achado na tela.

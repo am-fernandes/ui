@@ -136,7 +136,7 @@ const contentClass = cn(
 
 const rowClass = cn(
   "relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors",
-  "focus:bg-accent focus:text-accent-foreground",
+  "focus:state-hover",
   "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
   "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
 )
@@ -172,10 +172,7 @@ function entryKey(entry: DropdownMenuEntry, index: number) {
 function ActionRow({ item }: { item: DropdownMenuActionItem }) {
   const Icon = item.icon
   const destructive = item.variant === "destructive"
-  const className = cn(
-    rowClass,
-    destructive && "text-destructive focus:bg-destructive/10 focus:text-destructive",
-  )
+  const className = cn(rowClass, destructive && "text-destructive")
   const content = (
     <>
       {Icon ? <Icon className="size-4" aria-hidden /> : null}

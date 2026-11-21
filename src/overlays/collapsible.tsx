@@ -49,7 +49,7 @@ function Collapsible({
           data-slot="collapsible-trigger"
           className={cn(
             "flex w-full items-center justify-between rounded-md py-2 text-sm font-medium",
-            "cursor-pointer hover:bg-accent focus-visible:focus-outline",
+            "cursor-pointer state-layer focus-visible:focus-outline",
             triggerSide === "left" && "flex-row-reverse",
           )}
           aria-label={title ? undefined : triggerLabel}

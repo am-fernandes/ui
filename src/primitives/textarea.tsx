@@ -79,7 +79,7 @@ function Textarea({
       className={cn(
         "min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2.5 text-sm field-states",
         "placeholder:text-placeholder",
-        "disabled:cursor-not-allowed",
+        "disabled:cursor-default",
         hasError && "border-destructive field-error",
         autoResize && "resize-none overflow-hidden",
         className,

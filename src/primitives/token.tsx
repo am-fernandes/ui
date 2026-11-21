@@ -139,7 +139,9 @@ function Token({
     "min-w-0 truncate outline-none",
     "after:absolute after:inset-0 after:rounded-md after:transition-colors",
     "focus-visible:after:focus-outline",
-    disabled ? "cursor-not-allowed" : "cursor-pointer hover:after:bg-current/10",
+    disabled
+      ? "cursor-default"
+      : "cursor-pointer hover:after:state-hover active:after:state-pressed",
   )
 
   let content: React.ReactNode
@@ -207,9 +209,7 @@ function Token({
           className={cn(
             "relative z-10 inline-flex shrink-0 items-center justify-center rounded-sm opacity-70 transition",
             "focus-visible:focus-outline",
-            disabled
-              ? "cursor-not-allowed"
-              : "cursor-pointer hover:bg-current/10 hover:opacity-100",
+            disabled ? "cursor-default" : "cursor-pointer state-layer hover:opacity-100",
             sizing.remove,
           )}
         >

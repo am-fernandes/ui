@@ -198,9 +198,9 @@ function Stepper({
         onClick={() => onStepClick(index)}
         className={cn(
           layout,
-          "min-w-0 cursor-pointer rounded-md p-1 transition-colors hover:bg-accent/60",
+          "min-w-0 cursor-pointer rounded-md p-1 transition-colors state-layer",
           "focus-visible:focus-outline",
-          "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent",
+          "disabled:cursor-default disabled:opacity-50",
           vertical ? "-m-1 w-[calc(100%+0.5rem)]" : "w-full",
         )}
       >

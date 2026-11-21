@@ -12,17 +12,17 @@ const buttonVariants = cva(
     "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium cursor-pointer",
     "px-3 py-2.5",
     "transition focus-visible:focus-outline",
-    "active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100",
+    "motion-safe:pointer-fine:active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
     "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   ),
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        default: "bg-primary text-primary-foreground state-layer",
+        destructive: "bg-destructive text-destructive-foreground state-layer",
+        outline: "border border-input bg-background state-layer",
+        secondary: "bg-secondary text-secondary-foreground state-layer",
+        ghost: "state-layer",
         link: "text-primary underline-offset-4 hover:underline",
       },
     },

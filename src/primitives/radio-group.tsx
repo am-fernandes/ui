@@ -83,7 +83,7 @@ function RadioGroup({
                 className={cn(
                   "aspect-square size-4 shrink-0 cursor-pointer rounded-full border border-primary text-primary",
                   "focus-visible:focus-outline",
-                  "disabled:cursor-not-allowed disabled:opacity-50",
+                  "disabled:cursor-default disabled:opacity-50",
                 )}
               >
                 <RadioGroupPrimitive.Indicator

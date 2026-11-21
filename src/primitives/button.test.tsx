@@ -52,9 +52,9 @@ describe("Button", () => {
     expect(link).toHaveAttribute("data-slot", "button")
   })
 
-  it("uses the system focus ring", () => {
+  it("uses the system focus ring and the state layer", () => {
     render(<Button>x</Button>)
-    expect(screen.getByRole("button")).toHaveClass("focus-visible:focus-outline")
+    expect(screen.getByRole("button")).toHaveClass("focus-visible:focus-outline", "state-layer")
   })
 
   it("forwards ref", () => {

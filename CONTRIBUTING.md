@@ -57,7 +57,8 @@ Estas decisões são deliberadas. Não as questione num PR sem antes abrir issue
   - Menus / tabs / tree: `py-1.5`.
 - **Cursor pointer em tudo clicável.** Botões, triggers de Radix, ícones interativos.
 - **Foco (do Astryx).** Controles: um anel só, contorno de 2px na cor `--ring`, 3px afastado, em `:focus-visible` (`focus-visible:focus-outline`; `focus-visible:focus-outline-inset` onde um contêiner cortaria o anel). Campos: visual de campo (`field-states` no elemento que desenha a borda): borda `--primary` + anel interno de 2px da primária a 20% em qualquer foco, anel interno da borda a 30% no hover. Erro: `border-destructive field-error`. Nada de `ring-*` para foco.
-- **Disabled.** `opacity-50` no shell + `cursor-not-allowed` no controle. Não duplique opacidade dentro do `FieldShell` (ver commit `944211f`).
+- **Estados (do Astryx).** Hover e pressed são `state-layer`: uma camada da cor do texto do controle (5% e 10%) por cima do fundo, em qualquer variante. Estados que não são o ponteiro usam `state-hover` com a variante certa (`focus:state-hover` em item de menu). Pressed encolhe para 98% só com mouse e sem movimento reduzido: `motion-safe:pointer-fine:active:scale-[0.98]`. Não use `hover:bg-*/90` nem `hover:bg-accent` para hover.
+- **Disabled.** `opacity-50` no shell + `cursor-default` no controle, sem reação a hover ou clique. Não duplique opacidade dentro do `FieldShell` (ver commit `944211f`).
 - **Motion tokens (do Astryx).** `--duration-fast` (175ms), `--duration-medium-min/medium/medium-max` (310/410/550ms) e `--duration-exit` para toda saída, com `--ease-standard` na entrada e `--ease-exit` na saída. Overlays usam as combinações de `src/overlays/_internal/animations.ts`.
 - **Z-index tokens.** `--z-overlay` (40), `--z-modal` (50), `--z-popover` (60), `--z-tooltip` (70), `--z-toast` (80). Nunca use `z-[999...]`.
 - **WCAG AA** é o mínimo. Contraste verificado via `scripts/oklch-contrast.ts` e Storybook `addon-a11y`.

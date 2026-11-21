@@ -41,7 +41,7 @@ function Input({
       className={cn(
         "relative flex w-full items-center rounded-md border border-input bg-transparent text-sm field-states",
         hasError && "border-destructive field-error",
-        disabled && "cursor-not-allowed",
+        disabled && "cursor-default",
       )}
     >
       {leadingIcon ? (
@@ -58,7 +58,7 @@ function Input({
         disabled={disabled}
         required={required}
         className={cn(
-          "w-full bg-transparent px-3 py-2.5 placeholder:text-placeholder outline-none disabled:cursor-not-allowed",
+          "w-full bg-transparent px-3 py-2.5 placeholder:text-placeholder outline-none disabled:cursor-default",
           leadingIcon && "pl-2",
           trailingIcon && "pr-2",
           className,

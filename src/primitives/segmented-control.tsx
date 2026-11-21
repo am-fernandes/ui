@@ -114,8 +114,8 @@ function SegmentedControl({
             }}
             className={cn(
               "inline-flex min-w-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-sm font-medium transition-colors",
-              "hover:text-foreground focus-visible:focus-outline",
-              "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-muted-foreground",
+              "focus-visible:focus-outline data-[state=unchecked]:state-layer",
+              "disabled:cursor-default disabled:opacity-50",
               "data-[state=checked]:bg-background data-[state=checked]:text-foreground",
               "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
               size === "sm" ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm",

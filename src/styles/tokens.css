@@ -152,6 +152,11 @@
      at 30%. Not the keyboard ring — a field shows it on any focus. */
   --field-focus-ring: color-mix(in oklch, var(--primary) 20%, transparent);
 
+  /* States — hover and pressed paint a translucent layer of the control's own
+     text color over its fill, so one rule works on any variant. */
+  --state-hover-opacity: 5%;
+  --state-pressed-opacity: 10%;
+
   /* Backgrounds & Foregrounds */
   --background: oklch(1 0 0);
   --foreground: oklch(0.203 0.013 252);
@@ -343,6 +348,41 @@
 @utility field-error {
   --field-focus-border: var(--destructive);
   --field-hover-ring: color-mix(in oklch, var(--destructive) 30%, transparent);
+}
+
+/* ---- States -----------------------------------------------------------------
+   `state-layer` paints hover (pointer devices only) and pressed as a layer of
+   the control's text color over its fill — darker on light fills, lighter on
+   dark ones — and never on a disabled control. `state-hover` and
+   `state-pressed` are the same layers for states that are not a pointer
+   (`data-[highlighted]:state-hover` on a menu item, for one). */
+@utility state-hover {
+  background-image: linear-gradient(
+    color-mix(in oklch, currentColor var(--state-hover-opacity), transparent),
+    color-mix(in oklch, currentColor var(--state-hover-opacity), transparent)
+  );
+}
+@utility state-pressed {
+  background-image: linear-gradient(
+    color-mix(in oklch, currentColor var(--state-pressed-opacity), transparent),
+    color-mix(in oklch, currentColor var(--state-pressed-opacity), transparent)
+  );
+}
+@utility state-layer {
+  @media (hover: hover) {
+    &:hover:where(:not(:disabled, [aria-disabled="true"], [data-disabled])) {
+      background-image: linear-gradient(
+        color-mix(in oklch, currentColor var(--state-hover-opacity), transparent),
+        color-mix(in oklch, currentColor var(--state-hover-opacity), transparent)
+      );
+    }
+  }
+  &:active:where(:not(:disabled, [aria-disabled="true"], [data-disabled])) {
+    background-image: linear-gradient(
+      color-mix(in oklch, currentColor var(--state-pressed-opacity), transparent),
+      color-mix(in oklch, currentColor var(--state-pressed-opacity), transparent)
+    );
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

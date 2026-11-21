@@ -69,7 +69,7 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
 
   const baseClass = cn(
     "flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors",
-    "hover:bg-accent hover:text-accent-foreground",
+    "state-layer",
     "focus-visible:focus-outline",
     touch && "min-h-11",
     active && "bg-accent text-accent-foreground",
