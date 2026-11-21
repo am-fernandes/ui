@@ -184,6 +184,15 @@ export { Progress, type ProgressProps } from "./overlays/progress"
 export { Sheet, type SheetProps } from "./overlays/sheet"
 export { Toaster, toast, type ToasterProps } from "./overlays/sonner"
 export { Tooltip, type TooltipProps } from "./overlays/tooltip"
+export {
+  Tour,
+  defaultTourLabels,
+  type TourCloseReason,
+  type TourLabels,
+  type TourProps,
+  type TourStep,
+  type TourTarget,
+} from "./overlays/tour"
 
 // Primitives
 export { Avatar, type AvatarProps } from "./primitives/avatar"

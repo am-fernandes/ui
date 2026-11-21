@@ -131,6 +131,10 @@
       "types": "./dist/overlays/tooltip.d.ts",
       "import": "./dist/overlays/tooltip.js"
     },
+    "./tour": {
+      "types": "./dist/overlays/tour.d.ts",
+      "import": "./dist/overlays/tour.js"
+    },
     "./accordion": {
       "types": "./dist/navigation/accordion.d.ts",
       "import": "./dist/navigation/accordion.js"
