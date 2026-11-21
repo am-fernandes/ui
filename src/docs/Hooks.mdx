@@ -11,6 +11,7 @@ Além dos componentes, `@amfernandesinc/ui` exporta um conjunto pequeno e estáv
 | Símbolo | Tipo | O que faz |
 |---|---|---|
 | `useIsMobile` | hook | `true` quando a viewport é menor que 768 px (reativo a resize) |
+| `useAppShell` | hook | estado do `AppShell` (`collapsed`, `isMobile`, `closeMenu`) para navbar, footer e página |
 | `useDebounce` | hook | atrasa atualização de um valor até que o input pare por `delay` ms |
 | `useCopyToClipboard` | hook | copia texto para a área de transferência com feedback via toast |
 | `useComboboxOptions` | hook | converte `Array<{ id, nome }>` em `ComboboxOption[]` memoizado |
@@ -45,7 +46,7 @@ Importação genérica:
 
 ```ts
 import {
-  useIsMobile, useDebounce, useCopyToClipboard, useComboboxOptions,
+  useIsMobile, useAppShell, useDebounce, useCopyToClipboard, useComboboxOptions,
   cn, buttonVariants, badgeVariants, alertVariants, typographyVariants, tableStyles,
   toCents, fromCents, centsToDisplay, formatBRL, toBRLMoney, parseMaskedValue,
   percentOfTotal, percentFromValue,
@@ -83,7 +84,7 @@ import { useIsMobile } from "@amfernandesinc/ui"
 
 function ResponsiveNav() {
   const isMobile = useIsMobile()
-  return isMobile ? <MobileDrawer /> : <DesktopSidebar />
+  return isMobile ? <CompactFilters /> : <InlineFilters />
 }
 ```
 
@@ -92,6 +93,48 @@ function ResponsiveNav() {
 - SSR-safe: retorna `false` no primeiro render (server + hidratação), atualiza no client após o `useEffect` rodar.
 - Listener é registrado uma vez por mount e removido no unmount.
 - Threshold fixo em 768 px (matches `max-width: 767px`). Para customizar, use `window.matchMedia` direto em um hook próprio.
+
+---
+
+### `useAppShell`
+
+Lê o estado do `AppShell` de dentro dele: na `navbar`, no `footer` ou na página. Serve para o conteúdo se adaptar ao menu recolhido ou ao mobile.
+
+**Signature:**
+
+```ts
+function useAppShell(): {
+  collapsed: boolean // menu no trilho de 64px (sempre false dentro do menu mobile)
+  isMobile: boolean  // viewport abaixo de 768 px
+  closeMenu: () => void // fecha o menu mobile
+}
+```
+
+**Exemplo — footer que vira só o avatar no menu recolhido:**
+
+```tsx
+import { AppShell, Avatar, Button, useAppShell } from "@amfernandesinc/ui"
+
+function MenuDaConta() {
+  const { collapsed } = useAppShell()
+  if (collapsed) return <Avatar alt="Usuário" fallback="U" className="size-8" />
+  return (
+    <div className="flex items-center gap-2">
+      <Avatar alt="Usuário" fallback="U" className="size-8" />
+      <span className="flex-1 truncate text-sm font-medium">Usuário</span>
+      <Button variant="ghost" aria-label="Sair">…</Button>
+    </div>
+  )
+}
+
+<AppShell items={items} footer={<MenuDaConta />}>{children}</AppShell>
+```
+
+**Notas:**
+
+- Lança erro se for chamado fora de um `<AppShell>`.
+- Dentro do menu mobile, `collapsed` é sempre `false`: o footer aparece no layout expandido.
+- `isMobile` vem de `useIsMobile` — `false` no primeiro render (SSR), atualiza depois do mount.
 
 ---
 

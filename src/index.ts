@@ -84,6 +84,16 @@ export { cn } from "./lib/utils"
 // Navigation
 export { Accordion, type AccordionItemData, type AccordionProps } from "./navigation/accordion"
 export {
+  AppShell,
+  defaultAppShellLabels,
+  useAppShell,
+  type AppShellItem,
+  type AppShellLabels,
+  type AppShellProps,
+  type AppShellState,
+  type SidebarItem,
+} from "./navigation/app-shell"
+export {
   Breadcrumb,
   type BreadcrumbItemData,
   type BreadcrumbProps,
@@ -96,12 +106,6 @@ export {
   type CommandPaletteLabels,
   type CommandPaletteProps,
 } from "./navigation/command-palette"
-export {
-  Sidebar,
-  type SidebarItem,
-  type SidebarProps,
-  type SidebarUser,
-} from "./navigation/sidebar"
 export { Tabs, type TabsItemData, type TabsProps } from "./navigation/tabs"
 
 // Domain

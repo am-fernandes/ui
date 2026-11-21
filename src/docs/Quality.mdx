@@ -223,7 +223,7 @@ exclude: ["src/**/*.stories.tsx", "src/**/*.test.tsx", "src/docs/**", "src/index
 
 Em `vitest.setup.ts` polyfilamos APIs que o jsdom não implementa nativamente:
 
-- `window.matchMedia` — usado por `useIsMobile` e Sidebar
+- `window.matchMedia` — usado por `useIsMobile` e AppShell
 - `ResizeObserver` — usado por cmdk
 - `IntersectionObserver` — usado por Image/Video lazy loading
 - `Element.prototype.scrollIntoView` — usado por cmdk
@@ -275,7 +275,7 @@ A camada de **testes responsivos** vive em `tests/e2e/responsive.spec.ts` e roda
 
 | Componente | Comportamento responsivo testado |
 |---|---|
-| **Sidebar** | Mobile→`<Sheet>` overlay; Desktop→`<aside>` persistente |
+| **AppShell** | Mobile→barra de 64px + menu em painel à esquerda; ≥768px→menu lateral fixo; o painel fecha ao crescer a janela |
 | **DataTable** | Container `overflow-x: auto` em qualquer viewport |
 | **Tabs** | Trigger list não estoura largura da viewport |
 | **Dialog** | Conteúdo respeita width disponível, não vira minúsculo |
@@ -298,7 +298,7 @@ bun run test:visual         # 57 baselines em desktop
 
 ### Limitação conhecida
 
-A maioria dos componentes da lib **não tem media queries internas** — eles são "intrinsicamente responsivos" porque usam `w-full`, `flex-wrap`, `min-w-0`, etc. Sidebar é a exceção (usa `useIsMobile`). Por isso a maior parte dos testes responsivos valida **invariantes geométricas** (não estourar largura, manter aspect ratio) e não "elementos mudam ao cruzar breakpoints".
+A maioria dos componentes da lib **não tem media queries internas** — eles são "intrinsicamente responsivos" porque usam `w-full`, `flex-wrap`, `min-w-0`, etc. AppShell é a exceção (troca o menu no breakpoint de 768px). Por isso a maior parte dos testes responsivos valida **invariantes geométricas** (não estourar largura, manter aspect ratio) e não "elementos mudam ao cruzar breakpoints".
 
 ---
 
@@ -308,7 +308,6 @@ A tabela acima destaca onde investir esforço próximo. Os mais urgentes:
 
 - **Combobox** (`forms/combobox.tsx`) — ~72 % de linhas; faltam testes para `creatable`, multi-select remove via X click, e empty state.
 - **TimePicker** (`forms/time-picker.tsx`) — ~72 %; arrow keys, blur clamp e wrap modular ainda não cobertos.
-- **Sidebar** (`navigation/sidebar.tsx`) — ~76 %; falta cobertura do branch mobile (Sheet) e do submenu nested.
 - **FileUpload** (`domain/file-upload.tsx`) — ~79 %; o fluxo da câmera (`getUserMedia`) e o lightbox não são exercitados.
 
 ### Roadmap das camadas Playwright

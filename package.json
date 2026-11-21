@@ -119,6 +119,10 @@
       "types": "./dist/navigation/accordion.d.ts",
       "import": "./dist/navigation/accordion.js"
     },
+    "./app-shell": {
+      "types": "./dist/navigation/app-shell.d.ts",
+      "import": "./dist/navigation/app-shell.js"
+    },
     "./breadcrumb": {
       "types": "./dist/navigation/breadcrumb.d.ts",
       "import": "./dist/navigation/breadcrumb.js"
@@ -126,10 +130,6 @@
     "./command-palette": {
       "types": "./dist/navigation/command-palette.d.ts",
       "import": "./dist/navigation/command-palette.js"
-    },
-    "./sidebar": {
-      "types": "./dist/navigation/sidebar.d.ts",
-      "import": "./dist/navigation/sidebar.js"
     },
     "./tabs": {
       "types": "./dist/navigation/tabs.d.ts",

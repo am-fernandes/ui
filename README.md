@@ -40,7 +40,7 @@ import { Button } from "@amfernandesinc/ui/button"
 | Primitives | 12    | Avatar, Badge, Button, Checkbox, Input, Label, RadioGroup, Separator, Skeleton, Switch, Textarea, Typography |
 | Overlays   | 9     | Alert, AlertDialog, Collapsible, Dialog, Popover, Progress, Sheet, Toaster, Tooltip                  |
 | Forms      | 5     | Calendar, Combobox, DateInput, DateRangePicker, TimePicker                                           |
-| Navigation | 5     | Accordion, Breadcrumb, CommandPalette, Sidebar, Tabs                                                 |
+| Navigation | 5     | Accordion, AppShell, Breadcrumb, CommandPalette, Tabs                                                |
 | Data       | 7     | Card, DataTable, Image, ScrollArea, Tree, Video + helpers `columns` / `tableStyles`                  |
 | Domain     | 9     | CEPInput, CNPJInput, CPFInput, CurrencyInput, FileUpload, InputOTP, MultiInput, PercentageInput, PhoneInput |
 

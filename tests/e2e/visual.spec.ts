@@ -21,7 +21,8 @@ test.setTimeout(60_000)
  *     portaled content lives outside the iframe body, producing flaky frames.
  *   - Calendar / date pickers: snapshot churns every day.
  *   - Sonner (Toaster): renders only on user action.
- *   - Sidebar (relies on a parent SidebarProvider context with non-trivial chrome).
+ *   - AppShell's mobile menu (portaled drawer) — its geometry is asserted in
+ *     mobile.spec.ts instead.
  */
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
@@ -323,5 +324,17 @@ test.describe("Visual: Domain — PercentageInput", () => {
 test.describe("Visual: Domain — InputOTP", () => {
   test("default", async ({ page }) => {
     await snapshot(page, "domain-inputotp--default", "inputotp-default.png")
+  })
+})
+
+test.describe("Visual: Navigation — AppShell", () => {
+  test("default (expanded, navbar, footer)", async ({ page }) => {
+    await snapshot(page, "navigation-appshell--default", "appshell-default.png")
+  })
+  test("collapsed rail", async ({ page }) => {
+    await snapshot(page, "navigation-appshell--collapsed", "appshell-collapsed.png")
+  })
+  test("only items", async ({ page }) => {
+    await snapshot(page, "navigation-appshell--only-items", "appshell-only-items.png")
   })
 })

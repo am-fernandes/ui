@@ -4,26 +4,30 @@
  * The internal `useIsMobile` breakpoint is 768px, so a 810px tablet is treated
  * as *desktop* for layout purposes. These specs assert that:
  *
- *   - Sidebar renders as a persistent <aside> (not a Sheet drawer).
+ *   - AppShell keeps the persistent side menu (no mobile bar / drawer).
  *   - Calendar can render two months side-by-side without overflowing.
  *   - Dialog uses its size-based max-width rather than the viewport width.
  *
  * Scoped to `tablet-chromium` in `playwright.config.ts`.
  */
-import { expect, test } from "@playwright/test"
+import { type Page, expect, test } from "@playwright/test"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
-test.describe("Sidebar (tablet)", () => {
-  test("renders as a persistent aside (not a Sheet drawer)", async ({ page }) => {
-    await page.goto(story("navigation-sidebar--with-groups"))
+// Storybook's dev server can still be compiling on the first hit: wait for the
+// shell itself instead of acting on a half-loaded iframe.
+async function gotoShell(page: Page, id: string) {
+  await page.goto(story(id))
+  await expect(page.locator('[data-slot="app-shell"]')).toBeAttached({ timeout: 15_000 })
+}
 
-    const aside = page.locator('aside[data-slot="sidebar"]')
+test.describe("AppShell (tablet)", () => {
+  test("renders the persistent side menu, not the mobile bar", async ({ page }) => {
+    await gotoShell(page, "navigation-appshell--default")
+    const aside = page.locator('aside[data-slot="app-shell-sidebar"]')
     await expect(aside).toBeVisible()
-    // The mobile branch sets data-mobile="true" inside a dialog; that must NOT
-    // be present at this viewport.
     await expect(aside).toHaveAttribute("data-state", "expanded")
-    await expect(page.locator('[data-mobile="true"]')).toHaveCount(0)
+    await expect(page.getByRole("button", { name: "Abrir menu" })).toBeHidden()
   })
 })
 

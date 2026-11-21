@@ -12,12 +12,19 @@
  * viewport, keep an aspect ratio, stay clickable) because the library is
  * **intrinsically responsive** — most components rely on `w-full`,
  * `flex-wrap`, and intrinsic content sizing rather than CSS media queries.
- * Sidebar is the exception (it branches on `useIsMobile()`), so it gets
- * proper "mobile vs desktop" assertions.
+ * AppShell is the exception (its menu swaps at the 768px breakpoint), so it
+ * gets proper "mobile vs desktop" assertions.
  */
-import { expect, test } from "@playwright/test"
+import { type Page, expect, test } from "@playwright/test"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
+
+// Storybook's dev server can still be compiling on the first hit: wait for the
+// shell itself instead of acting on a half-loaded iframe.
+async function gotoShell(page: Page, id: string) {
+  await page.goto(story(id))
+  await expect(page.locator('[data-slot="app-shell"]')).toBeAttached({ timeout: 15_000 })
+}
 
 const VIEWPORTS = {
   mobile: { width: 375, height: 667 },
@@ -43,25 +50,37 @@ test.describe("Layout responsivo", () => {
     }
   })
 
-  test("Sidebar: vira Sheet (role=dialog) em viewport mobile", async ({ page }) => {
+  test("AppShell: abaixo de 768px o menu lateral some e vira barra + painel", async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.mobile)
-    await page.goto(story("navigation-sidebar--with-groups"))
-    // `useIsMobile` is SSR-safe — it defaults to `false` and flips to `true`
-    // only after the first effect runs. We wait for the swap explicitly via
-    // the data-mobile attribute rather than a fixed sleep.
-    const mobileSidebar = page.locator('[data-slot="sidebar"][data-mobile="true"]')
-    await expect(mobileSidebar).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByRole("dialog")).toBeVisible()
+    await gotoShell(page, "navigation-appshell--default")
+    await expect(page.locator('[data-slot="app-shell-sidebar"]')).toBeHidden()
+    const openMenu = page.getByRole("button", { name: "Abrir menu" })
+    await expect(openMenu).toBeVisible()
+    await openMenu.click()
+    await expect(page.getByRole("dialog", { name: "Menu" })).toBeVisible()
   })
 
-  test("Sidebar: permanece como aside em viewport desktop", async ({ page }) => {
+  test("AppShell: de 768px para cima o menu lateral fica fixo e a barra mobile some", async ({
+    page,
+  }) => {
+    for (const vp of [VIEWPORTS.tablet, VIEWPORTS.desktop]) {
+      await page.setViewportSize(vp)
+      await gotoShell(page, "navigation-appshell--default")
+      await expect(page.locator('aside[data-slot="app-shell-sidebar"]')).toBeVisible()
+      await expect(page.getByRole("button", { name: "Abrir menu" })).toBeHidden()
+    }
+  })
+
+  test("AppShell: o painel mobile fecha sozinho quando a janela passa de 768px", async ({
+    page,
+  }) => {
+    await page.setViewportSize(VIEWPORTS.mobile)
+    await gotoShell(page, "navigation-appshell--default")
+    await page.getByRole("button", { name: "Abrir menu" }).click()
+    await expect(page.getByRole("dialog", { name: "Menu" })).toBeVisible()
     await page.setViewportSize(VIEWPORTS.desktop)
-    await page.goto(story("navigation-sidebar--with-groups"))
-    const aside = page.locator('aside[data-slot="sidebar"]')
-    await expect(aside).toBeVisible({ timeout: 10_000 })
-    // The mobile branch sets data-mobile="true" and renders inside a Dialog.
-    // Neither should be present at desktop width.
-    await expect(page.locator('[data-mobile="true"]')).toHaveCount(0)
+    await expect(page.getByRole("dialog")).toHaveCount(0)
+    await expect(page.locator('aside[data-slot="app-shell-sidebar"]')).toBeVisible()
   })
 
   test("Tabs: trigger list não estoura a largura do viewport (overflow no scroll)", async ({

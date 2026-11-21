@@ -54,7 +54,7 @@ Estas decisões são deliberadas. Não as questione num PR sem antes abrir issue
   - Body: `text-sm`.
   - Inputs: `py-3` vertical, `px-3` horizontal (altura sai do padding, sem `h-*` fixo).
   - Linhas de tabela: `py-2.5 px-3`.
-  - Menus / tabs / sidebar / tree: `py-1.5`.
+  - Menus / tabs / tree: `py-1.5`.
 - **Cursor pointer em tudo clicável.** Botões, triggers de Radix, ícones interativos.
 - **Foco em 2 tiers.**
   - **Tier 1 (fields)** — `focus-within:border-primary focus-within:ring-1 focus-within:ring-ring` (sem offset, ring colado na borda). Estado de erro substitui o ring por `ring-destructive`.
@@ -114,7 +114,7 @@ Biome cuida de tudo (`bun run lint`). Configuração em `biome.json`:
 | `src/primitives/` | Átomos visuais. | `button`, `input`, `checkbox`, `badge`, `typography`. |
 | `src/forms/` | Widgets compostos de formulário (calendário, combobox, pickers). | `combobox`, `date-input`, `time-picker`. |
 | `src/overlays/` | Componentes que portalizam via Radix. | `dialog`, `popover`, `tooltip`, `sheet`. |
-| `src/navigation/` | Estrutura de navegação. | `sidebar`, `tabs`, `breadcrumb`, `command-palette`. |
+| `src/navigation/` | Estrutura de navegação. | `app-shell`, `tabs`, `breadcrumb`, `command-palette`. |
 | `src/data/` | Exibição de dados. | `data-table`, `tree`, `card`, `image`. |
 | `src/domain/` | Coisas específicas do Brasil ou do negócio. | `currency-input` (BRL), `cpf-input`, `percentage-input`. |
 
