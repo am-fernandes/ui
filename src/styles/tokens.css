@@ -53,6 +53,35 @@
   --color-status-destructive-text: var(--status-destructive-text);
   --color-status-destructive-border: var(--status-destructive-border);
 
+  /* Categorical palette (Token, Schedule): tinted bg, AA+ text, solid accent */
+  --color-category-gray-bg: var(--category-gray-bg);
+  --color-category-gray-text: var(--category-gray-text);
+  --color-category-gray-solid: var(--category-gray-solid);
+  --color-category-red-bg: var(--category-red-bg);
+  --color-category-red-text: var(--category-red-text);
+  --color-category-red-solid: var(--category-red-solid);
+  --color-category-orange-bg: var(--category-orange-bg);
+  --color-category-orange-text: var(--category-orange-text);
+  --color-category-orange-solid: var(--category-orange-solid);
+  --color-category-yellow-bg: var(--category-yellow-bg);
+  --color-category-yellow-text: var(--category-yellow-text);
+  --color-category-yellow-solid: var(--category-yellow-solid);
+  --color-category-green-bg: var(--category-green-bg);
+  --color-category-green-text: var(--category-green-text);
+  --color-category-green-solid: var(--category-green-solid);
+  --color-category-teal-bg: var(--category-teal-bg);
+  --color-category-teal-text: var(--category-teal-text);
+  --color-category-teal-solid: var(--category-teal-solid);
+  --color-category-blue-bg: var(--category-blue-bg);
+  --color-category-blue-text: var(--category-blue-text);
+  --color-category-blue-solid: var(--category-blue-solid);
+  --color-category-purple-bg: var(--category-purple-bg);
+  --color-category-purple-text: var(--category-purple-text);
+  --color-category-purple-solid: var(--category-purple-solid);
+  --color-category-pink-bg: var(--category-pink-bg);
+  --color-category-pink-text: var(--category-pink-text);
+  --color-category-pink-solid: var(--category-pink-solid);
+
   --color-border: var(--border);
   --color-input: var(--input);
   --color-placeholder: var(--placeholder);
@@ -141,6 +170,36 @@
   --status-destructive-bg: oklch(0.97 0.02 29.2);
   --status-destructive-text: oklch(0.42 0.18 29.2);
   --status-destructive-border: oklch(0.6 0.2 29.2);
+
+  /* Categorical palette — 9 hues for tags (Token) and calendar events (Schedule).
+     text-on-bg ≥ 7.3:1 and solid-on-white ≥ 3.9:1 (see scripts/contrast-audit.ts). */
+  --category-gray-bg: oklch(0.965 0.006 252);
+  --category-gray-text: oklch(0.42 0.02 252);
+  --category-gray-solid: oklch(0.55 0.02 252);
+  --category-red-bg: oklch(0.965 0.017 27);
+  --category-red-text: oklch(0.43 0.15 27);
+  --category-red-solid: oklch(0.58 0.18 27);
+  --category-orange-bg: oklch(0.965 0.019 50);
+  --category-orange-text: oklch(0.44 0.112 50);
+  --category-orange-solid: oklch(0.6 0.15 50);
+  --category-yellow-bg: oklch(0.97 0.035 92.6);
+  --category-yellow-text: oklch(0.42 0.083 92.6);
+  --category-yellow-solid: oklch(0.6 0.117 92.6);
+  --category-green-bg: oklch(0.965 0.03 145);
+  --category-green-text: oklch(0.42 0.1 145);
+  --category-green-solid: oklch(0.58 0.14 145);
+  --category-teal-bg: oklch(0.965 0.025 185);
+  --category-teal-text: oklch(0.42 0.071 185);
+  --category-teal-solid: oklch(0.58 0.098 185);
+  --category-blue-bg: oklch(0.965 0.017 250);
+  --category-blue-text: oklch(0.42 0.115 250);
+  --category-blue-solid: oklch(0.56 0.152 250);
+  --category-purple-bg: oklch(0.965 0.019 300);
+  --category-purple-text: oklch(0.42 0.15 300);
+  --category-purple-solid: oklch(0.56 0.18 300);
+  --category-pink-bg: oklch(0.965 0.019 350);
+  --category-pink-text: oklch(0.43 0.15 350);
+  --category-pink-solid: oklch(0.6 0.18 350);
 
   /* Inputs & Borders */
   --border: oklch(0.875 0.01 252);

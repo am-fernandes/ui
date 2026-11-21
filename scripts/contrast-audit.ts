@@ -67,3 +67,29 @@ for (const [label, c, needed] of proposed) {
     `${label.padEnd(54)} ratio=${r.toFixed(2).padStart(5)}  need≥${needed.toFixed(1)}  ${pass}  ${hex(c)}`,
   )
 }
+
+// Categorical palette (--category-*): text on its tinted bg (≥4.5) and the
+// solid accent against white (≥3.0, non-text UI per WCAG 1.4.11).
+const categorical: Array<[name: string, bg: OKLCH, text: OKLCH, solid: OKLCH]> = [
+  ["gray", [0.965, 0.006, 252], [0.42, 0.02, 252], [0.55, 0.02, 252]],
+  ["red", [0.965, 0.017, 27], [0.43, 0.15, 27], [0.58, 0.18, 27]],
+  ["orange", [0.965, 0.019, 50], [0.44, 0.112, 50], [0.6, 0.15, 50]],
+  ["yellow", [0.97, 0.035, 92.6], [0.42, 0.083, 92.6], [0.6, 0.117, 92.6]],
+  ["green", [0.965, 0.03, 145], [0.42, 0.1, 145], [0.58, 0.14, 145]],
+  ["teal", [0.965, 0.025, 185], [0.42, 0.071, 185], [0.58, 0.098, 185]],
+  ["blue", [0.965, 0.017, 250], [0.42, 0.115, 250], [0.56, 0.152, 250]],
+  ["purple", [0.965, 0.019, 300], [0.42, 0.15, 300], [0.56, 0.18, 300]],
+  ["pink", [0.965, 0.019, 350], [0.43, 0.15, 350], [0.6, 0.18, 350]],
+]
+
+console.log("")
+console.log("Categorical palette:")
+console.log("=".repeat(85))
+for (const [name, bg, text, solid] of categorical) {
+  const textRatio = contrast(text, bg)
+  const solidRatio = contrast(WHITE, solid)
+  const pass = textRatio >= 4.5 && solidRatio >= 3 ? "PASS" : "FAIL"
+  console.log(
+    `${name.padEnd(8)} text/bg=${textRatio.toFixed(2).padStart(5)}  solid/white=${solidRatio.toFixed(2).padStart(5)}  ${pass}`,
+  )
+}
