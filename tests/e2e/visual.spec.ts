@@ -338,3 +338,15 @@ test.describe("Visual: Navigation — AppShell", () => {
     await snapshot(page, "navigation-appshell--only-items", "appshell-only-items.png")
   })
 })
+
+test.describe("Visual: Primitives — IconButton", () => {
+  test("variants", async ({ page }) => {
+    await snapshot(page, "primitives-iconbutton--variants", "iconbutton-variants.png")
+  })
+  test("sizes", async ({ page }) => {
+    await snapshot(page, "primitives-iconbutton--sizes", "iconbutton-sizes.png")
+  })
+  test("next to Button", async ({ page }) => {
+    await snapshot(page, "primitives-iconbutton--next-to-button", "iconbutton-next-to-button.png")
+  })
+})

@@ -31,6 +31,10 @@
       "types": "./dist/primitives/checkbox.d.ts",
       "import": "./dist/primitives/checkbox.js"
     },
+    "./icon-button": {
+      "types": "./dist/primitives/icon-button.d.ts",
+      "import": "./dist/primitives/icon-button.js"
+    },
     "./input": {
       "types": "./dist/primitives/input.d.ts",
       "import": "./dist/primitives/input.js"

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { type Page, expect, test } from "@playwright/test"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
@@ -63,5 +63,36 @@ test.describe("Popover", () => {
     await expect(page.getByText(/conte[uú]do/i).first()).toBeVisible({ timeout: 2000 })
     await page.keyboard.press("Escape")
     await expect(page.getByText(/conte[uú]do/i).first()).not.toBeVisible({ timeout: 2000 })
+  })
+})
+
+// Storybook's dev server may still be compiling on the first hit.
+async function gotoStory(page: Page, id: string, ready: string) {
+  await page.goto(story(id))
+  await expect(page.getByRole("button", { name: ready })).toBeVisible({ timeout: 15_000 })
+}
+
+test.describe("IconButton", () => {
+  test("shows its label as a tooltip on hover", async ({ page }) => {
+    await gotoStory(page, "primitives-iconbutton--variants", "Excluir")
+    await page.getByRole("button", { name: "Excluir" }).hover()
+    await expect(page.getByRole("tooltip", { name: "Excluir" })).toBeVisible()
+  })
+
+  test("sizes are 32, 40 and 44px squares; md matches Button height", async ({ page }) => {
+    await gotoStory(page, "primitives-iconbutton--sizes", "Notificações (md)")
+    for (const [name, px] of [
+      ["Notificações (sm)", 32],
+      ["Notificações (md)", 40],
+      ["Notificações (lg)", 44],
+    ] as const) {
+      const box = await page.getByRole("button", { name }).boundingBox()
+      expect(box?.width, name).toBe(px)
+      expect(box?.height, name).toBe(px)
+    }
+    await gotoStory(page, "primitives-iconbutton--next-to-button", "Salvar proposta")
+    const button = await page.getByRole("button", { name: "Salvar proposta" }).boundingBox()
+    const icon = await page.getByRole("button", { name: "Duplicar proposta" }).boundingBox()
+    expect(icon?.height).toBe(button?.height)
   })
 })
