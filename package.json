@@ -43,6 +43,10 @@
       "types": "./dist/primitives/radio-group.d.ts",
       "import": "./dist/primitives/radio-group.js"
     },
+    "./segmented-control": {
+      "types": "./dist/primitives/segmented-control.d.ts",
+      "import": "./dist/primitives/segmented-control.js"
+    },
     "./separator": {
       "types": "./dist/primitives/separator.d.ts",
       "import": "./dist/primitives/separator.js"

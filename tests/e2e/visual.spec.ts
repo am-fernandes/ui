@@ -351,3 +351,19 @@ test.describe("Visual: Primitives — IconButton", () => {
     await snapshot(page, "primitives-iconbutton--next-to-button", "iconbutton-next-to-button.png")
   })
 })
+
+test.describe("Visual: Primitives — SegmentedControl", () => {
+  test("default", async ({ page }) => {
+    await snapshot(page, "primitives-segmentedcontrol--default", "segmentedcontrol-default.png")
+  })
+  test("with icons", async ({ page }) => {
+    await snapshot(
+      page,
+      "primitives-segmentedcontrol--with-icons",
+      "segmentedcontrol-with-icons.png",
+    )
+  })
+  test("small", async ({ page }) => {
+    await snapshot(page, "primitives-segmentedcontrol--small", "segmentedcontrol-small.png")
+  })
+})

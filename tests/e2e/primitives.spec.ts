@@ -74,3 +74,58 @@ test.describe("Input", () => {
     await expect(input).toHaveAttribute("type", "text")
   })
 })
+
+test.describe("SegmentedControl", () => {
+  const open = async (page: import("@playwright/test").Page, id: string) => {
+    await page.goto(story(id))
+    await expect(page.getByRole("radiogroup")).toBeVisible({ timeout: 15_000 })
+  }
+
+  test("arrows move and select in a real browser; one Tab stop", async ({ page }) => {
+    await open(page, "primitives-segmentedcontrol--default")
+    await page.keyboard.press("Tab")
+    const semana = page.getByRole("radio", { name: "Semana" })
+    await expect(semana).toBeFocused()
+    // `press` releases the key in the same tick — the hardest case.
+    await page.keyboard.press("ArrowRight")
+    const mes = page.getByRole("radio", { name: "Mês" })
+    await expect(mes).toBeFocused()
+    await expect(mes).toHaveAttribute("aria-checked", "true")
+    await expect(semana).toHaveAttribute("aria-checked", "false")
+    // Wraps around.
+    await page.keyboard.press("ArrowRight")
+    await expect(page.getByRole("radio", { name: "Dia" })).toHaveAttribute("aria-checked", "true")
+  })
+
+  test("selected segment stands out and the focus ring is visible", async ({ page }) => {
+    await open(page, "primitives-segmentedcontrol--default")
+    const selected = page.getByRole("radio", { name: "Semana" })
+    const other = page.getByRole("radio", { name: "Dia" })
+    const bg = (l: typeof selected) => l.evaluate((el) => getComputedStyle(el).backgroundColor)
+    expect(await bg(selected)).not.toBe(await bg(other))
+    await page.keyboard.press("Tab")
+    const ring = await selected.evaluate((el) => getComputedStyle(el).boxShadow)
+    expect(ring).not.toBe("none")
+  })
+
+  test("fill stretches segments to equal widths", async ({ page }) => {
+    await open(page, "primitives-segmentedcontrol--fill")
+    const widths = await page
+      .getByRole("radio")
+      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().width)))
+    expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1)
+  })
+
+  test("submits the chosen value with the form", async ({ page }) => {
+    await open(page, "primitives-segmentedcontrol--in-form")
+    await page.getByRole("radio", { name: "Pessoa jurídica" }).click()
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByText("Enviado: pj")).toBeVisible()
+  })
+
+  test("icon-only segments show their label as a tooltip", async ({ page }) => {
+    await open(page, "primitives-segmentedcontrol--icon-only")
+    await page.getByRole("radio", { name: "Lista" }).hover()
+    await expect(page.getByRole("tooltip", { name: "Lista" })).toBeVisible()
+  })
+})

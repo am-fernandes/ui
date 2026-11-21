@@ -187,6 +187,11 @@ export {
   type RadioGroupItemData,
   type RadioGroupProps,
 } from "./primitives/radio-group"
+export {
+  SegmentedControl,
+  type SegmentedControlOption,
+  type SegmentedControlProps,
+} from "./primitives/segmented-control"
 export { Separator, type SeparatorProps } from "./primitives/separator"
 export { Skeleton, type SkeletonProps } from "./primitives/skeleton"
 export { Switch, type SwitchProps } from "./primitives/switch"
