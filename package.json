@@ -151,6 +151,10 @@
       "types": "./dist/navigation/pagination.d.ts",
       "import": "./dist/navigation/pagination.js"
     },
+    "./stepper": {
+      "types": "./dist/navigation/stepper.d.ts",
+      "import": "./dist/navigation/stepper.js"
+    },
     "./tabs": {
       "types": "./dist/navigation/tabs.d.ts",
       "import": "./dist/navigation/tabs.js"

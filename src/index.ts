@@ -114,6 +114,13 @@ export {
   type PaginationLabels,
   type PaginationProps,
 } from "./navigation/pagination"
+export {
+  Stepper,
+  defaultStepperLabels,
+  type StepperLabels,
+  type StepperProps,
+  type StepperStep,
+} from "./navigation/stepper"
 export { Tabs, type TabsItemData, type TabsProps } from "./navigation/tabs"
 
 // Domain

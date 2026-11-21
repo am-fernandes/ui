@@ -403,3 +403,21 @@ test.describe("Visual: Navigation — Pagination", () => {
     await snapshot(page, "navigation-pagination--compact", "pagination-compact.png")
   })
 })
+
+test.describe("Visual: Navigation — Stepper", () => {
+  test("default", async ({ page }) => {
+    await snapshot(page, "navigation-stepper--default", "stepper-default.png")
+  })
+  test("with-status", async ({ page }) => {
+    await snapshot(page, "navigation-stepper--with-status", "stepper-with-status.png")
+  })
+  test("completed", async ({ page }) => {
+    await snapshot(page, "navigation-stepper--completed", "stepper-completed.png")
+  })
+  test("vertical", async ({ page }) => {
+    await snapshot(page, "navigation-stepper--vertical", "stepper-vertical.png")
+  })
+  test("narrow-container", async ({ page }) => {
+    await snapshot(page, "navigation-stepper--narrow-container", "stepper-narrow-container.png")
+  })
+})
