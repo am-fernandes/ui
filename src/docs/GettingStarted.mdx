@@ -144,7 +144,7 @@ Para apps internas que já usam cópias shadcn locais:
 **Gotchas conhecidas:**
 - `Button` não tem mais flow de confirmação embutido — use `AlertDialog` quando precisar confirmar.
 - O tema escuro usa a mesma classe `.dark` do shadcn: um toggle existente continua funcionando.
-- `Chart*`, `Form`/`Field`/`FieldGroup`/`FormField`, `DropdownMenu` foram removidos antes do release público. Use `recharts` direto para gráficos, `react-hook-form` direto para forms, e `Popover` + `Button` para menus de ação.
+- `Chart*` e `Form`/`Field`/`FieldGroup`/`FormField` foram removidos antes do release público. Use `recharts` direto para gráficos e `react-hook-form` direto para forms. O `DropdownMenu` existe, mas data-driven: as linhas vêm em `items`, sem os subcomponentes do shadcn.
 - Helpers `toCents`, `fromCents`, `centsToDisplay`, `percentOfTotal`, `percentFromValue`, `formatBRL` são exportados — delete `lib/currency.ts` locais. Veja a aba **Hooks** para a lista completa.
 - Validadores brasileiros (`isValidCPF`, `isValidCNPJ`, `isValidCEP`, `isValidPhone`) e os respectivos inputs (`CPFInput`, `CNPJInput`, `CEPInput`, `PhoneInput`) substituem implementações locais de máscaras/validação.
 
