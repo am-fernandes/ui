@@ -33,15 +33,15 @@ import { Button, DataTable } from "@amfernandesinc/ui"
 import { Button } from "@amfernandesinc/ui/button"
 ```
 
-## Componentes (47 no total)
+## Componentes (56 no total)
 
 | Categoria  | Count | Componentes                                                                                          |
 | ---------- | ----- | ---------------------------------------------------------------------------------------------------- |
-| Primitives | 12    | Avatar, Badge, Button, Checkbox, Input, Label, RadioGroup, Separator, Skeleton, Switch, Textarea, Typography |
-| Overlays   | 9     | Alert, AlertDialog, Collapsible, Dialog, Popover, Progress, Sheet, Toaster, Tooltip                  |
+| Primitives | 15    | Avatar, Badge, Button, Checkbox, IconButton, Input, Label, RadioGroup, SegmentedControl, Separator, Skeleton, Switch, Textarea, Token, Typography |
+| Overlays   | 11    | Alert, AlertDialog, Collapsible, Dialog, DropdownMenu, Popover, Progress, Sheet, Toaster, Tooltip, Tour |
 | Forms      | 5     | Calendar, Combobox, DateInput, DateRangePicker, TimePicker                                           |
-| Navigation | 5     | Accordion, AppShell, Breadcrumb, CommandPalette, Tabs                                                |
-| Data       | 7     | Card, DataTable, Image, ScrollArea, Tree, Video + helpers `columns` / `tableStyles`                  |
+| Navigation | 7     | Accordion, AppShell, Breadcrumb, CommandPalette, Pagination, Stepper, Tabs                          |
+| Data       | 9     | Card, DataTable, EmptyState, Image, Schedule, ScrollArea, Tree, Video + helpers `columns` / `tableStyles` |
 | Domain     | 9     | CEPInput, CNPJInput, CPFInput, CurrencyInput, FileUpload, InputOTP, MultiInput, PercentageInput, PhoneInput |
 
 Helpers utilitários (BRL em centavos, tamanhos em bytes, `cn`, hooks) estão documentados na aba **Hooks** do Storybook.

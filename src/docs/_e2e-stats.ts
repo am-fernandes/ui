@@ -3,7 +3,7 @@
  * Run `bun run sync:e2e-stats` to refresh.
  *
  * Source: tests/e2e/*.spec.ts + src story files
- * Generated: 2026-05-19T02:00:23.915Z
+ * Generated: 2026-11-21T17:14:36.033Z
  */
 
 export interface E2ESpec {
@@ -12,7 +12,7 @@ export interface E2ESpec {
   describes: number
 }
 
-export const E2E_GENERATED_AT = "2026-05-19T02:00:23.915Z"
+export const E2E_GENERATED_AT = "2026-11-21T17:14:36.033Z"
 
 export const E2E_SPECS: readonly E2ESpec[] = [
   {
@@ -21,33 +21,53 @@ export const E2E_SPECS: readonly E2ESpec[] = [
     describes: 4,
   },
   {
-    file: "forms.spec.ts",
-    tests: 5,
-    describes: 3,
+    file: "empty-state.spec.ts",
+    tests: 2,
+    describes: 1,
   },
   {
-    file: "mobile.spec.ts",
+    file: "forms.spec.ts",
     tests: 6,
     describes: 4,
   },
   {
+    file: "mobile.spec.ts",
+    tests: 9,
+    describes: 4,
+  },
+  {
     file: "navigation.spec.ts",
-    tests: 5,
-    describes: 3,
+    tests: 12,
+    describes: 4,
   },
   {
     file: "overlays.spec.ts",
-    tests: 5,
-    describes: 3,
+    tests: 16,
+    describes: 5,
+  },
+  {
+    file: "pagination.spec.ts",
+    tests: 9,
+    describes: 1,
   },
   {
     file: "primitives.spec.ts",
-    tests: 9,
-    describes: 3,
+    tests: 14,
+    describes: 4,
   },
   {
     file: "responsive.spec.ts",
-    tests: 7,
+    tests: 8,
+    describes: 1,
+  },
+  {
+    file: "schedule.spec.ts",
+    tests: 16,
+    describes: 4,
+  },
+  {
+    file: "stepper.spec.ts",
+    tests: 8,
     describes: 1,
   },
   {
@@ -56,16 +76,26 @@ export const E2E_SPECS: readonly E2ESpec[] = [
     describes: 3,
   },
   {
+    file: "token.spec.ts",
+    tests: 7,
+    describes: 1,
+  },
+  {
+    file: "tour.spec.ts",
+    tests: 8,
+    describes: 1,
+  },
+  {
     file: "visual.spec.ts",
-    tests: 57,
-    describes: 20,
+    tests: 84,
+    describes: 28,
   },
 ] as const
 
-export const E2E_TOTAL_TESTS = 102
+export const E2E_TOTAL_TESTS = 207
 
 export const STORYBOOK_STATS = {
-  totalStoryFiles: 40,
-  playFunctionFiles: 19,
-  playFunctionsTotal: 21,
+  totalStoryFiles: 57,
+  playFunctionFiles: 32,
+  playFunctionsTotal: 34,
 } as const
