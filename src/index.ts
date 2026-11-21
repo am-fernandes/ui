@@ -33,6 +33,15 @@ export {
   type ScrollAreaProps,
   type ScrollBarProps,
 } from "./data/scroll-area"
+export {
+  Schedule,
+  defaultScheduleLabels,
+  type ScheduleColor,
+  type ScheduleEvent,
+  type ScheduleLabels,
+  type ScheduleProps,
+  type ScheduleView,
+} from "./data/schedule"
 export { tableStyles, type TableStyles } from "./data/table-styles"
 export { Tree, type TreeNodeData, type TreeProps } from "./data/tree"
 export { Video, type VideoCaptionTrack, type VideoProps } from "./data/video"

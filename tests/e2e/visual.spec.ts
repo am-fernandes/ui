@@ -421,3 +421,15 @@ test.describe("Visual: Navigation — Stepper", () => {
     await snapshot(page, "navigation-stepper--narrow-container", "stepper-narrow-container.png")
   })
 })
+
+test.describe("Visual: Data — Schedule", () => {
+  test("month", async ({ page }) => {
+    await snapshot(page, "data-schedule--month", "schedule-month.png")
+  })
+  test("week", async ({ page }) => {
+    await snapshot(page, "data-schedule--week", "schedule-week.png")
+  })
+  test("list", async ({ page }) => {
+    await snapshot(page, "data-schedule--list", "schedule-list.png")
+  })
+})

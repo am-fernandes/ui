@@ -171,6 +171,10 @@
       "types": "./dist/data/columns.d.ts",
       "import": "./dist/data/columns.js"
     },
+    "./schedule": {
+      "types": "./dist/data/schedule.d.ts",
+      "import": "./dist/data/schedule.js"
+    },
     "./data-table": {
       "types": "./dist/data/data-table.d.ts",
       "import": "./dist/data/data-table.js"
