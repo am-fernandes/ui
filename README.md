@@ -1,6 +1,6 @@
 # @amfernandesinc/ui
 
-Component library para softwares enterprise da AM Fernandes Incorporadora. React 19, Tailwind v4, light-only, flat, WCAG AA.
+Component library para softwares enterprise da AM Fernandes Incorporadora. React 19, Tailwind v4, tema claro e escuro, flat, WCAG AA.
 
 ## Instalação
 
@@ -48,7 +48,7 @@ Helpers utilitários (BRL em centavos, tamanhos em bytes, `cn`, hooks) estão do
 
 ## Filosofia
 
-- **Light only, flat** — sem shadows, sem dark mode (decisão de produto).
+- **Claro e escuro, flat** — sem shadows; o tema escuro liga com a classe `dark` no `<html>`.
 - **4px radius uniforme**, densidade enterprise (`text-sm` no body, `py-3` nos inputs).
 - **WCAG AA** de contraste e foco; cursor pointer em tudo que é clicável.
 

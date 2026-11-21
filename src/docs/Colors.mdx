@@ -7,6 +7,12 @@ import * as React from "react"
 
 Paleta OKLCH com `oklch(L C H)`. Primary é preto absoluto, secundárias semânticas (success/warning/info/destructive), e família "status" com fundos tintados para badges.
 
+## Dois temas
+
+Cada token tem um valor no tema claro (`:root`) e outro no escuro (`.dark`), com o mesmo papel: `--background` é o fundo da página nos dois, `--primary` é a cor de maior contraste nos dois (preto no claro, branco no escuro). No escuro, os preenchimentos de status (`--destructive`, `--success`, `--info`, `--warning`) ficam mais claros e o texto sobre eles fica escuro, porque branco não chegaria a 4,5:1. Os valores abaixo mostram o tema ativo: troque em **Claro / Escuro** na barra de ferramentas.
+
+`bun run audit:contrast` mede os pares que os componentes desenham (texto ≥ 4,5:1, anel de foco e tons sólidos ≥ 3:1) nos dois temas e falha se algum não passar.
+
 export const Swatch = ({ name, varName }) => {
   const [oklch, setOklch] = React.useState("")
 

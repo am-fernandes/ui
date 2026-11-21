@@ -7,7 +7,11 @@ import { checkA11y, configureAxe, injectAxe } from "axe-playwright"
  * Runs every story in Chromium and asserts:
  *   - the story renders without console errors
  *   - any `play` function defined in the story passes
- *   - axe-core has zero WCAG 2.1 AA violations (severity serious/critical)
+ *   - axe-core has zero WCAG 2.1 AA violations (severity serious/critical),
+ *     in the light theme and again in the dark one
+ *
+ * Each story runs axe twice, so the scripts raise the per-story timeout to
+ * 30s (`--testTimeout`): an autoplaying video alone takes ~10s per pass.
  *
  * Stories may opt-out per-story via `parameters.a11y.disable: true` or tune
  * the rule set via `parameters.a11y.config.rules`.
@@ -33,17 +37,39 @@ const config: TestRunnerConfig = {
       return acc
     }, {})
 
-    await checkA11y(page, "#storybook-root", {
+    const axeOptions = {
       detailedReport: true,
       detailedReportOptions: { html: true },
       axeOptions: {
         runOnly: {
-          type: "tag",
+          type: "tag" as const,
           values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
         },
         rules: ruleOverrides,
       },
+    }
+
+    await checkA11y(page, "#storybook-root", axeOptions)
+
+    // Same story in the dark theme: the tokens flip under `.dark`, so every
+    // text/background pair is measured again.
+    // Transitions are switched off first, or axe would measure colors halfway
+    // through the light-to-dark fade.
+    await page.evaluate(() => {
+      const style = document.createElement("style")
+      style.id = "a11y-dark-pass"
+      style.textContent = "*,*::before,*::after{transition:none!important}"
+      document.head.append(style)
+      document.documentElement.classList.add("dark")
     })
+    try {
+      await checkA11y(page, "#storybook-root", axeOptions)
+    } finally {
+      await page.evaluate(() => {
+        document.documentElement.classList.remove("dark")
+        document.getElementById("a11y-dark-pass")?.remove()
+      })
+    }
   },
 }
 

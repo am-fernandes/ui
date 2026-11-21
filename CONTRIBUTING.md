@@ -47,7 +47,7 @@ Antes de qualquer push: `bun run typecheck && bun run test && bun run build`.
 
 Estas decisões são deliberadas. Não as questione num PR sem antes abrir issue separada.
 
-- **Light only.** Sem dark mode, sem theme switching. Apps internas, contexto controlado.
+- **Claro e escuro.** Os dois temas usam os mesmos papéis de cor; o escuro liga com a classe `dark` no `<html>` (ou num ancestral). Componentes não usam `dark:`: quem muda são os tokens de `src/styles/tokens.css` (`:root` e `.dark`). Toda cor nova entra nos dois blocos e passa em `bun run audit:contrast`.
 - **Flat.** Sem shadows, sem elevation tokens. Hierarquia é dada por borda, espaço e tipografia. A borda geral (`--border`) é 10% da cor primária, translúcida; a dos campos (`--input`) é sólida.
 - **Radius uniforme.** `--radius: 0.25rem` (4px) para *todas* as escalas (`rounded-sm` até `rounded-4xl` apontam para o mesmo valor — ver `src/styles/tokens.css`).
 - **Densidade enterprise.**
@@ -61,7 +61,7 @@ Estas decisões são deliberadas. Não as questione num PR sem antes abrir issue
 - **Disabled.** `opacity-50` no shell + `cursor-default` no controle, sem reação a hover ou clique. Não duplique opacidade dentro do `FieldShell` (ver commit `944211f`).
 - **Motion tokens (do Astryx).** `--duration-fast` (175ms), `--duration-medium-min/medium/medium-max` (310/410/550ms) e `--duration-exit` para toda saída, com `--ease-standard` na entrada e `--ease-exit` na saída. Overlays usam as combinações de `src/overlays/_internal/animations.ts`.
 - **Z-index tokens.** `--z-overlay` (40), `--z-modal` (50), `--z-popover` (60), `--z-tooltip` (70), `--z-toast` (80). Nunca use `z-[999...]`.
-- **WCAG AA** é o mínimo. Contraste verificado via `scripts/oklch-contrast.ts` e Storybook `addon-a11y`.
+- **WCAG AA** é o mínimo, nos dois temas. Contraste dos tokens em `bun run audit:contrast` (`scripts/contrast-audit.ts`); o test-runner do Storybook roda o axe em cada story no claro e no escuro.
 - **pt-BR nas strings.** Mensagens default ("obrigatório", "Carregando dados…", etc.) em pt-BR. A médio prazo serão extraídas via prop `labels`.
 
 ---

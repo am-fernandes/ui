@@ -4,7 +4,7 @@ import { Meta } from "@storybook/addon-docs/blocks"
 
 # @amfernandesinc/ui
 
-Design system oficial da AM Fernandes — 55 componentes React acessíveis, theming em OKLCH, fonte Geist self-hosted, light-only.
+Design system oficial da AM Fernandes — 55 componentes React acessíveis, theming em OKLCH, tema claro e escuro, fonte Geist self-hosted.
 
 ## Pré-requisitos
 
@@ -14,7 +14,7 @@ Design system oficial da AM Fernandes — 55 componentes React acessíveis, them
 
 ## Filosofia
 
-- **Light only.** Sem dark mode por escolha de produto — não há toggle, classe `.dark` ou variantes invertidas.
+- **Claro e escuro.** O tema escuro liga com a classe `dark` no `<html>`. Os componentes são os mesmos; quem muda são os tokens de cor.
 - **Flat.** Sem `box-shadow`, sem elevação. Hierarquia se faz com cor, peso e espaço.
 - **Raio uniforme de 4px** (`--radius: 0.25rem`). Toda a escala de tokens (`--radius-sm`, `--radius-md`, `--radius-lg`) deriva desse mesmo valor.
 - **Densidade enterprise.** Default é `text-sm` (14px) e `py-3`. Pensado para apps internos com formulários longos e tabelas densas.
@@ -65,6 +65,18 @@ import { isValidCPF } from "@amfernandesinc/ui/lib/brazil"
 ```
 
 O `exports` map do package expõe 53 entradas — uma para cada componente, mais subpaths utilitários (`lib/brazil`, `lib/currency`, `lib/size`, `hooks/*`). Tanto o barrel quanto os subpaths apontam para os mesmos chunks; o subpath é só uma garantia extra de tree-shaking quando o bundler não consegue eliminar exports não usados via análise estática do barrel.
+
+## Tema escuro
+
+Ponha a classe `dark` no `<html>` (ou em qualquer ancestral da parte que deve ficar escura). Os tokens de `tokens.css` trocam sozinhos e o `color-scheme` acompanha, então barras de rolagem e campos nativos também escurecem.
+
+```html
+<html lang="pt-BR" class="dark">
+```
+
+Para seguir o sistema operacional ou guardar a escolha do usuário, use um gerenciador de tema que alterne essa classe (com `next-themes`: `<ThemeProvider attribute="class">`). No Storybook, o seletor **Claro / Escuro** fica na barra de ferramentas.
+
+Nas suas próprias telas, use os tokens (`bg-background`, `text-muted-foreground`, `border-border`) e não cores fixas: assim elas acompanham o tema. Se precisar de um ajuste só no escuro, a variante `dark:` do Tailwind já está configurada.
 
 ## Primeiro componente
 
@@ -131,7 +143,7 @@ Para apps internas que já usam cópias shadcn locais:
 
 **Gotchas conhecidas:**
 - `Button` não tem mais flow de confirmação embutido — use `AlertDialog` quando precisar confirmar.
-- Sem dark mode. Remova qualquer toggle de classe `.dark` que ainda exista.
+- O tema escuro usa a mesma classe `.dark` do shadcn: um toggle existente continua funcionando.
 - `Chart*`, `Form`/`Field`/`FieldGroup`/`FormField`, `DropdownMenu` foram removidos antes do release público. Use `recharts` direto para gráficos, `react-hook-form` direto para forms, e `Popover` + `Button` para menus de ação.
 - Helpers `toCents`, `fromCents`, `centsToDisplay`, `percentOfTotal`, `percentFromValue`, `formatBRL` são exportados — delete `lib/currency.ts` locais. Veja a aba **Hooks** para a lista completa.
 - Validadores brasileiros (`isValidCPF`, `isValidCNPJ`, `isValidCEP`, `isValidPhone`) e os respectivos inputs (`CPFInput`, `CNPJInput`, `CEPInput`, `PhoneInput`) substituem implementações locais de máscaras/validação.

@@ -26,7 +26,8 @@ test.setTimeout(60_000)
  *     mobile.spec.ts instead.
  */
 
-const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
+const story = (id: string, theme?: "Escuro") =>
+  `/iframe.html?id=${id}&viewMode=story${theme ? `&globals=theme:${theme}` : ""}`
 
 // Force system fonts everywhere during visual tests so we don't race
 // against Geist (loaded from @fontsource at runtime). Geist's font-loaded
@@ -48,8 +49,13 @@ const KILL_ANIMATIONS = `
 }
 `
 
-async function snapshot(page: import("@playwright/test").Page, id: string, file: string) {
-  await page.goto(story(id), { waitUntil: "domcontentloaded" })
+async function snapshot(
+  page: import("@playwright/test").Page,
+  id: string,
+  file: string,
+  theme?: "Escuro",
+) {
+  await page.goto(story(id, theme), { waitUntil: "domcontentloaded" })
   // Wait for Storybook to flip from "preparing" to "main" (story mounted)
   // OR for storybook-root to have a rendered child. Either is a strong signal
   // the story has been hydrated.
@@ -432,4 +438,24 @@ test.describe("Visual: Data — Schedule", () => {
   test("list", async ({ page }) => {
     await snapshot(page, "data-schedule--list", "schedule-list.png")
   })
+})
+
+// The dark theme (Storybook's "Escuro" toolbar global puts `dark` on <html>).
+// One story per family, so a token that goes wrong in `.dark` shows up here.
+test.describe("Visual: Dark theme", () => {
+  const cases: Array<[id: string, file: string]> = [
+    ["primitives-button--all-variants", "dark-button-all-variants.png"],
+    ["primitives-badge--all-variants", "dark-badge-all-variants.png"],
+    ["primitives-input--with-error", "dark-input-with-error.png"],
+    ["primitives-token--colors", "dark-token-colors.png"],
+    ["navigation-appshell--default", "dark-appshell-default.png"],
+    ["data-card--with-footer", "dark-card-with-footer.png"],
+    ["data-schedule--week", "dark-schedule-week.png"],
+    ["navigation-stepper--with-status", "dark-stepper-with-status.png"],
+  ]
+  for (const [id, file] of cases) {
+    test(id, async ({ page }) => {
+      await snapshot(page, id, file, "Escuro")
+    })
+  }
 })

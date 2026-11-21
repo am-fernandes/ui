@@ -1,95 +1,158 @@
-// OKLCH to WCAG contrast audit for the @amfernandesinc/ui tokens.
+// WCAG contrast audit for the @amfernandesinc/ui color tokens, in both themes.
+//
+// Reads `src/styles/tokens.css` (the `:root` block is the light theme, `.dark`
+// the dark one), resolves every OKLCH token and checks the pairs the
+// components actually draw: text on its surface (≥ 4.5:1) and non-text UI
+// such as the focus ring and solid accents (≥ 3:1, WCAG 1.4.11).
+//
+//   bun run audit:contrast
+//
+// Exits with 1 when any required pair fails.
+
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 
 type OKLCH = readonly [L: number, C: number, H: number]
+type RGB = readonly [r: number, g: number, b: number]
 
-function oklchToLinearRgb([L, C, H]: OKLCH): [number, number, number] {
+function oklchToLinearRgb([L, C, H]: OKLCH): RGB {
   const hRad = (H * Math.PI) / 180
   const a = C * Math.cos(hRad)
   const b = C * Math.sin(hRad)
-  const l_ = L + 0.3963377774 * a + 0.2158037573 * b
-  const m_ = L - 0.1055613458 * a - 0.0638541728 * b
-  const s_ = L - 0.0894841775 * a - 1.291485548 * b
-  const lc = l_ ** 3
-  const mc = m_ ** 3
-  const sc = s_ ** 3
-  const r = 4.0767416621 * lc - 3.3077115913 * mc + 0.2309699292 * sc
-  const g = -1.2684380046 * lc + 2.6097574011 * mc - 0.3413193965 * sc
-  const bl = -0.0041960863 * lc - 0.7034186147 * mc + 1.707614701 * sc
-  return [r, g, bl]
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
+  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3
+  const clamp = (x: number) => Math.max(0, Math.min(1, x))
+  return [
+    clamp(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+    clamp(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+    clamp(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s),
+  ]
 }
 
-function clamp01(x: number) {
-  return Math.max(0, Math.min(1, x))
-}
+const encode = (c: number) => (c >= 0.0031308 ? 1.055 * c ** (1 / 2.4) - 0.055 : 12.92 * c)
+const decode = (c: number) => (c >= 0.04045 ? ((c + 0.055) / 1.055) ** 2.4 : c / 12.92)
 
-function relativeLuminance(oklch: OKLCH): number {
-  const [r, g, b] = oklchToLinearRgb(oklch).map(clamp01) as [number, number, number]
+function luminance([r, g, b]: RGB): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 
-function contrast(a: OKLCH, b: OKLCH): number {
-  const la = relativeLuminance(a)
-  const lb = relativeLuminance(b)
-  const [hi, lo] = la > lb ? [la, lb] : [lb, la]
+function contrast(a: RGB, b: RGB): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number]
   return (hi + 0.05) / (lo + 0.05)
 }
 
-function hex(oklch: OKLCH): string {
-  const [r, g, bl] = oklchToLinearRgb(oklch).map(clamp01) as [number, number, number]
-  const enc = (c: number) => (c >= 0.0031308 ? 1.055 * c ** (1 / 2.4) - 0.055 : 12.92 * c)
-  const toByte = (c: number) =>
-    Math.round(clamp01(enc(c)) * 255)
-      .toString(16)
-      .padStart(2, "0")
-  return `#${toByte(r)}${toByte(g)}${toByte(bl)}`
+/** `color` at `alpha` painted over `under`, blended in sRGB like the browser. */
+function over(color: RGB, alpha: number, under: RGB): RGB {
+  return color.map((c, i) => decode(encode(c) * alpha + encode(under[i]!) * (1 - alpha))) as RGB
 }
 
-const WHITE: OKLCH = [1, 0, 0]
+function hex(c: RGB): string {
+  return `#${c
+    .map((x) =>
+      Math.round(encode(x) * 255)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`
+}
 
-const proposed: Array<[label: string, oklch: OKLCH, need: number]> = [
-  ["destructive — current      oklch(.628 .258 29.2)", [0.628, 0.258, 29.2], 4.5],
-  ["destructive — proposed     oklch(.50 .21 29.2)", [0.5, 0.21, 29.2], 4.5],
-  ["destructive — alt          oklch(.55 .19 29.2)", [0.55, 0.19, 29.2], 4.5],
-  ["info — current             oklch(.668 .151 236.3)", [0.668, 0.151, 236.3], 4.5],
-  ["info — proposed            oklch(.50 .15 236.3)", [0.5, 0.15, 236.3], 4.5],
-  ["border — current           oklch(.875 .01 252)", [0.875, 0.01, 252], 3.0],
-  ["border — proposed          oklch(.80 .01 252)", [0.8, 0.01, 252], 3.0],
-  ["placeholder — current      oklch(.875 .01 252)", [0.875, 0.01, 252], 4.5],
-  ["placeholder — proposed     oklch(.55 .005 252)", [0.55, 0.005, 252], 4.5],
+// ---- parse the tokens -------------------------------------------------------
+
+const css = readFileSync(join(import.meta.dir, "../src/styles/tokens.css"), "utf8")
+
+function block(selector: string): string {
+  const start = css.search(new RegExp(`^${selector.replace(".", "\\.")} \\{`, "m"))
+  if (start < 0) throw new Error(`block ${selector} not found in tokens.css`)
+  return css.slice(start, css.indexOf("\n}", start))
+}
+
+type Theme = Map<string, RGB>
+
+function parseTheme(selector: string, base?: Theme): Theme {
+  const theme: Theme = new Map(base)
+  const body = block(selector)
+  const translucent: Array<[name: string, source: string, alpha: number]> = []
+  for (const [, name, value] of body.matchAll(/--([a-z0-9-]+):\s*([^;]+);/g)) {
+    const oklch = value!.match(/^oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)$/)
+    if (oklch) {
+      theme.set(name!, oklchToLinearRgb([Number(oklch[1]), Number(oklch[2]), Number(oklch[3])]))
+      continue
+    }
+    // color-mix(in oklch, var(--x) N%, transparent): x at N% opacity.
+    const mix = value!.match(
+      /^color-mix\(in oklch, var\(--([a-z0-9-]+)\) ([\d.]+)%, transparent\)$/,
+    )
+    if (mix) translucent.push([name!, mix[1]!, Number(mix[2]) / 100])
+  }
+  // Translucent tokens are measured as they land on the page background.
+  for (const [name, source, alpha] of translucent) {
+    theme.set(name, over(get(theme, source), alpha, get(theme, "background")))
+  }
+  return theme
+}
+
+function get(theme: Theme, name: string): RGB {
+  const value = theme.get(name)
+  if (!value) throw new Error(`token --${name} is missing`)
+  return value
+}
+
+const light = parseTheme(":root")
+const dark = parseTheme(".dark", light)
+
+// ---- the pairs the components draw ------------------------------------------
+
+type Pair = [fg: string, bg: string, need: number | null, note?: string]
+
+const STATUS = ["success", "warning", "info", "destructive"]
+const CATEGORIES = ["gray", "red", "orange", "yellow", "green", "teal", "blue", "purple", "pink"]
+
+const pairs: Pair[] = [
+  ["foreground", "background", 4.5],
+  ["card-foreground", "card", 4.5],
+  ["popover-foreground", "popover", 4.5],
+  ["primary-foreground", "primary", 4.5],
+  ["secondary-foreground", "secondary", 4.5],
+  ["muted-foreground", "muted", 4.5],
+  ["muted-foreground", "background", 4.5],
+  ["muted-foreground", "popover", 4.5],
+  ["accent-foreground", "accent", 4.5],
+  ["destructive-foreground", "destructive", 4.5],
+  ["success-foreground", "success", 4.5],
+  ["warning-foreground", "warning", 4.5],
+  ["info-foreground", "info", 4.5],
+  ["destructive", "background", 4.5, "error messages (text-destructive)"],
+  ["placeholder", "background", 4.5],
+  ["sidebar-foreground", "sidebar", 4.5],
+  ["sidebar-accent-foreground", "sidebar-accent", 4.5],
+  ["sidebar-primary-foreground", "sidebar-primary", 4.5],
+  ...STATUS.map((s): Pair => [`status-${s}-text`, `status-${s}-bg`, 4.5]),
+  ...CATEGORIES.map((c): Pair => [`category-${c}-text`, `category-${c}-bg`, 4.5]),
+  ["ring", "background", 3, "focus ring"],
+  ["primary", "background", 3, "checked controls, solid buttons"],
+  ...CATEGORIES.map((c): Pair => [`category-${c}-solid`, "background", 3, "bars, dots"]),
+  ["input", "background", null, "field border (reported only)"],
+  ["border", "background", null, "translucent border (reported only)"],
 ]
 
-console.log("Contrast against white (#ffffff):")
-console.log("=".repeat(85))
-for (const [label, c, needed] of proposed) {
-  const r = contrast(WHITE, c)
-  const pass = r >= needed ? "PASS" : "FAIL"
-  console.log(
-    `${label.padEnd(54)} ratio=${r.toFixed(2).padStart(5)}  need≥${needed.toFixed(1)}  ${pass}  ${hex(c)}`,
-  )
+let failures = 0
+for (const [label, theme] of [
+  ["Light (:root)", light],
+  ["Dark (.dark)", dark],
+] as const) {
+  console.log(`\n${label}`)
+  console.log("=".repeat(96))
+  for (const [fg, bg, need, note] of pairs) {
+    const ratio = contrast(get(theme, fg), get(theme, bg))
+    const status = need === null ? "info" : ratio >= need ? "PASS" : "FAIL"
+    if (status === "FAIL") failures++
+    const target = need === null ? "      " : `≥${need.toFixed(1)}`
+    console.log(
+      `${`${fg} / ${bg}`.padEnd(48)} ${ratio.toFixed(2).padStart(6)}  ${target}  ${status.padEnd(4)}  ${hex(get(theme, fg))} on ${hex(get(theme, bg))}${note ? `  ${note}` : ""}`,
+    )
+  }
 }
 
-// Categorical palette (--category-*): text on its tinted bg (≥4.5) and the
-// solid accent against white (≥3.0, non-text UI per WCAG 1.4.11).
-const categorical: Array<[name: string, bg: OKLCH, text: OKLCH, solid: OKLCH]> = [
-  ["gray", [0.965, 0.006, 252], [0.42, 0.02, 252], [0.55, 0.02, 252]],
-  ["red", [0.965, 0.017, 27], [0.43, 0.15, 27], [0.58, 0.18, 27]],
-  ["orange", [0.965, 0.019, 50], [0.44, 0.112, 50], [0.6, 0.15, 50]],
-  ["yellow", [0.97, 0.035, 92.6], [0.42, 0.083, 92.6], [0.6, 0.117, 92.6]],
-  ["green", [0.965, 0.03, 145], [0.42, 0.1, 145], [0.58, 0.14, 145]],
-  ["teal", [0.965, 0.025, 185], [0.42, 0.071, 185], [0.58, 0.098, 185]],
-  ["blue", [0.965, 0.017, 250], [0.42, 0.115, 250], [0.56, 0.152, 250]],
-  ["purple", [0.965, 0.019, 300], [0.42, 0.15, 300], [0.56, 0.18, 300]],
-  ["pink", [0.965, 0.019, 350], [0.43, 0.15, 350], [0.6, 0.18, 350]],
-]
-
-console.log("")
-console.log("Categorical palette:")
-console.log("=".repeat(85))
-for (const [name, bg, text, solid] of categorical) {
-  const textRatio = contrast(text, bg)
-  const solidRatio = contrast(WHITE, solid)
-  const pass = textRatio >= 4.5 && solidRatio >= 3 ? "PASS" : "FAIL"
-  console.log(
-    `${name.padEnd(8)} text/bg=${textRatio.toFixed(2).padStart(5)}  solid/white=${solidRatio.toFixed(2).padStart(5)}  ${pass}`,
-  )
-}
+console.log(failures === 0 ? "\nAll required pairs pass." : `\n${failures} pair(s) fail.`)
+process.exit(failures === 0 ? 0 : 1)
