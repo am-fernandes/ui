@@ -367,3 +367,12 @@ test.describe("Visual: Primitives — SegmentedControl", () => {
     await snapshot(page, "primitives-segmentedcontrol--small", "segmentedcontrol-small.png")
   })
 })
+
+test.describe("Visual: Data — EmptyState", () => {
+  test("default", async ({ page }) => {
+    await snapshot(page, "data-emptystate--default", "emptystate-default.png")
+  })
+  test("compact", async ({ page }) => {
+    await snapshot(page, "data-emptystate--compact", "emptystate-compact.png")
+  })
+})

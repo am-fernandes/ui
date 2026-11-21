@@ -24,6 +24,7 @@ export {
   type FormattedColumnOptions,
   type TruncateOption,
 } from "./data/columns"
+export { EmptyState, type EmptyStateProps } from "./data/empty-state"
 export { Image, type ImageProps } from "./data/image"
 export {
   ScrollArea,

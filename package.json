@@ -159,6 +159,10 @@
       "types": "./dist/data/data-table.d.ts",
       "import": "./dist/data/data-table.js"
     },
+    "./empty-state": {
+      "types": "./dist/data/empty-state.d.ts",
+      "import": "./dist/data/empty-state.js"
+    },
     "./image": {
       "types": "./dist/data/image.d.ts",
       "import": "./dist/data/image.js"
