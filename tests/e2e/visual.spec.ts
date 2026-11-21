@@ -17,7 +17,8 @@ test.setTimeout(60_000)
  * Snapshots live in `tests/e2e/visual.spec.ts-snapshots/`.
  *
  * Excluded by design:
- *   - Stories that portalize (Dialog, Sheet, Popover, Tooltip, AlertDialog):
+ *   - Stories that portalize (Dialog, Sheet, Popover, Tooltip, AlertDialog,
+ *     DropdownMenu — its geometry is asserted in overlays.spec.ts):
  *     portaled content lives outside the iframe body, producing flaky frames.
  *   - Calendar / date pickers: snapshot churns every day.
  *   - Sonner (Toaster): renders only on user action.

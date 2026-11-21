@@ -152,6 +152,18 @@ export { Alert, alertVariants, type AlertProps } from "./overlays/alert"
 export { AlertDialog, type AlertDialogProps } from "./overlays/alert-dialog"
 export { Collapsible, type CollapsibleProps } from "./overlays/collapsible"
 export { Dialog, type DialogProps } from "./overlays/dialog"
+export {
+  DropdownMenu,
+  type DropdownMenuActionItem,
+  type DropdownMenuCheckboxItem,
+  type DropdownMenuEntry,
+  type DropdownMenuGroup,
+  type DropdownMenuProps,
+  type DropdownMenuRadioGroup,
+  type DropdownMenuRadioOption,
+  type DropdownMenuSeparator,
+  type DropdownMenuSubmenu,
+} from "./overlays/dropdown-menu"
 export { Popover, type PopoverProps } from "./overlays/popover"
 export { Progress, type ProgressProps } from "./overlays/progress"
 export { Sheet, type SheetProps } from "./overlays/sheet"
