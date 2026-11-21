@@ -223,7 +223,9 @@
   --category-pink-solid: oklch(0.6 0.18 350);
 
   /* Inputs & Borders */
-  --border: oklch(0.875 0.01 252);
+  /* Dividers, cards, tables, menus: 10% of the primary, so they read the same
+     on any surface. Fields keep a solid border (--input) to stay findable. */
+  --border: color-mix(in oklch, var(--primary) 10%, transparent);
   --input: oklch(0.875 0.01 252);
   --placeholder: oklch(0.55 0.005 252);
   --ring: oklch(0 0 0);
@@ -242,7 +244,7 @@
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.968 0.005 252);
   --sidebar-accent-foreground: oklch(0.203 0.013 252);
-  --sidebar-border: oklch(0.875 0.01 252);
+  --sidebar-border: var(--border);
   --sidebar-ring: oklch(0 0 0);
 }
 

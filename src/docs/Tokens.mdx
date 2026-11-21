@@ -103,6 +103,10 @@ No fim de `tokens.css` há um override global que respeita `@media (prefers-redu
 }
 ```
 
+## Bordas
+
+`--border` (divisores, cards, tabelas, menus) é **10% da cor primária, translúcida**: `color-mix(in oklch, var(--primary) 10%, transparent)`. Ela lê igual sobre qualquer superfície, e no tema escuro vira 10% de branco sozinha. `--input`, a borda dos campos, continua sólida, como no Astryx: um campo precisa ser achado na tela.
+
 ## Z-index scale
 
 Cinco camadas, cada uma reservada para um tipo de surface. Isso elimina os clássicos "guerras de z-index" que aparecem em codebases que misturam `9999`, `99`, `1`, `-1` ao gosto do dev.

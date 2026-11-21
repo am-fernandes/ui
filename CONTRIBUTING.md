@@ -48,7 +48,7 @@ Antes de qualquer push: `bun run typecheck && bun run test && bun run build`.
 Estas decisões são deliberadas. Não as questione num PR sem antes abrir issue separada.
 
 - **Light only.** Sem dark mode, sem theme switching. Apps internas, contexto controlado.
-- **Flat.** Sem shadows, sem elevation tokens. Hierarquia é dada por borda, espaço e tipografia.
+- **Flat.** Sem shadows, sem elevation tokens. Hierarquia é dada por borda, espaço e tipografia. A borda geral (`--border`) é 10% da cor primária, translúcida; a dos campos (`--input`) é sólida.
 - **Radius uniforme.** `--radius: 0.25rem` (4px) para *todas* as escalas (`rounded-sm` até `rounded-4xl` apontam para o mesmo valor — ver `src/styles/tokens.css`).
 - **Densidade enterprise.**
   - Body: `text-sm`.
