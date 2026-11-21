@@ -6,7 +6,7 @@ import * as React from "react"
 
 import { useIsMobile } from "@/hooks/use-is-mobile"
 import { cn } from "@/lib/utils"
-import { overlayBase } from "../overlays/_internal/animations"
+import { motionSheet, overlayBase } from "../overlays/_internal/animations"
 import { Tooltip } from "../overlays/tooltip"
 import { type AppShellItem, AppShellNavItem } from "./_internal/app-shell-item"
 
@@ -395,7 +395,8 @@ function AppShell({
                   aria-describedby={undefined}
                   className={cn(
                     "fixed inset-y-0 left-0 z-[var(--z-modal)] flex w-72 max-w-[85vw] flex-col border-r bg-sidebar text-sidebar-foreground",
-                    "duration-[var(--motion-slowest)] data-[state=open]:animate-in data-[state=closed]:animate-out",
+                    motionSheet,
+                    "data-[state=open]:animate-in data-[state=closed]:animate-out",
                     "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
                   )}
                 >

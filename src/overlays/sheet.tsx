@@ -6,12 +6,13 @@ import { XIcon } from "lucide-react"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { overlayBase } from "./_internal/animations"
+import { motionSheet, overlayBase } from "./_internal/animations"
 
 const sheetVariants = cva(
   cn(
     "fixed z-[var(--z-modal)] gap-4 bg-background p-6 transition",
-    "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-[var(--motion-slowest)] data-[state=open]:duration-[var(--motion-slowest)]",
+    "data-[state=open]:animate-in data-[state=closed]:animate-out",
+    motionSheet,
   ),
   {
     variants: {

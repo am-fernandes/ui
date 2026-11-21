@@ -109,15 +109,36 @@
   --z-tooltip: 70;
   --z-toast: 80;
 
-  /* Motion durations — keep open/close in lockstep per component. */
-  --motion-fast: 100ms; /* tooltip */
-  --motion-default: 150ms; /* popover, dropdown */
-  --motion-slow: 200ms; /* dialog, alert-dialog, backdrop */
-  --motion-slowest: 300ms; /* sheet (symmetric open + close) */
+  /* `transition*` utilities default to the fast duration and the standard curve. */
+  --default-transition-duration: var(--duration-fast);
+  --default-transition-timing-function: var(--ease-standard);
 }
 
 :root {
   --radius: 0.25rem;
+
+  /* Motion — durations by visual weight (values from Astryx). fast: hover,
+     menus, tooltips, collapsibles; medium: popovers, sheets, dialogs; slow:
+     continuous movement. min/max are the band edges. Leaving always uses
+     --duration-exit. */
+  --duration-fast-min: 130ms;
+  --duration-fast: 175ms;
+  --duration-fast-max: 230ms;
+  --duration-medium-min: 310ms;
+  --duration-medium: 410ms;
+  --duration-medium-max: 550ms;
+  --duration-slow-min: 730ms;
+  --duration-slow: 975ms;
+  --duration-slow-max: 1300ms;
+  --duration-exit: var(--duration-fast);
+  /* standard decelerates (arrivals, state changes); exit accelerates. */
+  --ease-standard: cubic-bezier(0.24, 1, 0.4, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.6, 0.6);
+  /** @deprecated Use --duration-*. Kept for one release, mapped by role. */
+  --motion-fast: var(--duration-fast); /* tooltip */
+  --motion-default: var(--duration-fast); /* dropdown */
+  --motion-slow: var(--duration-medium-max); /* dialog */
+  --motion-slowest: var(--duration-medium); /* sheet */
 
   /* Backgrounds & Foregrounds */
   --background: oklch(1 0 0);

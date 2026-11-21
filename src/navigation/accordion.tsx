@@ -81,7 +81,7 @@ function renderItems(items: AccordionItemData[]) {
         </AccordionPrimitive.Header>
         <AccordionPrimitive.Content
           data-slot="accordion-content"
-          className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
+          className="overflow-hidden text-sm duration-(--duration-fast) ease-(--ease-standard) data-[state=closed]:animate-accordion-up data-[state=closed]:ease-(--ease-exit) data-[state=open]:animate-accordion-down"
         >
           <div className="pb-4 pt-0">{item.content}</div>
         </AccordionPrimitive.Content>

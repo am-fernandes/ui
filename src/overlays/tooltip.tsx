@@ -4,6 +4,7 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { motionTooltip } from "./_internal/animations"
 
 export interface TooltipProps {
   content: React.ReactNode
@@ -44,7 +45,7 @@ function Tooltip({
             sideOffset={sideOffset}
             className={cn(
               "z-[var(--z-tooltip)] overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground",
-              "duration-[var(--motion-fast)]",
+              motionTooltip,
               "data-[state=open]:animate-in data-[state=closed]:animate-out",
               "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
               "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",

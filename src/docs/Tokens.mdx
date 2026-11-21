@@ -60,23 +60,33 @@ export const RadiusSwatch = ({ name }) => (
   <RadiusSwatch name="4xl" />
 </div>
 
-## Motion durations
+## Motion
 
-Quatro durações cobrem todos os componentes animados. A regra é: **abertura e fechamento usam a mesma duração** — assimetria visual é fonte recorrente de bug perceptivo.
+Durações e curvas copiadas do Astryx. A duração segue o **peso visual** do que se move, em três faixas; cada faixa tem um mínimo e um máximo. Tudo que **sai** usa `--duration-exit` (a faixa rápida) com a curva que acelera: a saída é sempre mais curta que a entrada.
 
-| Token | Valor | Componentes |
+| Token | Valor | Onde |
 |---|---|---|
-| `--motion-fast`    | `100ms` | Tooltip |
-| `--motion-default` | `150ms` | Popover, Combobox, DateInput, DateRangePicker |
-| `--motion-slow`    | `200ms` | Dialog, AlertDialog, CommandPalette, backdrops |
-| `--motion-slowest` | `300ms` | Sheet (abertura + fechamento simétricos) |
+| `--duration-fast-min` | `130ms` | |
+| `--duration-fast` | `175ms` | hover e pressed (padrão de todo `transition`), Tooltip, DropdownMenu, Accordion, Collapsible |
+| `--duration-fast-max` | `230ms` | |
+| `--duration-medium-min` | `310ms` | Popover, Tour (entrada) |
+| `--duration-medium` | `410ms` | Sheet, menu mobile do AppShell (entrada e saída) |
+| `--duration-medium-max` | `550ms` | Dialog, AlertDialog e o backdrop (entrada) |
+| `--duration-slow-min` | `730ms` | |
+| `--duration-slow` | `975ms` | movimento contínuo |
+| `--duration-slow-max` | `1300ms` | |
+| `--duration-exit` | `= --duration-fast` | toda saída |
 
-```css
---motion-fast: 100ms;
---motion-default: 150ms;
---motion-slow: 200ms;
---motion-slowest: 300ms;
-```
+| Curva | Valor | Uso |
+|---|---|---|
+| `--ease-standard` | `cubic-bezier(0.24, 1, 0.4, 1)` | entradas e mudanças de estado (desacelera) |
+| `--ease-exit` | `cubic-bezier(0.3, 0, 0.6, 0.6)` | saídas (acelera) |
+
+As curvas vêm junto com as durações porque uma não funciona sem a outra: a `--ease-standard` anda quase tudo no começo e passa o resto assentando, então 550ms ainda parecem rápidos.
+
+No Tailwind: `duration-(--duration-fast) ease-(--ease-standard)`. Os overlays usam as combinações prontas de `src/overlays/_internal/animations.ts` (`motionTooltip`, `motionMenu`, `motionPopover`, `motionDialog`, `motionSheet`).
+
+`--motion-fast`, `--motion-default`, `--motion-slow` e `--motion-slowest` continuam definidos por uma versão, apontando para o token novo de cada papel, e estão **deprecated**.
 
 ### `prefers-reduced-motion`
 

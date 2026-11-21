@@ -60,7 +60,7 @@ function Collapsible({
       )}
       <CollapsiblePrimitive.Content
         data-slot="collapsible-content"
-        className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+        className="overflow-hidden duration-(--duration-fast) ease-(--ease-standard) data-[state=closed]:animate-collapsible-up data-[state=closed]:ease-(--ease-exit) data-[state=open]:animate-collapsible-down"
       >
         {children}
       </CollapsiblePrimitive.Content>
