@@ -147,6 +147,10 @@
       "types": "./dist/navigation/command-palette.d.ts",
       "import": "./dist/navigation/command-palette.js"
     },
+    "./pagination": {
+      "types": "./dist/navigation/pagination.d.ts",
+      "import": "./dist/navigation/pagination.js"
+    },
     "./tabs": {
       "types": "./dist/navigation/tabs.d.ts",
       "import": "./dist/navigation/tabs.js"

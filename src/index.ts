@@ -107,6 +107,13 @@ export {
   type CommandPaletteLabels,
   type CommandPaletteProps,
 } from "./navigation/command-palette"
+export {
+  Pagination,
+  defaultPaginationLabels,
+  getPaginationItems,
+  type PaginationLabels,
+  type PaginationProps,
+} from "./navigation/pagination"
 export { Tabs, type TabsItemData, type TabsProps } from "./navigation/tabs"
 
 // Domain

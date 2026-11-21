@@ -388,3 +388,18 @@ test.describe("Visual: Primitives — Token", () => {
     await snapshot(page, "primitives-token--token-vs-badge", "token-token-vs-badge.png")
   })
 })
+
+test.describe("Visual: Navigation — Pagination", () => {
+  test("many-pages", async ({ page }) => {
+    await snapshot(page, "navigation-pagination--many-pages", "pagination-many-pages.png")
+  })
+  test("with-totals", async ({ page }) => {
+    await snapshot(page, "navigation-pagination--with-totals", "pagination-with-totals.png")
+  })
+  test("small", async ({ page }) => {
+    await snapshot(page, "navigation-pagination--small", "pagination-small.png")
+  })
+  test("compact", async ({ page }) => {
+    await snapshot(page, "navigation-pagination--compact", "pagination-compact.png")
+  })
+})
