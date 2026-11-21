@@ -376,3 +376,15 @@ test.describe("Visual: Data — EmptyState", () => {
     await snapshot(page, "data-emptystate--compact", "emptystate-compact.png")
   })
 })
+
+test.describe("Visual: Primitives — Token", () => {
+  test("colors", async ({ page }) => {
+    await snapshot(page, "primitives-token--colors", "token-colors.png")
+  })
+  test("sizes", async ({ page }) => {
+    await snapshot(page, "primitives-token--sizes", "token-sizes.png")
+  })
+  test("token-vs-badge", async ({ page }) => {
+    await snapshot(page, "primitives-token--token-vs-badge", "token-token-vs-badge.png")
+  })
+})

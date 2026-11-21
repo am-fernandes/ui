@@ -199,6 +199,13 @@ export { Switch, type SwitchProps } from "./primitives/switch"
 export { Textarea, type TextareaProps } from "./primitives/textarea"
 export { Toggle, type ToggleProps, toggleVariants } from "./primitives/toggle"
 export {
+  Token,
+  defaultTokenLabels,
+  type TokenColor,
+  type TokenLabels,
+  type TokenProps,
+} from "./primitives/token"
+export {
   Typography,
   typographyVariants,
   type TypographyAs,
