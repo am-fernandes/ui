@@ -51,9 +51,13 @@ async function snapshot(page: import("@playwright/test").Page, id: string, file:
   // Wait for Storybook to flip from "preparing" to "main" (story mounted)
   // OR for storybook-root to have a rendered child. Either is a strong signal
   // the story has been hydrated.
+  // Both conditions, and not "preparing": while Storybook recompiles (HMR)
+  // the root can still hold a stale child under the loading spinner, and a
+  // small component against a blank frame stays under the 2% diff budget.
   await page.waitForFunction(
     () =>
-      document.body.classList.contains("sb-show-main") ||
+      document.body.classList.contains("sb-show-main") &&
+      !document.body.classList.contains("sb-show-preparing-story") &&
       !!document.getElementById("storybook-root")?.firstChild,
     null,
     { timeout: 30_000 },
