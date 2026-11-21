@@ -7,7 +7,11 @@ import type { DateRange } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Popover } from "../overlays/popover"
-import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
+import {
+  FieldShell,
+  type LabelPosition,
+  fieldTriggerClass,
+} from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Button } from "../primitives/button"
 import { Calendar } from "./calendar"
@@ -109,10 +113,10 @@ function DateRangePicker({
         : placeholder
 
   const trigger = (
-    <Button
+    <button
+      type="button"
       ref={ref}
       id={ids.controlId}
-      variant="outline"
       disabled={disabled}
       aria-invalid={hasError ? true : undefined}
       aria-label={ariaLabel ?? (typeof label === "string" ? label : "Selecionar período")}
@@ -120,11 +124,17 @@ function DateRangePicker({
         description: hasDescription,
         error: hasError,
       })}
-      className={cn("w-full justify-start text-left", !fromDate && "text-placeholder", className)}
+      className={cn(
+        fieldTriggerClass,
+        "w-full justify-start text-left",
+        !fromDate && "text-placeholder",
+        hasError && "border-destructive field-error",
+        className,
+      )}
     >
       <CalendarIcon className="size-4" aria-hidden="true" />
       {display}
-    </Button>
+    </button>
   )
 
   return (

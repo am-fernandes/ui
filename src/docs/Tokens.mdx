@@ -103,6 +103,41 @@ No fim de `tokens.css` há um override global que respeita `@media (prefers-redu
 }
 ```
 
+## Foco
+
+Dois visuais, os dois copiados do Astryx: um anel para os controles e um visual próprio para os campos.
+
+### Controles
+
+**Um anel só** para botões, checkbox, switch, abas e links: contorno de **2px** sólido na cor `--ring` (preto no claro, branco no escuro), **3px** afastado da borda, só em `:focus-visible` (quem usa o teclado vê; um clique de mouse num botão não acende o anel).
+
+```css
+--focus-outline-width: 2px;
+--focus-outline-style: solid;
+--focus-outline-color: var(--ring);
+--focus-outline-offset: 3px;
+```
+
+| Utilitário | Uso |
+|---|---|
+| `focus-visible:focus-outline` | botões, checkbox, switch, abas, links |
+| `focus-visible:focus-outline-inset` | células, linhas e itens dentro de um contêiner que cortaria o anel de fora |
+
+O mesmo anel é o padrão de qualquer elemento focável (`:focus-visible` no `@layer base`), então um link ou um botão do app consumidor já sai igual.
+
+### Campos
+
+Input, Textarea, os inputs brasileiros, MultiInput, TimePicker, os selects de paginação e os gatilhos de Combobox, DateInput e DateRangePicker usam o visual de campo do Astryx (`field-states`), em qualquer foco, inclusive com clique:
+
+| Estado | Visual |
+|---|---|
+| repouso | borda sólida `--input` |
+| hover (só com mouse, nunca desabilitado) | anel interno de 2px na cor da borda a 30% |
+| foco | borda `--primary` e anel interno de 2px da primária a 20% (`--field-focus-ring`; 25% no escuro) |
+| erro (`border-destructive field-error`) | borda vermelha, também no foco; hover com o vermelho a 30% |
+
+O `field-states` vai no elemento que desenha a borda: a caixa, quando o `<input>` fica dentro dela, ou o próprio `<input>`. Com toque, a troca é instantânea (sem fade enquanto o teclado sobe).
+
 ## Bordas
 
 `--border` (divisores, cards, tabelas, menus) é **10% da cor primária, translúcida**: `color-mix(in oklch, var(--primary) 10%, transparent)`. Ela lê igual sobre qualquer superfície, e no tema escuro vira 10% de branco sozinha. `--input`, a borda dos campos, continua sólida, como no Astryx: um campo precisa ser achado na tela.

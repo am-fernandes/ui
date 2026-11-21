@@ -175,7 +175,7 @@ describe("MultiInput", () => {
   it("error state applies the destructive border class", () => {
     const { container } = render(<MultiInput value={["a"]} onValueChange={vi.fn()} error="erro" />)
     const wrapper = container.querySelector("[data-slot='multi-input']")
-    expect(wrapper?.className).toMatch(/border-destructive/)
+    expect(wrapper?.className).toMatch(/field-error/)
     expect(screen.getByRole("alert")).toHaveTextContent("erro")
   })
 

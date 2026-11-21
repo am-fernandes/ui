@@ -1,5 +1,5 @@
 import { type Page, expect, test } from "@playwright/test"
-import { expectNoA11yViolations } from "./a11y"
+import { expectFocusRing, expectNoA11yViolations } from "./a11y"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
@@ -36,12 +36,11 @@ test.describe("Token", () => {
     const action = page.getByRole("button", { name: "Torre A", exact: true })
     await expect(action).toBeFocused()
     // The ring is drawn by the stretched ::after, around the whole chip.
-    const ring = await action.evaluate((el) => getComputedStyle(el, "::after").boxShadow)
-    expect(ring).not.toBe("none")
+    await expectFocusRing(action, { pseudo: "::after" })
     await page.keyboard.press("Tab")
     const remove = page.getByRole("button", { name: "Remover Torre A" })
     await expect(remove).toBeFocused()
-    expect(await remove.evaluate((el) => getComputedStyle(el).boxShadow)).not.toBe("none")
+    await expectFocusRing(remove)
     await page.keyboard.press("Enter")
     await expect(action).toHaveCount(0)
   })

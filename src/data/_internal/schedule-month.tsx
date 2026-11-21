@@ -153,7 +153,7 @@ function MoreEvents({
           type="button"
           data-slot="schedule-more"
           aria-label={`${moreLabel(count)}, ${dayLabel}`}
-          className="w-full cursor-pointer truncate rounded-sm px-1 text-left text-xs font-medium leading-5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+          className="w-full cursor-pointer truncate rounded-sm px-1 text-left text-xs font-medium leading-5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:focus-outline-inset"
         >
           {moreLabel(count)}
         </button>

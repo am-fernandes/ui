@@ -6,10 +6,13 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Popover } from "../overlays/popover"
-import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
+import {
+  FieldShell,
+  type LabelPosition,
+  fieldTriggerClass,
+} from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Badge } from "../primitives/badge"
-import { Button } from "../primitives/button"
 
 const CREATE_ACTION_VALUE = "__create_action__"
 
@@ -219,7 +222,7 @@ export function Combobox(props: ComboboxProps) {
               <button
                 type="button"
                 aria-label={`Remover ${labelText}`}
-                className="rounded-sm outline-none cursor-pointer transition-colors hover:bg-secondary-foreground/20"
+                className="rounded-sm cursor-pointer transition-colors hover:bg-secondary-foreground/20 focus-visible:focus-outline"
                 onClick={(e) => handleRemoveValue(val, e)}
               >
                 <X className="h-3 w-3 text-muted-foreground" />
@@ -240,10 +243,10 @@ export function Combobox(props: ComboboxProps) {
   })()
 
   const trigger = (
-    <Button
+    <button
+      type="button"
       ref={ref}
       id={ids.controlId}
-      variant="outline"
       // biome-ignore lint/a11y/useSemanticElements: combobox button pattern (WAI-ARIA listbox combobox)
       role="combobox"
       aria-expanded={open}
@@ -254,8 +257,10 @@ export function Combobox(props: ComboboxProps) {
       aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
       disabled={disabled}
       className={cn(
+        fieldTriggerClass,
         "w-full justify-between min-h-10 h-auto overflow-hidden",
         !hasValue && "text-placeholder",
+        hasError && "border-destructive field-error",
         className,
       )}
     >
@@ -263,11 +268,11 @@ export function Combobox(props: ComboboxProps) {
       <div className="flex items-center gap-1 ml-2">
         {hasValue ? (
           <span
-            // biome-ignore lint/a11y/useSemanticElements: avoid nested button inside Button
+            // biome-ignore lint/a11y/useSemanticElements: avoid a nested button inside the trigger button
             role="button"
             tabIndex={0}
             aria-label="Limpar seleção"
-            className="inline-flex cursor-pointer rounded-sm transition-colors hover:bg-secondary-foreground/20"
+            className="inline-flex cursor-pointer rounded-sm transition-colors hover:bg-secondary-foreground/20 focus-visible:focus-outline"
             onClick={handleClearAll}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -281,7 +286,7 @@ export function Combobox(props: ComboboxProps) {
         ) : null}
         <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
       </div>
-    </Button>
+    </button>
   )
 
   return (

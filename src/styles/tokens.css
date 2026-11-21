@@ -140,6 +140,18 @@
   --motion-slow: var(--duration-medium-max); /* dialog */
   --motion-slowest: var(--duration-medium); /* sheet */
 
+  /* Focus — one keyboard ring for every control (Astryx measures): 2px solid,
+     3px away from the edge. Applied by the focus-outline utilities below. */
+  --focus-outline-width: 2px;
+  --focus-outline-style: solid;
+  --focus-outline-color: var(--ring);
+  --focus-outline-offset: 3px;
+
+  /* Fields (Astryx field look): focus turns the border to the primary and adds
+     a 2px inner ring of it at 20%; hover adds the same ring in the border color
+     at 30%. Not the keyboard ring — a field shows it on any focus. */
+  --field-focus-ring: color-mix(in oklch, var(--primary) 20%, transparent);
+
   /* Backgrounds & Foregrounds */
   --background: oklch(1 0 0);
   --foreground: oklch(0.203 0.013 252);
@@ -252,6 +264,12 @@
   * {
     border-color: var(--color-border);
   }
+  /* The system ring is the default for anything focusable, so parts without
+     their own focus style (links, calendar days, tree rows) match the rest. */
+  :focus-visible {
+    outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+    outline-offset: var(--focus-outline-offset);
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -270,6 +288,61 @@
     -moz-appearance: textfield;
     appearance: textfield;
   }
+}
+
+/* ---- Focus ------------------------------------------------------------------
+   One ring for every control. Pair it with a variant so it only shows to
+   keyboard users: `focus-visible:focus-outline`. Fields use their own look
+   (`field-states`, below). The inset form is for cells and rows whose
+   container would clip an outer ring. */
+@utility focus-outline {
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+@utility focus-outline-inset {
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: calc(var(--focus-outline-width) * -1);
+}
+
+/* ---- Fields -----------------------------------------------------------------
+   The look of a text field, select or date trigger (Astryx Field): solid
+   --input border; hover (pointer only, never disabled) adds a 2px inner ring
+   of it at 30%; any focus turns the border to --primary with a 2px inner ring
+   of the primary at 20% (25% in dark). `border-destructive field-error` keeps
+   the border red, focused too, and tints the hover ring. Put it on the element
+   that draws the border (a shell with the <input> inside, or the input). */
+@utility field-states {
+  outline: none;
+  transition-property: border-color, box-shadow;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-standard);
+  @media (pointer: coarse) {
+    /* A tap raises the keyboard; a fade would repaint every frame of it. */
+    transition-duration: 0s;
+  }
+  @media (hover: hover) {
+    &:hover:not(:focus-within):where(
+        :not(:disabled, [aria-disabled="true"], [data-disabled], :has(:disabled))
+      ) {
+      box-shadow: inset 0 0 0 2px
+        var(--field-hover-ring, color-mix(in oklch, var(--input) 30%, transparent));
+    }
+  }
+  &:focus-within {
+    border-color: var(--field-focus-border, var(--primary));
+    box-shadow: inset 0 0 0 2px var(--field-focus-ring);
+  }
+  @media (forced-colors: active) {
+    &:focus-within {
+      border-color: Highlight;
+    }
+  }
+}
+/* Use together with `border-destructive`: that class sets the resting border
+   (and lets cn() drop `border-input`); this one keeps it red on focus. */
+@utility field-error {
+  --field-focus-border: var(--destructive);
+  --field-hover-ring: color-mix(in oklch, var(--destructive) 30%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

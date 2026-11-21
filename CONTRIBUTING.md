@@ -56,9 +56,7 @@ Estas decisões são deliberadas. Não as questione num PR sem antes abrir issue
   - Linhas de tabela: `py-2.5 px-3`.
   - Menus / tabs / tree: `py-1.5`.
 - **Cursor pointer em tudo clicável.** Botões, triggers de Radix, ícones interativos.
-- **Foco em 2 tiers.**
-  - **Tier 1 (fields)** — `focus-within:border-primary focus-within:ring-1 focus-within:ring-ring` (sem offset, ring colado na borda). Estado de erro substitui o ring por `ring-destructive`.
-  - **Tier 2 (controles ativos: buttons, checkbox, switch, links)** — `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`.
+- **Foco (do Astryx).** Controles: um anel só, contorno de 2px na cor `--ring`, 3px afastado, em `:focus-visible` (`focus-visible:focus-outline`; `focus-visible:focus-outline-inset` onde um contêiner cortaria o anel). Campos: visual de campo (`field-states` no elemento que desenha a borda): borda `--primary` + anel interno de 2px da primária a 20% em qualquer foco, anel interno da borda a 30% no hover. Erro: `border-destructive field-error`. Nada de `ring-*` para foco.
 - **Disabled.** `opacity-50` no shell + `cursor-not-allowed` no controle. Não duplique opacidade dentro do `FieldShell` (ver commit `944211f`).
 - **Motion tokens (do Astryx).** `--duration-fast` (175ms), `--duration-medium-min/medium/medium-max` (310/410/550ms) e `--duration-exit` para toda saída, com `--ease-standard` na entrada e `--ease-exit` na saída. Overlays usam as combinações de `src/overlays/_internal/animations.ts`.
 - **Z-index tokens.** `--z-overlay` (40), `--z-modal` (50), `--z-popover` (60), `--z-tooltip` (70), `--z-toast` (80). Nunca use `z-[999...]`.

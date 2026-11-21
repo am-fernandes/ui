@@ -189,10 +189,9 @@ function MultiInput(props: MultiInputProps) {
         data-type={props.type === "number" ? "number" : "string"}
         onClick={focusInput}
         className={cn(
-          "flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-2.5 text-sm transition-colors",
-          "focus-within:border-primary focus-within:ring-1 focus-within:ring-ring cursor-text",
+          "flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-2.5 text-sm field-states cursor-text",
           disabled && "cursor-not-allowed",
-          hasError && "border-destructive",
+          hasError && "border-destructive field-error",
         )}
         // biome-ignore lint/a11y/useSemanticElements: <fieldset> conflicts with the flex chip layout.
         role="group"
@@ -205,7 +204,7 @@ function MultiInput(props: MultiInputProps) {
               <button
                 type="button"
                 aria-label={`Remover ${renderToken(token)}`}
-                className="ml-0.5 rounded-sm hover:bg-secondary-foreground/20 cursor-pointer"
+                className="ml-0.5 rounded-sm hover:bg-secondary-foreground/20 cursor-pointer focus-visible:focus-outline"
                 onMouseDown={(e) => {
                   // Run on mousedown so we fire BEFORE the input's blur — avoids the race
                   // where blur commits the pending input and then we remove a different token.

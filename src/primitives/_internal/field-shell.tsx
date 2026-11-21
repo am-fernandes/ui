@@ -7,6 +7,14 @@ import { Label } from "./label"
 
 export type LabelPosition = "up" | "left" | "hidden"
 
+/**
+ * A button that looks and reacts like a text field (Astryx field look): the
+ * trigger of Combobox, DateInput and DateRangePicker. Disabled opacity comes
+ * from FieldShell, so it is not repeated here.
+ */
+export const fieldTriggerClass =
+  "inline-flex w-full cursor-pointer items-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-3 py-2.5 text-left text-sm font-normal field-states disabled:pointer-events-none disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+
 export interface FieldShellProps {
   controlId: string
   labelId: string

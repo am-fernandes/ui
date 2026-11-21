@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { expectFocusRing } from "./a11y"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
@@ -25,12 +26,19 @@ test.describe("Button", () => {
     await expect(button).toBeDisabled()
   })
 
-  test("focus-visible ring renders on tab focus", async ({ page }) => {
+  test("focus ring renders on Tab focus, not on a mouse click", async ({ page }) => {
     await page.goto(story("primitives-button--default"))
     const button = page.getByRole("button", { name: "Button" })
-    await button.focus()
-    // Tailwind ring shows when focus-visible — assert class presence.
-    await expect(button).toHaveClass(/focus-visible:ring/)
+    await expect(button).toBeVisible({ timeout: 15_000 })
+    // Start unfocused: the story may land with focus already on the button.
+    await button.evaluate((el) => el.blur())
+    await button.click()
+    await expect(button).toBeFocused()
+    expect(await button.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("none")
+    await page.keyboard.press("Shift+Tab")
+    await page.keyboard.press("Tab")
+    await expect(button).toBeFocused()
+    await expectFocusRing(button)
   })
 })
 
@@ -104,8 +112,7 @@ test.describe("SegmentedControl", () => {
     const bg = (l: typeof selected) => l.evaluate((el) => getComputedStyle(el).backgroundColor)
     expect(await bg(selected)).not.toBe(await bg(other))
     await page.keyboard.press("Tab")
-    const ring = await selected.evaluate((el) => getComputedStyle(el).boxShadow)
-    expect(ring).not.toBe("none")
+    await expectFocusRing(selected)
   })
 
   test("fill stretches segments to equal widths", async ({ page }) => {

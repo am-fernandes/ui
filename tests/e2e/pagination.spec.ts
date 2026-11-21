@@ -1,5 +1,5 @@
 import { type Page, expect, test } from "@playwright/test"
-import { expectNoA11yViolations } from "./a11y"
+import { expectFocusRing, expectNoA11yViolations } from "./a11y"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
@@ -38,8 +38,7 @@ test.describe("Pagination", () => {
     await page.keyboard.press("Tab")
     const focused = page.getByRole("button", { name: "Página 1", exact: true })
     await expect(focused).toBeFocused()
-    const shadow = await focused.evaluate((el) => getComputedStyle(el).boxShadow)
-    expect(shadow).not.toBe("none")
+    await expectFocusRing(focused)
   })
 
   test("ellipses keep 7 slots at the start, middle and end", async ({ page }) => {

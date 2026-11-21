@@ -93,7 +93,7 @@ describe("PercentageInput", () => {
     const input = screen.getByDisplayValue("0,00") as HTMLInputElement
     expect(input).toHaveAttribute("aria-invalid", "true")
     expect(screen.getByRole("alert")).toHaveTextContent("Inválido")
-    expect(input.className).toMatch(/border-destructive/)
+    expect(input.className).toMatch(/field-error/)
   })
 
   it("does not set aria-invalid when error is empty string", () => {

@@ -82,8 +82,8 @@ function CPFInput({
           required={required}
           aria-required={required ? true : undefined}
           className={cn(
-            "flex w-full rounded-md border border-input bg-transparent px-3 py-2.5 text-sm tabular-nums transition-colors focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed",
-            hasError && "border-destructive focus-visible:ring-1 focus-visible:ring-destructive",
+            "flex w-full rounded-md border border-input bg-transparent px-3 py-2.5 text-sm tabular-nums disabled:cursor-not-allowed field-states",
+            hasError && "border-destructive field-error",
             className,
           )}
           value={display}

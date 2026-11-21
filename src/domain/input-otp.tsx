@@ -32,7 +32,7 @@ function Slot({ slot }: { slot: SlotProps }) {
       className={cn(
         "relative flex h-10 w-10 items-center justify-center border-y border-r border-input font-mono text-sm tabular-nums transition-colors",
         "first:rounded-l-md first:border-l last:rounded-r-md",
-        "data-[active=true]:z-10 data-[active=true]:ring-2 data-[active=true]:ring-ring",
+        "data-[active=true]:z-10 data-[active=true]:outline-1 data-[active=true]:-outline-offset-1 data-[active=true]:outline-primary data-[active=true]:shadow-[inset_0_0_0_2px_var(--field-focus-ring)]",
       )}
     >
       {slot.char ?? slot.placeholderChar}

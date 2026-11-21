@@ -148,7 +148,7 @@ function writeStoredCollapsed(value: boolean) {
 const iconButtonClass = cn(
   "inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors",
   "hover:bg-accent hover:text-accent-foreground",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+  "focus-visible:focus-outline",
 )
 
 interface BrandMarkProps {
@@ -177,7 +177,7 @@ function BrandMark({ brand, onClick, label, className, withTooltip = false }: Br
       className={cn(
         box,
         "cursor-pointer transition-opacity hover:opacity-70",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "focus-visible:focus-outline",
       )}
     >
       {brand}
@@ -251,7 +251,7 @@ function AppShell({
       className={cn(
         "flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground transition-colors",
         "hover:bg-accent hover:text-accent-foreground",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "focus-visible:focus-outline",
         collapsed && "justify-center",
       )}
     >
@@ -278,7 +278,7 @@ function AppShell({
             "sr-only",
             "focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[var(--z-toast)] focus:rounded-md",
             "focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground",
-            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            "focus:focus-outline",
           )}
         >
           {l.skipToContent}

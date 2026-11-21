@@ -138,7 +138,7 @@ function Token({
   const actionClass = cn(
     "min-w-0 truncate outline-none",
     "after:absolute after:inset-0 after:rounded-md after:transition-colors",
-    "focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-offset-1",
+    "focus-visible:after:focus-outline",
     disabled ? "cursor-not-allowed" : "cursor-pointer hover:after:bg-current/10",
   )
 
@@ -206,7 +206,7 @@ function Token({
           onClick={onRemove}
           className={cn(
             "relative z-10 inline-flex shrink-0 items-center justify-center rounded-sm opacity-70 transition",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "focus-visible:focus-outline",
             disabled
               ? "cursor-not-allowed"
               : "cursor-pointer hover:bg-current/10 hover:opacity-100",

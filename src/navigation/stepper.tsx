@@ -199,7 +199,7 @@ function Stepper({
         className={cn(
           layout,
           "min-w-0 cursor-pointer rounded-md p-1 transition-colors hover:bg-accent/60",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "focus-visible:focus-outline",
           "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent",
           vertical ? "-m-1 w-[calc(100%+0.5rem)]" : "w-full",
         )}

@@ -124,7 +124,11 @@ describe("Token", () => {
       const action = screen.getByRole("button", { name: "Filtrar por SP" })
       expect(action).toHaveAttribute("type", "button")
       expect(action).toHaveAttribute("data-slot", "token-action")
-      expect(action).toHaveClass("after:absolute", "after:inset-0", "focus-visible:after:ring-2")
+      expect(action).toHaveClass(
+        "after:absolute",
+        "after:inset-0",
+        "focus-visible:after:focus-outline",
+      )
       await userEvent.click(action)
       expect(onClick).toHaveBeenCalledTimes(1)
     })

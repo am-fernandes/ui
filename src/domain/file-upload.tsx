@@ -291,7 +291,7 @@ function FileUpload({
           className={cn(
             "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
             "hover:bg-accent/40",
-            "focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring",
+            "focus-visible:focus-outline",
             isDragging && "border-primary bg-accent/60",
             hasError && "border-destructive",
             disabled && "cursor-not-allowed opacity-50",
@@ -407,7 +407,7 @@ function FileRow({
         aria-label={isImage ? labels.zoomImage(file.name) : labels.openFile(file.name)}
         className={cn(
           "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-muted-foreground cursor-pointer transition-opacity",
-          "hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "hover:opacity-80 focus-visible:focus-outline",
           disabled && "cursor-not-allowed opacity-50",
         )}
       >

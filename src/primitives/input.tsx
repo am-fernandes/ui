@@ -39,9 +39,8 @@ function Input({
     <div
       data-slot="input-wrapper"
       className={cn(
-        "relative flex w-full items-center rounded-md border border-input bg-transparent text-sm transition-colors",
-        "focus-within:border-primary focus-within:ring-1 focus-within:ring-ring",
-        hasError && "border-destructive focus-within:ring-destructive",
+        "relative flex w-full items-center rounded-md border border-input bg-transparent text-sm field-states",
+        hasError && "border-destructive field-error",
         disabled && "cursor-not-allowed",
       )}
     >

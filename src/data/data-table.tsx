@@ -808,7 +808,7 @@ function DataTable<TData>({
                     key={row.id}
                     className={cn(
                       interactive &&
-                        "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset focus-visible:bg-muted/60",
+                        "cursor-pointer focus-visible:focus-outline-inset focus-visible:bg-muted/60",
                       rowClassName?.(row.original, index),
                     )}
                     role={interactive ? "button" : undefined}
@@ -893,7 +893,7 @@ function DataTable<TData>({
                         // non-zero page when the user was past page 0).
                         table.setPagination({ pageIndex: 0, pageSize: next })
                       }}
-                      className="h-9 rounded-md border border-input bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="h-9 rounded-md border border-input bg-background px-2 text-xs text-foreground field-states"
                     >
                       {pagination.pageSizeOptions.map((opt) => (
                         <option key={opt} value={opt}>

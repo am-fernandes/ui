@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test"
+import { type Locator, type Page, expect } from "@playwright/test"
 import { checkA11y, injectAxe } from "axe-playwright"
 
 /** The rule set the Storybook test-runner enforces: WCAG 2.1 levels A and AA. */
@@ -31,4 +31,19 @@ export async function expectNoA11yViolations(page: Page, context: Parameters<typ
       await page.waitForTimeout(100)
     }
   }
+}
+
+/**
+ * The system focus ring (tokens.css): a 2px solid outline, 3px away from the
+ * edge — or drawn inside (`inset`) for cells and rows a container would clip.
+ */
+export async function expectFocusRing(
+  locator: Locator,
+  { pseudo, inset = false }: { pseudo?: "::after"; inset?: boolean } = {},
+) {
+  const ring = await locator.evaluate((el, p) => {
+    const style = getComputedStyle(el, p ?? null)
+    return { style: style.outlineStyle, width: style.outlineWidth, offset: style.outlineOffset }
+  }, pseudo)
+  expect(ring).toEqual({ style: "solid", width: "2px", offset: inset ? "-2px" : "3px" })
 }

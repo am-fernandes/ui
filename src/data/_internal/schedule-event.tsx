@@ -88,8 +88,7 @@ export function eventColors(event: ScheduleEventInput) {
   return EVENT_COLOR_CLASSES[event.color ?? DEFAULT_EVENT_COLOR]
 }
 
-const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+const focusRing = "focus-visible:focus-outline-inset"
 
 export type ScheduleEventVariant = "chip" | "bar" | "block" | "row"
 

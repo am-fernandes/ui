@@ -6,9 +6,12 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Popover } from "../overlays/popover"
-import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
+import {
+  FieldShell,
+  type LabelPosition,
+  fieldTriggerClass,
+} from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
-import { Button } from "../primitives/button"
 import { Calendar, type DisabledDays } from "./calendar"
 
 function parseIsoDate(value: string): Date | undefined {
@@ -73,11 +76,11 @@ function DateInput({
   const hasValidValue = display.length > 0
 
   const trigger = (
-    <Button
+    <button
+      type="button"
       ref={ref}
       id={ids.controlId}
       data-slot="date-input"
-      variant="outline"
       aria-label={ariaLabel ?? (typeof label === "string" ? label : "Selecionar data")}
       aria-invalid={hasError ? true : undefined}
       aria-describedby={ids.describedBy({
@@ -86,14 +89,16 @@ function DateInput({
       })}
       disabled={disabled}
       className={cn(
+        fieldTriggerClass,
         "w-full justify-start text-left font-normal h-auto px-3 py-2.5",
         !hasValidValue && "text-placeholder",
+        hasError && "border-destructive field-error",
         className,
       )}
     >
       <CalendarIcon className="h-4 w-4" />
       {hasValidValue ? display : placeholder}
-    </Button>
+    </button>
   )
 
   return (
