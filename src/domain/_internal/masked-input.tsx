@@ -21,11 +21,27 @@ export interface MaskSpec {
   filter: (text: string) => string
   /** Lays a clean value out with its separators. */
   mask: (raw: string) => string
+  /**
+   * Fixes the significant characters up before the limit is applied, by
+   * dropping some from the front (the `55` of a phone number written with the
+   * country code). `dropped` is how many went away.
+   */
+  normalize?: (significant: string) => { value: string; dropped: number }
+  /**
+   * Finds a complete number inside a pasted text ("CPF: 529.982.247-25, RG…")
+   * and returns just that piece, or `null` when there is none. A complete
+   * number replaces whatever the field had.
+   */
+  extract?: (text: string) => string | null
+}
+
+function normalize(spec: MaskSpec, significant: string) {
+  return spec.normalize?.(significant) ?? { value: significant, dropped: 0 }
 }
 
 /** The clean value a text stands for: significant characters, up to the limit. */
 export function cleanValue(spec: MaskSpec, text: string): string {
-  return spec.filter(text).slice(0, spec.maxLength)
+  return normalize(spec, spec.filter(text)).value.slice(0, spec.maxLength)
 }
 
 /** Index in `masked` right after its `count`-th significant character. */
@@ -56,6 +72,10 @@ export interface MaskedEdit {
  * separators coming and going never move it. When the edit removed only a
  * separator (Backspace right after the dot of `123.|456`), the neighbouring
  * significant character goes with it; otherwise the key would do nothing.
+ *
+ * The text is cleaned first and limited after: a pasted number is never cut
+ * by its label or its punctuation. A key typed into a field that is already
+ * full is refused, so the last digit is not pushed out.
  */
 export function applyEdit(
   spec: MaskSpec,
@@ -65,6 +85,8 @@ export function applyEdit(
   inputType?: string,
 ): MaskedEdit {
   const previousMasked = spec.mask(previous)
+  // Where the caret was before something was inserted at it.
+  const caretBefore = Math.max(0, caret - Math.max(0, edited.length - previousMasked.length))
   let before = spec.filter(edited.slice(0, caret)).length
   let significant = spec.filter(edited)
 
@@ -79,22 +101,49 @@ export function applyEdit(
     }
   }
 
-  const raw = significant.slice(0, spec.maxLength)
+  const normalized = normalize(spec, significant)
+  const typed = inputType === "insertText" || inputType === "insertCompositionText"
+  if (typed && normalized.value.length > spec.maxLength) {
+    return { raw: previous, caret: caretBefore }
+  }
+
+  const raw = normalized.value.slice(0, spec.maxLength)
   const masked = spec.mask(raw)
 
   // Something was typed and none of it counted (a letter in a CPF): the caret
   // goes back to where it was before the key.
   if (raw === previous && edited.length > previousMasked.length) {
-    return { raw, caret: Math.max(0, caret - (edited.length - previousMasked.length)) }
+    return { raw, caret: caretBefore }
   }
 
-  let position = caretAfter(spec, masked, Math.min(before, raw.length))
+  before = Math.max(0, Math.min(before - normalized.dropped, raw.length))
+  let position = caretAfter(spec, masked, before)
   if (inputType === "deleteContentBackward") {
     // Backspace leaves the text after the caret untouched, so the caret stays
     // against it: after the separator in `11.|22`, not before it.
     while (position < masked.length && spec.filter(masked.charAt(position)) === "") position += 1
   }
   return { raw, caret: position }
+}
+
+/**
+ * The edit a paste makes. A text holding a complete number replaces the
+ * field; anything else goes in at the selection, like typing it would.
+ */
+export function applyPaste(
+  spec: MaskSpec,
+  previous: string,
+  pasted: string,
+  selectionStart: number,
+  selectionEnd: number,
+): MaskedEdit {
+  const complete = spec.extract?.(pasted) ?? null
+  if (complete != null) {
+    return applyEdit(spec, previous, complete, complete.length, "insertFromPaste")
+  }
+  const current = spec.mask(previous)
+  const edited = current.slice(0, selectionStart) + pasted + current.slice(selectionEnd)
+  return applyEdit(spec, previous, edited, selectionStart + pasted.length, "insertFromPaste")
 }
 
 function assignRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
@@ -135,6 +184,7 @@ function MaskedInput({
   required,
   id,
   ref,
+  onPaste,
   ...props
 }: InternalMaskedInputProps) {
   const ids = useFieldIds(id)
@@ -171,20 +221,37 @@ function MaskedInput({
     if (root.activeElement === el) el.setSelectionRange(pending.caret, pending.caret)
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const el = e.target
-    const edit = applyEdit(
-      spec,
-      cleaned,
-      el.value,
-      el.selectionStart ?? el.value.length,
-      (e.nativeEvent as InputEvent).inputType,
-    )
+  const commit = (edit: MaskedEdit) => {
     pendingCaret.current = { masked: spec.mask(edit.raw), caret: edit.caret }
     if (edit.raw !== cleaned) onValueChange(edit.raw)
     // Always render again: the caret is restored in the layout effect even
     // when the value did not change.
     forceRender()
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const el = e.target
+    commit(
+      applyEdit(
+        spec,
+        cleaned,
+        el.value,
+        el.selectionStart ?? el.value.length,
+        (e.nativeEvent as InputEvent).inputType,
+      ),
+    )
+  }
+
+  // The paste is handled here, not left to the browser: the clipboard text
+  // is looked at whole, so a number is found among labels and other numbers.
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    onPaste?.(e)
+    if (e.defaultPrevented) return
+    e.preventDefault()
+    const el = e.currentTarget
+    const start = el.selectionStart ?? el.value.length
+    const end = el.selectionEnd ?? start
+    commit(applyPaste(spec, cleaned, e.clipboardData?.getData("text") ?? "", start, end))
   }
 
   return (
@@ -218,6 +285,7 @@ function MaskedInput({
           {...props}
           value={display}
           onChange={handleChange}
+          onPaste={handlePaste}
         />
       </div>
     </FieldShell>

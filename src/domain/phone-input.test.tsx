@@ -42,15 +42,13 @@ describe("PhoneInput", () => {
     expect(onValueChange).toHaveBeenLastCalledWith("11987654321")
   })
 
-  it("strips non-digit characters from pasted input", () => {
+  it("strips non-digit characters and the country code from a value set at once", () => {
     const onValueChange = vi.fn()
     render(<PhoneInput value="" onValueChange={onValueChange} />)
     const input = screen.getByRole("textbox") as HTMLInputElement
+    // What an autofill does: the whole text arrives in one change.
     fireEvent.change(input, { target: { value: "+55 (11) 98765-4321" } })
-    // Cleaned digits are capped at 11; "+55..." prepends 5 digits before the DDD.
-    // Spec: max 11 digits after stripping.
-    const last = onValueChange.mock.calls.at(-1)?.[0]
-    expect(last).toHaveLength(11)
+    expect(onValueChange).toHaveBeenLastCalledWith("11987654321")
   })
 
   it("reformats a pasted masked landline string in a controlled wrapper", () => {
@@ -160,6 +158,102 @@ describe("PhoneInput", () => {
       await user.type(input, "119")
       expect(input).toHaveValue("(11) 9")
       expect(input.selectionStart).toBe(6)
+    })
+  })
+
+  // Regressão: "+55 11 98765-4321" virava "(55) 11987-6543" e passava em
+  // isValidPhone; "011 98765-4321" virava "(01) 19876-5432".
+  describe("código do país e zero de operadora", () => {
+    async function pasteInto(text: string) {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      function Harness() {
+        const [value, setValue] = React.useState("")
+        return (
+          <PhoneInput
+            value={value}
+            onValueChange={(next) => {
+              onValueChange(next)
+              setValue(next)
+            }}
+          />
+        )
+      }
+      render(<Harness />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.paste(text)
+      return { input, onValueChange }
+    }
+
+    it("tira o +55 de um celular colado", async () => {
+      const { input, onValueChange } = await pasteInto("+55 11 98765-4321")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(onValueChange).toHaveBeenLastCalledWith("11987654321")
+    })
+
+    it("tira o +55 de um fixo colado", async () => {
+      const { input, onValueChange } = await pasteInto("+55 (11) 3333-4444")
+      expect(input).toHaveValue("(11) 3333-4444")
+      expect(onValueChange).toHaveBeenLastCalledWith("1133334444")
+    })
+
+    it("tira o zero de operadora", async () => {
+      const { input, onValueChange } = await pasteInto("011 98765-4321")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(onValueChange).toHaveBeenLastCalledWith("11987654321")
+    })
+
+    it("tira o +55 e o zero juntos", async () => {
+      const { input } = await pasteInto("+55 (011) 98765-4321")
+      expect(input).toHaveValue("(11) 98765-4321")
+    })
+
+    it("não mexe num celular do DDD 55", async () => {
+      const { input, onValueChange } = await pasteInto("(55) 99876-5432")
+      expect(input).toHaveValue("(55) 99876-5432")
+      expect(onValueChange).toHaveBeenLastCalledWith("55998765432")
+    })
+
+    it("não mexe num fixo do DDD 55", async () => {
+      const { input } = await pasteInto("55 3222-1100")
+      expect(input).toHaveValue("(55) 3222-1100")
+    })
+
+    it("aceita o número com rótulo na frente", async () => {
+      const { input } = await pasteInto("Tel.: (11) 98765-4321")
+      expect(input).toHaveValue("(11) 98765-4321")
+    })
+
+    it("quem digita o 55 na frente também chega no número certo", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPhoneInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.type(input, "5511987654321")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(input.selectionStart).toBe(15)
+    })
+
+    it("quem digita o zero na frente também chega no número certo", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPhoneInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.type(input, "011987654321")
+      expect(input).toHaveValue("(11) 98765-4321")
+    })
+
+    it("mostra sem o código do país um valor que já chega com ele", () => {
+      render(<PhoneInput value="+5511987654321" onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("(11) 98765-4321")
+    })
+
+    it("não tem maxLength e ignora o 12º dígito digitado", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPhoneInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).not.toHaveAttribute("maxLength")
+      await user.type(input, "119876543219")
+      expect(input).toHaveValue("(11) 98765-4321")
     })
   })
 })

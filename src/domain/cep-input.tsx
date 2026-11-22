@@ -22,6 +22,9 @@ const cepSpec: MaskSpec = {
   maxLength: 8,
   filter: (text) => text.replace(/\D/g, ""),
   mask: maskCEP,
+  // Um CEP inteiro que não seja parte de um número maior: num endereço
+  // colado, o número da rua não entra no lugar dele.
+  extract: (text) => /(?:^|\D)(\d{5}-?\d{3})(?!\d)/.exec(text)?.[1] ?? null,
 }
 
 function CEPInput(props: CEPInputProps) {
@@ -31,7 +34,6 @@ function CEPInput(props: CEPInputProps) {
       slot="cep-input"
       inputMode="numeric"
       autoComplete="postal-code"
-      maxLength={9}
       {...props}
     />
   )

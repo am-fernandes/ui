@@ -106,12 +106,6 @@ describe("CNPJInput", () => {
     expect(input).toBeDisabled()
   })
 
-  it("limits the rendered input via maxLength of 18 (masked length)", () => {
-    render(<CNPJInput value="" onValueChange={vi.fn()} />)
-    const input = screen.getByRole("textbox") as HTMLInputElement
-    expect(input).toHaveAttribute("maxLength", "18")
-  })
-
   describe("edição no meio do valor", () => {
     it("Backspace no meio apaga aquele dígito e o próximo entra no mesmo ponto", async () => {
       const user = userEvent.setup()
@@ -135,6 +129,35 @@ describe("CNPJInput", () => {
       await user.type(input, "{Backspace}", { initialSelectionStart: 11, initialSelectionEnd: 11 })
       expect(input).toHaveValue("11.222.330/0018-1")
       expect(input.selectionStart).toBe(9)
+    })
+  })
+
+  describe("colagem", () => {
+    it("aceita o CNPJ com rótulo e espaço na frente", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCNPJInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.paste(" CNPJ: 11.222.333/0001-81")
+      expect(input).toHaveValue("11.222.333/0001-81")
+    })
+
+    it("um CNPJ completo colado substitui o que estava no campo", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCNPJInput initial="45997418000153" />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.paste("11.222.333/0001-81")
+      expect(input).toHaveValue("11.222.333/0001-81")
+    })
+
+    it("não tem maxLength e ignora o 15º dígito digitado", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCNPJInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).not.toHaveAttribute("maxLength")
+      await user.type(input, "112223330001819")
+      expect(input).toHaveValue("11.222.333/0001-81")
     })
   })
 })

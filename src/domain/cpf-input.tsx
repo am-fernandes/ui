@@ -24,6 +24,8 @@ const cpfSpec: MaskSpec = {
   maxLength: 11,
   filter: (text) => text.replace(/\D/g, ""),
   mask: maskCPF,
+  // Um CPF inteiro, com ou sem pontuação, que não seja parte de um número maior.
+  extract: (text) => /(?:^|\D)(\d{3}\.?\d{3}\.?\d{3}-?\d{2})(?!\d)/.exec(text)?.[1] ?? null,
 }
 
 function CPFInput(props: CPFInputProps) {
@@ -33,7 +35,6 @@ function CPFInput(props: CPFInputProps) {
       slot="cpf-input"
       inputMode="numeric"
       autoComplete="off"
-      maxLength={14}
       {...props}
     />
   )

@@ -25,6 +25,8 @@ const cnpjSpec: MaskSpec = {
   maxLength: 14,
   filter: (text) => text.replace(/\D/g, ""),
   mask: maskCNPJ,
+  // Um CNPJ inteiro, com ou sem pontuação, que não seja parte de um número maior.
+  extract: (text) => /(?:^|\D)(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})(?!\d)/.exec(text)?.[1] ?? null,
 }
 
 function CNPJInput(props: CNPJInputProps) {
@@ -34,7 +36,6 @@ function CNPJInput(props: CNPJInputProps) {
       slot="cnpj-input"
       inputMode="numeric"
       autoComplete="off"
-      maxLength={18}
       {...props}
     />
   )

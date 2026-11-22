@@ -106,12 +106,6 @@ describe("CEPInput", () => {
     expect(input).toBeDisabled()
   })
 
-  it("limits the rendered input via maxLength of 9 (masked length)", () => {
-    render(<CEPInput value="" onValueChange={vi.fn()} />)
-    const input = screen.getByRole("textbox") as HTMLInputElement
-    expect(input).toHaveAttribute("maxLength", "9")
-  })
-
   describe("edição no meio do valor", () => {
     it("Backspace no meio apaga aquele dígito e o próximo entra no mesmo ponto", async () => {
       const user = userEvent.setup()
@@ -134,6 +128,35 @@ describe("CEPInput", () => {
       await user.type(input, "{Backspace}", { initialSelectionStart: 6, initialSelectionEnd: 6 })
       expect(input).toHaveValue("01311-00")
       expect(input.selectionStart).toBe(4)
+    })
+  })
+
+  describe("colagem", () => {
+    it("aceita o CEP com rótulo na frente", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCEPInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.paste("CEP: 01310-100")
+      expect(input).toHaveValue("01310-100")
+    })
+
+    it("acha o CEP no fim de um endereço com número", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCEPInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.paste("Av. Paulista, 1578 - Bela Vista, São Paulo - SP, 01310-200")
+      expect(input).toHaveValue("01310-200")
+    })
+
+    it("não tem maxLength e ignora o 9º dígito digitado", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCEPInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).not.toHaveAttribute("maxLength")
+      await user.type(input, "013101009")
+      expect(input).toHaveValue("01310-100")
     })
   })
 })

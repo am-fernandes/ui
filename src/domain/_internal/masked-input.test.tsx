@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { type MaskSpec, applyEdit, caretAfter, cleanValue } from "./masked-input"
+import { type MaskSpec, applyEdit, applyPaste, caretAfter, cleanValue } from "./masked-input"
 
 // "00-00": dois grupos de dois dígitos.
 const spec: MaskSpec = {
@@ -78,7 +78,65 @@ describe("applyEdit", () => {
     expect(applyEdit(spec, "1234", "12-x34", 4, "insertText")).toEqual({ raw: "1234", caret: 3 })
   })
 
-  it("corta o que passa do limite", () => {
+  it("corta o que passa do limite quando o texto chega de uma vez", () => {
     expect(applyEdit(spec, "", "123456", 6)).toEqual({ raw: "1234", caret: 5 })
+  })
+
+  it("recusa a tecla digitada num campo cheio, sem empurrar o último caractere", () => {
+    // "1|2-34" digita 9: "192-34" com o cursor em 2.
+    expect(applyEdit(spec, "1234", "192-34", 2, "insertText")).toEqual({ raw: "1234", caret: 1 })
+  })
+
+  describe("com normalização", () => {
+    // Um "9" na frente sai quando sobra caractere, como o 55 do telefone.
+    const prefixed: MaskSpec = {
+      ...spec,
+      normalize: (significant) =>
+        significant.length > 4 && significant.startsWith("9")
+          ? { value: significant.slice(1), dropped: 1 }
+          : { value: significant, dropped: 0 },
+    }
+
+    it("cleanValue normaliza antes de limitar", () => {
+      expect(cleanValue(prefixed, "9-12-34")).toBe("1234")
+      expect(cleanValue(prefixed, "91-23")).toBe("9123")
+    })
+
+    it("desconta do cursor o que saiu da frente", () => {
+      // "91-23" e o quinto dígito digitado no fim: "91-234" vira "12-34".
+      expect(applyEdit(prefixed, "9123", "91-234", 6, "insertText")).toEqual({
+        raw: "1234",
+        caret: 5,
+      })
+    })
+  })
+})
+
+describe("applyPaste", () => {
+  const withExtract: MaskSpec = {
+    ...spec,
+    extract: (text) => /(?:^|\D)(\d{2}-?\d{2})(?!\d)/.exec(text)?.[1] ?? null,
+  }
+
+  it("um número completo substitui o campo, onde quer que o cursor esteja", () => {
+    expect(applyPaste(withExtract, "12", "nº 56-78, fl. 9", 1, 1)).toEqual({
+      raw: "5678",
+      caret: 5,
+    })
+  })
+
+  it("um pedaço entra na seleção", () => {
+    // "1|2-3" cola "9": "19-23".
+    expect(applyPaste(withExtract, "123", "9", 1, 1)).toEqual({ raw: "1923", caret: 2 })
+    // "[12]-3" cola "9": "93".
+    expect(applyPaste(withExtract, "123", "9", 0, 2)).toEqual({ raw: "93", caret: 1 })
+  })
+
+  it("sem extract, tudo entra na seleção e o limite corta o resto", () => {
+    expect(applyPaste(spec, "", "a 12-34-56", 0, 0)).toEqual({ raw: "1234", caret: 5 })
+  })
+
+  it("texto sem caractere significativo não muda nada", () => {
+    expect(applyPaste(withExtract, "1234", "abc", 2, 2)).toEqual({ raw: "1234", caret: 2 })
   })
 })

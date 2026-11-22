@@ -25,10 +25,28 @@ function maskPhone(digits: string): string {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7, 11)}`
 }
 
+/**
+ * Um número com mais de 11 dígitos veio com algo na frente do DDD: o código
+ * do país (`55`) e, depois dele, o zero de operadora (`011`). Com 11 dígitos
+ * ou menos nada é retirado: `55` também é DDD (Santa Maria, RS).
+ */
+function dropCountryAndTrunkPrefix(digits: string) {
+  let value = digits
+  if (value.length > 11 && value.startsWith("55")) value = value.slice(2)
+  if (value.length > 11 && value.startsWith("0")) value = value.slice(1)
+  return { value, dropped: digits.length - value.length }
+}
+
 const phoneSpec: MaskSpec = {
   maxLength: 11,
   filter: (text) => text.replace(/\D/g, ""),
   mask: maskPhone,
+  normalize: dropCountryAndTrunkPrefix,
+  // Um telefone inteiro (10 ou 11 dígitos depois de tirar país e operadora).
+  extract: (text) => {
+    const { value } = dropCountryAndTrunkPrefix(text.replace(/\D/g, ""))
+    return value.length === 10 || value.length === 11 ? value : null
+  },
 }
 
 function PhoneInput(props: PhoneInputProps) {
@@ -38,7 +56,6 @@ function PhoneInput(props: PhoneInputProps) {
       slot="phone-input"
       inputMode="tel"
       autoComplete="tel"
-      maxLength={16}
       {...props}
     />
   )

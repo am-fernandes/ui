@@ -1,4 +1,4 @@
-import { type Locator, expect, test } from "@playwright/test"
+import { type Locator, type Page, expect, test } from "@playwright/test"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
@@ -11,6 +11,12 @@ async function caretAt(input: Locator, position: number) {
 }
 
 const caretOf = (input: Locator) => input.evaluate((el: HTMLInputElement) => el.selectionStart)
+
+/** A real paste: the text goes to the clipboard and Ctrl+V brings it in. */
+async function paste(page: Page, text: string) {
+  await page.evaluate((value) => navigator.clipboard.writeText(value), text)
+  await page.keyboard.press("ControlOrMeta+V")
+}
 
 // jsdom cannot prove where a real browser leaves the caret after React
 // rewrites the value, so the masked inputs are edited here with real keys.
@@ -111,6 +117,107 @@ test.describe("Campos com máscara: editar no meio", () => {
       expect(await caretOf(input)).toBe(edit.caretAfterRetype)
     })
   }
+})
+
+// A synthetic paste event does not go through the browser's own handling of
+// maxLength and of the selection, which is where the digits were lost.
+test.describe("Campos com máscara: colar", () => {
+  test.beforeEach(async ({ context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"])
+  })
+
+  const pastes = [
+    {
+      name: "CPF com espaço na frente",
+      id: "domain-cpfinput--with-validation-feedback",
+      label: "CPF",
+      text: " 529.982.247-25",
+      shown: "529.982.247-25",
+      digits: "52998224725",
+    },
+    {
+      name: "CPF com rótulo na frente",
+      id: "domain-cpfinput--with-validation-feedback",
+      label: "CPF",
+      text: "CPF: 529.982.247-25",
+      shown: "529.982.247-25",
+      digits: "52998224725",
+    },
+    {
+      name: "CNPJ com rótulo e espaço na frente",
+      id: "domain-cnpjinput--with-validation-feedback",
+      label: "CNPJ",
+      text: " CNPJ: 11.222.333/0001-81",
+      shown: "11.222.333/0001-81",
+      digits: "11222333000181",
+    },
+    {
+      name: "CEP no fim de um endereço",
+      id: "domain-cepinput--with-validation-feedback",
+      label: "CEP",
+      text: "Av. Paulista, 1578 - Bela Vista, São Paulo - SP, 01310-200",
+      shown: "01310-200",
+      digits: "01310200",
+    },
+    {
+      name: "telefone com +55",
+      id: "domain-phoneinput--with-validation-feedback",
+      label: "Telefone",
+      text: "+55 11 98765-4321",
+      shown: "(11) 98765-4321",
+      digits: "11987654321",
+    },
+    {
+      name: "telefone com zero de operadora",
+      id: "domain-phoneinput--with-validation-feedback",
+      label: "Telefone",
+      text: "011 98765-4321",
+      shown: "(11) 98765-4321",
+      digits: "11987654321",
+    },
+  ]
+
+  for (const item of pastes) {
+    test(`${item.name}: o número colado entra inteiro`, async ({ page }) => {
+      await page.goto(story(item.id))
+      const input = page.getByRole("textbox", { name: item.label })
+      await input.click()
+      await paste(page, item.text)
+      await expect(input).toHaveValue(item.shown)
+      await expect(page.getByText(`Dígitos: ${item.digits} — válido: true`)).toBeVisible()
+    })
+  }
+
+  test("um CPF completo colado substitui o que já estava no campo", async ({ page }) => {
+    await page.goto(story("domain-cpfinput--filled"))
+    const input = page.getByRole("textbox", { name: "CPF" })
+    await expect(input).toHaveValue("123.456.789-09")
+    await input.click()
+    await paste(page, "529.982.247-25")
+    await expect(input).toHaveValue("529.982.247-25")
+  })
+
+  test("um pedaço colado entra no ponto do cursor", async ({ page }) => {
+    await page.goto(story("domain-cpfinput--with-validation-feedback"))
+    const input = page.getByRole("textbox", { name: "CPF" })
+    await input.pressSequentially("529247")
+    await expect(input).toHaveValue("529.247")
+    // "529|.247"
+    await caretAt(input, 3)
+    await paste(page, "982")
+    await expect(input).toHaveValue("529.982.247")
+    expect(await caretOf(input)).toBe(7)
+  })
+
+  test("digitar num campo cheio não troca nenhum dígito", async ({ page }) => {
+    await page.goto(story("domain-cpfinput--filled"))
+    const input = page.getByRole("textbox", { name: "CPF" })
+    await expect(input).toHaveValue("123.456.789-09")
+    await caretAt(input, 2)
+    await page.keyboard.type("7")
+    await expect(input).toHaveValue("123.456.789-09")
+    expect(await caretOf(input)).toBe(2)
+  })
 })
 
 test.describe("CurrencyInput", () => {
