@@ -259,6 +259,10 @@
       "types": "./dist/lib/size.d.ts",
       "import": "./dist/lib/size.js"
     },
+    "./lib/text": {
+      "types": "./dist/lib/text.d.ts",
+      "import": "./dist/lib/text.js"
+    },
     "./lib/url": {
       "types": "./dist/lib/url.d.ts",
       "import": "./dist/lib/url.js"

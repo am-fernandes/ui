@@ -4,6 +4,7 @@ import { Command as CommandPrimitive } from "cmdk"
 import { Check, ChevronsUpDown, SearchIcon, X } from "lucide-react"
 import * as React from "react"
 
+import { matchesSearch, normalizeText } from "@/lib/text"
 import { cn } from "@/lib/utils"
 import { Popover } from "../overlays/popover"
 import {
@@ -16,17 +17,9 @@ import { Badge } from "../primitives/badge"
 
 const CREATE_ACTION_VALUE = "__create_action__"
 
-function normalizeSearch(text: string) {
-  return text
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-}
-
 function filterOption(value: string, search: string, keywords?: string[]) {
   if (value === CREATE_ACTION_VALUE) return 1
-  const haystack = normalizeSearch([value, ...(keywords ?? [])].join(" "))
-  return haystack.includes(normalizeSearch(search)) ? 1 : 0
+  return matchesSearch([value, ...(keywords ?? [])].join(" "), search) ? 1 : 0
 }
 
 function toArray<T>(v: T | T[] | undefined | null): T[] {
@@ -193,8 +186,8 @@ export function Combobox(props: ComboboxProps) {
   const showCreateOption =
     creatable &&
     trimmedSearch.length > 0 &&
-    !options.some((o) => normalizeSearch(o.value) === normalizeSearch(trimmedSearch)) &&
-    !options.some((o) => normalizeSearch(o.label) === normalizeSearch(trimmedSearch))
+    !options.some((o) => normalizeText(o.value) === normalizeText(trimmedSearch)) &&
+    !options.some((o) => normalizeText(o.label) === normalizeText(trimmedSearch))
 
   const hasValue = isMultiple ? toArray(props.value).length > 0 : Boolean(props.value)
 
