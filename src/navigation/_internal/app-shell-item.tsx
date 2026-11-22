@@ -72,7 +72,11 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
     "state-layer",
     "focus-visible:focus-outline",
     touch && "min-h-11",
-    active && "bg-accent text-accent-foreground",
+    // Inactive items recede to the supporting text colour; the active one
+    // takes the accent, a heavier weight and a marker in the functional blue.
+    active
+      ? "relative bg-accent font-semibold text-accent-foreground before:absolute before:left-0 before:top-1/2 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-inner before:bg-link"
+      : "text-muted-foreground hover:text-foreground",
     collapsed && "justify-center",
     item.disabled && "pointer-events-none opacity-50",
     depth > 0 && "pl-9",

@@ -18,12 +18,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground state-layer",
+        default:
+          "bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-pressed",
         destructive: "bg-destructive text-destructive-foreground state-layer",
         outline: "border border-input bg-card state-layer",
         secondary: "bg-secondary text-secondary-foreground state-layer",
         ghost: "state-layer",
-        link: "text-primary underline-offset-4 hover:underline",
+        link: "text-link underline-offset-4 hover:underline",
       },
     },
     defaultVariants: { variant: "default" },

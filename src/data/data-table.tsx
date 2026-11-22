@@ -62,7 +62,7 @@ function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElem
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b transition-colors hover:state-hover data-[state=selected]:bg-muted",
+        "border-b transition-colors hover:state-hover data-[state=selected]:bg-accent data-[state=selected]:text-accent-foreground",
         className,
       )}
       {...props}

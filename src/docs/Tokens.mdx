@@ -87,7 +87,7 @@ Input, Textarea, os inputs brasileiros, MultiInput, TimePicker, os selects de pa
 |---|---|
 | repouso | borda sólida `--input` |
 | hover (só com mouse, nunca desabilitado) | anel interno de 2px na cor da borda a 30% |
-| foco | borda `--primary` e anel interno de 2px da primária a 20% (`--field-focus-ring`; 25% no escuro) |
+| foco | borda `--ring` e anel interno de 2px dela a 20% (`--field-focus-ring`; 25% no escuro) |
 | erro (`border-destructive-text field-error`) | borda vermelha, também no foco; hover com o vermelho a 30% |
 
 O `field-states` vai no elemento que desenha a borda: a caixa, quando o `<input>` fica dentro dela, ou o próprio `<input>`. Com toque, a troca é instantânea (sem fade enquanto o teclado sobe).
@@ -105,6 +105,8 @@ Hover e pressed são uma **camada translúcida** da cor do texto do próprio con
 |---|---|
 | `state-layer` | hover (só em dispositivo com mouse) e pressed; nunca num controle desabilitado |
 | `state-hover` / `state-pressed` | a mesma camada para estados que não são o ponteiro: `focus:state-hover` num item de menu, `aria-selected:state-hover` num item de combobox |
+
+O **botão principal** é a exceção: em vez da camada, ele troca de tom (`--primary-hover` e `--primary-pressed`), porque 5% de branco sobre o marinho-950 quase não aparece. No claro, os dois tons caminham para o marinho das marcas.
 
 Pressed também encolhe o botão para 98% (`motion-safe:pointer-fine:active:scale-[0.98]`): só com mouse, nunca no toque nem com movimento reduzido. **Desabilitado** é `opacity-50` com cursor normal (`cursor-default`), sem reação a hover ou clique.
 

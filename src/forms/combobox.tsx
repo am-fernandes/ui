@@ -365,10 +365,10 @@ export function Combobox(props: ComboboxProps) {
                     >
                       <div
                         className={cn(
-                          "flex h-4 w-4 items-center justify-center rounded-inner border border-primary",
+                          "flex h-4 w-4 items-center justify-center rounded-inner border",
                           isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : "opacity-50 [&_svg]:invisible",
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-input [&_svg]:invisible",
                         )}
                       >
                         <Check className="h-3 w-3" />

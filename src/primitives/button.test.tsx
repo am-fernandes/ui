@@ -52,9 +52,13 @@ describe("Button", () => {
     expect(link).toHaveAttribute("data-slot", "button")
   })
 
-  it("uses the system focus ring and the state layer", () => {
+  it("uses the system focus ring, and its own hover and pressed tones on the primary", () => {
     render(<Button>x</Button>)
-    expect(screen.getByRole("button")).toHaveClass("focus-visible:focus-outline", "state-layer")
+    expect(screen.getByRole("button")).toHaveClass(
+      "focus-visible:focus-outline",
+      "hover:bg-primary-hover",
+      "active:bg-primary-pressed",
+    )
   })
 
   it("keeps the state layer on the other variants", () => {

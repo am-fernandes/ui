@@ -174,10 +174,10 @@
   --focus-outline-color: var(--ring);
   --focus-outline-offset: 3px;
 
-  /* Fields (Astryx field look): focus turns the border to the primary and adds
-     a 2px inner ring of it at 20%; hover adds the same ring in the border color
-     at 30%. Not the keyboard ring — a field shows it on any focus. */
-  --field-focus-ring: color-mix(in oklch, var(--primary) 20%, transparent);
+  /* Fields (Astryx field look): focus turns the border to the ring colour and
+     adds a 2px inner ring of it at 20%; hover adds the same ring in the border
+     color at 30%. Not the keyboard ring: a field shows it on any focus. */
+  --field-focus-ring: color-mix(in oklch, var(--ring) 20%, transparent);
 
   /* States — hover and pressed paint a translucent layer of the control's own
      text color over its fill, so one rule works on any variant. */
@@ -392,7 +392,7 @@
   --input: oklch(0.539 0.012 248); /* grafite-550 */
   --placeholder: var(--subtle-foreground);
   --focus-outline-color: var(--ring);
-  --field-focus-ring: color-mix(in oklch, var(--primary) 25%, transparent);
+  --field-focus-ring: color-mix(in oklch, var(--ring) 25%, transparent);
 
   /* seq inverts here: the dark end is "little". */
   --chart-1: oklch(0.641 0.11 249.2);
@@ -475,8 +475,8 @@
 /* ---- Fields -----------------------------------------------------------------
    The look of a text field, select or date trigger (Astryx Field): solid
    --input border; hover (pointer only, never disabled) adds a 2px inner ring
-   of it at 30%; any focus turns the border to --primary with a 2px inner ring
-   of the primary at 20% (25% in dark). `border-destructive-text field-error` keeps
+   of it at 30%; any focus turns the border to --ring with a 2px inner ring
+   of it at 20% (25% in dark). `border-destructive-text field-error` keeps
    the border red, focused too, and tints the hover ring. Put it on the element
    that draws the border (a shell with the <input> inside, or the input). */
 @utility field-states {
@@ -497,7 +497,7 @@
     }
   }
   &:focus-within {
-    border-color: var(--field-focus-border, var(--primary));
+    border-color: var(--field-focus-border, var(--ring));
     box-shadow: inset 0 0 0 2px var(--field-focus-ring);
   }
   @media (forced-colors: active) {
