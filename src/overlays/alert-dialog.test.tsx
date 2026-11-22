@@ -52,6 +52,28 @@ describe("AlertDialog", () => {
     expect(screen.getByTestId("extra")).toBeInTheDocument()
   })
 
+  it("scrolls the children only: title, description and buttons stay outside the body", () => {
+    render(
+      <AlertDialog open title="Arquivar?" description="Sai da fila." onConfirm={() => {}}>
+        <p>lista longa</p>
+      </AlertDialog>,
+    )
+    const content = document.querySelector('[data-slot="alert-dialog-content"]') as HTMLElement
+    const body = document.querySelector('[data-slot="alert-dialog-body"]') as HTMLElement
+    expect(content).toHaveClass("flex", "flex-col", "max-h-[calc(100dvh-2rem)]")
+    expect(body).toHaveClass("min-h-0", "overflow-y-auto")
+    expect(body).toHaveTextContent("lista longa")
+    expect(body).not.toContainElement(screen.getByText("Arquivar?"))
+    expect(body).not.toContainElement(screen.getByText("Sai da fila."))
+    expect(body).not.toContainElement(screen.getByRole("button", { name: "Confirmar" }))
+    expect(body).not.toContainElement(screen.getByRole("button", { name: "Cancelar" }))
+  })
+
+  it("renders no body wrapper without children", () => {
+    render(<AlertDialog open title="X" onConfirm={() => {}} />)
+    expect(document.querySelector('[data-slot="alert-dialog-body"]')).toBeNull()
+  })
+
   it("applies confirmVariant (destructive)", () => {
     render(<AlertDialog open title="X" onConfirm={() => {}} confirmVariant="destructive" />)
     expect(screen.getByRole("button", { name: "Confirmar" })).toHaveClass("bg-destructive")

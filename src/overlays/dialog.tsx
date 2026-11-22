@@ -6,6 +6,7 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { dialogContentBase, overlayBase } from "./_internal/animations"
+import { modalBodyClass } from "./_internal/modal-body"
 
 export interface DialogProps {
   /** Element that opens the dialog. Omit for fully controlled use. */
@@ -13,9 +14,13 @@ export interface DialogProps {
   /** Required for a11y (Radix logs a warning otherwise). */
   title: React.ReactNode
   description?: React.ReactNode
-  /** Body content (renders between header and footer). */
+  /**
+   * Body content, between the header and the footer. The dialog never grows
+   * past the screen: when the body is taller than the room left, it scrolls
+   * and title, description and footer stay in place.
+   */
   children?: React.ReactNode
-  /** Footer slot (renders flex-end justify with gap-2). */
+  /** Footer slot (renders flex-end justify with gap-2). Stays at the bottom. */
   footer?: React.ReactNode
   open?: boolean
   defaultOpen?: boolean
@@ -139,21 +144,25 @@ function Dialog({
         >
           <DialogPrimitive.Title
             data-slot="dialog-title"
-            className="text-lg font-semibold leading-none"
+            className="shrink-0 text-lg font-semibold leading-none"
           >
             {title}
           </DialogPrimitive.Title>
           {description ? (
             <DialogPrimitive.Description
               data-slot="dialog-description"
-              className="text-sm text-muted-foreground"
+              className="shrink-0 text-sm text-muted-foreground"
             >
               {description}
             </DialogPrimitive.Description>
           ) : null}
-          {children ? <div data-slot="dialog-body">{children}</div> : null}
+          {children ? (
+            <div data-slot="dialog-body" className={modalBodyClass(className)}>
+              {children}
+            </div>
+          ) : null}
           {footer ? (
-            <div data-slot="dialog-footer" className="flex justify-end gap-2">
+            <div data-slot="dialog-footer" className="flex shrink-0 justify-end gap-2">
               {footer}
             </div>
           ) : null}

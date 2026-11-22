@@ -6,6 +6,7 @@ import type * as React from "react"
 import { cn } from "@/lib/utils"
 import { Button, type ButtonProps } from "../primitives/button"
 import { dialogContentBase, overlayBase } from "./_internal/animations"
+import { modalBodyClass } from "./_internal/modal-body"
 
 export interface AlertDialogProps {
   trigger?: React.ReactNode
@@ -49,16 +50,32 @@ function AlertDialog({
           data-slot="alert-dialog-content"
           className={cn(dialogContentBase, "max-w-lg", className)}
         >
-          <AlertDialogPrimitive.Title className="text-lg font-semibold">
+          <AlertDialogPrimitive.Title
+            data-slot="alert-dialog-title"
+            className="shrink-0 text-lg font-semibold"
+          >
             {title}
           </AlertDialogPrimitive.Title>
           {description ? (
-            <AlertDialogPrimitive.Description className="text-sm text-muted-foreground">
+            <AlertDialogPrimitive.Description
+              data-slot="alert-dialog-description"
+              className="shrink-0 text-sm text-muted-foreground"
+            >
               {description}
             </AlertDialogPrimitive.Description>
           ) : null}
-          {children}
-          <div className="flex justify-end gap-2">
+          {children ? (
+            // The children used to be rows of the content itself, 16px apart:
+            // the body keeps that gap between them. `shrink-0` on each one makes
+            // a tall body scroll instead of squeezing its rows.
+            <div
+              data-slot="alert-dialog-body"
+              className={cn(modalBodyClass(className), "flex flex-col gap-4 *:shrink-0")}
+            >
+              {children}
+            </div>
+          ) : null}
+          <div data-slot="alert-dialog-footer" className="flex shrink-0 justify-end gap-2">
             <AlertDialogPrimitive.Cancel asChild>
               <Button variant="outline" className="min-w-24" onClick={onCancel}>
                 {cancelLabel}

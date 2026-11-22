@@ -163,3 +163,32 @@ export const WithBody: Story = {
     },
   },
 }
+
+export const LongBody: Story = {
+  render: () => (
+    <AlertDialog
+      trigger={<Button variant="outline">Arquivar 40 propostas</Button>}
+      title="Arquivar 40 propostas?"
+      description="As propostas abaixo saem da fila de atendimento."
+      confirmLabel="Arquivar"
+      onConfirm={() => console.log("archived")}
+    >
+      <ul className="flex flex-col gap-1 text-sm">
+        {Array.from({ length: 40 }).map((_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static story content
+          <li key={i}>
+            Proposta #{1000 + i} · Unidade {101 + i}
+          </li>
+        ))}
+      </ul>
+    </AlertDialog>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Conteúdo mais alto que a tela: o corpo rola e os botões “Cancelar” e a ação continuam à vista.",
+      },
+    },
+  },
+}

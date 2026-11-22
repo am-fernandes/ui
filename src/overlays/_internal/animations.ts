@@ -31,6 +31,12 @@ export const motionSheet =
 export const overlayBase =
   "fixed inset-0 z-[var(--z-overlay)] bg-black/80 duration-(--duration-medium-max) ease-(--ease-standard) data-[state=closed]:duration-(--duration-exit) data-[state=closed]:ease-(--ease-exit) data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
 
-/** Animação base do content centrado (Dialog/AlertDialog). */
+/**
+ * Animação base do content centrado (Dialog/AlertDialog).
+ *
+ * É uma coluna limitada à altura da tela (`100dvh` menos 1rem em cima e
+ * embaixo): título, descrição e rodapé guardam o tamanho e o corpo
+ * (`modalBodyClass`) é quem cede e rola.
+ */
 export const dialogContentBase =
-  "fixed left-[50%] top-[50%] z-[var(--z-modal)] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border-strong bg-popover p-6 text-popover-foreground duration-(--duration-medium-max) ease-(--ease-standard) data-[state=closed]:duration-(--duration-exit) data-[state=closed]:ease-(--ease-exit) data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-container"
+  "fixed left-[50%] top-[50%] z-[var(--z-modal)] flex max-h-[calc(100dvh-2rem)] w-full max-w-lg translate-x-[-50%] translate-y-[-50%] flex-col gap-4 border border-border-strong bg-popover p-6 text-popover-foreground duration-(--duration-medium-max) ease-(--ease-standard) data-[state=closed]:duration-(--duration-exit) data-[state=closed]:ease-(--ease-exit) data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-container"

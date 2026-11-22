@@ -167,4 +167,69 @@ describe("Dialog", () => {
     )
     expect(screen.getByText("Auto-aberto")).toBeInTheDocument()
   })
+
+  describe("tall content", () => {
+    it("scrolls the body only: title, description and footer stay outside it", () => {
+      render(
+        <Dialog
+          open
+          title="Nova proposta"
+          description="Dados do comprador"
+          footer={<button type="button">Salvar</button>}
+        >
+          <p>campos</p>
+        </Dialog>,
+      )
+      const content = document.querySelector('[data-slot="dialog-content"]') as HTMLElement
+      const body = document.querySelector('[data-slot="dialog-body"]') as HTMLElement
+      // The content is capped at the viewport and lays its parts out in a column…
+      expect(content).toHaveClass("flex", "flex-col", "max-h-[calc(100dvh-2rem)]")
+      // …where only the body gives way and scrolls.
+      expect(body).toHaveClass("min-h-0", "overflow-y-auto")
+      expect(body).toHaveTextContent("campos")
+      expect(body).not.toContainElement(screen.getByText("Nova proposta"))
+      expect(body).not.toContainElement(screen.getByText("Dados do comprador"))
+      expect(body).not.toContainElement(screen.getByRole("button", { name: "Salvar" }))
+      for (const slot of ["dialog-title", "dialog-description", "dialog-footer"]) {
+        expect(document.querySelector(`[data-slot="${slot}"]`)).toHaveClass("shrink-0")
+      }
+    })
+
+    it("lets the scrollbar reach the edge of the dialog with the default padding", () => {
+      render(
+        <Dialog open title="X">
+          body
+        </Dialog>,
+      )
+      expect(document.querySelector('[data-slot="dialog-body"]')).toHaveClass("-mx-6", "px-6")
+    })
+
+    it.each(["p-0", "overflow-hidden p-0", "px-8", "sm:p-8"])(
+      "keeps the body inside a dialog with its own padding (className=%s)",
+      (className) => {
+        render(
+          <Dialog open title="X" className={className}>
+            body
+          </Dialog>,
+        )
+        const body = document.querySelector('[data-slot="dialog-body"]')
+        expect(body).not.toHaveClass("-mx-6")
+        expect(body).not.toHaveClass("px-6")
+        // Still room for a focus ring (2px, 3px away) on every side.
+        expect(body).toHaveClass("-mx-1.5", "px-1.5", "-my-1.5", "py-1.5")
+      },
+    )
+
+    it.each(["py-2", "max-w-3xl", "gap-0", "placeholder-shown:opacity-50 peer-focus:block"])(
+      "does not take className=%s for a padding override",
+      (className) => {
+        render(
+          <Dialog open title="X" className={className}>
+            body
+          </Dialog>,
+        )
+        expect(document.querySelector('[data-slot="dialog-body"]')).toHaveClass("-mx-6", "px-6")
+      },
+    )
+  })
 })

@@ -235,10 +235,10 @@ export const LongContent: Story = {
     description: "Role para baixo para ver mais.",
     size: "lg",
     children: (
-      <div className="max-h-[60vh] overflow-y-auto pr-2 text-sm leading-relaxed">
+      <div className="text-sm leading-relaxed">
         {Array.from({ length: 12 }).map((_, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: static story content
-          <p key={i} className="mb-3">
+          <p key={i} className="mb-3 last:mb-0">
             <strong>Cláusula {i + 1}.</strong> Lorem ipsum dolor sit amet, consectetur adipiscing
             elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
             minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
@@ -258,7 +258,68 @@ export const LongContent: Story = {
     docs: {
       description: {
         story:
-          "Aplique `max-h-*` + `overflow-y-auto` no `children` para conteúdo longo com scroll interno.",
+          "O diálogo nunca passa da altura da tela: título e descrição ficam no topo, o rodapé fica embaixo e só o corpo rola. Não é preciso `max-h-*` nem `overflow-y-auto` no `children`.",
+      },
+    },
+  },
+}
+
+const proposalFields = [
+  "Nome completo",
+  "CPF",
+  "RG",
+  "Data de nascimento",
+  "Estado civil",
+  "Profissão",
+  "Renda mensal",
+  "E-mail",
+  "Telefone",
+  "CEP",
+  "Logradouro",
+  "Número",
+  "Complemento",
+  "Bairro",
+  "Cidade",
+  "UF",
+  "Empreendimento",
+  "Unidade",
+  "Valor da proposta",
+  "Entrada",
+  "Parcelas",
+  "Banco",
+  "Corretor",
+  "Observações",
+]
+
+export const LongForm: Story = {
+  args: {
+    trigger: <Button>Formulário longo</Button>,
+    title: "Nova proposta",
+    description: "Preencha os dados do comprador e da unidade.",
+    children: (
+      <form id="proposta" className="flex flex-col gap-3" onSubmit={(e) => e.preventDefault()}>
+        {proposalFields.map((label) => (
+          <Input key={label} label={label} />
+        ))}
+        <Button type="button" variant="outline" className="self-start">
+          Adicionar comprador
+        </Button>
+      </form>
+    ),
+    footer: (
+      <>
+        <Button variant="outline">Cancelar</Button>
+        <Button type="submit" form="proposta">
+          Salvar
+        </Button>
+      </>
+    ),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Formulário com 24 campos: num notebook ou num celular o corpo rola e “Salvar” continua à vista. O `form` fica no corpo e o botão do rodapé o envia por `form="id"`.',
       },
     },
   },

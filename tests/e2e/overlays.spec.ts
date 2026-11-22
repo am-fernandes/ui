@@ -1,7 +1,34 @@
-import { type Page, expect, test } from "@playwright/test"
+import { type Locator, type Page, expect, test } from "@playwright/test"
 import { expectNoA11yViolations } from "./a11y"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
+
+// Storybook's dev server may still be compiling on the first hit.
+async function gotoStory(page: Page, id: string, ready: string) {
+  await page.goto(story(id))
+  await expect(page.getByRole("button", { name: ready })).toBeVisible({ timeout: 15_000 })
+}
+
+type Box = { x: number; y: number; width: number; height: number }
+
+/**
+ * Waits for the open animation to end (a dialog zooms 95% → 100%, a sheet
+ * slides in) and returns the settled box. Fonts first: an overlay often brings
+ * a weight the page had not loaded yet, and the swap moves every box.
+ */
+async function settledBox(locator: Locator): Promise<Box> {
+  await locator.page().evaluate(() => document.fonts.ready.then(() => undefined))
+  let previous = ""
+  await expect
+    .poll(async () => {
+      const key = JSON.stringify(await locator.boundingBox())
+      const stable = key === previous
+      previous = key
+      return stable
+    })
+    .toBe(true)
+  return (await locator.boundingBox())!
+}
 
 test.describe("Dialog", () => {
   test("opens via trigger, traps focus, closes on Escape", async ({ page }) => {
@@ -39,6 +66,121 @@ test.describe("Dialog", () => {
     await page.keyboard.press("Escape")
     // Dialog must still be open.
     await expect(dialog).toBeVisible()
+  })
+
+  // A long form on a notebook, on a short window and on a phone: the dialog
+  // used to grow past the screen, with the title above it and the footer
+  // below it, and nothing scrolled.
+  for (const viewport of [
+    { width: 1280, height: 800 },
+    { width: 1280, height: 400 },
+    { width: 360, height: 640 },
+  ]) {
+    test(`tall content at ${viewport.width}×${viewport.height}: the dialog fits the screen and only the body scrolls`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport)
+      await gotoStory(page, "overlays-dialog--long-form", "Formulário longo")
+      await page.getByRole("button", { name: "Formulário longo" }).click()
+      const dialog = page.getByRole("dialog", { name: "Nova proposta" })
+      await expect(dialog).toBeVisible()
+
+      const box = await settledBox(dialog)
+      expect(box.y, "top edge inside the viewport").toBeGreaterThanOrEqual(0)
+      expect(box.y + box.height, "bottom edge inside the viewport").toBeLessThanOrEqual(
+        viewport.height,
+      )
+      expect(box.x).toBeGreaterThanOrEqual(0)
+      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
+
+      // Title and footer are on screen, inside the dialog.
+      const title = dialog.getByRole("heading", { name: "Nova proposta" })
+      const save = dialog.getByRole("button", { name: "Salvar" })
+      const titleBox = (await title.boundingBox())!
+      const saveBox = (await save.boundingBox())!
+      expect(titleBox.y).toBeGreaterThanOrEqual(box.y)
+      expect(saveBox.y + saveBox.height).toBeLessThanOrEqual(box.y + box.height)
+
+      // The body is the only thing that scrolls, with the wheel…
+      const body = dialog.locator('[data-slot="dialog-body"]')
+      const size = await body.evaluate((el) => ({
+        scroll: el.scrollHeight,
+        client: el.clientHeight,
+      }))
+      expect(size.scroll).toBeGreaterThan(size.client)
+      await body.hover()
+      await page.mouse.wheel(0, 300)
+      await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+      expect(await title.boundingBox()).toEqual(titleBox)
+      expect(await save.boundingBox()).toEqual(saveBox)
+
+      // …and with the keyboard: the last field comes into view above the footer.
+      const last = dialog.getByLabel("Observações")
+      await last.focus()
+      await expect
+        .poll(async () => {
+          const field = (await last.boundingBox())!
+          return field.y >= titleBox.y + titleBox.height && field.y + field.height <= saveBox.y
+        })
+        .toBe(true)
+    })
+  }
+
+  test("a control at the edge of the scrolling body keeps its whole focus ring", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 400 })
+    await gotoStory(page, "overlays-dialog--long-form", "Formulário longo")
+    await page.getByRole("button", { name: "Formulário longo" }).click()
+    const dialog = page.getByRole("dialog", { name: "Nova proposta" })
+    const body = dialog.locator('[data-slot="dialog-body"]')
+    const bodyBox = await settledBox(body)
+    // The ring is 2px wide and 3px away from the control. A scroll container
+    // clips at its own edge, so the body has to be wider than its content and
+    // has to stop short of the edge when it scrolls a control into view.
+    const ringFits = async (control: Locator) => {
+      const box = (await control.boundingBox())!
+      return (
+        box.x - 5 >= bodyBox.x &&
+        box.x + box.width + 5 <= bodyBox.x + bodyBox.width &&
+        box.y - 5 >= bodyBox.y &&
+        box.y + box.height + 5 <= bodyBox.y + bodyBox.height
+      )
+    }
+    // Last control, at the left edge and at the end of the scroll.
+    const add = dialog.getByRole("button", { name: "Adicionar comprador" })
+    await add.focus()
+    await expect.poll(() => ringFits(add)).toBe(true)
+    // Back up, one field at a time: each one lands with room above it.
+    for (let i = 0; i < 4; i++) await page.keyboard.press("Shift+Tab")
+    const field = dialog.getByLabel("Parcelas")
+    await expect(field).toBeFocused()
+    await expect.poll(() => ringFits(field)).toBe(true)
+  })
+})
+
+test.describe("AlertDialog", () => {
+  test("tall content: fits the screen, the body scrolls and the buttons stay in view", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 500 })
+    await gotoStory(page, "overlays-alertdialog--long-body", "Arquivar 40 propostas")
+    await page.getByRole("button", { name: "Arquivar 40 propostas" }).click()
+    const dialog = page.getByRole("alertdialog", { name: "Arquivar 40 propostas?" })
+    await expect(dialog).toBeVisible()
+    const box = await settledBox(dialog)
+    expect(box.y).toBeGreaterThanOrEqual(0)
+    expect(box.y + box.height).toBeLessThanOrEqual(500)
+
+    const confirm = dialog.getByRole("button", { name: "Arquivar" })
+    const confirmBox = (await confirm.boundingBox())!
+    expect(confirmBox.y + confirmBox.height).toBeLessThanOrEqual(box.y + box.height)
+
+    const body = dialog.locator('[data-slot="alert-dialog-body"]')
+    await body.hover()
+    await page.mouse.wheel(0, 300)
+    await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+    expect(await confirm.boundingBox()).toEqual(confirmBox)
   })
 })
 
@@ -79,12 +221,6 @@ test.describe("Popover", () => {
     await expect(trigger).toBeFocused()
   })
 })
-
-// Storybook's dev server may still be compiling on the first hit.
-async function gotoStory(page: Page, id: string, ready: string) {
-  await page.goto(story(id))
-  await expect(page.getByRole("button", { name: ready })).toBeVisible({ timeout: 15_000 })
-}
 
 test.describe("DropdownMenu", () => {
   test("opens below the trigger, aligned to its start, and returns focus on Escape", async ({
