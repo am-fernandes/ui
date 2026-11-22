@@ -83,6 +83,7 @@ export {
 } from "./lib/date"
 export { formatCount } from "./lib/format-count"
 export { formatCEP, formatCNPJ, formatCPF, formatPhone } from "./lib/format"
+export type { RenderLink, RenderLinkProps } from "./lib/render-link"
 export { bytes, gb, kb, mb } from "./lib/size"
 export { compareText, matchesSearch, normalizeText } from "./lib/text"
 export {

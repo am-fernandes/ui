@@ -255,6 +255,10 @@
       "types": "./dist/lib/format-count.d.ts",
       "import": "./dist/lib/format-count.js"
     },
+    "./lib/render-link": {
+      "types": "./dist/lib/render-link.d.ts",
+      "import": "./dist/lib/render-link.js"
+    },
     "./lib/size": {
       "types": "./dist/lib/size.d.ts",
       "import": "./dist/lib/size.js"
