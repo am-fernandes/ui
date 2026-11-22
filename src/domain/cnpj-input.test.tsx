@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
@@ -109,5 +110,31 @@ describe("CNPJInput", () => {
     render(<CNPJInput value="" onValueChange={vi.fn()} />)
     const input = screen.getByRole("textbox") as HTMLInputElement
     expect(input).toHaveAttribute("maxLength", "18")
+  })
+
+  describe("edição no meio do valor", () => {
+    it("Backspace no meio apaga aquele dígito e o próximo entra no mesmo ponto", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCNPJInput initial="11222333000181" />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "11.2|22.333/0001-81"
+      await user.type(input, "{Backspace}", { initialSelectionStart: 4, initialSelectionEnd: 4 })
+      expect(input).toHaveValue("11.223.330/0018-1")
+      // Depois do ponto: o texto à direita do cursor não mudou.
+      expect(input.selectionStart).toBe(3)
+      await user.keyboard("2")
+      expect(input).toHaveValue("11.222.333/0001-81")
+      expect(input.selectionStart).toBe(4)
+    })
+
+    it("Backspace logo depois da barra apaga o dígito anterior a ela", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCNPJInput initial="11222333000181" />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "11.222.333/|0001-81"
+      await user.type(input, "{Backspace}", { initialSelectionStart: 11, initialSelectionEnd: 11 })
+      expect(input).toHaveValue("11.222.330/0018-1")
+      expect(input.selectionStart).toBe(9)
+    })
   })
 })

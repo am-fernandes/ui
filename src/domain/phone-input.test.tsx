@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
@@ -126,5 +127,39 @@ describe("PhoneInput", () => {
     render(<PhoneInput value="" onValueChange={vi.fn()} />)
     const input = screen.getByRole("textbox") as HTMLInputElement
     expect(input).toHaveAttribute("inputMode", "tel")
+  })
+
+  describe("edição no meio do valor", () => {
+    it("Backspace no meio apaga aquele dígito e o próximo entra no mesmo ponto", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPhoneInput initial="11987654321" />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "(11) 98|765-4321"
+      await user.type(input, "{Backspace}", { initialSelectionStart: 7, initialSelectionEnd: 7 })
+      expect(input).toHaveValue("(11) 9765-4321")
+      expect(input.selectionStart).toBe(6)
+      await user.keyboard("8")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(input.selectionStart).toBe(7)
+    })
+
+    it("Backspace depois do espaço do DDD apaga o segundo dígito do DDD", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPhoneInput initial="11987654321" />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "(11) |98765-4321": antes do cursor estão ")" e " ".
+      await user.type(input, "{Backspace}", { initialSelectionStart: 5, initialSelectionEnd: 5 })
+      expect(input).toHaveValue("(19) 8765-4321")
+      expect(input.selectionStart).toBe(2)
+    })
+
+    it("digitar o primeiro dígito deixa o cursor depois dele, não antes do parêntese", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPhoneInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.type(input, "119")
+      expect(input).toHaveValue("(11) 9")
+      expect(input.selectionStart).toBe(6)
+    })
   })
 })

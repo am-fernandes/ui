@@ -1,25 +1,14 @@
 "use client"
 
-import type * as React from "react"
+import { type MaskSpec, MaskedInput, type MaskedInputProps } from "./_internal/masked-input"
 
-import { cn } from "@/lib/utils"
-import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
-import { useFieldIds } from "../primitives/_internal/use-field-ids"
-
-interface CPFInputProps extends Omit<React.ComponentProps<"input">, "value" | "onChange" | "type"> {
+interface CPFInputProps extends MaskedInputProps {
   /**
    * O CPF como **dígitos limpos** (sem máscara).
    * Pode conter de 0 a 11 dígitos enquanto o usuário digita.
    * Ex.: `"12345678909"`.
    */
   value: string
-  onValueChange: (value: string) => void
-  label?: React.ReactNode
-  description?: React.ReactNode
-  error?: string
-  labelPosition?: LabelPosition
-  required?: boolean
-  ref?: React.Ref<HTMLInputElement>
 }
 
 /** Aplica a máscara `000.000.000-00` sobre dígitos limpos. */
@@ -31,68 +20,22 @@ function maskCPF(digits: string): string {
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9, 11)}`
 }
 
-function CPFInput({
-  className,
-  value,
-  onValueChange,
-  disabled,
-  label,
-  description,
-  error,
-  labelPosition,
-  required,
-  id,
-  ref,
-  ...props
-}: CPFInputProps) {
-  const ids = useFieldIds(id)
-  const hasError = error != null && error !== ""
-  const hasDescription = description != null && description !== ""
-  const cleaned = value.replace(/\D/g, "").slice(0, 11)
-  const display = maskCPF(cleaned)
+const cpfSpec: MaskSpec = {
+  maxLength: 11,
+  filter: (text) => text.replace(/\D/g, ""),
+  mask: maskCPF,
+}
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 11)
-    onValueChange(digits)
-  }
-
+function CPFInput(props: CPFInputProps) {
   return (
-    <FieldShell
-      controlId={ids.controlId}
-      labelId={ids.labelId}
-      descriptionId={ids.descriptionId}
-      errorId={ids.errorId}
-      label={label}
-      description={description}
-      error={error}
-      labelPosition={labelPosition}
-      required={required}
-      disabled={disabled}
-    >
-      <div className="relative" data-slot="cpf-input">
-        <input
-          ref={ref}
-          id={ids.controlId}
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          maxLength={14}
-          aria-invalid={hasError ? true : undefined}
-          aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
-          required={required}
-          aria-required={required ? true : undefined}
-          className={cn(
-            "flex w-full rounded-element border border-input bg-card px-3 py-2.5 text-sm tabular-nums field-states disabled:cursor-default",
-            hasError && "border-destructive-text field-error",
-            className,
-          )}
-          value={display}
-          onChange={handleChange}
-          disabled={disabled}
-          {...props}
-        />
-      </div>
-    </FieldShell>
+    <MaskedInput
+      spec={cpfSpec}
+      slot="cpf-input"
+      inputMode="numeric"
+      autoComplete="off"
+      maxLength={14}
+      {...props}
+    />
   )
 }
 

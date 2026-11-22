@@ -1,25 +1,14 @@
 "use client"
 
-import type * as React from "react"
+import { type MaskSpec, MaskedInput, type MaskedInputProps } from "./_internal/masked-input"
 
-import { cn } from "@/lib/utils"
-import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
-import { useFieldIds } from "../primitives/_internal/use-field-ids"
-
-interface CEPInputProps extends Omit<React.ComponentProps<"input">, "value" | "onChange" | "type"> {
+interface CEPInputProps extends MaskedInputProps {
   /**
    * O CEP como **dígitos limpos** (sem máscara).
    * Pode conter de 0 a 8 dígitos enquanto o usuário digita.
    * Ex.: `"01310100"`.
    */
   value: string
-  onValueChange: (value: string) => void
-  label?: React.ReactNode
-  description?: React.ReactNode
-  error?: string
-  labelPosition?: LabelPosition
-  required?: boolean
-  ref?: React.Ref<HTMLInputElement>
 }
 
 /** Aplica a máscara `00000-000` sobre dígitos limpos. */
@@ -29,68 +18,22 @@ function maskCEP(digits: string): string {
   return `${d.slice(0, 5)}-${d.slice(5, 8)}`
 }
 
-function CEPInput({
-  className,
-  value,
-  onValueChange,
-  disabled,
-  label,
-  description,
-  error,
-  labelPosition,
-  required,
-  id,
-  ref,
-  ...props
-}: CEPInputProps) {
-  const ids = useFieldIds(id)
-  const hasError = error != null && error !== ""
-  const hasDescription = description != null && description !== ""
-  const cleaned = value.replace(/\D/g, "").slice(0, 8)
-  const display = maskCEP(cleaned)
+const cepSpec: MaskSpec = {
+  maxLength: 8,
+  filter: (text) => text.replace(/\D/g, ""),
+  mask: maskCEP,
+}
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 8)
-    onValueChange(digits)
-  }
-
+function CEPInput(props: CEPInputProps) {
   return (
-    <FieldShell
-      controlId={ids.controlId}
-      labelId={ids.labelId}
-      descriptionId={ids.descriptionId}
-      errorId={ids.errorId}
-      label={label}
-      description={description}
-      error={error}
-      labelPosition={labelPosition}
-      required={required}
-      disabled={disabled}
-    >
-      <div className="relative" data-slot="cep-input">
-        <input
-          ref={ref}
-          id={ids.controlId}
-          type="text"
-          inputMode="numeric"
-          autoComplete="postal-code"
-          maxLength={9}
-          aria-invalid={hasError ? true : undefined}
-          aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
-          required={required}
-          aria-required={required ? true : undefined}
-          className={cn(
-            "flex w-full rounded-element border border-input bg-card px-3 py-2.5 text-sm tabular-nums field-states disabled:cursor-default",
-            hasError && "border-destructive-text field-error",
-            className,
-          )}
-          value={display}
-          onChange={handleChange}
-          disabled={disabled}
-          {...props}
-        />
-      </div>
-    </FieldShell>
+    <MaskedInput
+      spec={cepSpec}
+      slot="cep-input"
+      inputMode="numeric"
+      autoComplete="postal-code"
+      maxLength={9}
+      {...props}
+    />
   )
 }
 

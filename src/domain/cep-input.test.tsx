@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
@@ -109,5 +110,30 @@ describe("CEPInput", () => {
     render(<CEPInput value="" onValueChange={vi.fn()} />)
     const input = screen.getByRole("textbox") as HTMLInputElement
     expect(input).toHaveAttribute("maxLength", "9")
+  })
+
+  describe("edição no meio do valor", () => {
+    it("Backspace no meio apaga aquele dígito e o próximo entra no mesmo ponto", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCEPInput initial="01310100" />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "01|310-100"
+      await user.type(input, "{Backspace}", { initialSelectionStart: 2, initialSelectionEnd: 2 })
+      expect(input).toHaveValue("03101-00")
+      expect(input.selectionStart).toBe(1)
+      await user.keyboard("1")
+      expect(input).toHaveValue("01310-100")
+      expect(input.selectionStart).toBe(2)
+    })
+
+    it("Backspace logo depois do hífen apaga o dígito anterior a ele", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCEPInput initial="01310100" />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "01310-|100"
+      await user.type(input, "{Backspace}", { initialSelectionStart: 6, initialSelectionEnd: 6 })
+      expect(input).toHaveValue("01311-00")
+      expect(input.selectionStart).toBe(4)
+    })
   })
 })
