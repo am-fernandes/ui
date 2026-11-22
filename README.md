@@ -49,6 +49,7 @@ Helpers utilitários (BRL em centavos, tamanhos em bytes, `cn`, hooks) estão do
 ## Filosofia
 
 - **Claro e escuro, flat** — sem shadows; o tema escuro liga com a classe `dark` no `<html>`.
+- **Paleta do grupo, sóbria** — grafite e o marinho que AM Fernandes e Ponto Forte dividem; cada status tem um fundo forte só, e as cores são conferidas também sob daltonismo simulado (`bun run audit:contrast`).
 - **Raio por papel em três níveis** (4, 8 e 12px), densidade enterprise (`text-sm` no body, `py-3` nos inputs).
 - **WCAG AA** de contraste e foco; cursor pointer em tudo que é clicável.
 

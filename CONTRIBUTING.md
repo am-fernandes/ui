@@ -226,15 +226,17 @@ Definidos em `src/styles/tokens.css` dentro de `@theme inline`. Os mais usados:
 | `--z-popover` | 60 | Popover, Combobox, DateInput, DateRangePicker. |
 | `--z-tooltip` | 70 | Tooltip. |
 | `--z-toast` | 80 | Toaster (Sonner). |
-| `--color-primary` | preto | CTA primário. |
-| `--color-destructive` | vermelho ≥4.5:1 | Erros, ações destrutivas. |
-| `--color-success` / `--color-warning` / `--color-info` | WCAG AA | Estados não-erro. |
-| `--color-muted-foreground` | — | Texto secundário (description, captions). |
-| `--color-input` / `--color-border` | — | Borda e placeholder de fields. |
+| `--color-background` / `--color-card` / `--color-popover` | página / superfície / camada flutuante | A página é só a área de conteúdo; card, campo e botão outline pintam `card`; menu e dialog, `popover`. |
+| `--color-primary` | marinho-950 | CTA primário, checkbox marcado. Hover e pressed: `--color-primary-hover` e `--color-primary-pressed`. |
+| `--color-link` / `--color-ring` | azul funcional | Link, anel de foco, marcador do item ativo. |
+| `--color-destructive` | fundo forte | Erros, ações destrutivas. Texto de erro sobre superfície: `--color-destructive-text`. |
+| `--color-success` / `--color-warning` / `--color-info` | fundo forte | Estados não-erro. Sempre com o `-foreground` do token; não existe versão de fundo claro. |
+| `--color-muted-foreground` / `--color-subtle-foreground` | — | Texto de apoio (description, captions) e terceiro nível (placeholder, dica). |
+| `--color-input` / `--color-border` / `--color-border-strong` | — | Borda de campo, divisor e moldura. |
 | `--font-sans` | Geist | Texto. |
 | `--font-mono` | Geist Mono | Campos numéricos, código, IDs (`tabular-nums`). |
 
-Auditoria de contraste: `bun scripts/oklch-contrast.ts` (utilitário OKLCH → WCAG, ver commit `19281a9`).
+Auditoria de cor: `bun run audit:contrast` (contraste WCAG dos pares que os componentes desenham e distância entre status, categorias e séries de gráfico sob daltonismo simulado; falha se algum não passar).
 
 ---
 
