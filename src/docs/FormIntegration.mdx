@@ -39,6 +39,8 @@ O prop `error: string` em todos os campos é **puramente visual**: ele pinta a b
 
 ## Receita com react-hook-form
 
+> **Use `noValidate` no `<form>`.** A prop `required` dos campos desenha o asterisco e marca o campo como obrigatório para o navegador. Sem `noValidate`, o navegador barra o envio com o balão dele antes de o react-hook-form rodar, e a mensagem que você escreveu em `rules` nunca aparece. Com `noValidate`, quem valida é a sua regra e quem mostra o erro é o campo da lib (`error`), no idioma e no visual do produto. A story **Form Integration / RHF Form / Envio vazio mostra os erros da lib** cobre esse fluxo.
+
 ### Setup mínimo
 
 ```tsx
@@ -60,7 +62,7 @@ export function ContatoForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
       <Input
         label="Nome"
         required
@@ -469,7 +471,7 @@ export function PropostaForm() {
     })
 
   return (
-    <form onSubmit={handleSubmit((data) => console.log(data))}>
+    <form noValidate onSubmit={handleSubmit((data) => console.log(data))}>
       <Input
         label="E-mail"
         {...register("email")}
