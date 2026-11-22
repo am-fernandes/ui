@@ -7,9 +7,15 @@ export function formatCPF(cpf: string): string {
   return digitsOnly(cpf).replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
 }
 
-/** "12345678000190" → "12.345.678/0001-90" */
+/**
+ * "12345678000190" → "12.345.678/0001-90"
+ * "12ABC34501DE35" → "12.ABC.345/01DE-35" (CNPJ alfanumérico, letras em maiúsculas)
+ */
 export function formatCNPJ(cnpj: string): string {
-  return digitsOnly(cnpj).replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5")
+  return cnpj
+    .replace(/[^0-9a-z]/gi, "")
+    .toUpperCase()
+    .replace(/([0-9A-Z]{2})([0-9A-Z]{3})([0-9A-Z]{3})([0-9A-Z]{4})(\d{2})/, "$1.$2.$3/$4-$5")
 }
 
 /**

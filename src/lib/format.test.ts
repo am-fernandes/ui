@@ -20,6 +20,20 @@ describe("formatCNPJ", () => {
   it("handles already masked input", () => {
     expect(formatCNPJ("12.345.678/0001-90")).toBe("12.345.678/0001-90")
   })
+
+  it("formata o CNPJ alfanumérico", () => {
+    expect(formatCNPJ("12ABC34501DE35")).toBe("12.ABC.345/01DE-35")
+    expect(formatCNPJ("12.ABC.345/01DE-35")).toBe("12.ABC.345/01DE-35")
+  })
+
+  it("passa letras para maiúsculas", () => {
+    expect(formatCNPJ("12abc34501de35")).toBe("12.ABC.345/01DE-35")
+  })
+
+  it("devolve o valor limpo quando ainda não há 14 caracteres", () => {
+    expect(formatCNPJ("12.ABC.3")).toBe("12ABC3")
+    expect(formatCNPJ("1234")).toBe("1234")
+  })
 })
 
 describe("formatPhone", () => {

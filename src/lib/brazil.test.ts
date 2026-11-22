@@ -63,6 +63,50 @@ describe("isValidCNPJ", () => {
   it("rejects an empty string", () => {
     expect(isValidCNPJ("")).toBe(false)
   })
+
+  // CNPJ alfanumérico (IN RFB 2.229/2024, em vigor desde julho de 2026): as
+  // doze primeiras posições aceitam letras maiúsculas e cada caractere vale o
+  // código ASCII menos 48 no mesmo módulo 11.
+  describe("alfanumérico", () => {
+    it("aceita o exemplo oficial da Receita, com e sem máscara", () => {
+      expect(isValidCNPJ("12.ABC.345/01DE-35")).toBe(true)
+      expect(isValidCNPJ("12ABC34501DE35")).toBe(true)
+    })
+
+    it("aceita outras raízes com letras (DV conferido à mão)", () => {
+      // A=17 em todas as doze posições: soma 17×58=986, resto 7, DV1=4;
+      // soma 17×62+4×2=1062, resto 6, DV2=5.
+      expect(isValidCNPJ("AAAAAAAAAAAA45")).toBe(true)
+      // Só a primeira posição com letra, Z=42: soma 42×5+1×2=212, resto 3,
+      // DV1=8; soma 42×6+1×3+8×2=271, resto 7, DV2=4.
+      expect(isValidCNPJ("Z0.000.000/0001-84")).toBe(true)
+      expect(isValidCNPJ("Z0000000000100")).toBe(false)
+    })
+
+    it("trata letra minúscula como a maiúscula", () => {
+      expect(isValidCNPJ("12.abc.345/01de-35")).toBe(true)
+    })
+
+    it("rejeita DV errado", () => {
+      expect(isValidCNPJ("12.ABC.345/01DE-36")).toBe(false)
+      expect(isValidCNPJ("12.ABC.345/01DE-45")).toBe(false)
+      expect(isValidCNPJ("12.ABD.345/01DE-35")).toBe(false)
+    })
+
+    it("rejeita letra nos dois dígitos verificadores", () => {
+      expect(isValidCNPJ("12ABC34501DE3A")).toBe(false)
+      expect(isValidCNPJ("12ABC34501DEA5")).toBe(false)
+    })
+
+    it("rejeita tamanho diferente de 14", () => {
+      expect(isValidCNPJ("12ABC34501DE3")).toBe(false)
+      expect(isValidCNPJ("12ABC34501DE355")).toBe(false)
+    })
+
+    it("não conta letra de rótulo como parte do número", () => {
+      expect(isValidCNPJ("CNPJ 12.ABC.345/01DE-35")).toBe(false)
+    })
+  })
 })
 
 describe("isValidCEP", () => {
