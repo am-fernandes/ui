@@ -4,22 +4,27 @@ const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
 test.describe("CurrencyInput", () => {
   test("typing digits formats to BRL display", async ({ page }) => {
-    await page.goto(story("domain-currencyinput--controlled"))
-    const input = page.getByRole("textbox").first()
-    await input.fill("")
-    await input.type("123456")
+    // `Playground` has no play function; `Default` types by itself and would race.
+    await page.goto(story("domain-currencyinput--playground"))
+    const input = page.getByRole("textbox", { name: /Valor do contrato/ })
+    await expect(input).toHaveValue("0,00")
+    // A scripted focus leaves the caret at the start; a person types at the end.
+    await input.press("End")
+    await input.pressSequentially("123456")
     // Display formatted as 1.234,56
     await expect(input).toHaveValue("1.234,56")
   })
 })
 
 test.describe("PercentageInput", () => {
-  test("clamps value above max", async ({ page }) => {
-    await page.goto(story("domain-percentageinput--clamp-demo"))
-    const input = page.getByRole("textbox").first()
-    await input.fill("")
-    await input.type("99999")
-    // Default max=100 → clamp to 100,00
+  test("never goes above max", async ({ page }) => {
+    await page.goto(story("domain-percentageinput--default"))
+    const input = page.getByRole("textbox", { name: /Comissão/ })
+    await expect(input).toHaveValue("0,00")
+    await input.press("End")
+    await input.pressSequentially("99999")
+    // Default max=100: the field never shows more than 100,00.
+    await expect(input).not.toHaveValue("0,00")
     const value = await input.inputValue()
     const numeric = Number.parseFloat(value.replace(".", "").replace(",", "."))
     expect(numeric).toBeLessThanOrEqual(100)
