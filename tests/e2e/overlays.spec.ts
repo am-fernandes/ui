@@ -5,21 +5,30 @@ const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
 test.describe("Dialog", () => {
   test("opens via trigger, traps focus, closes on Escape", async ({ page }) => {
-    await page.goto(story("overlays-dialog--default"))
-    await page.getByRole("button", { name: "Abrir dialog" }).click()
-    const dialog = page.getByRole("dialog")
+    // Not the Default story: its `play` function opens and closes the dialog
+    // by itself and would race with the steps below.
+    await gotoStory(page, "overlays-dialog--with-footer", "Editar com footer")
+    const trigger = page.getByRole("button", { name: "Editar com footer" })
+    await trigger.click()
+    const dialog = page.getByRole("dialog", { name: "Editar perfil" })
     await expect(dialog).toBeVisible()
 
-    // Focus is inside dialog after open.
-    const firstInput = dialog.getByLabel("Nome")
-    await expect(firstInput).toBeVisible()
+    // Focus moves to the first field of the dialog.
+    await expect(dialog.getByLabel("Nome")).toBeFocused()
 
-    // Tab should cycle within the dialog (focus trap).
-    await page.keyboard.press("Tab")
-    await page.keyboard.press("Tab")
-    // Pressing Escape closes.
+    // Tab cycles inside the dialog (focus trap): it never reaches the page.
+    for (let i = 0; i < 6; i++) {
+      await page.keyboard.press("Tab")
+      expect(
+        await dialog.evaluate((el) => el.contains(document.activeElement)),
+        `focus stays in the dialog after ${i + 1} Tab(s)`,
+      ).toBe(true)
+    }
+
+    // Escape closes and focus goes back to the trigger.
     await page.keyboard.press("Escape")
-    await expect(dialog).not.toBeVisible()
+    await expect(dialog).toHaveCount(0)
+    await expect(trigger).toBeFocused()
   })
 
   test("dismissible=false blocks Escape and overlay click", async ({ page }) => {
@@ -34,36 +43,40 @@ test.describe("Dialog", () => {
 })
 
 test.describe("Tooltip", () => {
+  // The Sides story, not Default: Default has a `play` function that focuses
+  // the trigger, so its tooltip is already open (and held open) by focus.
   test("appears on hover and disappears on mouse leave", async ({ page }) => {
-    await page.goto(story("overlays-tooltip--default"))
-    const trigger = page.getByRole("button").first()
-    await trigger.hover()
-    // Tooltip is portaled; query inside the page body
-    await expect(page.getByRole("tooltip")).toBeVisible({ timeout: 2000 })
-    // Move mouse away
-    await page.mouse.move(0, 0)
-    await expect(page.getByRole("tooltip")).not.toBeVisible({ timeout: 2000 })
+    await gotoStory(page, "overlays-tooltip--sides", "top")
+    await page.getByRole("button", { name: "top", exact: true }).hover()
+    await expect(page.getByRole("tooltip", { name: "side=top" })).toBeVisible()
+    // Several moves, like a real mouse: Radix closes on the first move past
+    // the trigger and the "grace area" that leads to the tooltip.
+    await page.mouse.move(0, 0, { steps: 10 })
+    await expect(page.getByRole("tooltip")).toHaveCount(0)
   })
 
-  test("appears on keyboard focus", async ({ page }) => {
-    await page.goto(story("overlays-tooltip--default"))
-    const trigger = page.getByRole("button").first()
-    await trigger.focus()
-    await expect(page.getByRole("tooltip")).toBeVisible({ timeout: 2000 })
+  test("appears on keyboard focus and Escape dismisses it", async ({ page }) => {
+    await gotoStory(page, "overlays-tooltip--sides", "top")
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("button", { name: "top", exact: true })).toBeFocused()
+    await expect(page.getByRole("tooltip", { name: "side=top" })).toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(page.getByRole("tooltip")).toHaveCount(0)
   })
 })
 
 test.describe("Popover", () => {
-  test("opens via trigger and closes on Escape", async ({ page }) => {
-    await page.goto(story("overlays-popover--default"))
-    await page
-      .getByRole("button", { name: /abrir|open|filtrar/i })
-      .first()
-      .click()
-    // Content renders via portal — assert visible content present
-    await expect(page.getByText(/conte[uú]do/i).first()).toBeVisible({ timeout: 2000 })
+  test("opens via trigger and closes on Escape, returning focus", async ({ page }) => {
+    // Not the Default story: its `play` function clicks the trigger itself.
+    await gotoStory(page, "overlays-popover--align-start", "align=start")
+    const trigger = page.getByRole("button", { name: "align=start" })
+    await trigger.click()
+    const popover = page.getByRole("dialog", { name: "Popover alinhado ao início" })
+    await expect(popover).toBeVisible()
+    await expect(popover).toContainText("Alinhado ao início do trigger.")
     await page.keyboard.press("Escape")
-    await expect(page.getByText(/conte[uú]do/i).first()).not.toBeVisible({ timeout: 2000 })
+    await expect(popover).toHaveCount(0)
+    await expect(trigger).toBeFocused()
   })
 })
 
