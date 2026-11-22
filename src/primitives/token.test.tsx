@@ -69,7 +69,7 @@ describe("Token", () => {
   it("merges className and forwards the ref", () => {
     const ref = React.createRef<HTMLSpanElement>()
     const { container } = render(<Token label="X" className="ml-2" ref={ref} />)
-    expect(root(container)).toHaveClass("ml-2", "rounded-md")
+    expect(root(container)).toHaveClass("ml-2", "rounded-inner")
     expect(ref.current).toBe(root(container))
   })
 

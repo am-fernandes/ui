@@ -48,7 +48,7 @@ function Collapsible({
         <CollapsiblePrimitive.Trigger
           data-slot="collapsible-trigger"
           className={cn(
-            "flex w-full items-center justify-between rounded-md py-2 text-sm font-medium",
+            "flex w-full items-center justify-between rounded-element py-2 text-sm font-medium",
             "cursor-pointer state-layer focus-visible:focus-outline",
             triggerSide === "left" && "flex-row-reverse",
           )}

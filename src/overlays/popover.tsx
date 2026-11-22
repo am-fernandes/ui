@@ -74,7 +74,7 @@ function Popover({
           onFocusOutside={onFocusOutside}
           onEscapeKeyDown={onEscapeKeyDown}
           className={cn(
-            "z-(--z-popover) w-72 rounded-md border bg-popover p-4 text-popover-foreground outline-none",
+            "z-(--z-popover) w-72 rounded-container border bg-popover p-4 text-popover-foreground outline-none",
             motionPopover,
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",

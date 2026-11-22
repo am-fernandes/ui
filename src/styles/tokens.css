@@ -6,19 +6,35 @@
    that should be dark). Components need no `dark:` classes; the tokens flip. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Radius — three levels, by role (Foundations/Radius in Storybook):
+   inner      4px  parts inside a control and small pieces (checkbox box, tab,
+                   segment, badge, token, chip in a field)
+   element    8px  the control itself (button, field, menu item, nav item)
+   container 12px  surfaces that group or float (card, dialog, popover, menu)
+   They step by 4px, like the default inner padding (p-1), so nesting closes
+   exactly: a 12px menu with p-1 holds 8px items; an 8px track holds 4px tabs.
+   Use `rounded-inner`, `rounded-element` and `rounded-container`. */
+@theme {
+  --radius-inner: 4px;
+  --radius-element: 8px;
+  --radius-container: 12px;
+}
+
 @theme inline {
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     "Liberation Mono", monospace;
 
-  --radius-sm: var(--radius);
-  --radius-md: var(--radius);
-  --radius-lg: var(--radius);
-  --radius-xl: var(--radius);
-  --radius-2xl: var(--radius);
-  --radius-3xl: var(--radius);
-  --radius-4xl: var(--radius);
+  /* Tailwind's own scale lands on the three levels, so no other radius exists. */
+  --radius-xs: var(--radius-inner);
+  --radius-sm: var(--radius-inner);
+  --radius-md: var(--radius-element);
+  --radius-lg: var(--radius-container);
+  --radius-xl: var(--radius-container);
+  --radius-2xl: var(--radius-container);
+  --radius-3xl: var(--radius-container);
+  --radius-4xl: var(--radius-container);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -120,7 +136,8 @@
 
 :root {
   color-scheme: light;
-  --radius: 0.25rem;
+  /** @deprecated Use --radius-element (or the level that fits). */
+  --radius: var(--radius-element);
 
   /* Motion — durations by visual weight (values from Astryx). fast: hover,
      menus, tooltips, collapsibles; medium: popovers, sheets, dialogs; slow:

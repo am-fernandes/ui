@@ -18,7 +18,7 @@ const alertVariants = cva(
   // so the old direct-child selector never matched and lucide icons
   // rendered at their intrinsic 24px — visually off centre from the
   // 16px title baseline.
-  "relative w-full rounded-lg border p-4 [&_svg]:size-4 [&_svg]:shrink-0",
+  "relative w-full rounded-container border p-4 [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {

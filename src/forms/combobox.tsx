@@ -215,14 +215,14 @@ export function Combobox(props: ComboboxProps) {
             <Badge
               key={val}
               variant="outline"
-              className="rounded-md px-1.5 py-0.5 font-normal bg-muted text-foreground border-border inline-flex items-center gap-1"
+              className="rounded-inner px-1.5 py-0.5 font-normal bg-muted text-foreground border-border inline-flex items-center gap-1"
               aria-label={labelText}
             >
               {labelText}
               <button
                 type="button"
                 aria-label={`Remover ${labelText}`}
-                className="rounded-sm cursor-pointer state-layer focus-visible:focus-outline"
+                className="rounded-inner cursor-pointer state-layer focus-visible:focus-outline"
                 onClick={(e) => handleRemoveValue(val, e)}
               >
                 <X className="h-3 w-3 text-muted-foreground" />
@@ -233,7 +233,7 @@ export function Combobox(props: ComboboxProps) {
         {remainingCount > 0 ? (
           <Badge
             variant="outline"
-            className="rounded-md px-1.5 py-0.5 font-normal bg-muted text-foreground border-border"
+            className="rounded-inner px-1.5 py-0.5 font-normal bg-muted text-foreground border-border"
           >
             +{remainingCount}
           </Badge>
@@ -272,7 +272,7 @@ export function Combobox(props: ComboboxProps) {
             role="button"
             tabIndex={0}
             aria-label="Limpar seleção"
-            className="inline-flex cursor-pointer rounded-sm state-layer focus-visible:focus-outline"
+            className="inline-flex cursor-pointer rounded-inner state-layer focus-visible:focus-outline"
             onClick={handleClearAll}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -322,7 +322,7 @@ export function Combobox(props: ComboboxProps) {
               <CommandPrimitive.Input
                 placeholder={resolvedSearchPlaceholder}
                 onValueChange={setSearch}
-                className="flex w-full rounded-md bg-transparent py-2.5 text-sm outline-none placeholder:text-placeholder"
+                className="flex w-full rounded-element bg-transparent py-2.5 text-sm outline-none placeholder:text-placeholder"
               />
             </div>
             <CommandPrimitive.List
@@ -341,7 +341,7 @@ export function Combobox(props: ComboboxProps) {
                     value={CREATE_ACTION_VALUE}
                     keywords={[trimmedSearch]}
                     onSelect={() => handleCreate(trimmedSearch)}
-                    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover"
+                    className="relative flex cursor-default select-none items-center rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover"
                   >
                     Usar: &ldquo;{trimmedSearch}&rdquo;
                   </CommandPrimitive.Item>
@@ -361,11 +361,11 @@ export function Combobox(props: ComboboxProps) {
                         if (isMultiple) handleMultipleSelect(option.value)
                         else handleSingleSelect(option.value)
                       }}
-                      className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
+                      className="relative flex cursor-default select-none items-center gap-2 rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
                     >
                       <div
                         className={cn(
-                          "flex h-4 w-4 items-center justify-center rounded-md border border-primary",
+                          "flex h-4 w-4 items-center justify-center rounded-inner border border-primary",
                           isSelected
                             ? "bg-primary text-primary-foreground"
                             : "opacity-50 [&_svg]:invisible",

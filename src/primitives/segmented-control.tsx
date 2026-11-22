@@ -91,7 +91,7 @@ function SegmentedControl({
       orientation="horizontal"
       loop
       className={cn(
-        "items-center gap-1 rounded-md bg-muted p-1 text-muted-foreground",
+        "items-center gap-1 rounded-element bg-muted p-1 text-muted-foreground",
         fill ? "flex w-full" : "inline-flex max-w-full",
         disabled && "opacity-50",
         className,
@@ -113,7 +113,7 @@ function SegmentedControl({
               }
             }}
             className={cn(
-              "inline-flex min-w-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-sm font-medium transition-colors",
+              "inline-flex min-w-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-inner font-medium transition-colors",
               "focus-visible:focus-outline data-[state=unchecked]:state-layer",
               "disabled:cursor-default disabled:opacity-50",
               "data-[state=checked]:bg-background data-[state=checked]:text-foreground",

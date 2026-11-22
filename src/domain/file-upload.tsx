@@ -289,7 +289,7 @@ function FileUpload({
             typeof resolvedLabel === "string" ? resolvedLabel : mergedLabels.dropzoneAriaLabel
           }
           className={cn(
-            "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
+            "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-element border border-dashed border-input bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
             "state-layer",
             "focus-visible:focus-outline",
             isDragging && "border-primary bg-accent/60",
@@ -399,14 +399,14 @@ function FileRow({
   }
 
   return (
-    <li className="flex items-center gap-3 rounded-md border bg-background px-2 py-1.5 text-sm">
+    <li className="flex items-center gap-3 rounded-element border bg-background px-2 py-1.5 text-sm">
       <button
         type="button"
         onClick={isImage ? onOpenImage : openInNewTab}
         disabled={disabled}
         aria-label={isImage ? labels.zoomImage(file.name) : labels.openFile(file.name)}
         className={cn(
-          "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-muted-foreground cursor-pointer transition-opacity",
+          "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-element bg-muted text-muted-foreground cursor-pointer transition-opacity",
           "hover:opacity-80 focus-visible:focus-outline",
           disabled && "cursor-default opacity-50",
         )}
@@ -566,7 +566,7 @@ function ImageLightbox({
         <img
           src={url}
           alt={file?.name ?? ""}
-          className="h-auto max-h-[85vh] w-full rounded-md object-contain"
+          className="h-auto max-h-[85vh] w-full rounded-container object-contain"
         />
       ) : null}
     </Dialog>
@@ -676,11 +676,11 @@ function CameraDialog({
       }
     >
       {errorMsg ? (
-        <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-container border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {errorMsg}
         </p>
       ) : (
-        <div className="relative aspect-video w-full overflow-hidden rounded-md bg-muted">
+        <div className="relative aspect-video w-full overflow-hidden rounded-container bg-muted">
           <video
             ref={videoRef}
             autoPlay

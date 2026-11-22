@@ -127,7 +127,7 @@ export interface DropdownMenuProps {
 
 const contentClass = cn(
   "z-(--z-popover) min-w-[max(8rem,var(--radix-dropdown-menu-trigger-width))] overflow-y-auto overflow-x-hidden",
-  "max-h-(--radix-dropdown-menu-content-available-height) rounded-md border bg-popover p-1 text-popover-foreground outline-none",
+  "max-h-(--radix-dropdown-menu-content-available-height) rounded-container border bg-popover p-1 text-popover-foreground outline-none",
   motionMenu,
   "data-[state=open]:animate-in data-[state=closed]:animate-out",
   "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
@@ -135,7 +135,7 @@ const contentClass = cn(
 )
 
 const rowClass = cn(
-  "relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors",
+  "relative flex w-full cursor-pointer select-none items-center gap-2 rounded-element px-2 py-1.5 text-left text-sm outline-none transition-colors",
   "focus:state-hover",
   "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
   "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",

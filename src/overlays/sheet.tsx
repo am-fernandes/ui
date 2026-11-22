@@ -82,7 +82,7 @@ function Sheet({
           {!hideCloseButton ? (
             <DialogPrimitive.Close
               aria-label={closeLabel}
-              className="absolute right-4 top-4 cursor-pointer rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:focus-outline"
+              className="absolute right-4 top-4 cursor-pointer rounded-inner opacity-70 transition-opacity hover:opacity-100 focus-visible:focus-outline"
             >
               <XIcon className="size-4" />
               <span className="sr-only">{closeLabel}</span>

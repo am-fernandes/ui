@@ -10,55 +10,9 @@ A filosofia é simples: cada propriedade visual do design system passa por um to
 
 ## Radius
 
-A lib é intencionalmente **chata** (flat). Todos os utilitários `rounded-*` do Tailwind resolvem para o mesmo valor — **4 px**. Isso reflete a decisão de design "enterprise robusto": sem cantos exageradamente arredondados, sem variação por componente.
+Três níveis, por papel: `--radius-inner` (4px), `--radius-element` (8px) e `--radius-container` (12px), com os utilitários `rounded-inner`, `rounded-element` e `rounded-container`. A escala do Tailwind cai neles: `rounded-xs`/`rounded-sm` → inner, `rounded-md` → element, `rounded-lg` até `rounded-4xl` → container.
 
-```css
---radius: 0.25rem; /* base, 4 px */
-
---radius-sm:  var(--radius);
---radius-md:  var(--radius);
---radius-lg:  var(--radius);
---radius-xl:  var(--radius);
---radius-2xl: var(--radius);
---radius-3xl: var(--radius);
---radius-4xl: var(--radius);
-```
-
-| Utilitário Tailwind | Token CSS | Valor |
-|---|---|---|
-| `rounded-sm`  | `--radius-sm`  | 4 px |
-| `rounded-md`  | `--radius-md`  | 4 px |
-| `rounded-lg`  | `--radius-lg`  | 4 px |
-| `rounded-xl`  | `--radius-xl`  | 4 px |
-| `rounded-2xl` | `--radius-2xl` | 4 px |
-| `rounded-3xl` | `--radius-3xl` | 4 px |
-| `rounded-4xl` | `--radius-4xl` | 4 px |
-
-Para shapes circulares (avatares, dots) use `rounded-full` — esse continua sendo um valor padrão do Tailwind (`9999px`).
-
-export const RadiusSwatch = ({ name }) => (
-  <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 6, margin: 8 }}>
-    <div
-      style={{
-        width: 56,
-        height: 56,
-        background: "var(--primary)",
-        borderRadius: `var(--radius-${name})`,
-      }}
-    />
-    <code style={{ fontSize: 11, color: "var(--muted-foreground)" }}>rounded-{name}</code>
-  </div>
-)
-
-<div style={{ display: "flex", flexWrap: "wrap", padding: 8 }}>
-  <RadiusSwatch name="sm" />
-  <RadiusSwatch name="md" />
-  <RadiusSwatch name="lg" />
-  <RadiusSwatch name="xl" />
-  <RadiusSwatch name="2xl" />
-  <RadiusSwatch name="3xl" />
-  <RadiusSwatch name="4xl" />
-</div>
+A explicação completa, a lista por componente e a regra do concêntrico estão em [Radius](?path=/docs/foundations-radius--docs).
 
 ## Motion
 

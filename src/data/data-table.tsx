@@ -602,7 +602,7 @@ function DataTable<TData>({
         <div
           data-slot="data-table-download-skeleton"
           className={cn(
-            "h-10 w-40 animate-pulse rounded-md bg-primary/10",
+            "h-10 w-40 animate-pulse rounded-element bg-primary/10",
             downloadTriggerClassName,
           )}
         />
@@ -634,7 +634,7 @@ function DataTable<TData>({
             type="button"
             role="menuitem"
             data-slot="data-table-download-filtered"
-            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer state-layer"
+            className="rounded-element px-2 py-1.5 text-left text-sm transition-colors cursor-pointer state-layer"
             onClick={() => runExport("filtered")}
           >
             {mergedLabels.exportFiltered}
@@ -643,7 +643,7 @@ function DataTable<TData>({
             type="button"
             role="menuitem"
             data-slot="data-table-download-page"
-            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer state-layer"
+            className="rounded-element px-2 py-1.5 text-left text-sm transition-colors cursor-pointer state-layer"
             onClick={() => runExport("page")}
           >
             {mergedLabels.exportPage}
@@ -652,7 +652,7 @@ function DataTable<TData>({
             type="button"
             role="menuitem"
             data-slot="data-table-download-all"
-            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer state-layer"
+            className="rounded-element px-2 py-1.5 text-left text-sm transition-colors cursor-pointer state-layer"
             onClick={() => runExport("all")}
           >
             {mergedLabels.exportAll}
@@ -723,7 +723,7 @@ function DataTable<TData>({
         </div>
       ) : null}
 
-      <div className="rounded-md border">
+      <div className="overflow-hidden rounded-container border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -742,7 +742,7 @@ function DataTable<TData>({
                         <button
                           type="button"
                           onClick={header.column.getToggleSortingHandler()}
-                          className="-mx-2 inline-flex h-8 items-center gap-2 rounded-md px-2 text-left cursor-pointer transition-colors state-layer"
+                          className="-mx-2 inline-flex h-8 items-center gap-2 rounded-element px-2 text-left cursor-pointer transition-colors state-layer"
                           aria-label={ariaLabel}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
@@ -791,7 +791,7 @@ function DataTable<TData>({
                       >
                         <div
                           className={cn(
-                            "h-5 animate-pulse rounded-md bg-primary/10",
+                            "h-5 animate-pulse rounded-inner bg-primary/10",
                             SKELETON_CELL_WIDTHS[(rowIdx + colIdx) % SKELETON_CELL_WIDTHS.length],
                           )}
                         />
@@ -861,7 +861,7 @@ function DataTable<TData>({
         <div className="-mt-1 flex items-center justify-between gap-2 px-3 pt-1 pb-3">
           {showRowCount ? (
             loading ? (
-              <div className="h-4 w-32 animate-pulse rounded-md bg-primary/10" />
+              <div className="h-4 w-32 animate-pulse rounded-inner bg-primary/10" />
             ) : (
               <span className="text-xs text-muted-foreground">
                 {rowCountFn(table.getFilteredRowModel().rows.length, data.length)}
@@ -876,7 +876,7 @@ function DataTable<TData>({
                 loading ? (
                   <div
                     data-slot="data-table-page-size-skeleton"
-                    className="h-9 w-28 animate-pulse rounded-md bg-primary/10"
+                    className="h-9 w-28 animate-pulse rounded-element bg-primary/10"
                   />
                 ) : (
                   <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -893,7 +893,7 @@ function DataTable<TData>({
                         // non-zero page when the user was past page 0).
                         table.setPagination({ pageIndex: 0, pageSize: next })
                       }}
-                      className="h-9 rounded-md border border-input bg-background px-2 text-xs text-foreground field-states"
+                      className="h-9 rounded-element border border-input bg-background px-2 text-xs text-foreground field-states"
                     >
                       {pagination.pageSizeOptions.map((opt) => (
                         <option key={opt} value={opt}>
@@ -905,7 +905,7 @@ function DataTable<TData>({
                 )
               ) : null}
               {loading ? (
-                <div className="h-4 w-24 animate-pulse rounded-md bg-primary/10" />
+                <div className="h-4 w-24 animate-pulse rounded-inner bg-primary/10" />
               ) : (
                 <span className="text-xs text-muted-foreground">
                   {mergedLabels.pageIndicator(

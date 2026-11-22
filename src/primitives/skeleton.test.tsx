@@ -33,7 +33,7 @@ describe("Skeleton", () => {
     render(<Skeleton className="rounded-none" data-testid="sk" />)
     const el = screen.getByTestId("sk")
     expect(el).toHaveClass("rounded-none")
-    expect(el).not.toHaveClass("rounded-md")
+    expect(el).not.toHaveClass("rounded-inner")
     expect(el).toHaveClass("animate-pulse")
   })
 })

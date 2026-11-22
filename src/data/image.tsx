@@ -14,11 +14,13 @@ const objectFitMap = {
   "scale-down": "object-scale-down",
 } as const
 
+// sm/md/lg are the three radius levels (inner, element, container); full is
+// the circle, for avatar-like images.
 const roundedMap = {
   none: "rounded-none",
-  sm: "rounded-sm",
-  md: "rounded-md",
-  lg: "rounded-lg",
+  sm: "rounded-inner",
+  md: "rounded-element",
+  lg: "rounded-container",
   full: "rounded-full",
 } as const
 

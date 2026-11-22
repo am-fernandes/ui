@@ -198,7 +198,7 @@ function Stepper({
         onClick={() => onStepClick(index)}
         className={cn(
           layout,
-          "min-w-0 cursor-pointer rounded-md p-1 transition-colors state-layer",
+          "min-w-0 cursor-pointer rounded-element p-1 transition-colors state-layer",
           "focus-visible:focus-outline",
           "disabled:cursor-default disabled:opacity-50",
           vertical ? "-m-1 w-[calc(100%+0.5rem)]" : "w-full",
@@ -336,7 +336,7 @@ function Stepper({
                 key={index}
                 data-slot="stepper-track-segment"
                 className={cn(
-                  "h-1 flex-1 rounded-full",
+                  "h-1 flex-1 rounded-inner",
                   step.status === "error"
                     ? "bg-destructive"
                     : step.status === "warning"

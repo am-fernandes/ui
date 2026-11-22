@@ -238,7 +238,7 @@ function Tour({
             <div
               aria-hidden="true"
               data-slot="tour-spotlight"
-              className="pointer-events-none fixed z-(--z-overlay) rounded-md outline-[9999px] outline-solid outline-black/50"
+              className="pointer-events-none fixed z-(--z-overlay) rounded-element outline-[9999px] outline-solid outline-black/50"
               style={{
                 top: box.top - SPOTLIGHT_PADDING,
                 left: box.left - SPOTLIGHT_PADDING,
@@ -281,7 +281,7 @@ function Tour({
               if (previous?.isConnected) previous.focus()
             }}
             className={cn(
-              "z-(--z-popover) w-80 max-w-[calc(100vw-16px)] rounded-md border bg-popover p-4 text-popover-foreground outline-none",
+              "z-(--z-popover) w-80 max-w-[calc(100vw-16px)] rounded-container border bg-popover p-4 text-popover-foreground outline-none",
               motionPopover,
               "data-[state=open]:animate-in data-[state=closed]:animate-out",
               "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",

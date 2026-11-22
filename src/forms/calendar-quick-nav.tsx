@@ -106,7 +106,7 @@ export function CalendarQuickNav({
     <div
       data-slot="calendar"
       className={cn(
-        "group/calendar w-fit bg-background p-2 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(7)]",
+        "group/calendar w-fit bg-background p-2 [--cell-radius:var(--radius-inner)] [--cell-size:--spacing(7)]",
         className,
       )}
       onKeyDown={(event) => {

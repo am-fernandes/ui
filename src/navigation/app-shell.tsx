@@ -146,7 +146,7 @@ function writeStoredCollapsed(value: boolean) {
 }
 
 const iconButtonClass = cn(
-  "inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors",
+  "inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-element transition-colors",
   "state-layer",
   "focus-visible:focus-outline",
 )
@@ -160,7 +160,7 @@ interface BrandMarkProps {
 }
 
 function BrandMark({ brand, onClick, label, className, withTooltip = false }: BrandMarkProps) {
-  const box = cn("shrink-0 overflow-hidden rounded", className)
+  const box = cn("shrink-0 overflow-hidden rounded-element", className)
   if (!onClick) {
     return (
       <span data-slot="app-shell-brand-mark" className={box}>
@@ -249,7 +249,7 @@ function AppShell({
       aria-label={collapsed ? l.expand : undefined}
       onClick={toggleCollapsed}
       className={cn(
-        "flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground transition-colors",
+        "flex w-full cursor-pointer items-center gap-3 rounded-element px-3 py-2 text-left text-sm font-medium text-muted-foreground transition-colors",
         "state-layer",
         "focus-visible:focus-outline",
         collapsed && "justify-center",
@@ -276,7 +276,7 @@ function AppShell({
           data-slot="app-shell-skip-link"
           className={cn(
             "sr-only",
-            "focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[var(--z-toast)] focus:rounded-md",
+            "focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[var(--z-toast)] focus:rounded-element",
             "focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground",
             "focus:focus-outline",
           )}

@@ -87,7 +87,7 @@ describe("Card", () => {
     const card = container.querySelector('[data-slot="card"]') as HTMLElement
     expect(card.className).toContain("custom-class")
     // Default styles still applied.
-    expect(card.className).toContain("rounded-lg")
+    expect(card.className).toContain("rounded-container")
   })
 
   it("forwards ref", () => {

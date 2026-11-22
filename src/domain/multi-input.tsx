@@ -189,7 +189,7 @@ function MultiInput(props: MultiInputProps) {
         data-type={props.type === "number" ? "number" : "string"}
         onClick={focusInput}
         className={cn(
-          "flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-2.5 text-sm field-states cursor-text",
+          "flex min-h-9 flex-wrap items-center gap-1.5 rounded-element border border-input bg-transparent px-3 py-2.5 text-sm field-states cursor-text",
           disabled && "cursor-default",
           hasError && "border-destructive field-error",
         )}
@@ -204,7 +204,7 @@ function MultiInput(props: MultiInputProps) {
               <button
                 type="button"
                 aria-label={`Remover ${renderToken(token)}`}
-                className="ml-0.5 rounded-sm cursor-pointer state-layer focus-visible:focus-outline"
+                className="ml-0.5 rounded-inner cursor-pointer state-layer focus-visible:focus-outline"
                 onMouseDown={(e) => {
                   // Run on mousedown so we fire BEFORE the input's blur — avoids the race
                   // where blur commits the pending input and then we remove a different token.

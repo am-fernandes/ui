@@ -49,7 +49,7 @@ Estas decisões são deliberadas. Não as questione num PR sem antes abrir issue
 
 - **Claro e escuro.** Os dois temas usam os mesmos papéis de cor; o escuro liga com a classe `dark` no `<html>` (ou num ancestral). Componentes não usam `dark:`: quem muda são os tokens de `src/styles/tokens.css` (`:root` e `.dark`). Toda cor nova entra nos dois blocos e passa em `bun run audit:contrast`.
 - **Flat.** Sem shadows, sem elevation tokens. Hierarquia é dada por borda, espaço e tipografia. A borda geral (`--border`) é 10% da cor primária, translúcida; a dos campos (`--input`) é sólida.
-- **Radius uniforme.** `--radius: 0.25rem` (4px) para *todas* as escalas (`rounded-sm` até `rounded-4xl` apontam para o mesmo valor — ver `src/styles/tokens.css`).
+- **Raio por papel, três níveis.** `inner` 4px (peças dentro de um controle e peças baixas, como Badge e Token), `element` 8px (o controle), `container` 12px (superfícies que agrupam ou flutuam). Use `rounded-inner`, `rounded-element` e `rounded-container`; a escala do Tailwind cai nos três. Peça dentro de peça segue a conta do concêntrico (raio de dentro = raio de fora − espaço). `rounded-full` só para círculo. Detalhes e a lista por componente em Foundations/Radius.
 - **Densidade enterprise.**
   - Body: `text-sm`.
   - Inputs: `py-3` vertical, `px-3` horizontal (altura sai do padding, sem `h-*` fixo).
@@ -215,7 +215,7 @@ Definidos em `src/styles/tokens.css` dentro de `@theme inline`. Os mais usados:
 
 | Token | Valor | Quando usar |
 |---|---|---|
-| `--radius` | `0.25rem` (4px) | Cantos. Use sempre via `rounded-md` (ou qualquer alias — todos apontam para o mesmo valor). |
+| `--radius-inner` / `--radius-element` / `--radius-container` | `4px` / `8px` / `12px` | Cantos por papel: `rounded-inner`, `rounded-element`, `rounded-container`. Ver Foundations/Radius. |
 | `--duration-fast` | 175ms | Hover, Tooltip, DropdownMenu, Accordion, Collapsible; padrão de todo `transition*`. |
 | `--duration-medium-min` | 310ms | Popover, Tour (entrada). |
 | `--duration-medium` | 410ms | Sheet, menu mobile do AppShell. |

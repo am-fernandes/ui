@@ -48,7 +48,7 @@ function Checkbox({
           aria-invalid={hasError ? true : undefined}
           aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
           className={cn(
-            "peer size-4 shrink-0 cursor-pointer rounded-sm border border-primary",
+            "peer size-4 shrink-0 cursor-pointer rounded-inner border border-primary",
             hasDescription && "mt-0.5",
             "focus-visible:focus-outline",
             "disabled:cursor-default disabled:opacity-50",

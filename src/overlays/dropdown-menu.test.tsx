@@ -428,7 +428,7 @@ describe("DropdownMenu", () => {
       const content = screen.getByRole("menu")
       expect(content).toHaveAttribute("data-side", "top")
       expect(content).toHaveAttribute("data-align", "end")
-      expect(content).toHaveClass("w-64", "bg-popover", "border", "rounded-md")
+      expect(content).toHaveClass("w-64", "bg-popover", "border", "rounded-container")
     })
 
     it("locks the page while open by default, but not with modal={false}", async () => {

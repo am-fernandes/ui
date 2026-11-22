@@ -109,7 +109,7 @@ function Video({
 
   return (
     <div
-      className={cn("relative overflow-hidden rounded-md bg-muted", className)}
+      className={cn("relative overflow-hidden rounded-container bg-muted", className)}
       style={{ aspectRatio: String(aspectRatio) }}
       data-slot="video"
     >

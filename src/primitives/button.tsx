@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
   cn(
-    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium cursor-pointer",
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-element text-sm font-medium cursor-pointer",
     "px-3 py-2.5",
     "transition focus-visible:focus-outline",
     "motion-safe:pointer-fine:active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",

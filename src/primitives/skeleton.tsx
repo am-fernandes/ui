@@ -15,7 +15,7 @@ function Skeleton({ className, ref, ...props }: SkeletonProps) {
       aria-busy="true"
       data-slot="skeleton"
       {...props}
-      className={cn("animate-pulse rounded-md bg-primary/10", className)}
+      className={cn("animate-pulse rounded-inner bg-primary/10", className)}
     />
   )
 }

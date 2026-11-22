@@ -80,7 +80,7 @@ function EmptyState({
           aria-hidden="true"
           data-slot="empty-state-icon"
           className={cn(
-            "flex shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground",
+            "flex shrink-0 items-center justify-center rounded-element bg-muted text-muted-foreground",
             compact ? "size-10 [&_svg]:size-5" : "size-12 [&_svg]:size-6",
           )}
         >

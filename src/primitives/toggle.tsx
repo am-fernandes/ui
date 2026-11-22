@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils"
  * standard.
  */
 const toggleVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium cursor-pointer transition focus-visible:focus-outline state-layer motion-safe:pointer-fine:active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-element text-sm font-medium cursor-pointer transition focus-visible:focus-outline state-layer motion-safe:pointer-fine:active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border",
   {
     variants: {
       variant: {

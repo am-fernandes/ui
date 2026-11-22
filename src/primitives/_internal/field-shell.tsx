@@ -13,7 +13,7 @@ export type LabelPosition = "up" | "left" | "hidden"
  * from FieldShell, so it is not repeated here.
  */
 export const fieldTriggerClass =
-  "inline-flex w-full cursor-pointer items-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-3 py-2.5 text-left text-sm font-normal field-states disabled:pointer-events-none disabled:cursor-default [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+  "inline-flex w-full cursor-pointer items-center gap-2 whitespace-nowrap rounded-element border border-input bg-background px-3 py-2.5 text-left text-sm font-normal field-states disabled:pointer-events-none disabled:cursor-default [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
 
 export interface FieldShellProps {
   controlId: string

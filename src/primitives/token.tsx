@@ -137,7 +137,7 @@ function Token({
   // Stretched hit area + focus ring drawn over the whole chip.
   const actionClass = cn(
     "min-w-0 truncate outline-none",
-    "after:absolute after:inset-0 after:rounded-md after:transition-colors",
+    "after:absolute after:inset-0 after:rounded-inner after:transition-colors",
     "focus-visible:after:focus-outline",
     disabled
       ? "cursor-default"
@@ -190,7 +190,7 @@ function Token({
       data-size={size}
       data-disabled={disabled ? "" : undefined}
       className={cn(
-        "relative inline-flex max-w-full shrink-0 items-center rounded-md border font-medium leading-none whitespace-nowrap",
+        "relative inline-flex max-w-full shrink-0 items-center rounded-inner border font-medium leading-none whitespace-nowrap",
         palette.root,
         sizing.root,
         disabled && "opacity-50",
@@ -207,7 +207,7 @@ function Token({
           disabled={disabled}
           onClick={onRemove}
           className={cn(
-            "relative z-10 inline-flex shrink-0 items-center justify-center rounded-sm opacity-70 transition",
+            "relative z-10 inline-flex shrink-0 items-center justify-center rounded-inner opacity-70 transition",
             "focus-visible:focus-outline",
             disabled ? "cursor-default" : "cursor-pointer state-layer hover:opacity-100",
             sizing.remove,
