@@ -23,6 +23,14 @@ import { defineConfig, devices } from "@playwright/test"
  *   bun run test:e2e:mobile      # mobile project only
  *   bun run test:e2e:tablet      # tablet project only
  */
+/**
+ * Storybook que os testes abrem. O padrão é o da porta 6006; para rodar contra
+ * outra cópia do repositório (um worktree com o seu próprio Storybook), passe
+ * `STORYBOOK_URL=http://localhost:6011 bun run test:e2e`.
+ */
+const storybookUrl = process.env.STORYBOOK_URL ?? "http://localhost:6006"
+const storybookPort = new URL(storybookUrl).port || "6006"
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
@@ -52,7 +60,7 @@ export default defineConfig({
     },
   },
   use: {
-    baseURL: "http://localhost:6006",
+    baseURL: storybookUrl,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -83,8 +91,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "bun run storybook -- --ci --quiet --port 6006",
-    url: "http://localhost:6006",
+    command: `bun run storybook -- --ci --quiet --port ${storybookPort}`,
+    url: storybookUrl,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     stdout: "ignore",
