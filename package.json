@@ -277,7 +277,7 @@
     }
   },
   "scripts": {
-    "build": "tsup && bun run build:styles",
+    "build": "tsup && bun scripts/use-client.ts && bun run build:styles",
     "build:styles": "cp src/styles/tokens.css dist/tokens.css && cp src/styles/fonts.css dist/fonts.css",
     "dev": "tsup --watch",
     "storybook": "storybook dev -p 6006",

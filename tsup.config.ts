@@ -28,6 +28,9 @@ export default defineConfig({
   sourcemap: false,
   clean: true,
   splitting: true,
+  // Lido por scripts/use-client.ts, que recoloca "use client" nos arquivos
+  // de cliente (o esbuild descarta a diretiva) e apaga o metafile em seguida.
+  metafile: true,
   treeshake: true,
   external: ["react", "react-dom"],
   tsconfig: "./tsconfig.build.json",
