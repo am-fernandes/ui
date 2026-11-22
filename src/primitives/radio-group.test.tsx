@@ -17,6 +17,48 @@ describe("RadioGroup", () => {
     expect(screen.getAllByRole("radio")).toHaveLength(3)
   })
 
+  it("names the group after its label", () => {
+    render(<RadioGroup label="Plano" values={VALUES} />)
+    const group = screen.getByRole("radiogroup", { name: "Plano" })
+    expect(group).toHaveAttribute("data-slot", "radio-group")
+    // The name of a group is tied by aria-labelledby: a <label for> cannot
+    // point at a div, so the text is not a <label> at all.
+    const label = screen.getByText("Plano")
+    expect(group).toHaveAttribute("aria-labelledby", label.id)
+    expect(label.tagName).toBe("SPAN")
+    expect(label).not.toHaveAttribute("for")
+  })
+
+  it("keeps a rich label as the name of the group", () => {
+    render(
+      <RadioGroup
+        label={
+          <>
+            Plano <em>anual</em>
+          </>
+        }
+        values={VALUES}
+      />,
+    )
+    expect(screen.getByRole("radiogroup", { name: "Plano anual" })).toBeInTheDocument()
+  })
+
+  it("is named by the consumer's aria-label when there is no label", () => {
+    render(<RadioGroup aria-label="Plano de assinatura" values={VALUES} />)
+    const group = screen.getByRole("radiogroup", { name: "Plano de assinatura" })
+    expect(group).not.toHaveAttribute("aria-labelledby")
+  })
+
+  it("lets the consumer point aria-labelledby somewhere else", () => {
+    render(
+      <>
+        <h2 id="titulo">Escolha o plano</h2>
+        <RadioGroup label="Plano" aria-labelledby="titulo" values={VALUES} />
+      </>,
+    )
+    expect(screen.getByRole("radiogroup", { name: "Escolha o plano" })).toBeInTheDocument()
+  })
+
   it("renders the group label and error", () => {
     render(<RadioGroup label="Plano" error="Escolha um" values={VALUES} />)
     expect(screen.getByText("Plano")).toBeInTheDocument()

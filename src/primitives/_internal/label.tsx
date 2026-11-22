@@ -6,15 +6,29 @@ import { cn } from "@/lib/utils"
 
 interface InternalLabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
   required?: boolean
+  /**
+   * `"span"` for the name of a group (radiogroup): a `<label for>` only works
+   * on a form control, so the group points at the text with
+   * `aria-labelledby` instead. @default "label"
+   */
+  as?: "label" | "span"
   ref?: React.Ref<HTMLLabelElement>
 }
 
-function Label({ className, children, required, ref, ...props }: InternalLabelProps) {
+function Label({
+  as: Element = "label",
+  className,
+  children,
+  required,
+  htmlFor,
+  ref,
+  ...props
+}: InternalLabelProps) {
   return (
-    // biome-ignore lint/a11y/noLabelWithoutControl: consumers pass `htmlFor` to associate; the component cannot statically verify the control exists.
-    <label
+    <Element
       ref={ref}
       data-slot="label"
+      htmlFor={Element === "label" ? htmlFor : undefined}
       className={cn(
         "text-sm font-medium leading-none peer-disabled:cursor-default peer-disabled:opacity-50",
         className,
@@ -27,7 +41,7 @@ function Label({ className, children, required, ref, ...props }: InternalLabelPr
           *
         </span>
       ) : null}
-    </label>
+    </Element>
   )
 }
 

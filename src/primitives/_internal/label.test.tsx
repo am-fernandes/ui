@@ -20,6 +20,19 @@ describe("Label (internal)", () => {
     expect(screen.getByLabelText("obrigatório")).toBeInTheDocument()
   })
 
+  it("renders a span with no `for` when it names a group", () => {
+    render(
+      <Label as="span" id="grupo" htmlFor="x">
+        Plano
+      </Label>,
+    )
+    const label = screen.getByText("Plano")
+    expect(label.tagName).toBe("SPAN")
+    expect(label).not.toHaveAttribute("for")
+    expect(label).toHaveAttribute("id", "grupo")
+    expect(label).toHaveAttribute("data-slot", "label")
+  })
+
   it("forwards ref to the underlying label element", () => {
     let captured: HTMLLabelElement | null = null
     render(

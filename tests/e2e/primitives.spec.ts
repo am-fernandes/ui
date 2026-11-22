@@ -91,6 +91,15 @@ test.describe("Input", () => {
   })
 })
 
+test.describe("RadioGroup", () => {
+  test("the group is named after its label in the accessibility tree", async ({ page }) => {
+    await open(page, "primitives-radiogroup--horizontal")
+    const group = page.getByRole("radiogroup", { name: "Tamanho" })
+    await expect(group).toBeVisible()
+    await expect(group.getByRole("radio")).toHaveCount(4)
+  })
+})
+
 test.describe("Textarea", () => {
   test("autoResize and the counter follow a value written by code and a narrower box", async ({
     page,

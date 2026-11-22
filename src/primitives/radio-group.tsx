@@ -47,7 +47,7 @@ function RadioGroup({
   return (
     <div data-slot="radio-group-field" className="flex w-full flex-col gap-1.5">
       {hasLabel ? (
-        <Label htmlFor={ids.controlId} required={required} id={ids.labelId}>
+        <Label as="span" required={required} id={ids.labelId}>
           {label}
         </Label>
       ) : null}
@@ -62,6 +62,7 @@ function RadioGroup({
         data-slot="radio-group"
         data-orientation={orientation}
         disabled={disabled}
+        aria-labelledby={hasLabel ? ids.labelId : undefined}
         aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
         aria-invalid={hasError ? true : undefined}
         className={cn(
