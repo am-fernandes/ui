@@ -3,17 +3,27 @@
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { type ControlSize, controlHeight, controlPaddingX } from "./control-size"
 import { Label } from "./label"
 
 export type LabelPosition = "up" | "left" | "hidden"
 
+const fieldTriggerBase =
+  "inline-flex w-full cursor-pointer items-center gap-2 whitespace-nowrap rounded-element border border-input bg-card text-left text-sm font-normal field-states disabled:pointer-events-none disabled:cursor-default [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+
 /**
  * A button that looks and reacts like a text field (Astryx field look): the
- * trigger of Combobox, DateInput and DateRangePicker. Disabled opacity comes
- * from FieldShell, so it is not repeated here.
+ * trigger of Combobox, DateInput and DateRangePicker. The height is the
+ * control height of the size, border included, so it lines up with buttons
+ * and inputs of the same size. Disabled opacity comes from FieldShell, so it
+ * is not repeated here.
  */
-export const fieldTriggerClass =
-  "inline-flex w-full cursor-pointer items-center gap-2 whitespace-nowrap rounded-element border border-input bg-card px-3 py-2.5 text-left text-sm font-normal field-states disabled:pointer-events-none disabled:cursor-default [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+export function fieldTriggerSizeClass(size: ControlSize = "md"): string {
+  return cn(fieldTriggerBase, controlHeight[size], controlPaddingX[size])
+}
+
+/** The trigger at the default size (`md`). */
+export const fieldTriggerClass = fieldTriggerSizeClass("md")
 
 export interface FieldShellProps {
   controlId: string

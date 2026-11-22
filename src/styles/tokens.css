@@ -18,6 +18,13 @@
   --radius-inner: 4px;
   --radius-element: 8px;
   --radius-container: 12px;
+
+  /* Altura dos controles (botão, campo, gatilho, toggle): a caixa inteira,
+     borda incluída. `h-control-md`, `min-h-control-md`, `size-control-md`.
+     Um controle de borda e um sem borda do mesmo tamanho têm a mesma altura. */
+  --spacing-control-sm: 2rem;
+  --spacing-control-md: 2.5rem;
+  --spacing-control-lg: 2.75rem;
 }
 
 @theme inline {
