@@ -1,7 +1,7 @@
 "use client"
 
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
-import { CheckIcon } from "lucide-react"
+import { CheckIcon, MinusIcon } from "lucide-react"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -9,11 +9,22 @@ import { Label } from "./_internal/label"
 import { useFieldIds } from "./_internal/use-field-ids"
 
 export interface CheckboxProps
-  extends Omit<React.ComponentProps<typeof CheckboxPrimitive.Root>, "id" | "checked"> {
+  extends Omit<
+    React.ComponentProps<typeof CheckboxPrimitive.Root>,
+    "id" | "checked" | "defaultChecked" | "onCheckedChange"
+  > {
   label?: React.ReactNode
   description?: React.ReactNode
   error?: string
-  checked?: boolean
+  /**
+   * `true`, `false` ou `"indeterminate"`: o estado misto de um "selecionar
+   * todos" quando só parte dos itens está marcada. Um clique no estado misto
+   * marca a caixa.
+   */
+  checked?: boolean | "indeterminate"
+  defaultChecked?: boolean | "indeterminate"
+  /** Recebe sempre `true` ou `false`: um clique nunca produz o estado misto. */
+  onCheckedChange?: (checked: boolean) => void
   id?: string
   ref?: React.Ref<HTMLButtonElement>
 }
@@ -27,6 +38,7 @@ function Checkbox({
   disabled,
   className,
   checked,
+  onCheckedChange,
   ref,
   ...props
 }: CheckboxProps) {
@@ -43,6 +55,7 @@ function Checkbox({
           id={ids.controlId}
           data-slot="checkbox"
           checked={checked}
+          onCheckedChange={onCheckedChange ? (state) => onCheckedChange(state === true) : undefined}
           disabled={disabled}
           required={required}
           aria-invalid={hasError ? true : undefined}
@@ -53,6 +66,7 @@ function Checkbox({
             "focus-visible:focus-outline",
             "disabled:cursor-default disabled:opacity-50",
             "data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
+            "data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground",
             hasError && "border-destructive-text",
             className,
           )}
@@ -60,9 +74,10 @@ function Checkbox({
         >
           <CheckboxPrimitive.Indicator
             data-slot="checkbox-indicator"
-            className="grid place-content-center text-current"
+            className="group/indicator grid place-content-center text-current"
           >
-            <CheckIcon className="size-3.5" />
+            <CheckIcon className="size-3.5 group-data-[state=indeterminate]/indicator:hidden" />
+            <MinusIcon className="hidden size-3.5 group-data-[state=indeterminate]/indicator:block" />
           </CheckboxPrimitive.Indicator>
         </CheckboxPrimitive.Root>
 
