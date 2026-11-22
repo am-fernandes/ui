@@ -260,7 +260,7 @@ export function Combobox(props: ComboboxProps) {
         fieldTriggerClass,
         "w-full justify-between min-h-10 h-auto overflow-hidden",
         !hasValue && "text-placeholder",
-        hasError && "border-destructive field-error",
+        hasError && "border-destructive-text field-error",
         className,
       )}
     >

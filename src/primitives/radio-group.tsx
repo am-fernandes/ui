@@ -104,7 +104,7 @@ function RadioGroup({
         })}
       </RadioGroupPrimitive.Root>
       {hasError ? (
-        <p id={ids.errorId} role="alert" className="text-xs text-destructive">
+        <p id={ids.errorId} role="alert" className="text-xs text-destructive-text">
           {error}
         </p>
       ) : null}

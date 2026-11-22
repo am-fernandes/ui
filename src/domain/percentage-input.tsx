@@ -73,7 +73,7 @@ function PercentageInput({
           aria-required={required ? true : undefined}
           className={cn(
             "flex w-full rounded-element border border-input bg-card px-3 pr-8 py-2.5 text-sm tabular-nums field-states disabled:cursor-default",
-            hasError && "border-destructive field-error",
+            hasError && "border-destructive-text field-error",
             className,
           )}
           value={display}

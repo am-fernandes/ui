@@ -118,10 +118,10 @@ describe("DropdownMenu", () => {
       const menu = await openMenu()
       const destructive = within(menu).getByRole("menuitem", { name: "Excluir" })
       expect(destructive).toHaveAttribute("data-variant", "destructive")
-      expect(destructive).toHaveClass("text-destructive")
+      expect(destructive).toHaveClass("text-destructive-text")
       const regular = within(menu).getByRole("menuitem", { name: "Editar" })
       expect(regular).toHaveAttribute("data-variant", "default")
-      expect(regular).not.toHaveClass("text-destructive")
+      expect(regular).not.toHaveClass("text-destructive-text")
     })
   })
 

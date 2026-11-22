@@ -281,7 +281,7 @@ export const FormExample: Story = {
           </Button>
         </div>
         {submitted ? (
-          <p className="text-xs text-status-success-text">Verificado: {submitted}</p>
+          <p className="text-xs text-muted-foreground">Verificado: {submitted}</p>
         ) : null}
       </form>
     )

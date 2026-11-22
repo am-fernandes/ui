@@ -52,10 +52,10 @@ describe("Alert", () => {
 
   it.each([
     ["default", "bg-card"],
-    ["info", "bg-status-info-bg"],
-    ["success", "bg-status-success-bg"],
-    ["warning", "bg-status-warning-bg"],
-    ["destructive", "bg-destructive/10"],
+    ["info", "bg-info"],
+    ["success", "bg-success"],
+    ["warning", "bg-warning"],
+    ["destructive", "bg-destructive"],
   ] as const)("variant=%s applies %s class", (variant, klass) => {
     const { container } = render(<Alert variant={variant} title="X" />)
     expect(container.querySelector('[data-slot="alert"]')).toHaveClass(klass)

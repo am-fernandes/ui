@@ -128,7 +128,7 @@ function DateRangePicker({
         fieldTriggerClass,
         "w-full justify-start text-left",
         !fromDate && "text-placeholder",
-        hasError && "border-destructive field-error",
+        hasError && "border-destructive-text field-error",
         className,
       )}
     >

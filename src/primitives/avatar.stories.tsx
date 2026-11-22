@@ -69,7 +69,7 @@ export const WithStatusDot: Story = {
         alt="Online user"
         fallback={<UserIcon className="size-5" />}
       />
-      <span className="absolute right-0 bottom-0 size-3 rounded-full border-2 border-background bg-status-success-text" />
+      <span className="absolute right-0 bottom-0 size-3 rounded-full border-2 border-background bg-success" />
     </div>
   ),
   parameters: {

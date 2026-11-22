@@ -293,7 +293,7 @@ function FileUpload({
             "state-layer",
             "focus-visible:focus-outline",
             isDragging && "border-primary bg-accent/60",
-            hasError && "border-destructive",
+            hasError && "border-destructive-text",
             disabled && "cursor-default opacity-50",
             dropzoneClassName,
           )}
@@ -318,7 +318,7 @@ function FileUpload({
         ) : null}
       </div>
       {hasError ? (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="text-xs text-destructive-text">
           {error}
         </p>
       ) : null}
@@ -676,7 +676,7 @@ function CameraDialog({
       }
     >
       {errorMsg ? (
-        <p className="rounded-container border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-container border border-destructive-text px-3 py-2 text-sm text-destructive-text">
           {errorMsg}
         </p>
       ) : (

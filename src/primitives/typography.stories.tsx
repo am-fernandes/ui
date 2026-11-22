@@ -250,7 +250,7 @@ export const WithClassName: Story = {
       <Typography variant="body" className="italic">
         Itálico via className
       </Typography>
-      <Typography variant="body" className="text-destructive">
+      <Typography variant="body" className="text-destructive-text">
         Texto destrutivo
       </Typography>
     </div>

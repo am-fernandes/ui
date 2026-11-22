@@ -31,7 +31,7 @@ const meta: Meta<typeof Toaster> = {
           "",
           "**Props principais (`Toaster`):**",
           "- `position` — canto da viewport. Default `'bottom-right'`.",
-          "- `richColors: boolean` — usa paleta saturada por variante.",
+          "- `richColors: boolean` — pinta o toast com o fundo forte do status (sucesso, erro, alerta, informação). Sem ele, o toast é neutro e só o ícone leva a cor.",
           "- `closeButton: boolean` — exibe botão de fechar em cada toast.",
           "- `expand: boolean` — expande toasts por padrão (sem hover).",
           "- `duration: number` — duração padrão em ms.",
@@ -82,7 +82,8 @@ const meta: Meta<typeof Toaster> = {
     },
     richColors: {
       control: "boolean",
-      description: "Aplica cores saturadas por variante (`success`, `error` etc.).",
+      description:
+        "Fundo forte do status por variante (`success`, `error` etc.). Sem ele, só o ícone leva a cor.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     closeButton: {

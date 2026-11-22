@@ -63,20 +63,6 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
 
-  /* Status badge palettes — tinted bg, WCAG AA text, medium border */
-  --color-status-success-bg: var(--status-success-bg);
-  --color-status-success-text: var(--status-success-text);
-  --color-status-success-border: var(--status-success-border);
-  --color-status-warning-bg: var(--status-warning-bg);
-  --color-status-warning-text: var(--status-warning-text);
-  --color-status-warning-border: var(--status-warning-border);
-  --color-status-info-bg: var(--status-info-bg);
-  --color-status-info-text: var(--status-info-text);
-  --color-status-info-border: var(--status-info-border);
-  --color-status-destructive-bg: var(--status-destructive-bg);
-  --color-status-destructive-text: var(--status-destructive-text);
-  --color-status-destructive-border: var(--status-destructive-border);
-
   /* Categorical palette (Token, Schedule): faint bg, AA+ text, solid accent */
   --color-category-gray-bg: var(--category-gray-bg);
   --color-category-gray-text: var(--category-gray-text);
@@ -256,20 +242,6 @@
   /* Error on a surface, with no fill: field border and message. */
   --destructive-text: oklch(0.551 0.19 29.3);
 
-  /* Status badge palettes — tinted bg, WCAG AA contrast text, medium border */
-  --status-success-bg: oklch(0.96 0.025 120.7);
-  --status-success-text: oklch(0.33 0.07 120.7);
-  --status-success-border: oklch(0.68 0.1 120.7);
-  --status-warning-bg: oklch(0.97 0.03 92.6);
-  --status-warning-text: oklch(0.38 0.1 92.6);
-  --status-warning-border: oklch(0.75 0.12 92.6);
-  --status-info-bg: oklch(0.96 0.02 236.3);
-  --status-info-text: oklch(0.35 0.1 236.3);
-  --status-info-border: oklch(0.6 0.12 236.3);
-  --status-destructive-bg: oklch(0.97 0.02 29.2);
-  --status-destructive-text: oklch(0.42 0.18 29.2);
-  --status-destructive-border: oklch(0.6 0.2 29.2);
-
   /* Categorical palette: 9 hues for tags (Token) and calendar events (Schedule).
      Low chroma, and each solid at its own lightness: the solid (dot, bar) and
      the label carry the category; bg and text only support it. */
@@ -385,19 +357,6 @@
   --info-foreground: oklch(1 0 0);
   /* The fill red would be 3.3:1 as text here, so error text gets lighter. */
   --destructive-text: oklch(0.759 0.14 29.2);
-
-  --status-success-bg: oklch(0.26 0.04 120.7);
-  --status-success-text: oklch(0.87 0.1 120.7);
-  --status-success-border: oklch(0.52 0.1 120.7);
-  --status-warning-bg: oklch(0.27 0.045 92.6);
-  --status-warning-text: oklch(0.88 0.11 92.6);
-  --status-warning-border: oklch(0.56 0.1 92.6);
-  --status-info-bg: oklch(0.26 0.04 236.3);
-  --status-info-text: oklch(0.86 0.08 236.3);
-  --status-info-border: oklch(0.52 0.1 236.3);
-  --status-destructive-bg: oklch(0.26 0.05 29.2);
-  --status-destructive-text: oklch(0.85 0.09 29.2);
-  --status-destructive-border: oklch(0.55 0.15 29.2);
 
   --category-gray-bg: oklch(0.284 0.006 258.4);
   --category-gray-text: oklch(0.881 0.008 253.9);
@@ -517,7 +476,7 @@
    The look of a text field, select or date trigger (Astryx Field): solid
    --input border; hover (pointer only, never disabled) adds a 2px inner ring
    of it at 30%; any focus turns the border to --primary with a 2px inner ring
-   of the primary at 20% (25% in dark). `border-destructive field-error` keeps
+   of the primary at 20% (25% in dark). `border-destructive-text field-error` keeps
    the border red, focused too, and tints the hover ring. Put it on the element
    that draws the border (a shell with the <input> inside, or the input). */
 @utility field-states {
@@ -547,11 +506,11 @@
     }
   }
 }
-/* Use together with `border-destructive`: that class sets the resting border
-   (and lets cn() drop `border-input`); this one keeps it red on focus. */
+/* Use together with `border-destructive-text`: that class sets the resting
+   border (and lets cn() drop `border-input`); this one keeps it red on focus. */
 @utility field-error {
-  --field-focus-border: var(--destructive);
-  --field-hover-ring: color-mix(in oklch, var(--destructive) 30%, transparent);
+  --field-focus-border: var(--destructive-text);
+  --field-hover-ring: color-mix(in oklch, var(--destructive-text) 30%, transparent);
 }
 
 /* ---- States -----------------------------------------------------------------

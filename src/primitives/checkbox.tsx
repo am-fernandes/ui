@@ -53,7 +53,7 @@ function Checkbox({
             "focus-visible:focus-outline",
             "disabled:cursor-default disabled:opacity-50",
             "data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
-            hasError && "border-destructive",
+            hasError && "border-destructive-text",
             className,
           )}
           {...props}
@@ -89,7 +89,7 @@ function Checkbox({
           id={ids.errorId}
           data-slot="checkbox-error"
           role="alert"
-          className="text-xs text-destructive"
+          className="text-xs text-destructive-text"
         >
           {error}
         </p>

@@ -23,7 +23,7 @@ function Label({ className, children, required, ref, ...props }: InternalLabelPr
     >
       {children}
       {required ? (
-        <span aria-label="obrigatório" className="ml-0.5 text-destructive">
+        <span aria-label="obrigatório" className="ml-0.5 text-destructive-text">
           *
         </span>
       ) : null}

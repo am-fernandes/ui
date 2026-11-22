@@ -99,10 +99,8 @@ function Indicator({
       data-state={step.status ?? state}
       className={cn(
         "relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-medium tabular-nums transition-colors",
-        step.status === "error" &&
-          "border-status-destructive-border bg-status-destructive-bg text-status-destructive-text",
-        step.status === "warning" &&
-          "border-status-warning-border bg-status-warning-bg text-status-warning-text",
+        step.status === "error" && "border-destructive bg-destructive text-destructive-foreground",
+        step.status === "warning" && "border-warning bg-warning text-warning-foreground",
         !step.status &&
           state === "completed" &&
           "border-primary bg-primary text-primary-foreground",

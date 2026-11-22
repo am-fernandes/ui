@@ -92,7 +92,7 @@ function DateInput({
         fieldTriggerClass,
         "w-full justify-start text-left font-normal h-auto px-3 py-2.5",
         !hasValidValue && "text-placeholder",
-        hasError && "border-destructive field-error",
+        hasError && "border-destructive-text field-error",
         className,
       )}
     >

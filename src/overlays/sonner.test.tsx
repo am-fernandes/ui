@@ -98,6 +98,18 @@ describe("Toaster", () => {
     expect(toastEl).toHaveAttribute("data-rich-colors", "true")
   })
 
+  it("maps Sonner's status colours to the strong fills of the palette", async () => {
+    render(<Toaster richColors />)
+    toast.success("fill-msg")
+    const text = await screen.findByText("fill-msg")
+    const toaster = text.closest("[data-sonner-toaster]") as HTMLElement
+    expect(toaster.style.getPropertyValue("--success-bg")).toBe("var(--success)")
+    expect(toaster.style.getPropertyValue("--success-text")).toBe("var(--success-foreground)")
+    expect(toaster.style.getPropertyValue("--warning-text")).toBe("var(--warning-foreground)")
+    expect(toaster.style.getPropertyValue("--error-bg")).toBe("var(--destructive)")
+    expect(toaster.style.getPropertyValue("--info-bg")).toBe("var(--info)")
+  })
+
   it("dismisses a toast by id via toast.dismiss(id)", async () => {
     render(<Toaster />)
     let id: string | number = ""

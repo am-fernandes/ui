@@ -200,7 +200,7 @@ export const Nested = ({ outer, gap, inner, label, ok }) => (
         }}
       />
     </div>
-    <strong style={{ color: ok ? "var(--status-success-text)" : "var(--destructive)" }}>{label}</strong>
+    <strong style={{ color: ok ? "var(--foreground)" : "var(--destructive-text)" }}>{label}</strong>
     <span style={{ fontSize: 13 }}>
       Raio de dentro: {Math.max(0, inner)}px
       <br />

@@ -172,7 +172,7 @@ function entryKey(entry: DropdownMenuEntry, index: number) {
 function ActionRow({ item }: { item: DropdownMenuActionItem }) {
   const Icon = item.icon
   const destructive = item.variant === "destructive"
-  const className = cn(rowClass, destructive && "text-destructive")
+  const className = cn(rowClass, destructive && "text-destructive-text")
   const content = (
     <>
       {Icon ? <Icon className="size-4" aria-hidden /> : null}

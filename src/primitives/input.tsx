@@ -40,7 +40,7 @@ function Input({
       data-slot="input-wrapper"
       className={cn(
         "relative flex w-full items-center rounded-element border border-input bg-card text-sm field-states",
-        hasError && "border-destructive field-error",
+        hasError && "border-destructive-text field-error",
         disabled && "cursor-default",
       )}
     >

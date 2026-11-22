@@ -74,10 +74,10 @@ describe("Stepper", () => {
       expect(error).toHaveTextContent("A, concluída, com erro")
       expect(warning).toHaveTextContent("B, etapa atual, com alerta")
       expect(indicator(error!).querySelector("svg.lucide-circle-alert")).not.toBeNull()
-      expect(indicator(error!)).toHaveClass("text-status-destructive-text")
+      expect(indicator(error!)).toHaveClass("bg-destructive", "text-destructive-foreground")
       expect(indicator(error!)).toHaveAttribute("data-state", "error")
       expect(indicator(warning!).querySelector("svg.lucide-triangle-alert")).not.toBeNull()
-      expect(indicator(warning!)).toHaveClass("text-status-warning-text")
+      expect(indicator(warning!)).toHaveClass("bg-warning", "text-warning-foreground")
     })
 
     it("marks every step completed when activeStep equals the number of steps", () => {

@@ -77,7 +77,7 @@ Dois visuais, os dois copiados do Astryx: um anel para os controles e um visual 
 | `focus-visible:focus-outline` | botões, checkbox, switch, abas, links |
 | `focus-visible:focus-outline-inset` | células, linhas e itens dentro de um contêiner que cortaria o anel de fora |
 
-O mesmo anel é o padrão de qualquer elemento focável (`:focus-visible` no `@layer base`), então um link ou um botão do app consumidor já sai igual.
+O mesmo anel é o padrão de qualquer elemento focável (`:focus-visible` no `@layer base`), então um link ou um botão do app consumidor já sai igual. Dentro de um fundo de status (um `Alert` de erro, por exemplo) o anel usa a cor do texto dele, porque o azul não teria contraste ali.
 
 ### Campos
 
@@ -88,7 +88,7 @@ Input, Textarea, os inputs brasileiros, MultiInput, TimePicker, os selects de pa
 | repouso | borda sólida `--input` |
 | hover (só com mouse, nunca desabilitado) | anel interno de 2px na cor da borda a 30% |
 | foco | borda `--primary` e anel interno de 2px da primária a 20% (`--field-focus-ring`; 25% no escuro) |
-| erro (`border-destructive field-error`) | borda vermelha, também no foco; hover com o vermelho a 30% |
+| erro (`border-destructive-text field-error`) | borda vermelha, também no foco; hover com o vermelho a 30% |
 
 O `field-states` vai no elemento que desenha a borda: a caixa, quando o `<input>` fica dentro dela, ou o próprio `<input>`. Com toque, a troca é instantânea (sem fade enquanto o teclado sobe).
 

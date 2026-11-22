@@ -191,7 +191,7 @@ function MultiInput(props: MultiInputProps) {
         className={cn(
           "flex min-h-9 flex-wrap items-center gap-1.5 rounded-element border border-input bg-card px-3 py-2.5 text-sm field-states cursor-text",
           disabled && "cursor-default",
-          hasError && "border-destructive field-error",
+          hasError && "border-destructive-text field-error",
         )}
         // biome-ignore lint/a11y/useSemanticElements: <fieldset> conflicts with the flex chip layout.
         role="group"
