@@ -1,37 +1,44 @@
-import { expect, test } from "@playwright/test"
+import { type Page, expect, test } from "@playwright/test"
 import { expectFocusRing } from "./a11y"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
+/**
+ * Opens a story and waits until it has rendered. Storybook's dev server may
+ * still be compiling on the first hit, so the first wait is a long one.
+ *
+ * Never point a test at a story that has a `play` function: the two race for
+ * the same controls (the play function types or clicks while the test does).
+ */
+async function open(page: Page, id: string) {
+  await page.goto(story(id))
+  await expect(page.locator("#storybook-root > *").first()).toBeVisible({ timeout: 15_000 })
+}
+
 test.describe("Button", () => {
-  test("default renders and is clickable", async ({ page }) => {
-    await page.goto(story("primitives-button--default"))
-    const button = page.getByRole("button", { name: "Button" })
+  test("renders and is clickable", async ({ page }) => {
+    await open(page, "primitives-button--secondary")
+    const button = page.getByRole("button", { name: "Secundário" })
     await expect(button).toBeEnabled()
     await button.click()
   })
 
   test("loading state has aria-busy and is not clickable", async ({ page }) => {
-    await page.goto(story("primitives-button--loading"))
-    const button = page.getByRole("button", { name: /Salvando/ })
+    await open(page, "primitives-button--loading-variants")
+    const button = page.getByRole("button", { name: "outline" })
     await expect(button).toBeDisabled()
     await expect(button).toHaveAttribute("aria-busy", "true")
-    // Real browser: aria-busy + disabled prevents pointer interaction.
-    // Clicking a disabled button must not trigger anything (no Playwright error).
   })
 
   test("disabled state blocks clicks", async ({ page }) => {
-    await page.goto(story("primitives-button--disabled"))
-    const button = page.getByRole("button", { name: "Indisponível" })
+    await open(page, "primitives-button--all-states")
+    const button = page.locator('[data-slot="button"]:disabled').first()
     await expect(button).toBeDisabled()
   })
 
   test("focus ring renders on Tab focus, not on a mouse click", async ({ page }) => {
-    await page.goto(story("primitives-button--default"))
-    const button = page.getByRole("button", { name: "Button" })
-    await expect(button).toBeVisible({ timeout: 15_000 })
-    // Start unfocused: the story may land with focus already on the button.
-    await button.evaluate((el) => el.blur())
+    await open(page, "primitives-button--outline")
+    const button = page.getByRole("button", { name: "Cancelar" })
     await button.click()
     await expect(button).toBeFocused()
     expect(await button.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("none")
@@ -44,17 +51,17 @@ test.describe("Button", () => {
 
 test.describe("Checkbox", () => {
   test("clicking the label toggles state (implicit Radix binding)", async ({ page }) => {
-    await page.goto(story("primitives-checkbox--default"))
-    const label = page.getByText("Aceito os termos")
-    const box = page.getByRole("checkbox", { name: "Aceito os termos" })
+    await open(page, "primitives-checkbox--with-description")
+    const label = page.getByText("Receber newsletter")
+    const box = page.getByRole("checkbox", { name: "Receber newsletter" })
     await expect(box).toHaveAttribute("aria-checked", "false")
     await label.click()
     await expect(box).toHaveAttribute("aria-checked", "true")
   })
 
   test("keyboard Space toggles", async ({ page }) => {
-    await page.goto(story("primitives-checkbox--default"))
-    const box = page.getByRole("checkbox", { name: "Aceito os termos" })
+    await open(page, "primitives-checkbox--with-description")
+    const box = page.getByRole("checkbox", { name: "Receber newsletter" })
     await box.focus()
     await page.keyboard.press("Space")
     await expect(box).toHaveAttribute("aria-checked", "true")
@@ -63,20 +70,21 @@ test.describe("Checkbox", () => {
 
 test.describe("Input", () => {
   test("typing updates the value", async ({ page }) => {
-    await page.goto(story("primitives-input--default"))
-    const input = page.getByLabel("Nome completo")
-    await input.fill("João da Silva")
-    await expect(input).toHaveValue("João da Silva")
+    await open(page, "primitives-input--with-description")
+    const input = page.getByLabel("E-mail")
+    await input.fill("joao@exemplo.com")
+    await expect(input).toHaveValue("joao@exemplo.com")
   })
 
   test("error renders role=alert", async ({ page }) => {
-    await page.goto(story("primitives-input--with-error"))
+    await open(page, "primitives-input--with-error")
     await expect(page.getByRole("alert")).toBeVisible()
   })
 
   test("password toggle changes input type", async ({ page }) => {
-    await page.goto(story("primitives-input--password-toggle"))
-    const input = page.getByLabel("Senha")
+    await open(page, "primitives-input--password-toggle")
+    // `exact`: the toggle button is named "Mostrar senha", which also contains "Senha".
+    const input = page.getByLabel("Senha", { exact: true })
     await expect(input).toHaveAttribute("type", "password")
     await page.getByRole("button", { name: "Mostrar senha" }).click()
     await expect(input).toHaveAttribute("type", "text")
@@ -84,11 +92,6 @@ test.describe("Input", () => {
 })
 
 test.describe("SegmentedControl", () => {
-  const open = async (page: import("@playwright/test").Page, id: string) => {
-    await page.goto(story(id))
-    await expect(page.getByRole("radiogroup")).toBeVisible({ timeout: 15_000 })
-  }
-
   test("arrows move and select in a real browser; one Tab stop", async ({ page }) => {
     await open(page, "primitives-segmentedcontrol--default")
     await page.keyboard.press("Tab")
