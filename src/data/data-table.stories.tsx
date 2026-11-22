@@ -139,11 +139,16 @@ const columns: ColumnDef<Contrato>[] = [
     cell: ({ row }) => {
       const variant =
         row.original.status === "aprovado"
-          ? "default"
+          ? "success"
           : row.original.status === "vencido"
             ? "destructive"
-            : "secondary"
-      return <Badge variant={variant}>{row.original.status}</Badge>
+            : "warning"
+      // Dot + label: a column of filled badges would outweigh the data.
+      return (
+        <Badge variant={variant} dot>
+          {row.original.status}
+        </Badge>
+      )
     },
   },
 ]
@@ -177,7 +182,7 @@ const meta = {
           "- `pageIndex` / `onPaginationChange` / `pageCount` / `manualPagination` — paginação server-side.",
           "- `labels?: { search?, empty?, rowCount?(filtered, total) => string }` — sobrescreve os textos default.",
           '- `onRowClick?: (row, event) => void` — torna cada linha clicável. Adiciona `role="button"`, `tabIndex=0` e suporte a Enter/Espaço automaticamente.',
-          "- `rowClassName?: (row, index) => string | undefined` — classes por linha. Retorne `undefined` para a linha herdar o estilo padrão. Útil para colorir linhas por status.",
+          "- `rowClassName?: (row, index) => string | undefined` — classes por linha. Retorne `undefined` para a linha herdar o estilo padrão. Útil para destacar linhas.",
           "- `loading?: boolean` — exibe estado skeleton: linhas (count = `pagination.pageSize ?? 5`, células = `columns.length`), input de busca, contagem e botões de paginação. Wrapper recebe `aria-busy`.",
           "- `downloadable?: boolean | { filename?, sheetName?, rowToRecord? }` — botão `Exportar para Excel` (ghost) à direita; abre popover com 3 escopos: dados filtrados, página atual, todos. Gera `.xlsx` via `xlsx` (SheetJS) lazy-loaded.",
           "- `className?: string` — classes extras no wrapper externo.",
@@ -212,7 +217,7 @@ const meta = {
           "  {",
           '    accessorKey: "status",',
           '    header: "Status",',
-          "    cell: ({ row }) => <Badge>{row.original.status}</Badge>,",
+          '    cell: ({ row }) => <Badge variant="success" dot>{row.original.status}</Badge>,',
           "  },",
           "]",
           "```",
@@ -313,7 +318,7 @@ const meta = {
     rowClassName: {
       control: false,
       description:
-        "Função que recebe `(row, index)` e retorna classes para a linha. Use para destacar linhas por status — ex: `row.status === 'vencido' ? 'bg-destructive/10' : undefined`.",
+        "Função que recebe `(row, index)` e retorna classes para a linha. Use para destacar linhas — ex: `row.status === 'vencido' ? 'bg-muted' : undefined`. O status em si fica na célula, com `<Badge dot>`.",
       table: { type: { summary: "(row: TData, index: number) => string | undefined" } },
     },
   },
@@ -825,8 +830,7 @@ export const WithRowColoring: Story = {
         data={contratos.slice(0, 10)}
         sortableColumns={["numero", "cliente", "vencimento", "valor"]}
         rowClassName={(row) => {
-          if (row.status === "vencido") return "bg-destructive/10 hover:bg-destructive/15"
-          if (row.status === "pendente") return "bg-amber-50 hover:bg-amber-100/70"
+          if (row.status === "vencido") return "bg-muted"
           return undefined
         }}
       />
@@ -836,7 +840,7 @@ export const WithRowColoring: Story = {
     docs: {
       description: {
         story:
-          "`rowClassName(row, index)` permite estilizar linhas individualmente. Aqui: vermelho-claro para `vencido`, âmbar para `pendente`. Retorne `undefined` para manter o estilo padrão.",
+          "`rowClassName(row, index)` permite estilizar linhas individualmente. Aqui as linhas `vencido` ganham o fundo neutro (`bg-muted`); quem diz o status é o ponto colorido da célula. A paleta não tem fundo claro de status. Retorne `undefined` para manter o estilo padrão.",
       },
     },
   },
@@ -863,8 +867,8 @@ export const ClickableAndColored: Story = {
             sortableColumns={["numero", "cliente", "vencimento", "valor"]}
             onRowClick={(row) => setSelected(row.numero)}
             rowClassName={(row) => {
-              if (row.numero === selected) return "bg-primary/10 hover:bg-primary/15"
-              if (row.status === "vencido") return "bg-destructive/10 hover:bg-destructive/15"
+              if (row.numero === selected) return "bg-accent text-accent-foreground"
+              if (row.status === "vencido") return "bg-muted"
               return undefined
             }}
           />
@@ -877,7 +881,7 @@ export const ClickableAndColored: Story = {
     docs: {
       description: {
         story:
-          "`onRowClick` e `rowClassName` se combinam — a linha selecionada usa `bg-primary/10`, vencidas ficam destacadas em vermelho.",
+          "`onRowClick` e `rowClassName` se combinam: a linha selecionada usa `bg-accent text-accent-foreground`, e as vencidas, o fundo neutro.",
       },
     },
   },

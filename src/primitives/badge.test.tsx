@@ -44,6 +44,24 @@ describe("Badge", () => {
     expect(screen.getByText("Outline")).toHaveClass("border")
   })
 
+  it("dot: paints only the dot in the variant colour and inherits the text colour", () => {
+    render(
+      <Badge variant="success" dot>
+        Aprovado
+      </Badge>,
+    )
+    const badge = screen.getByText("Aprovado")
+    expect(badge).toHaveAttribute("data-dot", "true")
+    expect(badge).toHaveClass("before:bg-success", "bg-transparent", "text-inherit")
+    expect(badge).not.toHaveClass("bg-success")
+    expect(badge).not.toHaveClass("text-success-foreground")
+  })
+
+  it("dot: the default variant uses the primary", () => {
+    render(<Badge dot>Ativo</Badge>)
+    expect(screen.getByText("Ativo")).toHaveClass("before:bg-primary")
+  })
+
   it("renders as child element when asChild is true", () => {
     render(
       <Badge asChild>
