@@ -22,7 +22,7 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-card text-card-foreground",
+        default: "border-border-strong bg-card text-card-foreground",
         // One strong fill per status. The transparent border is what a
         // forced-colors mode draws; a focus ring inside takes the text colour.
         info: "border-transparent bg-info text-info-foreground [--focus-outline-color:currentColor]",

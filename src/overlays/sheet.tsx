@@ -10,7 +10,7 @@ import { motionSheet, overlayBase } from "./_internal/animations"
 
 const sheetVariants = cva(
   cn(
-    "fixed z-[var(--z-modal)] gap-4 bg-popover p-6 text-popover-foreground transition",
+    "fixed z-[var(--z-modal)] gap-4 border-border-strong bg-popover p-6 text-popover-foreground transition",
     "data-[state=open]:animate-in data-[state=closed]:animate-out",
     motionSheet,
   ),

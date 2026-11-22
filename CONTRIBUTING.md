@@ -48,7 +48,7 @@ Antes de qualquer push: `bun run typecheck && bun run test && bun run build`.
 Estas decisões são deliberadas. Não as questione num PR sem antes abrir issue separada.
 
 - **Claro e escuro.** Os dois temas usam os mesmos papéis de cor; o escuro liga com a classe `dark` no `<html>` (ou num ancestral). Componentes não usam `dark:`: quem muda são os tokens de `src/styles/tokens.css` (`:root` e `.dark`). Toda cor nova entra nos dois blocos e passa em `bun run audit:contrast`.
-- **Flat.** Sem shadows, sem elevation tokens. Hierarquia é dada por borda, espaço e tipografia. A borda geral (`--border`) é 10% da cor primária, translúcida; a dos campos (`--input`) é sólida.
+- **Flat.** Sem shadows, sem elevation tokens. Hierarquia é dada por borda, espaço e tipografia. A borda tem dois níveis da cor primária, translúcidos: `--border` (10%) para divisores e `--border-strong` (18%) para molduras; a dos campos (`--input`) é sólida, a 3:1 ou mais.
 - **Raio por papel, três níveis.** `inner` 4px (peças dentro de um controle e peças baixas, como Badge e Token), `element` 8px (o controle), `container` 12px (superfícies que agrupam ou flutuam). Use `rounded-inner`, `rounded-element` e `rounded-container`; a escala do Tailwind cai nos três. Peça dentro de peça segue a conta do concêntrico (raio de dentro = raio de fora − espaço). `rounded-full` só para círculo. Detalhes e a lista por componente em Foundations/Radius.
 - **Densidade enterprise.**
   - Body: `text-sm`.

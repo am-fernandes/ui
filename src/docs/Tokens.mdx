@@ -112,7 +112,15 @@ Pressed também encolhe o botão para 98% (`motion-safe:pointer-fine:active:scal
 
 ## Bordas
 
-`--border` (divisores, cards, tabelas, menus) é **10% da cor primária, translúcida**: `color-mix(in oklch, var(--primary) 10%, transparent)`. Ela lê igual sobre qualquer superfície, e no tema escuro vira 10% de branco sozinha. `--input`, a borda dos campos, continua sólida, como no Astryx: um campo precisa ser achado na tela.
+Dois níveis da cor primária, translúcidos, que leem igual sobre qualquer superfície e acompanham o tema sozinhos:
+
+| Token | Valor | Uso |
+|---|---|---|
+| `--border` | 10% da primária | divisores de dentro de uma superfície: linhas de tabela, separadores de menu |
+| `--border-strong` | 18% da primária | molduras que separam camadas: card, tabela, menu, popover, dialog, menu lateral |
+| `--input` | sólida, 3:1 ou mais | borda de campo, checkbox e radio desmarcados, trilho do switch desligado |
+
+Sem sombra, é a borda forte que separa um menu aberto do conteúdo. `--input` é sólida e mais escura porque o contorno é o que identifica um campo (WCAG 1.4.11).
 
 ## Z-index scale
 

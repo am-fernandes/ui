@@ -723,7 +723,7 @@ function DataTable<TData>({
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-container border bg-card">
+      <div className="overflow-hidden rounded-container border border-border-strong bg-card">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

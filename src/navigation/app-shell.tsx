@@ -291,7 +291,7 @@ function AppShell({
           className={cn(
             // `overflow-hidden` keeps labels growing from 0 → full width from
             // exposing a horizontal scrollbar while the width animates.
-            "hidden shrink-0 flex-col overflow-hidden border-r bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:flex",
+            "hidden shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:flex",
             collapsed ? "w-16" : "w-64",
           )}
         >
@@ -358,7 +358,7 @@ function AppShell({
           <header
             data-slot="app-shell-navbar"
             className={cn(
-              "flex h-16 shrink-0 items-center gap-2 border-b bg-sidebar px-2 text-sidebar-foreground md:gap-3 md:px-6",
+              "flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border bg-sidebar px-2 text-sidebar-foreground md:gap-3 md:px-6",
               !navbar && "md:hidden",
             )}
           >
@@ -394,7 +394,7 @@ function AppShell({
                   data-slot="app-shell-menu"
                   aria-describedby={undefined}
                   className={cn(
-                    "fixed inset-y-0 left-0 z-[var(--z-modal)] flex w-72 max-w-[85vw] flex-col border-r bg-sidebar text-sidebar-foreground",
+                    "fixed inset-y-0 left-0 z-[var(--z-modal)] flex w-72 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground",
                     motionSheet,
                     "data-[state=open]:animate-in data-[state=closed]:animate-out",
                     "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
