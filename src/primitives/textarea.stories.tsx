@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, fn, userEvent, within } from "@storybook/test"
-import { useState } from "react"
+import { useRef, useState } from "react"
 
+import { Button } from "./button"
 import { Textarea } from "./textarea"
 
 const meta: Meta<typeof Textarea> = {
@@ -187,6 +188,46 @@ export const AutoResize: Story = {
       description: {
         story:
           "`autoResize` desabilita `resize`/`overflow` e ajusta `style.height` ao `scrollHeight` toda vez que o valor muda.",
+      },
+    },
+  },
+}
+
+const SERVER_NOTE = Array.from(
+  { length: 12 },
+  (_, i) => `Linha ${i + 1} de uma observação carregada do servidor`,
+).join("\n")
+
+export const ValueSetByCode: Story = {
+  render: () => {
+    const ref = useRef<HTMLTextAreaElement>(null)
+    const [narrow, setNarrow] = useState(false)
+    return (
+      <div className="flex w-96 flex-col gap-3">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (ref.current) ref.current.value = SERVER_NOTE
+            }}
+          >
+            Carregar observação
+          </Button>
+          <Button variant="outline" onClick={() => setNarrow((current) => !current)}>
+            {narrow ? "Alargar" : "Estreitar"}
+          </Button>
+        </div>
+        <div data-testid="box" style={{ width: narrow ? 180 : 360 }}>
+          <Textarea ref={ref} label="Observações" autoResize maxLength={2000} />
+        </div>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "O contador e a altura leem o valor do próprio campo, não o `onChange`. Por isso acompanham um valor escrito por código (o `register`, o `setValue` e o `reset` do react-hook-form escrevem pelo `ref`, sem evento nenhum), um `form.reset()` e uma mudança de largura da caixa.",
       },
     },
   },

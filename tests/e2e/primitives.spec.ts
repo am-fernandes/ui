@@ -91,6 +91,46 @@ test.describe("Input", () => {
   })
 })
 
+test.describe("Textarea", () => {
+  test("autoResize and the counter follow a value written by code and a narrower box", async ({
+    page,
+  }) => {
+    // Resizing inside a ResizeObserver callback makes the browser report a loop.
+    const errors: string[] = []
+    page.on("pageerror", (error) => errors.push(String(error)))
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text())
+    })
+
+    await open(page, "primitives-textarea--value-set-by-code")
+    const textarea = page.getByLabel("Observações")
+    // How much of the text is cut off by `overflow: hidden`.
+    const hidden = () => textarea.evaluate((el) => el.scrollHeight - el.clientHeight)
+    const height = async () => (await textarea.boundingBox())?.height ?? 0
+
+    const empty = await height()
+    await expect(page.getByText("0/2000")).toBeVisible()
+
+    // Assigned through the ref: no input event, no re-render.
+    await page.getByRole("button", { name: "Carregar observação" }).click()
+    await expect(page.getByText("578/2000")).toBeVisible()
+    await expect.poll(hidden).toBe(0)
+    const loaded = await height()
+    expect(loaded).toBeGreaterThan(empty + 100)
+
+    // Half the width: every line wraps, so the box has to grow again.
+    await page.getByRole("button", { name: "Estreitar" }).click()
+    await expect.poll(height).toBeGreaterThan(loaded + 100)
+    await expect.poll(hidden).toBe(0)
+
+    await page.getByRole("button", { name: "Alargar" }).click()
+    await expect.poll(height).toBe(loaded)
+    await expect.poll(hidden).toBe(0)
+
+    expect(errors).toEqual([])
+  })
+})
+
 test.describe("SegmentedControl", () => {
   test("arrows move and select in a real browser; one Tab stop", async ({ page }) => {
     await open(page, "primitives-segmentedcontrol--default")

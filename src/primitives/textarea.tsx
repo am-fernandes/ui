@@ -4,6 +4,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { FieldShell, type LabelPosition } from "./_internal/field-shell"
+import { observeValue } from "./_internal/observe-value"
 import { useFieldIds } from "./_internal/use-field-ids"
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -38,10 +39,12 @@ function Textarea({
   const hasDescription = description != null && description !== ""
 
   const isControlled = value !== undefined
-  const [internal, setInternal] = React.useState<string>(
-    typeof defaultValue === "string" ? defaultValue : "",
+  // The counter of an uncontrolled textarea follows the DOM, not `onChange`:
+  // a form library may write the value through the ref without any event.
+  const [domLength, setDomLength] = React.useState(() =>
+    defaultValue == null ? 0 : String(defaultValue).length,
   )
-  const current = isControlled ? String(value ?? "") : internal
+  const length = isControlled ? String(value ?? "").length : domLength
 
   const localRef = React.useRef<HTMLTextAreaElement | null>(null)
   const mergedRef = React.useCallback(
@@ -53,12 +56,97 @@ function Textarea({
     [ref],
   )
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `current` is the trigger — re-run on value change.
+  // What the last measurement saw: the height is only measured again when the
+  // text or the width of the box changed.
+  const measured = React.useRef<{ value: string; width: number } | null>(null)
+  const syncFromDom = React.useCallback(
+    (force = false) => {
+      const el = localRef.current
+      if (!el) return
+      if (!isControlled) setDomLength(el.value.length)
+      if (!autoResize) return
+      const width = el.clientWidth
+      const last = measured.current
+      if (!force && last && last.value === el.value && last.width === width) return
+      el.style.height = "auto"
+      // scrollHeight leaves the border out, and the box is border-box.
+      el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`
+      measured.current = { value: el.value, width }
+    },
+    [autoResize, isControlled],
+  )
+
+  // After every commit: picks up what React, or a ref callback such as
+  // react-hook-form's `register`, has just written to the DOM.
+  React.useLayoutEffect(() => {
+    syncFromDom()
+  })
+
+  // Turning `autoResize` off hands the height back to `rows` and the classes.
+  React.useLayoutEffect(() => {
+    if (!autoResize) return
+    const el = localRef.current
+    return () => {
+      measured.current = null
+      if (el) el.style.height = ""
+    }
+  }, [autoResize])
+
   React.useEffect(() => {
-    if (!autoResize || !localRef.current) return
-    localRef.current.style.height = "auto"
-    localRef.current.style.height = `${localRef.current.scrollHeight}px`
-  }, [autoResize, current])
+    const el = localRef.current
+    if (!el) return
+
+    // `textarea.value = …` from code (setValue and reset of react-hook-form).
+    let queued = false
+    const stopObserving = observeValue(el, () => {
+      if (queued) return
+      queued = true
+      queueMicrotask(() => {
+        queued = false
+        syncFromDom()
+      })
+    })
+
+    // A native reset: the event fires before the fields go back.
+    const form = el.form
+    let resetTimer: number | undefined
+    const onReset = () => {
+      window.clearTimeout(resetTimer)
+      resetTimer = window.setTimeout(() => syncFromDom())
+    }
+    form?.addEventListener("reset", onReset)
+
+    return () => {
+      stopObserving()
+      window.clearTimeout(resetTimer)
+      form?.removeEventListener("reset", onReset)
+    }
+  }, [syncFromDom])
+
+  // A narrower box wraps the same text into more lines; a font that finishes
+  // loading changes how much fits in each one.
+  React.useEffect(() => {
+    const el = localRef.current
+    if (!autoResize || !el) return
+    let frame = 0
+    // Next frame: resizing inside the observer's own callback makes the
+    // browser report a ResizeObserver loop.
+    const schedule = (force: boolean) => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => syncFromDom(force))
+    }
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => schedule(false))
+    observer?.observe(el)
+    const fonts = document.fonts
+    const onFontsLoaded = () => schedule(true)
+    fonts?.addEventListener?.("loadingdone", onFontsLoaded)
+    return () => {
+      cancelAnimationFrame(frame)
+      observer?.disconnect()
+      fonts?.removeEventListener?.("loadingdone", onFontsLoaded)
+    }
+  }, [autoResize, syncFromDom])
 
   const textareaEl = (
     <textarea
@@ -73,7 +161,7 @@ function Textarea({
       value={value}
       defaultValue={defaultValue}
       onChange={(e) => {
-        if (!isControlled) setInternal(e.target.value)
+        syncFromDom()
         onChange?.(e)
       }}
       className={cn(
@@ -104,7 +192,7 @@ function Textarea({
       {textareaEl}
       {maxLength ? (
         <p className="text-right text-xs text-muted-foreground" aria-live="polite">
-          {current.length}/{maxLength}
+          {length}/{maxLength}
         </p>
       ) : null}
     </FieldShell>
