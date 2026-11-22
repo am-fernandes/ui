@@ -57,6 +57,11 @@ describe("Button", () => {
     expect(screen.getByRole("button")).toHaveClass("focus-visible:focus-outline", "state-layer")
   })
 
+  it("keeps the state layer on the other variants", () => {
+    render(<Button variant="outline">x</Button>)
+    expect(screen.getByRole("button")).toHaveClass("state-layer", "bg-card")
+  })
+
   it("forwards ref", () => {
     let captured: HTMLButtonElement | null = null
     render(

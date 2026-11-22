@@ -116,7 +116,7 @@ function SegmentedControl({
               "inline-flex min-w-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-inner font-medium transition-colors",
               "focus-visible:focus-outline data-[state=unchecked]:state-layer",
               "disabled:cursor-default disabled:opacity-50",
-              "data-[state=checked]:bg-background data-[state=checked]:text-foreground",
+              "data-[state=checked]:bg-card data-[state=checked]:text-foreground",
               "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
               size === "sm" ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm",
               iconOnly && (size === "sm" ? "px-1.5" : "px-2"),

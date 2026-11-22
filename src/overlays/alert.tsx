@@ -22,7 +22,7 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-background text-foreground",
+        default: "bg-card text-card-foreground",
         info: "border-status-info-border bg-status-info-bg text-status-info-text",
         success: "border-status-success-border bg-status-success-bg text-status-success-text",
         warning: "border-status-warning-border bg-status-warning-bg text-status-warning-text",

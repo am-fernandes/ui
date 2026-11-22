@@ -76,7 +76,7 @@ Ponha a classe `dark` no `<html>` (ou em qualquer ancestral da parte que deve fi
 
 Para seguir o sistema operacional ou guardar a escolha do usuário, use um gerenciador de tema que alterne essa classe (com `next-themes`: `<ThemeProvider attribute="class">`). No Storybook, o seletor **Claro / Escuro** fica na barra de ferramentas.
 
-Nas suas próprias telas, use os tokens (`bg-background`, `text-muted-foreground`, `border-border`) e não cores fixas: assim elas acompanham o tema. Se precisar de um ajuste só no escuro, a variante `dark:` do Tailwind já está configurada.
+Nas suas próprias telas, use os tokens e não cores fixas: assim elas acompanham o tema. A página é `bg-background`; o que fica sobre ela (um painel, uma barra de filtros) é `bg-card` com `border-border-strong`; texto de apoio é `text-muted-foreground`. Se precisar de um ajuste só no escuro, a variante `dark:` do Tailwind já está configurada.
 
 ## Primeiro componente
 

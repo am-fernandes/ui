@@ -68,7 +68,7 @@ function Tabs({
             disabled={item.disabled}
             data-slot="tabs-trigger"
             className={cn(
-              "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-inner px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer state-layer focus-visible:focus-outline disabled:pointer-events-none disabled:cursor-default disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground",
+              "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-inner px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer state-layer focus-visible:focus-outline disabled:pointer-events-none disabled:cursor-default disabled:opacity-50 data-[state=active]:bg-card data-[state=active]:text-foreground",
             )}
           >
             {item.label}

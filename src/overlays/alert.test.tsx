@@ -51,7 +51,7 @@ describe("Alert", () => {
   })
 
   it.each([
-    ["default", "bg-background"],
+    ["default", "bg-card"],
     ["info", "bg-status-info-bg"],
     ["success", "bg-status-success-bg"],
     ["warning", "bg-status-warning-bg"],

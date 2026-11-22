@@ -399,7 +399,7 @@ function FileRow({
   }
 
   return (
-    <li className="flex items-center gap-3 rounded-element border bg-background px-2 py-1.5 text-sm">
+    <li className="flex items-center gap-3 rounded-element border bg-card px-2 py-1.5 text-sm">
       <button
         type="button"
         onClick={isImage ? onOpenImage : openInNewTab}

@@ -88,7 +88,7 @@ function PhoneInput({
           required={required}
           aria-required={required ? true : undefined}
           className={cn(
-            "flex w-full rounded-element border border-input bg-transparent px-3 py-2.5 text-sm tabular-nums field-states disabled:cursor-default",
+            "flex w-full rounded-element border border-input bg-card px-3 py-2.5 text-sm tabular-nums field-states disabled:cursor-default",
             hasError && "border-destructive field-error",
             className,
           )}

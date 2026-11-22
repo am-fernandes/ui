@@ -723,7 +723,7 @@ function DataTable<TData>({
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-container border">
+      <div className="overflow-hidden rounded-container border bg-card">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -893,7 +893,7 @@ function DataTable<TData>({
                         // non-zero page when the user was past page 0).
                         table.setPagination({ pageIndex: 0, pageSize: next })
                       }}
-                      className="h-9 rounded-element border border-input bg-background px-2 text-xs text-foreground field-states"
+                      className="h-9 rounded-element border border-input bg-card px-2 text-xs text-foreground field-states"
                     >
                       {pagination.pageSizeOptions.map((opt) => (
                         <option key={opt} value={opt}>

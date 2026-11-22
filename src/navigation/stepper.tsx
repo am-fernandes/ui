@@ -106,10 +106,8 @@ function Indicator({
         !step.status &&
           state === "completed" &&
           "border-primary bg-primary text-primary-foreground",
-        !step.status &&
-          state === "current" &&
-          "border-2 border-primary bg-background text-foreground",
-        !step.status && state === "upcoming" && "border-input bg-background text-muted-foreground",
+        !step.status && state === "current" && "border-2 border-primary bg-card text-foreground",
+        !step.status && state === "upcoming" && "border-input bg-card text-muted-foreground",
       )}
     >
       {content}

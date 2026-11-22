@@ -293,7 +293,7 @@ function Calendar({
       showOutsideDays={showOutsideDays}
       disabled={resolvedDisabled}
       className={cn(
-        "group/calendar bg-background p-2 [--cell-radius:var(--radius-inner)] [--cell-size:--spacing(7)]",
+        "group/calendar p-2 [--cell-radius:var(--radius-inner)] [--cell-size:--spacing(7)]",
         className,
       )}
       captionLayout={captionLayout}

@@ -29,30 +29,30 @@ const toggleVariants = cva(
   {
     variants: {
       variant: {
-        // Off = plain outline (`border-input bg-background`, same as
+        // Off = plain outline (`border-input bg-card`, same as
         // Button's `outline` variant so a Toggle in its idle state lines
         // up next to outline buttons without looking thinner).
         // On = solid fill in the variant colour, mirroring Button's
         // `default` / `destructive` solid look — at-a-glance the on-state
         // reads as "this is engaged".
         default: [
-          "border-input bg-background",
+          "border-input bg-card",
           "data-[state=on]:bg-accent data-[state=on]:text-accent-foreground data-[state=on]:border-accent",
         ].join(" "),
         info: [
-          "border-input bg-background",
+          "border-input bg-card",
           "data-[state=on]:bg-info data-[state=on]:text-info-foreground data-[state=on]:border-info",
         ].join(" "),
         success: [
-          "border-input bg-background",
+          "border-input bg-card",
           "data-[state=on]:bg-success data-[state=on]:text-success-foreground data-[state=on]:border-success",
         ].join(" "),
         warning: [
-          "border-input bg-background",
+          "border-input bg-card",
           "data-[state=on]:bg-warning data-[state=on]:text-warning-foreground data-[state=on]:border-warning",
         ].join(" "),
         destructive: [
-          "border-input bg-background",
+          "border-input bg-card",
           "data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground data-[state=on]:border-destructive",
         ].join(" "),
       },

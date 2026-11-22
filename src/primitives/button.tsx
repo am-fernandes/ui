@@ -20,7 +20,7 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground state-layer",
         destructive: "bg-destructive text-destructive-foreground state-layer",
-        outline: "border border-input bg-background state-layer",
+        outline: "border border-input bg-card state-layer",
         secondary: "bg-secondary text-secondary-foreground state-layer",
         ghost: "state-layer",
         link: "text-primary underline-offset-4 hover:underline",

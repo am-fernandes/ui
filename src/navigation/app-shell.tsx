@@ -358,7 +358,7 @@ function AppShell({
           <header
             data-slot="app-shell-navbar"
             className={cn(
-              "flex h-16 shrink-0 items-center gap-2 border-b bg-background px-2 md:gap-3 md:px-6",
+              "flex h-16 shrink-0 items-center gap-2 border-b bg-sidebar px-2 text-sidebar-foreground md:gap-3 md:px-6",
               !navbar && "md:hidden",
             )}
           >

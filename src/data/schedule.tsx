@@ -295,7 +295,7 @@ function Schedule({
           aria-busy={loading || undefined}
           // Not dimmed while loading: fading the events would drop their text
           // below WCAG contrast. The header spinner and aria-busy carry the state.
-          className="overflow-hidden rounded-container border"
+          className="overflow-hidden rounded-container border bg-card"
         >
           {body}
         </div>

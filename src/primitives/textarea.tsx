@@ -77,7 +77,7 @@ function Textarea({
         onChange?.(e)
       }}
       className={cn(
-        "min-h-[60px] w-full rounded-element border border-input bg-transparent px-3 py-2.5 text-sm field-states",
+        "min-h-[60px] w-full rounded-element border border-input bg-card px-3 py-2.5 text-sm field-states",
         "placeholder:text-placeholder",
         "disabled:cursor-default",
         hasError && "border-destructive field-error",
