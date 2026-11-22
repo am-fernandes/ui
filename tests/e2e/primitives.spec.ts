@@ -98,6 +98,23 @@ test.describe("RadioGroup", () => {
     await expect(group).toBeVisible()
     await expect(group.getByRole("radio")).toHaveCount(4)
   })
+
+  test("required blocks the submit until an option is chosen", async ({ page }) => {
+    await open(page, "primitives-radiogroup--in-form")
+    await expect(page.getByRole("radiogroup", { name: "Plano" })).toHaveAttribute(
+      "aria-required",
+      "true",
+    )
+    await page.getByRole("button", { name: "Enviar" }).click()
+    expect(
+      await page.locator("form").evaluate((form: HTMLFormElement) => form.checkValidity()),
+    ).toBe(false)
+    await expect(page.getByText(/Enviado/)).toHaveCount(0)
+
+    await page.getByRole("radio", { name: "Pro" }).click()
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByText("Enviado: pro")).toBeVisible()
+  })
 })
 
 test.describe("Textarea", () => {

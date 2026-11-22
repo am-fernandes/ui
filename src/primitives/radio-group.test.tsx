@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { ZapIcon } from "lucide-react"
+import type * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
 import { RadioGroup } from "./radio-group"
@@ -57,6 +58,45 @@ describe("RadioGroup", () => {
       </>,
     )
     expect(screen.getByRole("radiogroup", { name: "Escolha o plano" })).toBeInTheDocument()
+  })
+
+  describe("required", () => {
+    it("says so on the group, not only with the asterisk", () => {
+      const { rerender } = render(<RadioGroup label="Plano" values={VALUES} />)
+      expect(screen.getByRole("radiogroup")).toHaveAttribute("aria-required", "false")
+      rerender(<RadioGroup label="Plano" values={VALUES} required />)
+      expect(screen.getByRole("radiogroup")).toHaveAttribute("aria-required", "true")
+    })
+
+    it("makes the form invalid until one option is chosen", async () => {
+      const onSubmit = vi.fn((event: React.FormEvent<HTMLFormElement>) => event.preventDefault())
+      const { container } = render(
+        <form onSubmit={onSubmit}>
+          <RadioGroup label="Plano" name="plano" values={VALUES} required />
+          <button type="submit">Enviar</button>
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(form.checkValidity()).toBe(false)
+
+      await userEvent.click(screen.getByRole("button", { name: "Enviar" }))
+      expect(onSubmit).not.toHaveBeenCalled()
+
+      await userEvent.click(screen.getByRole("radio", { name: "Pro" }))
+      expect(form.checkValidity()).toBe(true)
+      await userEvent.click(screen.getByRole("button", { name: "Enviar" }))
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      expect(new FormData(form).get("plano")).toBe("pro")
+    })
+
+    it("does not block the form when it is not required", () => {
+      const { container } = render(
+        <form>
+          <RadioGroup label="Plano" name="plano" values={VALUES} />
+        </form>,
+      )
+      expect((container.querySelector("form") as HTMLFormElement).checkValidity()).toBe(true)
+    })
   })
 
   it("renders the group label and error", () => {

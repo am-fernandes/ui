@@ -62,6 +62,7 @@ function RadioGroup({
         data-slot="radio-group"
         data-orientation={orientation}
         disabled={disabled}
+        required={required}
         aria-labelledby={hasLabel ? ids.labelId : undefined}
         aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
         aria-invalid={hasError ? true : undefined}

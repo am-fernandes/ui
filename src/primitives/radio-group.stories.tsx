@@ -3,6 +3,7 @@ import { expect, fn, userEvent, within } from "@storybook/test"
 import { BuildingIcon, CrownIcon, ZapIcon } from "lucide-react"
 import { useState } from "react"
 
+import { Button } from "./button"
 import { RadioGroup } from "./radio-group"
 
 const meta: Meta<typeof RadioGroup> = {
@@ -84,6 +85,33 @@ export const DefaultValue: Story = {
 
 export const Disabled: Story = {
   args: { label: "Plano", disabled: true, defaultValue: "free", values: PLANS },
+}
+
+export const InForm: Story = {
+  render: () => {
+    const [sent, setSent] = useState<string | null>(null)
+    return (
+      <form
+        className="flex flex-col items-start gap-4"
+        onSubmit={(event) => {
+          event.preventDefault()
+          setSent(String(new FormData(event.currentTarget).get("plano")))
+        }}
+      >
+        <RadioGroup label="Plano" name="plano" required values={PLANS} />
+        <Button type="submit">Enviar</Button>
+        {sent ? <output className="text-sm">Enviado: {sent}</output> : null}
+      </form>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com `name`, a escolha vai junto no envio. Com `required`, o grupo é anunciado como obrigatório e o formulário não é enviado enquanto nenhuma opção estiver marcada.",
+      },
+    },
+  },
 }
 
 export const Controlled: Story = {
