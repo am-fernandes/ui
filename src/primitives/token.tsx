@@ -17,8 +17,9 @@ export type TokenColor =
   | "purple"
   | "pink"
 
-// Literal class strings so Tailwind can see them. Text on the tinted
-// background is ≥ 7.3:1; the solid accent (icon, border) is ≥ 3.9:1.
+// Literal class strings so Tailwind can see them. Text on the faint background
+// is ≥ 8.7:1. The solid (icon, border) is ≥ 3:1 on the surface and sits at a
+// different lightness in each colour: it and the label tell categories apart.
 const colorClasses: Record<TokenColor, { root: string; icon: string }> = {
   gray: {
     root: "bg-category-gray-bg text-category-gray-text border-category-gray-solid/30",

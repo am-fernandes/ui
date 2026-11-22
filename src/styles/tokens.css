@@ -44,14 +44,18 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-pressed: var(--primary-pressed);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-text: var(--destructive-text);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
@@ -73,7 +77,7 @@
   --color-status-destructive-text: var(--status-destructive-text);
   --color-status-destructive-border: var(--status-destructive-border);
 
-  /* Categorical palette (Token, Schedule): tinted bg, AA+ text, solid accent */
+  /* Categorical palette (Token, Schedule): faint bg, AA+ text, solid accent */
   --color-category-gray-bg: var(--category-gray-bg);
   --color-category-gray-text: var(--category-gray-text);
   --color-category-gray-solid: var(--category-gray-solid);
@@ -103,15 +107,30 @@
   --color-category-pink-solid: var(--category-pink-solid);
 
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-placeholder: var(--placeholder);
   --color-ring: var(--ring);
+  --color-link: var(--link);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-seq-1: var(--chart-seq-1);
+  --color-chart-seq-2: var(--chart-seq-2);
+  --color-chart-seq-3: var(--chart-seq-3);
+  --color-chart-seq-4: var(--chart-seq-4);
+  --color-chart-seq-5: var(--chart-seq-5);
+  --color-chart-div-1: var(--chart-div-1);
+  --color-chart-div-2: var(--chart-div-2);
+  --color-chart-div-3: var(--chart-div-3);
+  --color-chart-div-4: var(--chart-div-4);
+  --color-chart-div-5: var(--chart-div-5);
+  --color-chart-div-6: var(--chart-div-6);
+  --color-chart-div-7: var(--chart-div-7);
 
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -179,43 +198,63 @@
   --state-hover-opacity: 5%;
   --state-pressed-opacity: 10%;
 
-  /* Backgrounds & Foregrounds */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.203 0.013 252);
+  /* ---- Colors: the group palette (AM Fernandes + Ponto Forte) ---------------
+     Neutrals are the Grafite scale (the brand navy's hue, almost no chroma).
+     The navy both brands share gives the primary (marinho-950) and the one
+     functional blue (marinho-500). Every pair the components draw is checked by
+     scripts/contrast-audit.ts. */
+
+  /* Surfaces. Two backgrounds: --background is the page (only the content
+     area), one small step under the white of every surface. Controls and
+     frames paint --card; floating layers paint --popover. */
+  --background: oklch(0.984 0.003 228.8); /* grafite-25 */
+  --foreground: oklch(0.173 0.038 249.2); /* marinho-950 */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.203 0.013 252);
+  --card-foreground: oklch(0.173 0.038 249.2);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.203 0.013 252);
+  --popover-foreground: oklch(0.173 0.038 249.2);
 
-  /* Primary: preto 100% */
-  --primary: oklch(0 0 0);
+  /* Primary: marinho-950. Hover and pressed walk towards the brand navy. */
+  --primary: oklch(0.173 0.038 249.2);
   --primary-foreground: oklch(1 0 0);
+  --primary-hover: oklch(0.271 0.072 249.1); /* marinho-800 */
+  --primary-pressed: oklch(0.322 0.089 248.8); /* marinho-700, the colour of both brands */
 
-  /* Secondary: branco */
-  --secondary: oklch(1 0 0);
-  --secondary-foreground: oklch(0 0 0);
+  --secondary: oklch(0.945 0.005 247.9); /* grafite-100 */
+  --secondary-foreground: oklch(0.173 0.038 249.2);
 
-  /* Muted & Accent */
-  --muted: oklch(0.934 0.008 252);
-  --muted-foreground: oklch(0.185 0 0);
-  --accent: oklch(0.968 0.005 252);
-  --accent-foreground: oklch(0.203 0.013 252);
+  /* Text has three levels: --foreground, --muted-foreground and
+     --subtle-foreground (placeholder, hint, date; only on --card and
+     --background, it misses 4.5:1 on --muted). */
+  --muted: oklch(0.945 0.005 247.9); /* grafite-100 */
+  --muted-foreground: oklch(0.471 0.011 243); /* grafite-600 */
+  --subtle-foreground: oklch(0.539 0.012 248); /* grafite-550 */
 
-  /* Destructive: vermelho profundo (#c93125) — passes WCAG AA (5.33:1 on white) */
-  --destructive: oklch(0.55 0.19 29.2);
+  /* Selected: the active nav item, a selected row. Stronger than the hover
+     layer, so "where I am" outranks "what I point at". */
+  --accent: oklch(0.931 0.024 248.1); /* marinho-100 */
+  --accent-foreground: oklch(0 0 0);
+
+  /* The functional blue: what is clickable and where you are (links, the focus
+     ring, the marker of the active item). Fills stay on --primary. */
+  --link: oklch(0.514 0.1 248.8); /* marinho-500 */
+  --ring: oklch(0.514 0.1 248.8);
+  --selection: oklch(0.86 0.045 249.4); /* marinho-200 */
+  --selection-foreground: oklch(0.173 0.038 249.2);
+
+  /* Status: one strong fill each, never a tinted version. Each sits at its own
+     lightness and the green leans to blue, so no pair depends on the red-green
+     axis alone (Foundations/Color Vision). Warning takes dark text. */
+  --destructive: oklch(0.551 0.19 29.3);
   --destructive-foreground: oklch(1 0 0);
-
-  /* Success: verde #6d8d0b (74 85% 30%) */
-  --success: oklch(0.497 0.135 120.7);
+  --warning: oklch(0.66 0.137 80.2);
+  --warning-foreground: oklch(0.173 0.038 249.2);
+  --success: oklch(0.52 0.1 168.2);
   --success-foreground: oklch(1 0 0);
-
-  /* Warning: amarelo #ebcd17 (49 86% 51%) */
-  --warning: oklch(0.868 0.167 92.6);
-  --warning-foreground: oklch(0 0 0);
-
-  /* Info: azul corporativo (#006cac) — passes WCAG AA (5.61:1 on white) */
-  --info: oklch(0.5 0.15 236.3);
+  --info: oklch(0.358 0.088 244);
   --info-foreground: oklch(1 0 0);
+  /* Error on a surface, with no fill: field border and message. */
+  --destructive-text: oklch(0.551 0.19 29.3);
 
   /* Status badge palettes — tinted bg, WCAG AA contrast text, medium border */
   --status-success-bg: oklch(0.96 0.025 120.7);
@@ -231,95 +270,121 @@
   --status-destructive-text: oklch(0.42 0.18 29.2);
   --status-destructive-border: oklch(0.6 0.2 29.2);
 
-  /* Categorical palette — 9 hues for tags (Token) and calendar events (Schedule).
-     text-on-bg ≥ 7.3:1 and solid-on-white ≥ 3.9:1 (see scripts/contrast-audit.ts). */
-  --category-gray-bg: oklch(0.965 0.006 252);
-  --category-gray-text: oklch(0.42 0.02 252);
-  --category-gray-solid: oklch(0.55 0.02 252);
-  --category-red-bg: oklch(0.965 0.017 27);
-  --category-red-text: oklch(0.43 0.15 27);
-  --category-red-solid: oklch(0.58 0.18 27);
-  --category-orange-bg: oklch(0.965 0.019 50);
-  --category-orange-text: oklch(0.44 0.112 50);
-  --category-orange-solid: oklch(0.6 0.15 50);
-  --category-yellow-bg: oklch(0.97 0.035 92.6);
-  --category-yellow-text: oklch(0.42 0.083 92.6);
-  --category-yellow-solid: oklch(0.6 0.117 92.6);
-  --category-green-bg: oklch(0.965 0.03 145);
-  --category-green-text: oklch(0.42 0.1 145);
-  --category-green-solid: oklch(0.58 0.14 145);
-  --category-teal-bg: oklch(0.965 0.025 185);
-  --category-teal-text: oklch(0.42 0.071 185);
-  --category-teal-solid: oklch(0.58 0.098 185);
-  --category-blue-bg: oklch(0.965 0.017 250);
-  --category-blue-text: oklch(0.42 0.115 250);
-  --category-blue-solid: oklch(0.56 0.152 250);
-  --category-purple-bg: oklch(0.965 0.019 300);
-  --category-purple-text: oklch(0.42 0.15 300);
-  --category-purple-solid: oklch(0.56 0.18 300);
-  --category-pink-bg: oklch(0.965 0.019 350);
-  --category-pink-text: oklch(0.43 0.15 350);
-  --category-pink-solid: oklch(0.6 0.18 350);
+  /* Categorical palette: 9 hues for tags (Token) and calendar events (Schedule).
+     Low chroma, and each solid at its own lightness: the solid (dot, bar) and
+     the label carry the category; bg and text only support it. */
+  --category-gray-bg: oklch(0.963 0.005 247.9);
+  --category-gray-text: oklch(0.379 0.015 248.2);
+  --category-gray-solid: oklch(0.502 0.018 248.2);
+  --category-red-bg: oklch(0.962 0.016 32);
+  --category-red-text: oklch(0.379 0.065 30);
+  --category-red-solid: oklch(0.399 0.109 30.1);
+  --category-orange-bg: oklch(0.961 0.016 42.4);
+  --category-orange-text: oklch(0.381 0.065 45.7);
+  --category-orange-solid: oklch(0.521 0.11 45.3);
+  --category-yellow-bg: oklch(0.961 0.015 90.2);
+  --category-yellow-text: oklch(0.379 0.064 92.8);
+  --category-yellow-solid: oklch(0.604 0.11 92.9);
+  --category-green-bg: oklch(0.962 0.016 156.9);
+  --category-green-text: oklch(0.381 0.065 157.8);
+  --category-green-solid: oklch(0.596 0.07 158);
+  --category-teal-bg: oklch(0.962 0.016 201.7);
+  --category-teal-text: oklch(0.379 0.065 202.4);
+  --category-teal-solid: oklch(0.399 0.061 201.4);
+  --category-blue-bg: oklch(0.962 0.015 257.2);
+  --category-blue-text: oklch(0.379 0.065 255.8);
+  --category-blue-solid: oklch(0.442 0.11 255.9);
+  --category-purple-bg: oklch(0.963 0.016 310.1);
+  --category-purple-text: oklch(0.38 0.065 310.3);
+  --category-purple-solid: oklch(0.568 0.111 310.3);
+  --category-pink-bg: oklch(0.961 0.017 337.6);
+  --category-pink-text: oklch(0.379 0.065 340);
+  --category-pink-solid: oklch(0.665 0.111 340.1);
 
-  /* Inputs & Borders */
-  /* Dividers, cards, tables, menus: 10% of the primary, so they read the same
-     on any surface. Fields keep a solid border (--input) to stay findable. */
+  /* Borders. Two levels of the primary: 10% for dividers inside a surface,
+     18% for the frames that separate layers (card, table, menu, dialog).
+     Fields keep a solid border at 3:1 or more, so they can be found. */
   --border: color-mix(in oklch, var(--primary) 10%, transparent);
-  --input: oklch(0.875 0.01 252);
-  --placeholder: oklch(0.55 0.005 252);
-  --ring: oklch(0 0 0);
+  --border-strong: color-mix(in oklch, var(--primary) 18%, transparent);
+  --input: oklch(0.63 0.011 248); /* grafite-450 */
+  --placeholder: var(--subtle-foreground);
 
-  /* Charts */
-  --chart-1: oklch(0 0 0);
-  --chart-2: oklch(0.507 0.189 17.6);
-  --chart-3: oklch(0.497 0.135 120.7);
-  --chart-4: oklch(0.868 0.167 92.6);
-  --chart-5: oklch(0.668 0.151 236.3);
+  /* Charts. 1-6: series identity, always in this order (neighbours differ in
+     lightness; past six, group as "Outros"). seq: one hue for magnitude.
+     div: two arms around a neutral middle. None repeats a status colour. */
+  --chart-1: oklch(0.514 0.1 248.8);
+  --chart-2: oklch(0.54 0.128 58);
+  --chart-3: oklch(0.66 0.131 300.1);
+  --chart-4: oklch(0.66 0.13 113);
+  --chart-5: oklch(0.499 0.126 0.7);
+  --chart-6: oklch(0.612 0.1 184.5);
+  --chart-seq-1: oklch(0.76 0.068 249.4);
+  --chart-seq-2: oklch(0.629 0.088 249.4);
+  --chart-seq-3: oklch(0.514 0.1 248.8);
+  --chart-seq-4: oklch(0.421 0.098 248.9);
+  --chart-seq-5: oklch(0.322 0.089 248.8);
+  --chart-div-1: oklch(0.421 0.13 29.1);
+  --chart-div-2: oklch(0.629 0.12 28.6);
+  --chart-div-3: oklch(0.76 0.091 28.7);
+  --chart-div-4: oklch(0.945 0.005 247.9);
+  --chart-div-5: oklch(0.76 0.068 249.4);
+  --chart-div-6: oklch(0.629 0.088 249.4);
+  --chart-div-7: oklch(0.421 0.098 248.9);
 
-  /* Sidebar */
+  /* Sidebar: the frame of the app (side menu and navbar) is a surface. */
   --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.203 0.013 252);
-  --sidebar-primary: oklch(0 0 0);
+  --sidebar-foreground: oklch(0.173 0.038 249.2);
+  --sidebar-primary: oklch(0.173 0.038 249.2);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.968 0.005 252);
-  --sidebar-accent-foreground: oklch(0.203 0.013 252);
-  --sidebar-border: var(--border);
-  --sidebar-ring: oklch(0 0 0);
+  --sidebar-accent: oklch(0.931 0.024 248.1);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: var(--border-strong);
+  --sidebar-ring: var(--ring);
 }
 
-/* Dark theme. Same roles, same hue (252) for the neutrals. Status and solid
-   fills get lighter, so their content flips to dark where white would miss
-   4.5:1 (checked by scripts/contrast-audit.ts). */
+/* Dark theme. Same roles. A higher layer is lighter: page grafite-950, surfaces
+   grafite-900, floating layers grafite-850. Status fills are the light ones,
+   except info, which climbs to marinho-500 to stay 3:1 from the surface. */
 .dark {
   color-scheme: dark;
 
-  --background: oklch(0.175 0.006 252);
-  --foreground: oklch(0.96 0.004 252);
-  --card: oklch(0.175 0.006 252);
-  --card-foreground: oklch(0.96 0.004 252);
-  /* Floating surfaces sit one step lighter: without shadows, that is what
-     separates them from the page in the dark. */
-  --popover: oklch(0.215 0.007 252);
-  --popover-foreground: oklch(0.96 0.004 252);
+  --background: oklch(0.175 0.009 240.5); /* grafite-950 */
+  --foreground: oklch(0.896 0.007 247.9); /* grafite-200: pure white would glare */
+  --card: oklch(0.215 0.01 248.3); /* grafite-900 */
+  --card-foreground: oklch(0.896 0.007 247.9);
+  --popover: oklch(0.245 0.01 248.2); /* grafite-850 */
+  --popover-foreground: oklch(0.896 0.007 247.9);
 
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.175 0.006 252);
-  --secondary: oklch(0.175 0.006 252);
-  --secondary-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.931 0.024 248.1); /* marinho-100 */
+  --primary-foreground: oklch(0.175 0.009 240.5);
+  --primary-hover: oklch(0.86 0.045 249.4); /* marinho-200 */
+  --primary-pressed: oklch(0.76 0.068 249.4); /* marinho-300 */
 
-  --muted: oklch(0.27 0.008 252);
-  --muted-foreground: oklch(0.86 0.006 252);
-  --accent: oklch(0.245 0.008 252);
-  --accent-foreground: oklch(0.96 0.004 252);
+  --secondary: oklch(0.286 0.01 242); /* grafite-800 */
+  --secondary-foreground: oklch(0.896 0.007 247.9);
 
-  --destructive: oklch(0.68 0.18 27);
-  --destructive-foreground: oklch(0.175 0.006 252);
-  --success: oklch(0.72 0.15 125);
-  --success-foreground: oklch(0.175 0.006 252);
-  --warning: oklch(0.84 0.15 92.6);
-  --warning-foreground: oklch(0.175 0.006 252);
-  --info: oklch(0.72 0.12 236.3);
-  --info-foreground: oklch(0.175 0.006 252);
+  --muted: oklch(0.286 0.01 242); /* grafite-800 */
+  --muted-foreground: oklch(0.7 0.011 248); /* grafite-400 */
+  --subtle-foreground: oklch(0.63 0.011 248); /* grafite-450 */
+
+  --accent: oklch(0.322 0.089 248.8); /* marinho-700, the colour of both brands */
+  --accent-foreground: oklch(1 0 0);
+
+  --link: oklch(0.76 0.068 249.4); /* marinho-300 */
+  --ring: oklch(0.76 0.068 249.4);
+  --selection: oklch(0.421 0.098 248.9); /* marinho-600 */
+  --selection-foreground: oklch(1 0 0);
+
+  --destructive: oklch(0.551 0.19 29.3);
+  --destructive-foreground: oklch(1 0 0);
+  --warning: oklch(0.66 0.137 80.2);
+  --warning-foreground: oklch(0.173 0.038 249.2);
+  --success: oklch(0.52 0.1 168.2);
+  --success-foreground: oklch(1 0 0);
+  --info: oklch(0.514 0.1 248.8); /* marinho-500 */
+  --info-foreground: oklch(1 0 0);
+  /* The fill red would be 3.3:1 as text here, so error text gets lighter. */
+  --destructive-text: oklch(0.759 0.14 29.2);
 
   --status-success-bg: oklch(0.26 0.04 120.7);
   --status-success-text: oklch(0.87 0.1 120.7);
@@ -334,56 +399,70 @@
   --status-destructive-text: oklch(0.85 0.09 29.2);
   --status-destructive-border: oklch(0.55 0.15 29.2);
 
-  --category-gray-bg: oklch(0.27 0.008 252);
-  --category-gray-text: oklch(0.87 0.01 252);
-  --category-gray-solid: oklch(0.62 0.02 252);
-  --category-red-bg: oklch(0.27 0.05 27);
-  --category-red-text: oklch(0.86 0.08 27);
-  --category-red-solid: oklch(0.66 0.17 27);
-  --category-orange-bg: oklch(0.27 0.045 50);
-  --category-orange-text: oklch(0.87 0.08 50);
-  --category-orange-solid: oklch(0.7 0.14 50);
-  --category-yellow-bg: oklch(0.28 0.045 92.6);
-  --category-yellow-text: oklch(0.88 0.1 92.6);
-  --category-yellow-solid: oklch(0.75 0.12 92.6);
-  --category-green-bg: oklch(0.27 0.045 145);
-  --category-green-text: oklch(0.87 0.1 145);
-  --category-green-solid: oklch(0.68 0.14 145);
-  --category-teal-bg: oklch(0.27 0.04 185);
-  --category-teal-text: oklch(0.87 0.08 185);
-  --category-teal-solid: oklch(0.68 0.1 185);
-  --category-blue-bg: oklch(0.27 0.05 250);
-  --category-blue-text: oklch(0.86 0.07 250);
-  --category-blue-solid: oklch(0.66 0.14 250);
-  --category-purple-bg: oklch(0.27 0.06 300);
-  --category-purple-text: oklch(0.86 0.08 300);
-  --category-purple-solid: oklch(0.66 0.16 300);
-  --category-pink-bg: oklch(0.27 0.055 350);
-  --category-pink-text: oklch(0.86 0.08 350);
-  --category-pink-solid: oklch(0.68 0.16 350);
+  --category-gray-bg: oklch(0.284 0.006 258.4);
+  --category-gray-text: oklch(0.881 0.008 253.9);
+  --category-gray-solid: oklch(0.688 0.009 253.9);
+  --category-red-bg: oklch(0.286 0.03 32.2);
+  --category-red-text: oklch(0.879 0.046 31.6);
+  --category-red-solid: oklch(0.581 0.11 32.2);
+  --category-orange-bg: oklch(0.284 0.031 55.6);
+  --category-orange-text: oklch(0.88 0.045 58.4);
+  --category-orange-solid: oklch(0.669 0.098 56.7);
+  --category-yellow-bg: oklch(0.286 0.03 102.7);
+  --category-yellow-text: oklch(0.88 0.045 100.4);
+  --category-yellow-solid: oklch(0.86 0.11 99.8);
+  --category-green-bg: oklch(0.286 0.031 137.5);
+  --category-green-text: oklch(0.88 0.045 137);
+  --category-green-solid: oklch(0.766 0.069 137.8);
+  --category-teal-bg: oklch(0.286 0.03 199.1);
+  --category-teal-text: oklch(0.88 0.045 198.1);
+  --category-teal-solid: oklch(0.579 0.059 198.6);
+  --category-blue-bg: oklch(0.285 0.03 254.7);
+  --category-blue-text: oklch(0.881 0.044 253.6);
+  --category-blue-solid: oklch(0.676 0.108 254);
+  --category-purple-bg: oklch(0.286 0.029 290.2);
+  --category-purple-text: oklch(0.88 0.045 289.6);
+  --category-purple-solid: oklch(0.55 0.11 289.9);
+  --category-pink-bg: oklch(0.284 0.031 338.3);
+  --category-pink-text: oklch(0.879 0.046 339.7);
+  --category-pink-solid: oklch(0.817 0.103 340.3);
 
-  /* Re-declared so they mix this theme's primary, not the light one. */
+  /* Re-declared: these derive from tokens that change in this theme. */
   --border: color-mix(in oklch, var(--primary) 10%, transparent);
-  --input: oklch(0.42 0.01 252);
-  --placeholder: oklch(0.66 0.008 252);
-  --ring: oklch(0.985 0 0);
+  --border-strong: color-mix(in oklch, var(--primary) 18%, transparent);
+  --input: oklch(0.539 0.012 248); /* grafite-550 */
+  --placeholder: var(--subtle-foreground);
   --focus-outline-color: var(--ring);
   --field-focus-ring: color-mix(in oklch, var(--primary) 25%, transparent);
 
-  --chart-1: oklch(0.985 0 0);
-  --chart-2: oklch(0.66 0.19 17.6);
-  --chart-3: oklch(0.72 0.15 120.7);
-  --chart-4: oklch(0.84 0.15 92.6);
-  --chart-5: oklch(0.72 0.12 236.3);
+  /* seq inverts here: the dark end is "little". */
+  --chart-1: oklch(0.641 0.11 249.2);
+  --chart-2: oklch(0.525 0.1302 53.8);
+  --chart-3: oklch(0.536 0.13 302.8);
+  --chart-4: oklch(0.667 0.103 112.7);
+  --chart-5: oklch(0.556 0.102 2.5);
+  --chart-6: oklch(0.669 0.101 185);
+  --chart-seq-1: oklch(0.421 0.098 248.9);
+  --chart-seq-2: oklch(0.514 0.1 248.8);
+  --chart-seq-3: oklch(0.629 0.088 249.4);
+  --chart-seq-4: oklch(0.76 0.068 249.4);
+  --chart-seq-5: oklch(0.86 0.045 249.4);
+  --chart-div-1: oklch(0.76 0.091 28.7);
+  --chart-div-2: oklch(0.629 0.12 28.6);
+  --chart-div-3: oklch(0.421 0.13 29.1);
+  --chart-div-4: oklch(0.286 0.01 242);
+  --chart-div-5: oklch(0.421 0.098 248.9);
+  --chart-div-6: oklch(0.629 0.088 249.4);
+  --chart-div-7: oklch(0.76 0.068 249.4);
 
-  --sidebar: oklch(0.175 0.006 252);
-  --sidebar-foreground: oklch(0.96 0.004 252);
-  --sidebar-primary: oklch(0.985 0 0);
-  --sidebar-primary-foreground: oklch(0.175 0.006 252);
-  --sidebar-accent: oklch(0.245 0.008 252);
-  --sidebar-accent-foreground: oklch(0.96 0.004 252);
-  --sidebar-border: var(--border);
-  --sidebar-ring: oklch(0.985 0 0);
+  --sidebar: oklch(0.215 0.01 248.3);
+  --sidebar-foreground: oklch(0.896 0.007 247.9);
+  --sidebar-primary: oklch(0.931 0.024 248.1);
+  --sidebar-primary-foreground: oklch(0.175 0.009 240.5);
+  --sidebar-accent: oklch(0.322 0.089 248.8);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: var(--border-strong);
+  --sidebar-ring: var(--ring);
 }
 
 @layer base {
@@ -395,6 +474,10 @@
   :focus-visible {
     outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
     outline-offset: var(--focus-outline-offset);
+  }
+  ::selection {
+    background-color: var(--selection);
+    color: var(--selection-foreground);
   }
   body {
     background-color: var(--color-background);

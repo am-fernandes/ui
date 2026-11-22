@@ -158,7 +158,7 @@ export const WithAction: Story = {
                 type="button"
                 aria-label={`Remover ${typeof item.title === "string" ? item.title : item.value}`}
                 onClick={() => setItems((prev) => prev.filter((p) => p.value !== item.value))}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <Trash2 className="size-4" />
               </button>

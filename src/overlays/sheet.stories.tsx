@@ -89,13 +89,13 @@ export const Left: Story = {
     side: "left",
     children: (
       <nav className="flex flex-col gap-2 py-4 text-sm">
-        <a href="/" className="rounded-md px-2 py-1 hover:bg-accent">
+        <a href="/" className="rounded-md px-2 py-1 hover:bg-muted">
           Home
         </a>
-        <a href="/" className="rounded-md px-2 py-1 hover:bg-accent">
+        <a href="/" className="rounded-md px-2 py-1 hover:bg-muted">
           Projetos
         </a>
-        <a href="/" className="rounded-md px-2 py-1 hover:bg-accent">
+        <a href="/" className="rounded-md px-2 py-1 hover:bg-muted">
           Configurações
         </a>
       </nav>

@@ -134,7 +134,7 @@ function LeadsPage({ rows = 24 }: { rows?: number }) {
         className="overflow-x-auto rounded-md border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <table className="w-full min-w-[560px] text-left text-sm">
-          <thead className="bg-accent text-muted-foreground">
+          <thead className="bg-muted text-muted-foreground">
             <tr>
               <th className="px-3 py-2.5 font-medium">Nome</th>
               <th className="px-3 py-2.5 font-medium">Telefone</th>
@@ -282,7 +282,7 @@ export const WithoutContentPadding: Story = {
     defaultCollapsed: true,
     contentPadding: false,
     children: (
-      <div className="grid h-full min-h-[480px] place-items-center bg-accent text-sm text-muted-foreground">
+      <div className="grid h-full min-h-[480px] place-items-center bg-muted text-sm text-muted-foreground">
         Mapa / quadro de borda a borda
       </div>
     ),
