@@ -216,10 +216,11 @@ Definidos em `src/styles/tokens.css` dentro de `@theme inline`. Os mais usados:
 | Token | Valor | Quando usar |
 |---|---|---|
 | `--radius` | `0.25rem` (4px) | Cantos. Use sempre via `rounded-md` (ou qualquer alias — todos apontam para o mesmo valor). |
-| `--motion-fast` | 100ms | Tooltip. |
-| `--motion-default` | 150ms | Popover, dropdown, transições padrão. |
-| `--motion-slow` | 200ms | Dialog, AlertDialog, backdrops. |
-| `--motion-slowest` | 300ms | Sheet (entrada e saída simétricas). |
+| `--duration-fast` | 175ms | Hover, Tooltip, DropdownMenu, Accordion, Collapsible; padrão de todo `transition*`. |
+| `--duration-medium-min` | 310ms | Popover, Tour (entrada). |
+| `--duration-medium` | 410ms | Sheet, menu mobile do AppShell. |
+| `--duration-medium-max` | 550ms | Dialog, AlertDialog e backdrop (entrada). |
+| `--duration-exit` | = `--duration-fast` | Toda saída, com `--ease-exit`. |
 | `--z-overlay` | 40 | Backdrop de modal. |
 | `--z-modal` | 50 | Dialog, AlertDialog, Sheet, CommandPalette. |
 | `--z-popover` | 60 | Popover, Combobox, DateInput, DateRangePicker. |
