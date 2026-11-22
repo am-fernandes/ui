@@ -97,6 +97,52 @@ describe("addMonths", () => {
     expect(result.getUTCFullYear()).toBe(2025)
     expect(result.getUTCMonth()).toBe(1)
   })
+
+  // Regressão: 31/01 + 1 mês caía em 02/03 (o dia 31 estourava fevereiro) e a
+  // parcela de fevereiro sumia do carnê.
+  it("para no último dia do mês de destino quando o dia não existe nele", () => {
+    expect(addMonths("2024-01-31", 1).toISOString().slice(0, 10)).toBe("2024-02-29")
+    expect(addMonths("2023-01-31", 1).toISOString().slice(0, 10)).toBe("2023-02-28")
+    expect(addMonths("2024-08-31", 6).toISOString().slice(0, 10)).toBe("2025-02-28")
+    expect(addMonths("2024-03-31", 1).toISOString().slice(0, 10)).toBe("2024-04-30")
+    expect(addMonths("2024-01-30", 1).toISOString().slice(0, 10)).toBe("2024-02-29")
+    expect(addMonths("2024-01-29", 1).toISOString().slice(0, 10)).toBe("2024-02-29")
+  })
+
+  it("subtrai meses com o mesmo limite", () => {
+    expect(addMonths("2024-03-31", -1).toISOString().slice(0, 10)).toBe("2024-02-29")
+    expect(addMonths("2024-01-31", -2).toISOString().slice(0, 10)).toBe("2023-11-30")
+  })
+
+  it("mantém o dia quando o mês de destino tem esse dia", () => {
+    expect(addMonths("2024-01-31", 2).toISOString().slice(0, 10)).toBe("2024-03-31")
+    expect(addMonths("2024-02-29", 12).toISOString().slice(0, 10)).toBe("2025-02-28")
+    expect(addMonths("2024-05-15", 0).toISOString().slice(0, 10)).toBe("2024-05-15")
+  })
+
+  it("gera doze parcelas mensais a partir da data base sem pular mês", () => {
+    const vencimentos = Array.from({ length: 12 }, (_, i) =>
+      addMonths("2024-01-31", i).toISOString().slice(0, 10),
+    )
+    expect(vencimentos).toEqual([
+      "2024-01-31",
+      "2024-02-29",
+      "2024-03-31",
+      "2024-04-30",
+      "2024-05-31",
+      "2024-06-30",
+      "2024-07-31",
+      "2024-08-31",
+      "2024-09-30",
+      "2024-10-31",
+      "2024-11-30",
+      "2024-12-31",
+    ])
+  })
+
+  it("preserva a hora do dia", () => {
+    expect(addMonths("2024-01-31T14:30:00.000Z", 1).toISOString()).toBe("2024-02-29T14:30:00.000Z")
+  })
 })
 
 describe("compareDates", () => {

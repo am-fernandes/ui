@@ -67,10 +67,24 @@ export function subDays(date: Date | string | null | undefined, days: number): D
   return addDays(date, -days)
 }
 
-/** Adiciona meses a uma data. */
+/**
+ * Adiciona meses a uma data. Quando o mês de destino não tem o dia de origem,
+ * para no último dia dele: 31/01 + 1 mês = 29/02 (ou 28/02), nunca 02/03.
+ *
+ * Para gerar parcelas, some sempre a partir da data base
+ * (`addMonths(base, i)`), não da parcela anterior: assim o vencimento volta ao
+ * dia 31 nos meses que têm 31.
+ * @example addMonths("2024-01-31", 1) → 2024-02-29
+ */
 export function addMonths(date: Date | string | null | undefined, months: number): Date {
   const d = new Date(toUTCDate(date))
+  const day = d.getUTCDate()
+  // Vai ao dia 1 antes de trocar o mês: `setUTCMonth` com o dia 31 num mês de
+  // 30 dias transborda para o mês seguinte.
+  d.setUTCDate(1)
   d.setUTCMonth(d.getUTCMonth() + months)
+  const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()
+  d.setUTCDate(Math.min(day, lastDay))
   return d
 }
 
