@@ -217,7 +217,7 @@ exclude: ["src/**/*.stories.tsx", "src/**/*.test.tsx", "src/docs/**", "src/index
 - **Render server-side (SSR/RSC)** — a lib é client-only (`"use client"` nos componentes interativos). Nenhum teste exercita Next.js RSC.
 - **Implementação interna** — testes asseram comportamento, não tipo de hook, não classes intermediárias.
 
-> **Visual regression JÁ está coberta:** `tests/e2e/visual.spec.ts` mantém 92 baselines (84 no tema claro, 8 no escuro) via `toHaveScreenshot` (Google Fonts bloqueado em cada teste para determinismo). Layout responsivo é coberto em E2E pelos projects `mobile-chromium` (Pixel 5) e `tablet-chromium` (iPad gen 7).
+> **Visual regression JÁ está coberta:** `tests/e2e/visual.spec.ts` mantém 95 baselines (85 no tema claro, 10 no escuro) via `toHaveScreenshot` (Google Fonts bloqueado em cada teste para determinismo). Layout responsivo é coberto em E2E pelos projects `mobile-chromium` (Pixel 5) e `tablet-chromium` (iPad gen 7).
 
 ### Stubs do jsdom
 
@@ -293,7 +293,7 @@ Para visual diff em múltiplos viewports da mesma story, use o project-level tes
 ```bash
 bun run test:e2e:mobile     # roda mobile.spec.ts no Pixel 5
 bun run test:e2e:tablet     # roda tablet.spec.ts no iPad
-bun run test:visual         # 92 baselines em desktop (claro e escuro)
+bun run test:visual         # 95 baselines em desktop (claro e escuro)
 ```
 
 ### Limitação conhecida
@@ -317,6 +317,6 @@ A tabela acima destaca onde investir esforço próximo. Os mais urgentes:
 | Storybook test runner smoke de todas as stories | ✅ 289 stories passam em Chromium |
 | `play` functions com asserções de interação | ✅ 21 play fns em 19 stories |
 | E2E specs por grupo | ✅ 8 specs / 96 tests (desktop + mobile + tablet + visual) |
-| Visual regression com `toHaveScreenshot` | ✅ 92 baselines em `tests/e2e/visual.spec.ts-snapshots/` (Google Fonts blocked para determinismo) |
+| Visual regression com `toHaveScreenshot` | ✅ 95 baselines em `tests/e2e/visual.spec.ts-snapshots/` (Google Fonts blocked para determinismo) |
 | Multi-viewport (mobile + tablet) em E2E | ✅ projects `mobile-chromium` (Pixel 5) + `tablet-chromium` (iPad gen 7) |
 | Axe a11y assertions no test-runner | ✅ `injectAxe` + `checkA11y` wcag2aa no `postVisit` — 289/289 stories passam (0 violations serious/critical) |

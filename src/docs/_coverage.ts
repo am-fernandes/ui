@@ -3,7 +3,7 @@
  * Run `bun run sync:coverage` to refresh.
  *
  * Source: coverage/coverage-summary.json (vitest + v8 provider)
- * Generated: 2026-11-21T17:14:35.920Z
+ * Generated: 2026-11-22T14:20:44.905Z
  */
 
 export interface CoverageMetric {
@@ -28,17 +28,17 @@ export interface CoverageRow {
   branches: number
 }
 
-export const COVERAGE_GENERATED_AT = "2026-11-21T17:14:35.920Z"
+export const COVERAGE_GENERATED_AT = "2026-11-22T14:20:44.905Z"
 
 export const TOTAL_COVERAGE: CoverageFile = {
   lines: {
-    total: 8389,
-    covered: 8334,
+    total: 8436,
+    covered: 8381,
     pct: 99.34,
   },
   statements: {
-    total: 8389,
-    covered: 8334,
+    total: 8436,
+    covered: 8381,
     pct: 99.34,
   },
   functions: {
@@ -47,9 +47,9 @@ export const TOTAL_COVERAGE: CoverageFile = {
     pct: 99.73,
   },
   branches: {
-    total: 2387,
-    covered: 2266,
-    pct: 94.93,
+    total: 2396,
+    covered: 2275,
+    pct: 94.94,
   },
 } as const
 
@@ -236,7 +236,7 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     lines: 99.33,
     statements: 99.33,
     functions: 94.11,
-    branches: 86,
+    branches: 86.13,
   },
   {
     file: "forms/date-input.tsx",
@@ -244,7 +244,7 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     lines: 100,
     statements: 100,
     functions: 100,
-    branches: 92.85,
+    branches: 93.1,
   },
   {
     file: "forms/date-range-picker.tsx",
@@ -252,7 +252,7 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     lines: 100,
     statements: 100,
     functions: 100,
-    branches: 83.33,
+    branches: 83.87,
   },
   {
     file: "forms/time-picker.tsx",

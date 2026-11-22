@@ -146,6 +146,9 @@ test.describe("Visual: Primitives — Badge", () => {
   test("all-variants", async ({ page }) => {
     await snapshot(page, "primitives-badge--all-variants", "badge-all-variants.png")
   })
+  test("dot in a table", async ({ page }) => {
+    await snapshot(page, "primitives-badge--dot-in-table", "badge-dot-in-table.png")
+  })
 })
 
 test.describe("Visual: Primitives — Checkbox", () => {
@@ -452,6 +455,8 @@ test.describe("Visual: Dark theme", () => {
     ["data-card--with-footer", "dark-card-with-footer.png"],
     ["data-schedule--week", "dark-schedule-week.png"],
     ["navigation-stepper--with-status", "dark-stepper-with-status.png"],
+    ["overlays-alert--all-variants", "dark-alert-all-variants.png"],
+    ["primitives-badge--dot-in-table", "dark-badge-dot-in-table.png"],
   ]
   for (const [id, file] of cases) {
     test(id, async ({ page }) => {
