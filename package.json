@@ -255,6 +255,14 @@
       "types": "./dist/lib/currency.d.ts",
       "import": "./dist/lib/currency.js"
     },
+    "./lib/date": {
+      "types": "./dist/lib/date.d.ts",
+      "import": "./dist/lib/date.js"
+    },
+    "./lib/format": {
+      "types": "./dist/lib/format.d.ts",
+      "import": "./dist/lib/format.js"
+    },
     "./lib/format-count": {
       "types": "./dist/lib/format-count.d.ts",
       "import": "./dist/lib/format-count.js"
