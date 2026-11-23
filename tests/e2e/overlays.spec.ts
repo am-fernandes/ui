@@ -187,6 +187,35 @@ test.describe("Dialog", () => {
     })
   }
 
+  // The title had `leading-none`: in two lines, 18px from one line to the
+  // next for an 18px font, and the accents of one touched the line above.
+  test("a title in two lines keeps the text's line height, the X beside its first line", async ({
+    page,
+  }) => {
+    await gotoStory(page, "overlays-dialog--long-title", "Transferir proposta")
+    await page.getByRole("button", { name: "Transferir proposta" }).click()
+    const dialog = page.getByRole("dialog", { name: /Transferir a proposta/ })
+    await settledBox(dialog)
+    const title = dialog.getByRole("heading", { name: /Transferir a proposta/ })
+    const { lines, lineHeight, fontSize, firstLineMiddle } = await title.evaluate((el) => {
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      const tops = new Set([...range.getClientRects()].map((r) => Math.round(r.top)))
+      const style = getComputedStyle(el)
+      const lineHeight = Number.parseFloat(style.lineHeight)
+      return {
+        lines: tops.size,
+        lineHeight,
+        fontSize: Number.parseFloat(style.fontSize),
+        firstLineMiddle: el.getBoundingClientRect().top + lineHeight / 2,
+      }
+    })
+    expect(lines).toBeGreaterThanOrEqual(2)
+    expect(lineHeight / fontSize).toBeGreaterThanOrEqual(1.3)
+    const close = (await dialog.getByRole("button", { name: "Fechar" }).boundingBox())!
+    expect(Math.abs(close.y + close.height / 2 - firstLineMiddle)).toBeLessThanOrEqual(1)
+  })
+
   test("dismissible=false blocks Escape and overlay click", async ({ page }) => {
     await gotoStory(page, "overlays-dialog--non-dismissible", "Abrir não-dismissível")
     await page.getByRole("button", { name: "Abrir não-dismissível" }).click()

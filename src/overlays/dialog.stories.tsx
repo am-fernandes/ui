@@ -159,6 +159,24 @@ export const Sizes: Story = {
   },
 }
 
+export const LongTitle: Story = {
+  args: {
+    trigger: <Button>Transferir proposta</Button>,
+    size: "sm",
+    title: "Transferir a proposta #1042 do Residencial Jardim das Acácias para outro corretor?",
+    description: "O novo corretor recebe o histórico e os anexos.",
+    children: <Input label="Corretor" placeholder="Nome ou CRECI" />,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Título que quebra em duas linhas: as linhas têm a entrelinha do texto (acentos não encostam) e o X fica alinhado à primeira.",
+      },
+    },
+  },
+}
+
 export const HideClose: Story = {
   args: {
     trigger: <Button>Abrir sem X</Button>,

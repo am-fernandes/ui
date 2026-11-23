@@ -143,10 +143,7 @@ function Dialog({
           <OverlayContainerProvider container={overlayContainer}>
             <DialogPrimitive.Title
               data-slot="dialog-title"
-              className={cn(
-                "shrink-0 text-lg font-semibold leading-none",
-                showCloseButton && titleBesideClose,
-              )}
+              className={cn("shrink-0 text-lg font-semibold", showCloseButton && titleBesideClose)}
             >
               {title}
             </DialogPrimitive.Title>

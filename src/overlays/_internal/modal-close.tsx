@@ -19,6 +19,9 @@ export const titleBesideClose = "pe-8"
  * WCAG 2.5.8 without the spacing exception), with the state layer on hover
  * and press like every other control, in the top-right corner of the modal.
  * No tooltip: the X is self-explanatory, and the label is its name.
+ *
+ * `top-5.5` (22px) centres it on the first line of the title: the modal's
+ * 24px padding plus half of the title's 28px line, less half of the X.
  */
 export function ModalCloseButton({ label, slot }: { label: string; slot: string }) {
   return (
@@ -29,7 +32,7 @@ export function ModalCloseButton({ label, slot }: { label: string; slot: string 
         label={label}
         size="sm"
         tooltip={false}
-        className="absolute right-4 top-4"
+        className="absolute right-4 top-5.5"
       />
     </DialogPrimitive.Close>
   )
