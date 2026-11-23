@@ -292,6 +292,53 @@ test.describe("Tamanho dos campos", () => {
   })
 })
 
+// iOS zooms the page in when a focused input has text under 16px.
+test.describe("Ponteiro grosso (toque): texto de 16px", () => {
+  test.use({ hasTouch: true, isMobile: true })
+
+  const fields = [
+    { id: "domain-cpfinput--sizes", name: "CPF (sm)" },
+    { id: "domain-cnpjinput--sizes", name: "CNPJ (md)" },
+    { id: "domain-cepinput--sizes", name: "CEP (lg)" },
+    { id: "domain-phoneinput--sizes", name: "Telefone (md)" },
+    { id: "domain-currencyinput--sizes", name: "Valor (md)" },
+    { id: "domain-percentageinput--sizes", name: "Taxa (md)" },
+    { id: "domain-multiinput--sizes", name: "Tags (md)" },
+  ]
+  for (const field of fields) {
+    test(`${field.name}: o campo de digitação usa 16px`, async ({ page }) => {
+      await gotoStory(page, field.id)
+      expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true)
+      await expect(page.getByRole("textbox", { name: field.name })).toHaveCSS("font-size", "16px")
+    })
+  }
+
+  test("a altura dos campos não muda com o texto maior", async ({ page }) => {
+    const sizes = [
+      ["sm", 32],
+      ["md", 40],
+      ["lg", 44],
+    ] as const
+    await gotoStory(page, "domain-cpfinput--sizes")
+    for (const [size, height] of sizes) {
+      const box = await page.getByRole("textbox", { name: `CPF (${size})` }).boundingBox()
+      expect(box?.height).toBe(height)
+    }
+    await gotoStory(page, "domain-multiinput--sizes")
+    for (const [size, height] of sizes) {
+      const box = await page.getByRole("group", { name: `Tags (${size})` }).boundingBox()
+      expect(box?.height).toBe(height)
+    }
+  })
+})
+
+test.describe("Ponteiro fino (mouse): texto de 14px", () => {
+  test("os campos continuam com 14px", async ({ page }) => {
+    await gotoStory(page, "domain-cpfinput--sizes")
+    await expect(page.getByRole("textbox", { name: "CPF (md)" })).toHaveCSS("font-size", "14px")
+  })
+})
+
 // Looks are measured here: jsdom has no stylesheet.
 test.describe("Somente leitura", () => {
   const stories = [

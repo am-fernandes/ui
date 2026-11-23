@@ -367,7 +367,9 @@ function MultiInput(props: MultiInputProps) {
             description: description != null && description !== "",
             error: hasError,
           })}
-          className="flex-1 min-w-[60px] bg-transparent outline-none disabled:cursor-default"
+          // 16px on touch screens (iOS zooms into a focused field with smaller
+          // text), on the same 20px line so the box keeps its height.
+          className="flex-1 min-w-[60px] bg-transparent leading-5 outline-none pointer-coarse:text-base pointer-coarse:leading-5 disabled:cursor-default"
           placeholder={tokens.length === 0 ? placeholder : undefined}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}

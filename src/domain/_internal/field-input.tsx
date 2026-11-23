@@ -138,7 +138,9 @@ function FieldInput({
           required={required}
           aria-required={required ? true : undefined}
           className={cn(
-            "flex w-full rounded-element border border-input bg-card text-sm tabular-nums field-states disabled:cursor-default",
+            // 16px on touch screens: iOS zooms the page into a focused field
+            // whose text is smaller.
+            "flex w-full rounded-element border border-input bg-card text-sm pointer-coarse:text-base tabular-nums field-states disabled:cursor-default",
             controlHeight[size],
             controlPaddingX[size],
             leading != null && leadingClasses[size].input,
