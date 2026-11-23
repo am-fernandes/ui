@@ -159,4 +159,62 @@ describe("CEPInput", () => {
       expect(input).toHaveValue("01310-100")
     })
   })
+
+  // Regressão: com `name`, o form nativo recebia o texto com máscara
+  // ("01310-100") enquanto onValueChange entregava o valor limpo.
+  describe("em um formulário nativo", () => {
+    it("envia o valor limpo, não a máscara", () => {
+      const { container } = render(
+        <form>
+          <CEPInput name="cep" value="01310100" onValueChange={vi.fn()} />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      const data = new FormData(form)
+      expect(data.get("cep")).toBe("01310100")
+      expect([...data.keys()]).toEqual(["cep"])
+      // O campo visível mostra a máscara e não leva o name.
+      expect(screen.getByRole("textbox")).toHaveValue("01310-100")
+      expect(screen.getByRole("textbox")).not.toHaveAttribute("name")
+    })
+
+    it("acompanha o que é digitado", async () => {
+      const user = userEvent.setup()
+      function Harness() {
+        const [value, setValue] = React.useState<string>("")
+        return (
+          <form>
+            <CEPInput name="cep" value={value} onValueChange={setValue} />
+          </form>
+        )
+      }
+      const { container } = render(<Harness />)
+      await user.click(screen.getByRole("textbox"))
+      await user.keyboard("{End}01310100")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("cep")).toBe("01310100")
+    })
+
+    it("desabilitado, não é enviado", () => {
+      const { container } = render(
+        <form>
+          <CEPInput name="cep" value="01310100" onValueChange={vi.fn()} disabled />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).has("cep")).toBe(false)
+    })
+
+    it("sem name não cria input oculto", () => {
+      const { container } = render(<CEPInput value="01310100" onValueChange={vi.fn()} />)
+      expect(container.querySelector("input[type=hidden]")).toBeNull()
+    })
+
+    it("o input oculto acompanha o atributo form", () => {
+      const { container } = render(
+        <CEPInput name="cep" form="cadastro" value="01310100" onValueChange={vi.fn()} />,
+      )
+      expect(container.querySelector("input[type=hidden]")).toHaveAttribute("form", "cadastro")
+    })
+  })
 })

@@ -256,4 +256,62 @@ describe("PhoneInput", () => {
       expect(input).toHaveValue("(11) 98765-4321")
     })
   })
+
+  // Regressão: com `name`, o form nativo recebia o texto com máscara
+  // ("(11) 98765-4321") enquanto onValueChange entregava o valor limpo.
+  describe("em um formulário nativo", () => {
+    it("envia o valor limpo, não a máscara", () => {
+      const { container } = render(
+        <form>
+          <PhoneInput name="telefone" value="11987654321" onValueChange={vi.fn()} />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      const data = new FormData(form)
+      expect(data.get("telefone")).toBe("11987654321")
+      expect([...data.keys()]).toEqual(["telefone"])
+      // O campo visível mostra a máscara e não leva o name.
+      expect(screen.getByRole("textbox")).toHaveValue("(11) 98765-4321")
+      expect(screen.getByRole("textbox")).not.toHaveAttribute("name")
+    })
+
+    it("acompanha o que é digitado", async () => {
+      const user = userEvent.setup()
+      function Harness() {
+        const [value, setValue] = React.useState<string>("")
+        return (
+          <form>
+            <PhoneInput name="telefone" value={value} onValueChange={setValue} />
+          </form>
+        )
+      }
+      const { container } = render(<Harness />)
+      await user.click(screen.getByRole("textbox"))
+      await user.keyboard("{End}11987654321")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("telefone")).toBe("11987654321")
+    })
+
+    it("desabilitado, não é enviado", () => {
+      const { container } = render(
+        <form>
+          <PhoneInput name="telefone" value="11987654321" onValueChange={vi.fn()} disabled />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).has("telefone")).toBe(false)
+    })
+
+    it("sem name não cria input oculto", () => {
+      const { container } = render(<PhoneInput value="11987654321" onValueChange={vi.fn()} />)
+      expect(container.querySelector("input[type=hidden]")).toBeNull()
+    })
+
+    it("o input oculto acompanha o atributo form", () => {
+      const { container } = render(
+        <PhoneInput name="telefone" form="cadastro" value="11987654321" onValueChange={vi.fn()} />,
+      )
+      expect(container.querySelector("input[type=hidden]")).toHaveAttribute("form", "cadastro")
+    })
+  })
 })

@@ -3,43 +3,18 @@
 import type * as React from "react"
 
 import { centsToDisplay, fromCents, toCents } from "@/lib/currency"
-import { cn } from "@/lib/utils"
-import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
-import { useFieldIds } from "../primitives/_internal/use-field-ids"
+import { FieldInput, type FieldInputProps } from "./_internal/field-input"
 
-interface PercentageInputProps
-  extends Omit<React.ComponentProps<"input">, "value" | "onChange" | "type"> {
+interface PercentageInputProps extends Omit<FieldInputProps, "max"> {
   value: number
   onValueChange: (value: number) => void
   /** Maximum percentage allowed. Default 100. */
   max?: number
-  label?: React.ReactNode
-  description?: React.ReactNode
-  error?: string
-  labelPosition?: LabelPosition
-  required?: boolean
-  ref?: React.Ref<HTMLInputElement>
 }
 
-function PercentageInput({
-  className,
-  value,
-  onValueChange,
-  disabled,
-  max = 100,
-  label,
-  description,
-  error,
-  labelPosition,
-  required,
-  id,
-  ref,
-  ...props
-}: PercentageInputProps) {
-  const ids = useFieldIds(id)
-  const hasError = error != null && error !== ""
-  const hasDescription = description != null && description !== ""
-  const display = centsToDisplay(toCents(value))
+function PercentageInput({ value, onValueChange, max = 100, ...props }: PercentageInputProps) {
+  const hundredths = toCents(value)
+  const display = centsToDisplay(hundredths)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/\D/g, "").slice(0, 15)
@@ -49,43 +24,16 @@ function PercentageInput({
   }
 
   return (
-    <FieldShell
-      controlId={ids.controlId}
-      labelId={ids.labelId}
-      descriptionId={ids.descriptionId}
-      errorId={ids.errorId}
-      label={label}
-      description={description}
-      error={error}
-      labelPosition={labelPosition}
-      required={required}
-      disabled={disabled}
-    >
-      <div className="relative" data-slot="percentage-input">
-        <input
-          ref={ref}
-          id={ids.controlId}
-          type="text"
-          inputMode="numeric"
-          aria-invalid={hasError ? true : undefined}
-          aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
-          required={required}
-          aria-required={required ? true : undefined}
-          className={cn(
-            "flex w-full rounded-element border border-input bg-card px-3 pr-8 py-2.5 text-sm tabular-nums field-states disabled:cursor-default",
-            hasError && "border-destructive-text field-error",
-            className,
-          )}
-          value={display}
-          onChange={handleChange}
-          disabled={disabled}
-          {...props}
-        />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
-          %
-        </span>
-      </div>
-    </FieldShell>
+    <FieldInput
+      inputMode="numeric"
+      {...props}
+      slot="percentage-input"
+      trailing="%"
+      display={display}
+      // The form receives the number itself ("12.5"), not "12,50".
+      formValue={String(fromCents(hundredths))}
+      onChange={handleChange}
+    />
   )
 }
 

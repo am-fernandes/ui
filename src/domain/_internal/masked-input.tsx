@@ -2,9 +2,7 @@
 
 import * as React from "react"
 
-import { cn } from "@/lib/utils"
-import { FieldShell, type LabelPosition } from "../../primitives/_internal/field-shell"
-import { useFieldIds } from "../../primitives/_internal/use-field-ids"
+import { FieldInput, type FieldInputProps } from "./field-input"
 
 /**
  * One mask: which characters are part of the value and how they are laid out.
@@ -161,17 +159,10 @@ function assignRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
   else if (ref != null) (ref as React.RefObject<T | null>).current = node
 }
 
-export interface MaskedInputProps
-  extends Omit<React.ComponentProps<"input">, "value" | "onChange" | "type"> {
+export interface MaskedInputProps extends FieldInputProps {
   /** The clean value (no mask). */
   value: string
   onValueChange: (value: string) => void
-  label?: React.ReactNode
-  description?: React.ReactNode
-  error?: string
-  labelPosition?: LabelPosition
-  required?: boolean
-  ref?: React.Ref<HTMLInputElement>
 }
 
 interface InternalMaskedInputProps extends MaskedInputProps {
@@ -183,23 +174,12 @@ interface InternalMaskedInputProps extends MaskedInputProps {
 function MaskedInput({
   spec,
   slot,
-  className,
   value,
   onValueChange,
-  disabled,
-  label,
-  description,
-  error,
-  labelPosition,
-  required,
-  id,
   ref,
   onPaste,
   ...props
 }: InternalMaskedInputProps) {
-  const ids = useFieldIds(id)
-  const hasError = error != null && error !== ""
-  const hasDescription = description != null && description !== ""
   const cleaned = cleanValue(spec, value)
   const display = spec.mask(cleaned)
 
@@ -265,40 +245,15 @@ function MaskedInput({
   }
 
   return (
-    <FieldShell
-      controlId={ids.controlId}
-      labelId={ids.labelId}
-      descriptionId={ids.descriptionId}
-      errorId={ids.errorId}
-      label={label}
-      description={description}
-      error={error}
-      labelPosition={labelPosition}
-      required={required}
-      disabled={disabled}
-    >
-      <div className="relative" data-slot={slot}>
-        <input
-          ref={setRefs}
-          id={ids.controlId}
-          type="text"
-          aria-invalid={hasError ? true : undefined}
-          aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
-          required={required}
-          aria-required={required ? true : undefined}
-          className={cn(
-            "flex w-full rounded-element border border-input bg-card px-3 py-2.5 text-sm tabular-nums field-states disabled:cursor-default",
-            hasError && "border-destructive-text field-error",
-            className,
-          )}
-          disabled={disabled}
-          {...props}
-          value={display}
-          onChange={handleChange}
-          onPaste={handlePaste}
-        />
-      </div>
-    </FieldShell>
+    <FieldInput
+      {...props}
+      ref={setRefs}
+      slot={slot}
+      display={display}
+      formValue={cleaned}
+      onChange={handleChange}
+      onPaste={handlePaste}
+    />
   )
 }
 

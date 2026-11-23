@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
@@ -147,5 +148,63 @@ describe("PercentageInput", () => {
     render(<PercentageInput value={0} onValueChange={vi.fn()} disabled />)
     const input = screen.getByDisplayValue("0,00") as HTMLInputElement
     expect(input).toBeDisabled()
+  })
+
+  // Regressão: com `name`, o form nativo recebia o texto com máscara
+  // ("12,50") enquanto onValueChange entregava o valor limpo.
+  describe("em um formulário nativo", () => {
+    it("envia o valor limpo, não a máscara", () => {
+      const { container } = render(
+        <form>
+          <PercentageInput name="taxa" value={12.5} onValueChange={vi.fn()} />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      const data = new FormData(form)
+      expect(data.get("taxa")).toBe("12.5")
+      expect([...data.keys()]).toEqual(["taxa"])
+      // O campo visível mostra a máscara e não leva o name.
+      expect(screen.getByRole("textbox")).toHaveValue("12,50")
+      expect(screen.getByRole("textbox")).not.toHaveAttribute("name")
+    })
+
+    it("acompanha o que é digitado", async () => {
+      const user = userEvent.setup()
+      function Harness() {
+        const [value, setValue] = React.useState<number>(0)
+        return (
+          <form>
+            <PercentageInput name="taxa" value={value} onValueChange={setValue} />
+          </form>
+        )
+      }
+      const { container } = render(<Harness />)
+      await user.click(screen.getByRole("textbox"))
+      await user.keyboard("{End}1250")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("taxa")).toBe("12.5")
+    })
+
+    it("desabilitado, não é enviado", () => {
+      const { container } = render(
+        <form>
+          <PercentageInput name="taxa" value={12.5} onValueChange={vi.fn()} disabled />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).has("taxa")).toBe(false)
+    })
+
+    it("sem name não cria input oculto", () => {
+      const { container } = render(<PercentageInput value={12.5} onValueChange={vi.fn()} />)
+      expect(container.querySelector("input[type=hidden]")).toBeNull()
+    })
+
+    it("o input oculto acompanha o atributo form", () => {
+      const { container } = render(
+        <PercentageInput name="taxa" form="cadastro" value={12.5} onValueChange={vi.fn()} />,
+      )
+      expect(container.querySelector("input[type=hidden]")).toHaveAttribute("form", "cadastro")
+    })
   })
 })

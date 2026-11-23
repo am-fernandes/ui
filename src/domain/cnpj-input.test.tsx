@@ -271,4 +271,62 @@ describe("CNPJInput", () => {
       expect(input).toHaveAttribute("autocapitalize", "characters")
     })
   })
+
+  // Regressão: com `name`, o form nativo recebia o texto com máscara
+  // ("12.ABC.345/01DE-35") enquanto onValueChange entregava o valor limpo.
+  describe("em um formulário nativo", () => {
+    it("envia o valor limpo, não a máscara", () => {
+      const { container } = render(
+        <form>
+          <CNPJInput name="cnpj" value="12ABC34501DE35" onValueChange={vi.fn()} />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      const data = new FormData(form)
+      expect(data.get("cnpj")).toBe("12ABC34501DE35")
+      expect([...data.keys()]).toEqual(["cnpj"])
+      // O campo visível mostra a máscara e não leva o name.
+      expect(screen.getByRole("textbox")).toHaveValue("12.ABC.345/01DE-35")
+      expect(screen.getByRole("textbox")).not.toHaveAttribute("name")
+    })
+
+    it("acompanha o que é digitado", async () => {
+      const user = userEvent.setup()
+      function Harness() {
+        const [value, setValue] = React.useState<string>("")
+        return (
+          <form>
+            <CNPJInput name="cnpj" value={value} onValueChange={setValue} />
+          </form>
+        )
+      }
+      const { container } = render(<Harness />)
+      await user.click(screen.getByRole("textbox"))
+      await user.keyboard("{End}12abc34501de35")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("cnpj")).toBe("12ABC34501DE35")
+    })
+
+    it("desabilitado, não é enviado", () => {
+      const { container } = render(
+        <form>
+          <CNPJInput name="cnpj" value="12ABC34501DE35" onValueChange={vi.fn()} disabled />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).has("cnpj")).toBe(false)
+    })
+
+    it("sem name não cria input oculto", () => {
+      const { container } = render(<CNPJInput value="12ABC34501DE35" onValueChange={vi.fn()} />)
+      expect(container.querySelector("input[type=hidden]")).toBeNull()
+    })
+
+    it("o input oculto acompanha o atributo form", () => {
+      const { container } = render(
+        <CNPJInput name="cnpj" form="cadastro" value="12ABC34501DE35" onValueChange={vi.fn()} />,
+      )
+      expect(container.querySelector("input[type=hidden]")).toHaveAttribute("form", "cadastro")
+    })
+  })
 })
