@@ -153,11 +153,12 @@ export const PasswordToggle: Story = {
         type={show ? "text" : "password"}
         placeholder="Digite a senha"
         trailingIcon={
+          // 24 by 24px: the minimum target (WCAG 2.2, SC 2.5.8), around a 16px icon.
           <button
             type="button"
             onClick={() => setShow(!show)}
             aria-label={show ? "Ocultar senha" : "Mostrar senha"}
-            className="cursor-pointer"
+            className="-mr-1 inline-flex size-6 cursor-pointer items-center justify-center rounded-inner state-layer focus-visible:focus-outline"
           >
             {show ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
           </button>
@@ -166,7 +167,12 @@ export const PasswordToggle: Story = {
     )
   },
   parameters: {
-    docs: { description: { story: "Pattern para mostrar/ocultar senha via `trailingIcon`." } },
+    docs: {
+      description: {
+        story:
+          "Pattern para mostrar/ocultar senha via `trailingIcon`. O botão tem 24 por 24px em volta do ícone de 16px: o alvo mínimo de toque (WCAG 2.2, SC 2.5.8).",
+      },
+    },
   },
 }
 

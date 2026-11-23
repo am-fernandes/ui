@@ -505,6 +505,10 @@ test.describe("Input", () => {
     // `exact`: the toggle button is named "Mostrar senha", which also contains "Senha".
     const input = page.getByLabel("Senha", { exact: true })
     await expect(input).toHaveAttribute("type", "password")
+    // The button is a target of 24 by 24px or more, not just its 16px icon.
+    const target = await page.getByRole("button", { name: "Mostrar senha" }).boundingBox()
+    expect(target?.width).toBeGreaterThanOrEqual(24)
+    expect(target?.height).toBeGreaterThanOrEqual(24)
     await page.getByRole("button", { name: "Mostrar senha" }).click()
     await expect(input).toHaveAttribute("type", "text")
   })
