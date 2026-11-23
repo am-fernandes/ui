@@ -164,6 +164,7 @@ function Tour({
   const primaryRef = React.useRef<HTMLButtonElement>(null)
   const returnFocusRef = React.useRef<HTMLElement | null>(null)
   const titleRef = React.useRef<HTMLHeadingElement>(null)
+  const descriptionRef = React.useRef<HTMLDivElement>(null)
   const [announcement, setAnnouncement] = React.useState("")
 
   // An uncontrolled tour restarts from `defaultStep` every time it opens
@@ -212,9 +213,13 @@ function Tour({
     }
     if (previousIndex.current !== null && previousIndex.current !== index) {
       primaryRef.current?.focus()
-      // The callout is mounted whenever the tour is open, so the title is there.
-      const title = titleRef.current!.textContent
-      setAnnouncement(`${l.progress(index + 1, total)}: ${title}`)
+      // The callout is mounted whenever the tour is open, so the title is
+      // there. The content goes too: the focus stays on "Próximo", so
+      // nothing else would read the new step's description.
+      const title = titleRef.current!.textContent?.trim() ?? ""
+      const content = descriptionRef.current?.textContent?.trim()
+      const text = content ? `${title}${/[.!?:]$/.test(title) ? "" : "."} ${content}` : title
+      setAnnouncement(`${l.progress(index + 1, total)}: ${text}`)
     }
     previousIndex.current = index
   }, [open, index, total, l.progress])
@@ -310,7 +315,11 @@ function Tour({
               />
             </div>
             {current.content ? (
-              <div id={descriptionId} className="mt-1 text-sm text-muted-foreground">
+              <div
+                ref={descriptionRef}
+                id={descriptionId}
+                className="mt-1 text-sm text-muted-foreground"
+              >
                 {current.content}
               </div>
             ) : null}

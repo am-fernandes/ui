@@ -111,6 +111,52 @@ describe("Tour", () => {
       expect(dialog()).toHaveAccessibleName("Crie leads")
     })
 
+    // From step 2 on, the screen reader heard "2 de 3: título" and nothing
+    // of the step's content: the focus stays on "Próximo", so the callout's
+    // description is never read again.
+    it("announces the content of the step with its title", async () => {
+      renderTour()
+      await userEvent.click(screen.getByRole("button", { name: "Próximo" }))
+      await userEvent.click(screen.getByRole("button", { name: "Próximo" }))
+      expect(document.querySelector('[data-slot="tour-announcer"]')).toHaveTextContent(
+        "3 de 3: Exporte. Baixe em CSV.",
+      )
+    })
+
+    it("a step without content is announced by its title alone", async () => {
+      renderTour()
+      await userEvent.click(screen.getByRole("button", { name: "Próximo" }))
+      expect(document.querySelector('[data-slot="tour-announcer"]')?.textContent).toBe(
+        "2 de 3: Filtre a lista",
+      )
+    })
+
+    it("a content made of elements is announced as its text", async () => {
+      render(
+        <Page>
+          <Tour
+            open
+            steps={[
+              { target: "#novo", title: "Um" },
+              {
+                target: "#filtros",
+                title: "Dois",
+                content: (
+                  <p>
+                    Use <strong>Ctrl+K</strong> para buscar.
+                  </p>
+                ),
+              },
+            ]}
+          />
+        </Page>,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Próximo" }))
+      expect(document.querySelector('[data-slot="tour-announcer"]')).toHaveTextContent(
+        "2 de 2: Dois. Use Ctrl+K para buscar.",
+      )
+    })
+
     it("finishes on the last step with Concluir", async () => {
       const { onClose } = renderTour({ defaultStep: 2 })
       expect(screen.queryByRole("button", { name: "Próximo" })).not.toBeInTheDocument()
