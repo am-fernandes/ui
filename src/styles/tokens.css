@@ -565,3 +565,42 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ==== Overlays (src/overlays) ================================================ */
+
+/* ---- Toaster (Sonner) -------------------------------------------------------
+   Sonner injects its own stylesheet at runtime, outside any cascade layer, so
+   utility classes (which are layered) lose to it whatever the order. Its
+   colours come from CSS variables, which `Toaster` points at our tokens; the
+   rules below cover what has no variable. They are not layered either, and
+   each selector carries more attributes than the Sonner rule it replaces, so
+   the order of the two stylesheets does not matter. */
+
+/* Sonner paints the description #3f3f3f, for its own light theme: 1.5:1 on
+   the dark surface. With `richColors` it inherits the text of the fill. */
+[data-sonner-toaster]
+  [data-sonner-toast][data-styled="true"]:not([data-rich-colors="true"])
+  [data-description] {
+  color: var(--muted-foreground);
+}
+
+/* The X took a fixed near-black (1.1:1 in the dark theme) and, on hover, a
+   near-white fill. It wears what the toast wears, neutral or status fill,
+   and hover is the state layer of every other control. */
+[data-sonner-toaster][data-sonner-theme]
+  [data-sonner-toast][data-styled="true"]
+  [data-close-button] {
+  color: inherit;
+  background-color: inherit;
+  border-color: inherit;
+}
+[data-sonner-toaster][data-sonner-theme]
+  [data-sonner-toast][data-styled="true"]
+  [data-close-button]:hover {
+  background-color: inherit;
+  background-image: linear-gradient(
+    color-mix(in oklch, currentColor var(--state-hover-opacity), transparent),
+    color-mix(in oklch, currentColor var(--state-hover-opacity), transparent)
+  );
+  border-color: inherit;
+}

@@ -1,15 +1,88 @@
 import { type Locator, type Page, expect, test } from "@playwright/test"
 import { expectNoA11yViolations } from "./a11y"
 
-const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
+const story = (id: string, query = "") =>
+  `/iframe.html?id=${id}&viewMode=story${query ? `&${query}` : ""}`
 
-// Storybook's dev server may still be compiling on the first hit.
-async function gotoStory(page: Page, id: string, ready: string) {
-  await page.goto(story(id))
+/** Storybook's toolbar switch for the dark theme (puts `dark` on <html>). */
+const DARK = "globals=theme:Escuro"
+
+/**
+ * Opens a story and waits for the button named `ready`: Storybook's dev
+ * server may still be compiling on the first hit. `query` adds to the URL
+ * (`DARK`, or `args=…` for a story with controls).
+ */
+async function gotoStory(page: Page, id: string, ready: string, query = "") {
+  await page.goto(story(id, query))
   await expect(page.getByRole("button", { name: ready })).toBeVisible({ timeout: 15_000 })
 }
 
 type Box = { x: number; y: number; width: number; height: number }
+
+/**
+ * WCAG contrast ratio between the text colour of an element and what is
+ * painted behind it: the fills of its ancestors, composited from the first
+ * opaque one up. Colours go through a canvas, so any CSS colour (`oklch()`,
+ * `color-mix()`) ends up as sRGB.
+ */
+async function contrastRatio(locator: Locator): Promise<number> {
+  return locator.evaluate((element) => {
+    const canvas = document.createElement("canvas")
+    canvas.width = 1
+    canvas.height = 1
+    const context = canvas.getContext("2d", { willReadFrequently: true })!
+    const rgba = (color: string): [number, number, number, number] => {
+      context.clearRect(0, 0, 1, 1)
+      context.fillStyle = color
+      context.fillRect(0, 0, 1, 1)
+      const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data
+      return [r ?? 0, g ?? 0, b ?? 0, (a ?? 0) / 255]
+    }
+    const over = (
+      top: [number, number, number, number],
+      bottom: [number, number, number],
+    ): [number, number, number] => [
+      top[0] * top[3] + bottom[0] * (1 - top[3]),
+      top[1] * top[3] + bottom[1] * (1 - top[3]),
+      top[2] * top[3] + bottom[2] * (1 - top[3]),
+    ]
+    const luminance = (rgb: [number, number, number]) => {
+      const [r, g, b] = rgb.map((channel) => {
+        const c = channel / 255
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+      }) as [number, number, number]
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+
+    // Fills behind the text, nearest first, down to the first opaque one.
+    const fills: [number, number, number, number][] = []
+    let textOpacity = 1
+    for (let node: Element | null = element; node; node = node.parentElement) {
+      const style = getComputedStyle(node)
+      textOpacity *= Number(style.opacity)
+      const fill = rgba(style.backgroundColor)
+      if (fill[3] > 0) fills.push(fill)
+      if (fill[3] === 1) break
+    }
+    let background: [number, number, number] = [255, 255, 255]
+    for (const fill of fills.reverse()) background = over(fill, background)
+
+    const text = rgba(getComputedStyle(element).color)
+    const foreground = over([text[0], text[1], text[2], text[3] * textOpacity], background)
+    const [lighter, darker] = [luminance(foreground), luminance(background)].sort((a, b) => b - a)
+    return ((lighter ?? 0) + 0.05) / ((darker ?? 0) + 0.05)
+  })
+}
+
+/**
+ * WCAG AA for text: 4.5:1. Polled, because a colour may still be in a
+ * transition when the element shows up.
+ */
+async function expectReadable(locator: Locator, minimum = 4.5) {
+  await expect
+    .poll(() => contrastRatio(locator), { message: `contrast of ${locator}` })
+    .toBeGreaterThanOrEqual(minimum)
+}
 
 /**
  * Waits for the open animation to end (a dialog zooms 95% → 100%, a sheet
@@ -846,6 +919,71 @@ test.describe("Toaster", () => {
       if (active?.closest('[role="dialog"]')) return "dialog"
       return "page"
     })
+
+  /** Fires a toast from the Playground story and waits for it to be fully in. */
+  async function playgroundToast(page: Page, args: string, theme: "light" | "dark") {
+    await gotoStory(
+      page,
+      "overlays-sonner--playground",
+      "Disparar toast",
+      [theme === "dark" ? DARK : "", `args=${args}`].filter(Boolean).join("&"),
+    )
+    await page.getByRole("button", { name: "Disparar toast" }).click()
+    const toast = page.locator("[data-sonner-toast]")
+    await expect(toast).toBeVisible()
+    // It fades in over 400ms: colours are measured at full opacity.
+    await expect.poll(() => toast.evaluate((el) => getComputedStyle(el).opacity)).toBe("1")
+    return toast
+  }
+
+  // Sonner's stylesheet paints the description #3f3f3f and the X near-black,
+  // for its own light theme. On the dark surface of the library's dark theme
+  // that was 1.5:1 and 1.1:1.
+  for (const theme of ["light", "dark"] as const) {
+    test(`title, description and close button are readable in the ${theme} theme`, async ({
+      page,
+    }) => {
+      const toast = await playgroundToast(
+        page,
+        "closeButton:true;variant:error;message:Falha+ao+salvar;description:Confira+a+conexao",
+        theme,
+      )
+      await expect(toast.locator("[data-description]")).toHaveText("Confira a conexao")
+      await expectReadable(toast.locator("[data-title]"))
+      await expectReadable(toast.locator("[data-description]"))
+      const close = toast.locator("[data-close-button]")
+      await expectReadable(close)
+      // Under the pointer too: Sonner's hover fill is near-white.
+      await close.hover()
+      await expectReadable(close)
+    })
+
+    test(`the same with richColors, on the status fill, in the ${theme} theme`, async ({
+      page,
+    }) => {
+      const toast = await playgroundToast(
+        page,
+        "richColors:true;closeButton:true;variant:error;message:Falha+ao+salvar;description:Confira+a+conexao",
+        theme,
+      )
+      await expect(toast).toHaveAttribute("data-rich-colors", "true")
+      await expectReadable(toast.locator("[data-title]"))
+      await expectReadable(toast.locator("[data-description]"))
+      const close = toast.locator("[data-close-button]")
+      await expectReadable(close)
+      await close.hover()
+      await expectReadable(close)
+    })
+  }
+
+  test("a toast with a description in the dark theme", async ({ page }) => {
+    await gotoStory(page, "overlays-sonner--with-description", "Disparar erro", DARK)
+    await page.getByRole("button", { name: "Disparar erro" }).click()
+    const toast = page.locator("[data-sonner-toast]")
+    await expect(toast).toContainText("Confira a conexão e tente de novo.")
+    await expect.poll(() => toast.evaluate((el) => getComputedStyle(el).opacity)).toBe("1")
+    await expectReadable(toast.locator("[data-description]"))
+  })
 
   // A modal makes the page behind it inert, and the toasts were part of that
   // page: no click reached them, no key either, and a click on them counted
