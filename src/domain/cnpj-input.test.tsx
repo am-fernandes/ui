@@ -329,4 +329,84 @@ describe("CNPJInput", () => {
       expect(container.querySelector("input[type=hidden]")).toHaveAttribute("form", "cadastro")
     })
   })
+
+  // Regressão: `value` nulo quebrava em `value.replace`, e sem `value` o
+  // campo não guardava nada: só existia o modo controlado.
+  describe("valor ausente e modo não controlado", () => {
+    it("value null mostra o campo vazio, sem quebrar", () => {
+      render(<CNPJInput value={null} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("")
+    })
+
+    it("value undefined mostra o campo vazio, sem quebrar", () => {
+      render(<CNPJInput value={undefined} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("")
+    })
+
+    it("um valor que não é texto é lido como texto", () => {
+      render(<CNPJInput value={11222333000181 as unknown as string} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("11.222.333/0001-81")
+    })
+
+    it("sem value, parte de defaultValue e guarda o que é digitado", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const { container } = render(
+        <form>
+          <CNPJInput name="campo" defaultValue="12ABC3" onValueChange={onValueChange} />
+        </form>,
+      )
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("12.ABC.3")
+      await user.click(input)
+      await user.keyboard("{End}4501de35")
+      expect(input).toHaveValue("12.ABC.345/01DE-35")
+      expect(onValueChange).toHaveBeenLastCalledWith("12ABC34501DE35")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("campo")).toBe("12ABC34501DE35")
+    })
+
+    it("sem value nem defaultValue começa vazio e funciona sem onValueChange", async () => {
+      const user = userEvent.setup()
+      render(<CNPJInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("")
+      await user.type(input, "12abc34501de35")
+      expect(input).toHaveValue("12.ABC.345/01DE-35")
+    })
+
+    it("o reset do formulário devolve o defaultValue", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const { container } = render(
+        <form>
+          <CNPJInput name="campo" defaultValue="12ABC3" onValueChange={onValueChange} />
+          <button type="reset">Limpar</button>
+        </form>,
+      )
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}4501de35")
+      expect(input).toHaveValue("12.ABC.345/01DE-35")
+      await user.click(screen.getByRole("button", { name: "Limpar" }))
+      expect(input).toHaveValue("12.ABC.3")
+      expect(onValueChange).toHaveBeenLastCalledWith("12ABC3")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("campo")).toBe("12ABC3")
+    })
+
+    it("controlado, quem manda é o value: sem atualização do pai nada muda", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(
+        <CNPJInput value="12ABC3" defaultValue="12ABC34501DE35" onValueChange={onValueChange} />,
+      )
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("12.ABC.3")
+      await user.click(input)
+      await user.keyboard("{End}4501de35")
+      expect(onValueChange).toHaveBeenCalled()
+      expect(input).toHaveValue("12.ABC.3")
+    })
+  })
 })

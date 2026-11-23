@@ -6,9 +6,13 @@ interface PhoneInputProps extends MaskedInputProps {
   /**
    * O telefone como **dígitos limpos** (sem máscara).
    * Pode conter de 0 a 11 dígitos enquanto o usuário digita.
-   * Ex.: `"11987654321"` (celular) ou `"1133334444"` (fixo).
+   * Ex.: `"11987654321"` (celular) ou `"1133334444"` (fixo). `null` é campo
+   * vazio; sem `value`, o campo guarda o próprio valor a partir de
+   * `defaultValue`.
    */
-  value: string
+  value?: string | null
+  /** Telefone inicial (dígitos limpos) de um campo não controlado. */
+  defaultValue?: string
 }
 
 /**

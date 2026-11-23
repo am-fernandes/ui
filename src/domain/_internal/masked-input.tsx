@@ -160,9 +160,16 @@ function assignRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
 }
 
 export interface MaskedInputProps extends FieldInputProps {
-  /** The clean value (no mask). */
-  value: string
-  onValueChange: (value: string) => void
+  /**
+   * The clean value (no mask), controlled. `null` is an empty field. Leave it
+   * out (`undefined`) and the field keeps its own value, starting from
+   * `defaultValue`.
+   */
+  value?: string | null
+  /** Initial clean value of an uncontrolled field. */
+  defaultValue?: string
+  /** Called with the clean value after every edit. */
+  onValueChange?: (value: string) => void
 }
 
 interface InternalMaskedInputProps extends MaskedInputProps {
@@ -175,12 +182,17 @@ function MaskedInput({
   spec,
   slot,
   value,
+  defaultValue,
   onValueChange,
   ref,
   onPaste,
   ...props
 }: InternalMaskedInputProps) {
-  const cleaned = cleanValue(spec, value)
+  const isControlled = value !== undefined
+  const initial = cleanValue(spec, String(defaultValue ?? ""))
+  const [internal, setInternal] = React.useState(initial)
+  // `String()`: a number handed in by mistake must not break the field.
+  const cleaned = isControlled ? cleanValue(spec, String(value ?? "")) : internal
   const display = spec.mask(cleaned)
 
   const inputRef = React.useRef<HTMLInputElement | null>(null)
@@ -211,9 +223,30 @@ function MaskedInput({
     if (root.activeElement === el) el.setSelectionRange(pending.caret, pending.caret)
   })
 
+  const change = (raw: string) => {
+    if (raw === cleaned) return
+    if (!isControlled) setInternal(raw)
+    onValueChange?.(raw)
+  }
+
+  // An uncontrolled field goes back to `defaultValue` when its form is reset,
+  // like a native input. The latest values are read through a ref so the
+  // listener is attached once.
+  const onReset = React.useRef(() => {})
+  onReset.current = () => {
+    if (!isControlled) change(initial)
+  }
+  React.useEffect(() => {
+    const form = inputRef.current?.form
+    if (form == null) return
+    const reset = () => onReset.current()
+    form.addEventListener("reset", reset)
+    return () => form.removeEventListener("reset", reset)
+  }, [])
+
   const commit = (edit: MaskedEdit) => {
     pendingCaret.current = { masked: spec.mask(edit.raw), caret: edit.caret }
-    if (edit.raw !== cleaned) onValueChange(edit.raw)
+    change(edit.raw)
     // Always render again: the caret is restored in the layout effect even
     // when the value did not change.
     forceRender()

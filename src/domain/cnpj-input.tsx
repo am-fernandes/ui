@@ -8,8 +8,12 @@ interface CNPJInputProps extends MaskedInputProps {
    * No CNPJ numérico são só dígitos (`"11222333000181"`); no alfanumérico
    * (IN RFB 2.229/2024) as doze primeiras posições podem ter letras
    * maiúsculas (`"12ABC34501DE35"`). Os dois últimos são sempre dígitos.
+   * `null` é campo vazio; sem `value`, o campo guarda o próprio valor a partir
+   * de `defaultValue`.
    */
-  value: string
+  value?: string | null
+  /** CNPJ inicial (sem máscara) de um campo não controlado. */
+  defaultValue?: string
 }
 
 /** Aplica a máscara `XX.XXX.XXX/XXXX-DD` sobre o valor limpo. */

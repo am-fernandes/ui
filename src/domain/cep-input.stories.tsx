@@ -14,13 +14,15 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Input controlado para **CEP** com máscara `00000-000`. O valor interno são apenas os **dígitos limpos** (string de até 8 dígitos), enquanto o display é mascarado em tempo real.",
+          "Input para **CEP** com máscara `00000-000`. O valor interno são apenas os **dígitos limpos** (string de até 8 dígitos), enquanto o display é mascarado em tempo real.",
           "",
           "**Props principais:**",
           '- `value` — CEP atual como string de dígitos limpos (ex.: `"01310100"`).',
           "- `onValueChange` — callback `(value: string) => void` que recebe os dígitos limpos a cada edição.",
           "- `label` — rótulo renderizado pelo próprio componente via `FieldShell`.",
           "- `disabled` — desabilita a edição.",
+          "- `defaultValue` — valor inicial (sem máscara) quando o campo não é controlado: sem `value`, ele guarda o próprio valor.",
+          "- `name` — nome no formulário nativo. O form recebe o valor **sem máscara**, por um input oculto.",
           "- Demais props do `<input>` (exceto `value`, `onChange`, `type`) são repassadas.",
           "",
           "**Validação:** o componente é apenas um formatador. Para validar o tamanho use `isValidCEP` de `@amfernandesinc/ui/lib/brazil`.",

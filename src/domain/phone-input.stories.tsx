@@ -14,7 +14,7 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Input controlado para **telefone brasileiro**. A máscara se ajusta automaticamente:",
+          "Input para **telefone brasileiro**. A máscara se ajusta automaticamente:",
           "- 10 dígitos (fixo) → `(00) 0000-0000`",
           "- 11 dígitos (celular) → `(00) 00000-0000`",
           "",
@@ -25,6 +25,8 @@ const meta = {
           "- `onValueChange` — callback `(value: string) => void` que recebe os dígitos limpos a cada edição.",
           "- `label` — rótulo renderizado pelo próprio componente via `FieldShell`.",
           "- `disabled` — desabilita a edição.",
+          "- `defaultValue` — valor inicial (sem máscara) quando o campo não é controlado: sem `value`, ele guarda o próprio valor.",
+          "- `name` — nome no formulário nativo. O form recebe o valor **sem máscara**, por um input oculto.",
           "- Demais props do `<input>` (exceto `value`, `onChange`, `type`) são repassadas.",
           "",
           "**Validação:** o componente é apenas um formatador. Para validar use `isValidPhone` de `@amfernandesinc/ui/lib/brazil`.",

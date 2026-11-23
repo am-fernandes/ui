@@ -14,7 +14,7 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Input controlado para **CNPJ** com máscara `XX.XXX.XXX/XXXX-DD`. O valor interno é o CNPJ **sem máscara** (string de até 14 caracteres), enquanto o display é mascarado em tempo real.",
+          "Input para **CNPJ** com máscara `XX.XXX.XXX/XXXX-DD`. O valor interno é o CNPJ **sem máscara** (string de até 14 caracteres), enquanto o display é mascarado em tempo real.",
           "",
           "**CNPJ alfanumérico.** A Receita emite CNPJ com letras desde julho de 2026 (IN RFB 2.229/2024): as doze primeiras posições aceitam dígitos ou letras maiúsculas e os dois dígitos verificadores continuam numéricos. O campo aceita os dois formatos, passa para maiúsculas o que é digitado e abre o teclado de texto no celular.",
           "",
@@ -23,6 +23,8 @@ const meta = {
           "- `onValueChange` — callback `(value: string) => void` que recebe o CNPJ sem máscara a cada edição.",
           "- `label` — rótulo renderizado pelo próprio componente via `FieldShell`.",
           "- `disabled` — desabilita a edição.",
+          "- `defaultValue` — valor inicial (sem máscara) quando o campo não é controlado: sem `value`, ele guarda o próprio valor.",
+          "- `name` — nome no formulário nativo. O form recebe o valor **sem máscara**, por um input oculto.",
           "- Demais props do `<input>` (exceto `value`, `onChange`, `type`) são repassadas.",
           "",
           "**Validação:** o componente é apenas um formatador. Para validar o DV use `isValidCNPJ` de `@amfernandesinc/ui/lib/brazil`.",

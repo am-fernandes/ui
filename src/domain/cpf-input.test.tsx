@@ -358,4 +358,82 @@ describe("CPFInput", () => {
       expect(container.querySelector("input[type=hidden]")).toHaveAttribute("form", "cadastro")
     })
   })
+
+  // Regressão: `value` nulo quebrava em `value.replace`, e sem `value` o
+  // campo não guardava nada: só existia o modo controlado.
+  describe("valor ausente e modo não controlado", () => {
+    it("value null mostra o campo vazio, sem quebrar", () => {
+      render(<CPFInput value={null} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("")
+    })
+
+    it("value undefined mostra o campo vazio, sem quebrar", () => {
+      render(<CPFInput value={undefined} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("")
+    })
+
+    it("um valor que não é texto é lido como texto", () => {
+      render(<CPFInput value={52998224725 as unknown as string} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("529.982.247-25")
+    })
+
+    it("sem value, parte de defaultValue e guarda o que é digitado", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const { container } = render(
+        <form>
+          <CPFInput name="campo" defaultValue="529982" onValueChange={onValueChange} />
+        </form>,
+      )
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("529.982")
+      await user.click(input)
+      await user.keyboard("{End}24725")
+      expect(input).toHaveValue("529.982.247-25")
+      expect(onValueChange).toHaveBeenLastCalledWith("52998224725")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("campo")).toBe("52998224725")
+    })
+
+    it("sem value nem defaultValue começa vazio e funciona sem onValueChange", async () => {
+      const user = userEvent.setup()
+      render(<CPFInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("")
+      await user.type(input, "52998224725")
+      expect(input).toHaveValue("529.982.247-25")
+    })
+
+    it("o reset do formulário devolve o defaultValue", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const { container } = render(
+        <form>
+          <CPFInput name="campo" defaultValue="529982" onValueChange={onValueChange} />
+          <button type="reset">Limpar</button>
+        </form>,
+      )
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}24725")
+      expect(input).toHaveValue("529.982.247-25")
+      await user.click(screen.getByRole("button", { name: "Limpar" }))
+      expect(input).toHaveValue("529.982")
+      expect(onValueChange).toHaveBeenLastCalledWith("529982")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("campo")).toBe("529982")
+    })
+
+    it("controlado, quem manda é o value: sem atualização do pai nada muda", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<CPFInput value="529982" defaultValue="52998224725" onValueChange={onValueChange} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("529.982")
+      await user.click(input)
+      await user.keyboard("{End}24725")
+      expect(onValueChange).toHaveBeenCalled()
+      expect(input).toHaveValue("529.982")
+    })
+  })
 })

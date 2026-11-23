@@ -6,9 +6,12 @@ interface CEPInputProps extends MaskedInputProps {
   /**
    * O CEP como **dígitos limpos** (sem máscara).
    * Pode conter de 0 a 8 dígitos enquanto o usuário digita.
-   * Ex.: `"01310100"`.
+   * Ex.: `"01310100"`. `null` é campo vazio; sem `value`, o campo guarda o
+   * próprio valor a partir de `defaultValue`.
    */
-  value: string
+  value?: string | null
+  /** CEP inicial (dígitos limpos) de um campo não controlado. */
+  defaultValue?: string
 }
 
 /** Aplica a máscara `00000-000` sobre dígitos limpos. */

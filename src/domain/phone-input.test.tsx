@@ -314,4 +314,82 @@ describe("PhoneInput", () => {
       expect(container.querySelector("input[type=hidden]")).toHaveAttribute("form", "cadastro")
     })
   })
+
+  // Regressão: `value` nulo quebrava em `value.replace`, e sem `value` o
+  // campo não guardava nada: só existia o modo controlado.
+  describe("valor ausente e modo não controlado", () => {
+    it("value null mostra o campo vazio, sem quebrar", () => {
+      render(<PhoneInput value={null} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("")
+    })
+
+    it("value undefined mostra o campo vazio, sem quebrar", () => {
+      render(<PhoneInput value={undefined} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("")
+    })
+
+    it("um valor que não é texto é lido como texto", () => {
+      render(<PhoneInput value={11987654321 as unknown as string} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("(11) 98765-4321")
+    })
+
+    it("sem value, parte de defaultValue e guarda o que é digitado", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const { container } = render(
+        <form>
+          <PhoneInput name="campo" defaultValue="1198" onValueChange={onValueChange} />
+        </form>,
+      )
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("(11) 98")
+      await user.click(input)
+      await user.keyboard("{End}7654321")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(onValueChange).toHaveBeenLastCalledWith("11987654321")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("campo")).toBe("11987654321")
+    })
+
+    it("sem value nem defaultValue começa vazio e funciona sem onValueChange", async () => {
+      const user = userEvent.setup()
+      render(<PhoneInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("")
+      await user.type(input, "11987654321")
+      expect(input).toHaveValue("(11) 98765-4321")
+    })
+
+    it("o reset do formulário devolve o defaultValue", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const { container } = render(
+        <form>
+          <PhoneInput name="campo" defaultValue="1198" onValueChange={onValueChange} />
+          <button type="reset">Limpar</button>
+        </form>,
+      )
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}7654321")
+      expect(input).toHaveValue("(11) 98765-4321")
+      await user.click(screen.getByRole("button", { name: "Limpar" }))
+      expect(input).toHaveValue("(11) 98")
+      expect(onValueChange).toHaveBeenLastCalledWith("1198")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("campo")).toBe("1198")
+    })
+
+    it("controlado, quem manda é o value: sem atualização do pai nada muda", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<PhoneInput value="1198" defaultValue="11987654321" onValueChange={onValueChange} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("(11) 98")
+      await user.click(input)
+      await user.keyboard("{End}7654321")
+      expect(onValueChange).toHaveBeenCalled()
+      expect(input).toHaveValue("(11) 98")
+    })
+  })
 })
