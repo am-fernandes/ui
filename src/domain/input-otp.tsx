@@ -12,7 +12,13 @@ export interface InputOTPProps {
   value: string
   onValueChange: (value: string) => void
   onComplete?: (value: string) => void
+  /** Regular expression every character must match. Default: digits only. */
   pattern?: string
+  /**
+   * Virtual keyboard on phones. Default: `"numeric"` when `pattern` accepts
+   * only digits, `"text"` when it accepts letters.
+   */
+  inputMode?: "numeric" | "text"
   label?: React.ReactNode
   description?: React.ReactNode
   error?: string
@@ -49,12 +55,24 @@ function Slot({ slot, invalid }: { slot: SlotProps; invalid: boolean }) {
   )
 }
 
+/** Whether a code of this pattern can hold letters, so needs a text keyboard. */
+function acceptsLetters(pattern: string) {
+  try {
+    const re = new RegExp(pattern)
+    return ["a", "A", "z", "Z", "F"].some((c) => re.test(c))
+  } catch {
+    // An invalid pattern rejects nothing in particular: keep every key.
+    return true
+  }
+}
+
 function InputOTP({
   length,
   value,
   onValueChange,
   onComplete,
   pattern = REGEXP_ONLY_DIGITS,
+  inputMode,
   label,
   description,
   error,
@@ -91,6 +109,7 @@ function InputOTP({
         onChange={onValueChange}
         onComplete={onComplete}
         pattern={pattern}
+        inputMode={inputMode ?? (acceptsLetters(pattern) ? "text" : "numeric")}
         disabled={disabled}
         aria-invalid={hasError ? true : undefined}
         aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}

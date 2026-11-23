@@ -168,4 +168,34 @@ describe("InputOTP", () => {
       expect(slot).not.toHaveAttribute("data-invalid")
     }
   })
+  // Regressão: o teclado era sempre numérico, e um código com letras
+  // (pattern alfanumérico) não podia ser digitado no celular.
+  describe("inputMode segue o pattern", () => {
+    it("só dígitos: teclado numérico", () => {
+      render(<InputOTP length={4} value="" onValueChange={() => {}} />)
+      expect(screen.getByRole("textbox")).toHaveAttribute("inputmode", "numeric")
+    })
+
+    it.each([
+      ["letras e dígitos", "^[a-zA-Z0-9]+$"],
+      ["só letras", "^[a-zA-Z]+$"],
+      ["hexadecimal em maiúsculas", "^[0-9A-F]+$"],
+    ])("%s: teclado de texto", (_, pattern) => {
+      render(<InputOTP length={4} value="" onValueChange={() => {}} pattern={pattern} />)
+      expect(screen.getByRole("textbox")).toHaveAttribute("inputmode", "text")
+    })
+
+    it("inputMode explícito ganha do automático", () => {
+      render(
+        <InputOTP
+          length={4}
+          value=""
+          onValueChange={() => {}}
+          pattern="^[a-zA-Z0-9]+$"
+          inputMode="numeric"
+        />,
+      )
+      expect(screen.getByRole("textbox")).toHaveAttribute("inputmode", "numeric")
+    })
+  })
 })
