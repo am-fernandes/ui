@@ -65,6 +65,7 @@ export {
   toBRLMoney,
 } from "./lib/currency"
 export {
+  DEFAULT_TIME_ZONE,
   addDays,
   addMonths,
   compareDates,
