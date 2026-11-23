@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, fn, userEvent, waitFor, within } from "@storybook/test"
-import { useState } from "react"
+import { useRef, useState } from "react"
 
 import { Button } from "../primitives/button"
 import { Textarea } from "../primitives/textarea"
@@ -22,7 +22,7 @@ const meta: Meta<typeof AlertDialog> = {
           "- `title: ReactNode` — título obrigatório (a11y).",
           "- `description?: ReactNode` — texto secundário.",
           "- `children?: ReactNode` — body adicional (renderiza entre description e botões).",
-          "- `onConfirm: () => void` — handler do botão principal.",
+          "- `onConfirm: () => void | Promise` — handler do botão principal. Com Promise, o diálogo espera: botão com spinner, fecha quando ela resolve e continua aberto se ela rejeitar.",
           "- `onCancel?: () => void` — chamado em `Cancelar` e no Esc.",
           "- `confirmLabel?: string` — default `'Confirmar'`.",
           "- `cancelLabel?: string` — default `'Cancelar'`.",
@@ -135,6 +135,63 @@ export const ConfirmOnce: Story = {
       description: {
         story:
           "Um clique duplo em “Aprovar” confirma uma vez só: enquanto o diálogo fecha, os botões não respondem mais.",
+      },
+    },
+  },
+}
+
+export const AsyncConfirm: Story = {
+  render: () => {
+    const attempts = useRef(0)
+    const [requests, setRequests] = useState(0)
+    const [approved, setApproved] = useState(0)
+    const [error, setError] = useState<string | null>(null)
+    // A slow server that fails the first time.
+    const approve = () =>
+      new Promise<void>((resolve, reject) => {
+        attempts.current += 1
+        const attempt = attempts.current
+        setRequests(attempt)
+        setError(null)
+        setTimeout(() => {
+          if (attempt === 1) {
+            setError("O servidor não respondeu. Tente de novo.")
+            reject(new Error("timeout"))
+          } else {
+            setApproved((n) => n + 1)
+            resolve()
+          }
+        }, 2000)
+      })
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <AlertDialog
+          trigger={<Button>Aprovar proposta</Button>}
+          title="Aprovar a proposta #1042?"
+          description="O comprador é avisado por e-mail."
+          confirmLabel="Aprovar"
+          onConfirm={approve}
+        >
+          {error ? (
+            <p role="alert" className="text-sm text-destructive-text">
+              {error}
+            </p>
+          ) : null}
+        </AlertDialog>
+        <p className="text-sm text-muted-foreground" data-testid="request-count">
+          Pedidos enviados: {requests}
+        </p>
+        <p className="text-sm text-muted-foreground" data-testid="approved-count">
+          Aprovações concluídas: {approved}
+        </p>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`onConfirm` que devolve uma Promise: o botão mostra o spinner e o diálogo espera. Aqui o servidor falha na primeira vez: o diálogo continua aberto com o erro no corpo e “Aprovar” tenta de novo. Enquanto o pedido corre, os dois botões e o Esc não fazem nada.",
       },
     },
   },

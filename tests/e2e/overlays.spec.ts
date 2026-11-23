@@ -357,6 +357,46 @@ test.describe("AlertDialog", () => {
     await expect(page.getByTestId("cancel-count")).toHaveText("Cancelamentos: 0")
   })
 
+  // An `onConfirm` returning a Promise used to close the dialog at once: no
+  // pending state, and a failed request had nowhere to be told.
+  test("an asynchronous confirm waits, keeps the dialog open on failure and closes on success", async ({
+    page,
+  }) => {
+    await gotoStory(page, "overlays-alertdialog--async-confirm", "Aprovar proposta")
+    await page.getByRole("button", { name: "Aprovar proposta" }).click()
+    const dialog = page.getByRole("alertdialog")
+    const confirm = dialog.getByRole("button", { name: "Aprovar", exact: true })
+    const cancel = dialog.getByRole("button", { name: "Cancelar" })
+    await expect(confirm).toBeVisible()
+    await settledBox(confirm)
+
+    // The story's server takes 2s and fails the first time.
+    await confirm.click()
+    await expect(confirm).toHaveAttribute("aria-busy", "true")
+    await expect(confirm.locator("svg.animate-spin")).toBeVisible()
+    // Neither the keyboard nor a click does anything while it runs, and the
+    // focus stays on the button (aria-disabled, not disabled).
+    await page.keyboard.press("Enter")
+    await page.keyboard.press("Escape")
+    await expect(confirm).toBeFocused()
+    await confirm.click({ force: true })
+    await cancel.click({ force: true })
+    await expect(dialog).toBeVisible()
+    await expect(page.getByTestId("request-count")).toHaveText("Pedidos enviados: 1")
+
+    // Rejected: still open, the error inside, the buttons active again.
+    await expect(dialog.getByRole("alert")).toHaveText("O servidor não respondeu. Tente de novo.")
+    await expect(confirm).not.toHaveAttribute("aria-busy")
+    await expect(confirm).not.toHaveAttribute("aria-disabled")
+
+    // Resolved: closed, approved once.
+    await confirm.click()
+    await expect(page.getByTestId("request-count")).toHaveText("Pedidos enviados: 2")
+    await expect(dialog).toHaveCount(0, { timeout: 10_000 })
+    await expect(page.getByTestId("approved-count")).toHaveText("Aprovações concluídas: 1")
+    await expect(page.getByRole("button", { name: "Aprovar proposta" })).toBeFocused()
+  })
+
   test("tall content: fits the screen, the body scrolls and the buttons stay in view", async ({
     page,
   }) => {

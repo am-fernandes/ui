@@ -1,7 +1,8 @@
 "use client"
 
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
-import type * as React from "react"
+import { Loader2 } from "lucide-react"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Button, type ButtonProps } from "../primitives/button"
@@ -18,7 +19,14 @@ export interface AlertDialogProps {
   open?: boolean
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
-  onConfirm: () => void
+  /**
+   * Called on the confirm button. Return a Promise (the request behind
+   * "Aprovar") and the dialog waits for it: the button shows a spinner, both
+   * buttons and Escape are ignored, the dialog closes when it resolves and
+   * stays open when it rejects, so the consumer can show the error inside it
+   * (in `children`) or in a toast and the user can try again.
+   */
+  onConfirm: () => void | Promise<unknown>
   /** Called on "Cancelar" and on Escape. */
   onCancel?: () => void
   confirmLabel?: string
@@ -33,6 +41,17 @@ export interface AlertDialogProps {
    */
   onCloseAutoFocus?: (event: Event) => void
   className?: string
+}
+
+// The look of a disabled `Button`, for one that keeps the focus.
+const pendingClass = "aria-disabled:pointer-events-none aria-disabled:opacity-50"
+
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as PromiseLike<unknown>).then === "function"
+  )
 }
 
 function AlertDialog({
@@ -59,15 +78,54 @@ function AlertDialog({
     onCloseAutoFocus,
   })
 
+  // While an asynchronous `onConfirm` runs. The ref answers at once, before
+  // React renders the state: a double click lands in the same frame.
+  const [pending, setPending] = React.useState(false)
+  const pendingRef = React.useRef(false)
+  const mountedRef = React.useRef(true)
+  React.useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+  // The promise settles renders later: close with the handlers of that time.
+  const latest = React.useRef({ isOpen, handleOpenChange })
+  latest.current = { isOpen, handleOpenChange }
+
   // A closing dialog stays mounted, with its buttons under the pointer, while
   // the exit animation runs. A second click there (a double click, a held
-  // Enter) must not confirm or cancel again.
+  // Enter) must not confirm or cancel again; nor any click while the
+  // confirmation is pending.
   const whileOpen = (action?: () => void) => (event: React.MouseEvent) => {
-    if (!isOpen) {
+    if (!isOpen || pendingRef.current) {
       event.preventDefault()
       return
     }
     action?.()
+  }
+
+  const confirm = whileOpen(() => {})
+  const handleConfirm = (event: React.MouseEvent) => {
+    confirm(event)
+    if (event.defaultPrevented) return
+    const result = onConfirm()
+    // Synchronous: Radix's Action closes the dialog.
+    if (!isPromiseLike(result)) return
+    event.preventDefault()
+    pendingRef.current = true
+    setPending(true)
+    const settle = (close: boolean) => {
+      pendingRef.current = false
+      if (!mountedRef.current) return
+      setPending(false)
+      if (close && latest.current.isOpen) latest.current.handleOpenChange(false)
+    }
+    // A rejection is the consumer's to show; the dialog only stays open.
+    Promise.resolve(result).then(
+      () => settle(true),
+      () => settle(false),
+    )
   }
 
   // The popovers, menus and tooltips opened inside the dialog render into its
@@ -90,7 +148,7 @@ function AlertDialog({
           // (once: not again while the dialog closes). Escape typed with
           // focus in a toast (they float above the dialog) is for the toast.
           onEscapeKeyDown={(e) => {
-            if (isToastFocused()) {
+            if (isToastFocused() || pendingRef.current) {
               e.preventDefault()
               return
             }
@@ -124,17 +182,27 @@ function AlertDialog({
               </div>
             ) : null}
             <div data-slot="alert-dialog-footer" className="flex shrink-0 justify-end gap-2">
+              {/* Pending: `aria-disabled`, not `disabled`, so the focus stays
+                  on the button instead of falling to <body>. */}
               <AlertDialogPrimitive.Cancel asChild>
-                <Button variant="outline" className="min-w-24" onClick={whileOpen(onCancel)}>
+                <Button
+                  variant="outline"
+                  className={cn("min-w-24", pendingClass)}
+                  aria-disabled={pending || undefined}
+                  onClick={whileOpen(onCancel)}
+                >
                   {cancelLabel}
                 </Button>
               </AlertDialogPrimitive.Cancel>
               <AlertDialogPrimitive.Action asChild>
                 <Button
                   variant={confirmVariant}
-                  className="min-w-24"
-                  onClick={whileOpen(onConfirm)}
+                  className={cn("min-w-24", pendingClass)}
+                  aria-disabled={pending || undefined}
+                  aria-busy={pending || undefined}
+                  onClick={handleConfirm}
                 >
+                  {pending ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
                   {confirmLabel}
                 </Button>
               </AlertDialogPrimitive.Action>
