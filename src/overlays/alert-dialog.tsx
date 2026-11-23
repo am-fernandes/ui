@@ -9,6 +9,7 @@ import { dialogContentBase, overlayBase } from "./_internal/animations"
 import { modalBodyClass } from "./_internal/modal-body"
 import { useModalOpen, useReturnFocus } from "./_internal/modal-state"
 import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
+import { isToastFocused } from "./_internal/toasts"
 
 export interface AlertDialogProps {
   trigger?: React.ReactNode
@@ -84,6 +85,11 @@ function AlertDialog({
           data-slot="alert-dialog-content"
           className={cn(dialogContentBase, "max-w-lg", className)}
           onCloseAutoFocus={returnFocus}
+          // Escape typed with focus in a toast (they float above the dialog)
+          // is for the toast, not for the dialog.
+          onEscapeKeyDown={(e) => {
+            if (isToastFocused()) e.preventDefault()
+          }}
         >
           <OverlayContainerProvider container={overlayContainer}>
             <AlertDialogPrimitive.Title

@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react"
+import { useState } from "react"
 
 import { Button } from "../primitives/button"
+import { Input } from "../primitives/input"
+import { Dialog } from "./dialog"
 import { Toaster, toast } from "./sonner"
 
 type PlaygroundArgs = {
@@ -165,4 +168,104 @@ export const Default: Story = {
       <Button onClick={() => toast.success("Salvo com sucesso!")}>Disparar toast</Button>
     </>
   ),
+}
+
+export const WithDescription: Story = {
+  render: () => (
+    <>
+      <Toaster />
+      <div className="flex gap-2">
+        <Button
+          onClick={() =>
+            toast.success("Proposta salva", {
+              description: "O comprador foi avisado por e-mail.",
+            })
+          }
+        >
+          Disparar sucesso
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() =>
+            toast.error("Não foi possível salvar", {
+              description: "Confira a conexão e tente de novo.",
+            })
+          }
+        >
+          Disparar erro
+        </Button>
+      </div>
+    </>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`description` é o texto de apoio, na cor de `--muted-foreground` nos dois temas. Troque o tema na barra do Storybook para conferir.",
+      },
+    },
+  },
+}
+
+export const WithAction: Story = {
+  render: () => {
+    const [undone, setUndone] = useState(0)
+    return (
+      <>
+        <Toaster />
+        <div className="flex flex-col items-start gap-3">
+          <Button
+            onClick={() =>
+              toast("Proposta arquivada", {
+                description: "Ela saiu da fila de atendimento.",
+                action: { label: "Desfazer", onClick: () => setUndone((n) => n + 1) },
+              })
+            }
+          >
+            Arquivar proposta
+          </Button>
+          <p className="text-sm text-muted-foreground" data-testid="undo-count">
+            Desfeitas: {undone}
+          </p>
+        </div>
+      </>
+    )
+  },
+}
+
+export const OverDialog: Story = {
+  render: () => {
+    const [retries, setRetries] = useState(0)
+    const fail = () =>
+      toast.error("Não foi possível salvar", {
+        description: "Confira a conexão e tente de novo.",
+        action: { label: "Tentar de novo", onClick: () => setRetries((n) => n + 1) },
+      })
+    return (
+      <>
+        <Toaster />
+        <div className="flex flex-col items-start gap-3">
+          <Dialog
+            trigger={<Button>Editar proposta</Button>}
+            title="Editar proposta"
+            description="O formulário continua aberto enquanto o aviso aparece."
+            footer={<Button onClick={fail}>Salvar</Button>}
+          >
+            <Input label="Cliente" defaultValue="Ana Souza" />
+          </Dialog>
+          <p className="text-sm text-muted-foreground" data-testid="retry-count">
+            Tentativas: {retries}
+          </p>
+        </div>
+      </>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com um `Dialog` aberto o aviso continua usável: dá para clicar em “Tentar de novo”, fechar o aviso e chegar nele pelo teclado (Alt+T), e nada disso fecha o diálogo.",
+      },
+    },
+  },
 }

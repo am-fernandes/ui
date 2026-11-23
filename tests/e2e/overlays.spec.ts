@@ -837,6 +837,108 @@ test.describe("DropdownMenu", () => {
   })
 })
 
+test.describe("Toaster", () => {
+  /** Where focus is: in a toast, in the dialog or on the page behind. */
+  const focusPlace = (page: Page) =>
+    page.evaluate(() => {
+      const active = document.activeElement
+      if (active?.closest("[data-sonner-toaster]")) return "toast"
+      if (active?.closest('[role="dialog"]')) return "dialog"
+      return "page"
+    })
+
+  // A modal makes the page behind it inert, and the toasts were part of that
+  // page: no click reached them, no key either, and a click on them counted
+  // as a click outside, which closed the dialog and lost the form.
+  test.describe("with a Dialog open", () => {
+    test.beforeEach(async ({ page }) => {
+      await gotoStory(page, "overlays-sonner--over-dialog", "Editar proposta")
+      await page.getByRole("button", { name: "Editar proposta" }).click()
+      await settledBox(page.getByRole("dialog", { name: "Editar proposta" }))
+    })
+
+    test("a toast can be clicked and the click does not close the Dialog", async ({ page }) => {
+      const dialog = page.getByRole("dialog", { name: "Editar proposta" })
+      await dialog.getByLabel("Cliente").fill("Bruno Lima")
+      await dialog.getByRole("button", { name: "Salvar" }).click()
+      const toast = page.locator("[data-sonner-toast]")
+      await expect(toast).toContainText("Não foi possível salvar")
+
+      await toast.getByRole("button", { name: "Tentar de novo" }).click()
+      await expect(page.getByTestId("retry-count")).toHaveText("Tentativas: 1")
+      await expect(dialog).toBeVisible()
+      // The form is still there, with what was typed.
+      await expect(dialog.getByLabel("Cliente")).toHaveValue("Bruno Lima")
+
+      // A click on the text of a toast is not a click outside either.
+      await dialog.getByRole("button", { name: "Salvar" }).click()
+      await toast.getByText("Confira a conexão e tente de novo.").click()
+      await page.waitForTimeout(300)
+      await expect(dialog).toBeVisible()
+    })
+
+    test("the keyboard reaches a toast with Alt+T and Tab, and Tab goes back to the Dialog", async ({
+      page,
+    }) => {
+      const dialog = page.getByRole("dialog", { name: "Editar proposta" })
+      await dialog.getByRole("button", { name: "Salvar" }).click()
+      const action = page.getByRole("button", { name: "Tentar de novo" })
+      await expect(action).toBeVisible()
+      expect(await focusPlace(page)).toBe("dialog")
+
+      await page.keyboard.press("Alt+KeyT")
+      await expect.poll(() => focusPlace(page)).toBe("toast")
+      // The focus trap of the dialog does not take it back.
+      await page.waitForTimeout(300)
+      expect(await focusPlace(page)).toBe("toast")
+
+      // Tab walks the toast and then returns to the dialog, never to the page.
+      const places: string[] = []
+      for (
+        let i = 0;
+        i < 8 && !(await action.evaluate((el) => el === document.activeElement));
+        i++
+      ) {
+        await page.keyboard.press("Tab")
+        places.push(await focusPlace(page))
+      }
+      await expect(action).toBeFocused()
+      expect(places).not.toContain("page")
+
+      await page.keyboard.press("Enter")
+      await expect(page.getByTestId("retry-count")).toHaveText("Tentativas: 1")
+      await expect(dialog).toBeVisible()
+
+      await dialog.getByRole("button", { name: "Salvar" }).click()
+      await expect(action).toBeVisible()
+      await page.keyboard.press("Alt+KeyT")
+      await expect.poll(() => focusPlace(page)).toBe("toast")
+      for (let i = 0; i < 8 && (await focusPlace(page)) === "toast"; i++) {
+        await page.keyboard.press("Tab")
+      }
+      expect(await focusPlace(page)).toBe("dialog")
+    })
+
+    test("Escape in a toast gives focus back to the Dialog; the next Escape closes it", async ({
+      page,
+    }) => {
+      const dialog = page.getByRole("dialog", { name: "Editar proposta" })
+      const save = dialog.getByRole("button", { name: "Salvar" })
+      await save.click()
+      await expect(page.getByRole("button", { name: "Tentar de novo" })).toBeVisible()
+
+      await page.keyboard.press("Alt+KeyT")
+      await expect.poll(() => focusPlace(page)).toBe("toast")
+      await page.keyboard.press("Escape")
+      await expect(save).toBeFocused()
+      await expect(dialog).toBeVisible()
+
+      await page.keyboard.press("Escape")
+      await expect(dialog).toHaveCount(0)
+    })
+  })
+})
+
 test.describe("IconButton", () => {
   test("shows its label as a tooltip on hover", async ({ page }) => {
     await gotoStory(page, "primitives-iconbutton--variants", "Excluir")

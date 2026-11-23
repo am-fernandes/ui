@@ -10,6 +10,7 @@ import { motionSheet, overlayBase } from "./_internal/animations"
 import { modalBodyClass } from "./_internal/modal-body"
 import { useModalOpen, useReturnFocus } from "./_internal/modal-state"
 import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
+import { isToastFocused, isToastPress } from "./_internal/toasts"
 
 // The panel is a column: title, description and footer keep their size, the
 // body (`modalBodyClass`) takes what is left and scrolls. Side panels are as
@@ -105,6 +106,17 @@ function Sheet({
           data-side={side}
           className={cn(sheetVariants({ side }), className)}
           onCloseAutoFocus={returnFocus}
+          // A toast floats above the panel and belongs to no modal: a press on
+          // it, or Escape typed in it, is not for the panel.
+          onEscapeKeyDown={(e) => {
+            if (isToastFocused()) e.preventDefault()
+          }}
+          onPointerDownOutside={(e) => {
+            if (isToastPress(e)) e.preventDefault()
+          }}
+          onInteractOutside={(e) => {
+            if (isToastPress(e)) e.preventDefault()
+          }}
         >
           <OverlayContainerProvider container={overlayContainer}>
             <DialogPrimitive.Title

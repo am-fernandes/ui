@@ -9,6 +9,7 @@ import { dialogContentBase, overlayBase } from "./_internal/animations"
 import { modalBodyClass } from "./_internal/modal-body"
 import { useModalOpen, useReturnFocus } from "./_internal/modal-state"
 import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
+import { isToastFocused, isToastPress } from "./_internal/toasts"
 
 export interface DialogProps {
   /** Element that opens the dialog. Omit for fully controlled use. */
@@ -102,19 +103,20 @@ function Dialog({
           onOpenAutoFocus={onOpenAutoFocus}
           onCloseAutoFocus={returnFocus}
           onEscapeKeyDown={(e) => {
-            if (!dismissible) e.preventDefault()
+            if (!dismissible || isToastFocused()) e.preventDefault()
           }}
           // What is "outside" is Radix's call, and it follows the React tree:
           // a press in a popover, menu, calendar or list opened from the
           // dialog (they also render inside its content) is a press inside.
           // The dialog used to add guesses of its own, down to "is there a
           // grid anywhere in the document", and stopped closing on a page
-          // with a table, a date field or a command list.
+          // with a table, a date field or a command list. The one exception
+          // is a toast: it floats above the dialog and belongs to no modal.
           onPointerDownOutside={(e) => {
-            if (!dismissible) e.preventDefault()
+            if (!dismissible || isToastPress(e)) e.preventDefault()
           }}
           onInteractOutside={(e) => {
-            if (!dismissible) e.preventDefault()
+            if (!dismissible || isToastPress(e)) e.preventDefault()
           }}
         >
           <OverlayContainerProvider container={overlayContainer}>
