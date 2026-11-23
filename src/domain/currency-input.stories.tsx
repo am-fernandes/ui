@@ -22,6 +22,7 @@ const meta = {
           "- `onValueChange` — callback `(value: number) => void` disparado a cada edição com o novo valor em reais.",
           '- `emptyValue` — o que vale um campo vazio. `"zero"` (padrão): o campo sempre tem um número e limpar volta a `0,00`. `"null"`: o campo pode ficar vazio, `value` aceita `null`, `onValueChange` passa a receber `number | null`, o placeholder aparece e o `required` nativo funciona.',
           "- `allowNegative` — aceita valores negativos (estorno, desconto, saldo devedor).",
+          "- `min` / `max` — limites em reais. A tecla (ou a colagem) que passaria de `max` é recusada; um valor abaixo de `min` é corrigido quando o campo perde o foco.",
           "- `name` — nome no formulário nativo. O form recebe o número (`1234.56`), por um input oculto.",
           "- `size` — altura do campo: `sm` (32px), `md` (40px, padrão) ou `lg` (44px).",
           "- `readOnly` — somente leitura: o valor fica legível, recebe foco e é enviado, mas não é editável.",
@@ -267,6 +268,35 @@ export const Empty: Story = {
       description: {
         story:
           'Com `emptyValue="null"` o campo sabe ficar vazio: `null` é "não informado", diferente de zero. Limpar o campo reporta `null`, o placeholder aparece e o `required` nativo passa a acusar. Zero digitado continua sendo um valor.',
+      },
+    },
+  },
+}
+
+export const MinMax: Story = {
+  args: {},
+  render: () => {
+    const [value, setValue] = React.useState<number>(0)
+    return (
+      <div className="flex w-80 flex-col gap-2">
+        <CurrencyInput
+          id="installment"
+          label="Valor da parcela (R$)"
+          description="Entre R$ 100,00 e R$ 5.000,00."
+          min={100}
+          max={5000}
+          value={value}
+          onValueChange={setValue}
+        />
+        <p className="text-xs text-muted-foreground">Valor interno: {value}</p>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`max` é um teto: a tecla que passaria dele é recusada e o campo fica com o que tinha, sem trocar o número digitado por outro. `min` vale quando o campo perde o foco, porque durante a digitação o valor passa por números menores no caminho.",
       },
     },
   },

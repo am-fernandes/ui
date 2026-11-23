@@ -20,7 +20,8 @@ const meta = {
           "- `defaultValue` — valor inicial quando o campo não é controlado: sem `value`, ele guarda o próprio valor.",
           "- `onValueChange` — callback `(value: number) => void` disparado a cada edição com o novo decimal.",
           '- `emptyValue` — o que vale um campo vazio. `"zero"` (padrão): o campo sempre tem um número e limpar volta a `0,00`. `"null"`: o campo pode ficar vazio, `value` aceita `null`, `onValueChange` passa a receber `number | null`, o placeholder aparece e o `required` nativo funciona.',
-          "- `max` — teto do percentual (padrão 100).",
+          "- `max` — teto do percentual (padrão 100). A tecla (ou a colagem) que passaria dele é recusada: o campo fica com o que tinha.",
+          "- `min` — piso do percentual, aplicado quando o campo perde o foco. Com `min` negativo o campo aceita percentual negativo.",
           "- `label` — rótulo renderizado pelo próprio componente via `FieldShell`. Prefira esta prop em vez de um `<Label>` externo.",
           "- `name` — nome no formulário nativo. O form recebe o número (`12.5`), por um input oculto.",
           "- `size` — altura do campo: `sm` (32px), `md` (40px, padrão) ou `lg` (44px).",
@@ -229,6 +230,35 @@ export const Empty: Story = {
       description: {
         story:
           'Com `emptyValue="null"` o campo sabe ficar vazio: `null` é "não informado", diferente de zero. Limpar o campo reporta `null`, o placeholder aparece e o `required` nativo passa a acusar.',
+      },
+    },
+  },
+}
+
+export const MinMax: Story = {
+  args: {},
+  render: () => {
+    const [value, setValue] = React.useState<number>(0)
+    return (
+      <div className="flex w-80 flex-col gap-2">
+        <PercentageInput
+          id="down-payment"
+          label="Entrada (%)"
+          description="Entre 10% e 50% do valor do imóvel."
+          min={10}
+          max={50}
+          value={value}
+          onValueChange={setValue}
+        />
+        <p className="text-xs text-muted-foreground">Valor interno: {value}</p>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`max` é um teto: a tecla que passaria dele é recusada e o campo fica com o que tinha, sem trocar o número digitado por outro. `min` vale quando o campo perde o foco, porque durante a digitação o valor passa por números menores no caminho.",
       },
     },
   },

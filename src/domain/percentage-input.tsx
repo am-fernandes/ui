@@ -3,8 +3,20 @@
 import { type DecimalFieldProps, DecimalInput } from "./_internal/decimal-input"
 
 interface PercentageInputBaseProps extends DecimalFieldProps {
-  /** Maximum percentage allowed. Default 100. */
+  /**
+   * Largest percentage. A key (or a paste) that would take the value past it
+   * is refused: the field keeps what it had, and never shows a number the
+   * user did not type.
+   * @default 100
+   */
   max?: number
+  /**
+   * Smallest percentage. While typing, the value passes below it on its way
+   * up, so it is applied when the field loses focus after an edit: a smaller
+   * value is raised to `min`. A negative `min` lets the field take negative
+   * percentages, with the minus key.
+   */
+  min?: number
 }
 
 interface PercentageInputZeroProps extends PercentageInputBaseProps {
@@ -44,6 +56,7 @@ function PercentageInput({
   defaultValue,
   onValueChange,
   max = 100,
+  min,
   ...props
 }: PercentageInputProps) {
   const allowEmpty = emptyValue === "null"
@@ -60,12 +73,11 @@ function PercentageInput({
       decimals={2}
       value={value}
       defaultValue={defaultValue}
-      onValueChange={(next) => {
-        if (next == null) report?.(allowEmpty ? null : 0)
-        else report?.(Math.min(next, max))
-      }}
+      onValueChange={(next) => report?.(allowEmpty ? next : (next ?? 0))}
       allowEmpty={allowEmpty}
-      allowNegative={false}
+      allowNegative={min != null && min < 0}
+      min={min}
+      max={max}
     />
   )
 }

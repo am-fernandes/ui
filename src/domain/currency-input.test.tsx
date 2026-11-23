@@ -780,4 +780,100 @@ describe("CurrencyInput", () => {
       expect(screen.getByRole("textbox")).toHaveValue("")
     })
   })
+
+  describe("min e max", () => {
+    function Limited(props: {
+      initial?: number
+      min?: number
+      max?: number
+      allowNegative?: boolean
+    }) {
+      const { initial = 0, ...limits } = props
+      const [value, setValue] = React.useState(initial)
+      return (
+        <>
+          <CurrencyInput label="Valor" value={value} onValueChange={setValue} {...limits} />
+          <output data-testid="value">{String(value)}</output>
+        </>
+      )
+    }
+
+    it("a tecla que passaria do máximo é recusada, sem trocar o valor por outro", async () => {
+      const user = userEvent.setup()
+      render(<Limited max={1000} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}100000")
+      expect(input).toHaveValue("1.000,00")
+      await user.keyboard("5")
+      expect(input).toHaveValue("1.000,00")
+      expect(input.selectionStart).toBe(8)
+      expect(screen.getByTestId("value")).toHaveTextContent("1000")
+    })
+
+    it("um valor colado acima do máximo não entra", async () => {
+      const user = userEvent.setup()
+      render(<Limited initial={250} max={1000} />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.paste("1.500,00")
+      expect(input).toHaveValue("250,00")
+      await user.paste("1.000,00")
+      expect(input).toHaveValue("1.000,00")
+    })
+
+    it("abaixo do mínimo é aceito enquanto se digita e corrigido ao sair do campo", async () => {
+      const user = userEvent.setup()
+      render(<Limited min={100} />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.keyboard("{End}5000")
+      // O caminho até 50,00 passou por 0,05 e 0,50, todos abaixo de 100,00.
+      expect(input).toHaveValue("50,00")
+      expect(screen.getByTestId("value")).toHaveTextContent("50")
+      await user.tab()
+      expect(input).toHaveValue("100,00")
+      expect(screen.getByTestId("value")).toHaveTextContent("100")
+    })
+
+    it("passar pelo campo sem editar não muda um valor fora dos limites", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<CurrencyInput value={50} onValueChange={onValueChange} min={100} max={1000} />)
+      await user.tab()
+      await user.tab()
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(screen.getByRole("textbox")).toHaveValue("50,00")
+    })
+
+    it("um valor que já chegou acima do máximo pode ser reduzido", async () => {
+      const user = userEvent.setup()
+      render(<Limited initial={15000} max={1000} />)
+      const input = screen.getByRole("textbox")
+      expect(input).toHaveValue("15.000,00")
+      await user.click(input)
+      await user.keyboard("{End}{Backspace}")
+      expect(input).toHaveValue("1.500,00")
+      await user.keyboard("{Backspace}")
+      expect(input).toHaveValue("150,00")
+    })
+
+    it("com negativos, o mínimo também recusa a tecla que passaria dele", async () => {
+      const user = userEvent.setup()
+      render(<Limited allowNegative min={-100} max={100} />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.keyboard("{End}-10000")
+      expect(input).toHaveValue("-100,00")
+      await user.keyboard("1")
+      expect(input).toHaveValue("-100,00")
+    })
+
+    it("min e max não vão para o input como atributos nativos", () => {
+      render(<CurrencyInput value={0} onValueChange={vi.fn()} min={1} max={10} />)
+      const input = screen.getByRole("textbox")
+      expect(input).not.toHaveAttribute("min")
+      expect(input).not.toHaveAttribute("max")
+    })
+  })
 })

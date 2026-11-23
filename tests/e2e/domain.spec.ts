@@ -553,6 +553,50 @@ test.describe("CurrencyInput e PercentageInput: campo vazio", () => {
   }
 })
 
+test.describe("CurrencyInput e PercentageInput: limites", () => {
+  test("CurrencyInput: a tecla que passaria de max é recusada e min vale ao sair do campo", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-currencyinput--min-max")
+    const input = page.getByRole("textbox", { name: /Valor da parcela/ })
+    const internal = page.getByText(/^Valor interno:/)
+    await input.press("End")
+    await page.keyboard.type("500000")
+    await expect(input).toHaveValue("5.000,00")
+    // Mais um dígito daria 50.000,00.
+    await page.keyboard.type("1")
+    await expect(input).toHaveValue("5.000,00")
+    await expect(internal).toHaveText("Valor interno: 5000")
+
+    await input.press("ControlOrMeta+A")
+    await page.keyboard.type("2550")
+    await expect(input).toHaveValue("25,50")
+    await page.keyboard.press("Tab")
+    await expect(input).toHaveValue("100,00")
+    await expect(internal).toHaveText("Valor interno: 100")
+  })
+
+  test("PercentageInput: digitar além do teto não troca o número por 100", async ({ page }) => {
+    await gotoStory(page, "domain-percentageinput--default")
+    const input = page.getByRole("textbox", { name: /Comissão/ })
+    await input.press("End")
+    await page.keyboard.type("12345")
+    await expect(input).toHaveValue("12,34")
+    expect(await caretOf(input)).toBe(5)
+  })
+
+  test("PercentageInput: min vale ao sair do campo", async ({ page }) => {
+    await gotoStory(page, "domain-percentageinput--min-max")
+    const input = page.getByRole("textbox", { name: /Entrada/ })
+    await input.press("End")
+    await page.keyboard.type("250")
+    await expect(input).toHaveValue("2,50")
+    await page.keyboard.press("Tab")
+    await expect(input).toHaveValue("10,00")
+    await expect(page.getByText(/^Valor interno:/)).toHaveText("Valor interno: 10")
+  })
+})
+
 test.describe("CurrencyInput: colar", () => {
   test.beforeEach(async ({ context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"])

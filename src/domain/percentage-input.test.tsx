@@ -28,12 +28,17 @@ describe("PercentageInput", () => {
     expect(screen.getByDisplayValue("0,00")).toBeInTheDocument()
   })
 
-  it("clamps to default max=100 when more than 100 is typed", () => {
+  // Antes o valor acima do teto era trocado por 100 em silêncio: digitar
+  // 12345 mostrava 100,00, um número que a pessoa não digitou.
+  it("does not take a value above the default max=100", () => {
     const onValueChange = vi.fn()
     render(<PercentageInput value={0} onValueChange={onValueChange} />)
     const input = screen.getByDisplayValue("0,00") as HTMLInputElement
-    // "12000" -> 120.00 -> clamped to 100
+    // "12000" -> 120.00 -> above 100: the field keeps what it had
     fireEvent.change(input, { target: { value: "12000" } })
+    expect(onValueChange).not.toHaveBeenCalled()
+    expect(input).toHaveValue("0,00")
+    fireEvent.change(input, { target: { value: "10000" } })
     expect(onValueChange).toHaveBeenLastCalledWith(100)
   })
 
@@ -44,7 +49,7 @@ describe("PercentageInput", () => {
     fireEvent.change(input, { target: { value: "15050" } })
     expect(onValueChange).toHaveBeenLastCalledWith(150.5)
     fireEvent.change(input, { target: { value: "30000" } })
-    expect(onValueChange).toHaveBeenLastCalledWith(200)
+    expect(onValueChange).toHaveBeenCalledTimes(1)
   })
 
   it("strips letters from typed input", () => {
@@ -565,6 +570,82 @@ describe("PercentageInput", () => {
     it('com emptyValue="null" e sem defaultValue começa vazio', () => {
       render(<PercentageInput emptyValue="null" />)
       expect(screen.getByRole("textbox")).toHaveValue("")
+    })
+  })
+
+  describe("min e max", () => {
+    function Limited(props: { initial?: number; min?: number; max?: number }) {
+      const { initial = 0, ...limits } = props
+      const [value, setValue] = React.useState(initial)
+      return (
+        <>
+          <PercentageInput label="Taxa" value={value} onValueChange={setValue} {...limits} />
+          <output data-testid="value">{String(value)}</output>
+        </>
+      )
+    }
+
+    it("digitar 12345 para em 12,34: o dígito que passaria de 100 é recusado", async () => {
+      const user = userEvent.setup()
+      render(<Limited />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}12345")
+      expect(input).toHaveValue("12,34")
+      expect(input.selectionStart).toBe(5)
+      expect(screen.getByTestId("value")).toHaveTextContent("12.34")
+    })
+
+    it("dá para chegar exatamente a 100", async () => {
+      const user = userEvent.setup()
+      render(<Limited />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.keyboard("{End}10000")
+      expect(input).toHaveValue("100,00")
+    })
+
+    it("um valor colado acima do máximo não entra", async () => {
+      const user = userEvent.setup()
+      render(<Limited initial={10} />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.paste("150")
+      expect(input).toHaveValue("10,00")
+    })
+
+    it("abaixo do mínimo é aceito enquanto se digita e corrigido ao sair do campo", async () => {
+      const user = userEvent.setup()
+      render(<Limited min={5} />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.keyboard("{End}250")
+      expect(input).toHaveValue("2,50")
+      await user.tab()
+      expect(input).toHaveValue("5,00")
+      expect(screen.getByTestId("value")).toHaveTextContent("5")
+    })
+
+    it("com min negativo, aceita percentual negativo até o mínimo", async () => {
+      const user = userEvent.setup()
+      render(<Limited min={-10} />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.keyboard("{End}-500")
+      expect(input).toHaveValue("-5,00")
+      expect(screen.getByTestId("value")).toHaveTextContent("-5")
+      await user.keyboard("0")
+      // -50,00 passaria de -10,00.
+      expect(input).toHaveValue("-5,00")
+    })
+
+    it("sem min negativo o sinal é ignorado", async () => {
+      const user = userEvent.setup()
+      render(<Limited />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.keyboard("{End}-500")
+      expect(input).toHaveValue("5,00")
     })
   })
 })
