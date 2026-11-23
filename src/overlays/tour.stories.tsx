@@ -137,6 +137,57 @@ export const WithoutProgress: Story = {
   render: () => <TourDemo showProgress={false} />,
 }
 
+function LateTargetDemo() {
+  const [open, setOpen] = React.useState(false)
+  const [loaded, setLoaded] = React.useState(false)
+  return (
+    <div className="flex flex-col items-start gap-4">
+      <Button
+        variant="secondary"
+        onClick={() => {
+          setLoaded(false)
+          setOpen(true)
+          setTimeout(() => setLoaded(true), 1000)
+        }}
+      >
+        Iniciar tour
+      </Button>
+      <div className="h-24">
+        {loaded ? (
+          <Button id="tour-relatorio" variant="outline">
+            <Download /> Baixar relatório
+          </Button>
+        ) : (
+          <p className="text-sm text-muted-foreground">Carregando relatório…</p>
+        )}
+      </div>
+      <Tour
+        open={open}
+        onClose={() => setOpen(false)}
+        steps={[
+          {
+            target: "#tour-relatorio",
+            title: "Baixe o relatório",
+            content: "O botão aparece quando os dados terminam de carregar.",
+          },
+        ]}
+      />
+    </div>
+  )
+}
+
+export const LateTarget: Story = {
+  render: () => <LateTargetDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "O alvo só aparece depois que os dados carregam: o balão começa centrado e passa a apontar para ele assim que ele entra na página. O mesmo vale para um alvo trocado por outro nó com o mesmo seletor.",
+      },
+    },
+  },
+}
+
 export const Interaction: Story = {
   parameters: {
     docs: {

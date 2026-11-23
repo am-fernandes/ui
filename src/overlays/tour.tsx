@@ -198,6 +198,26 @@ function Tour({
   // every frame, so it follows the target through scroll and layout changes.
   const targetRef = React.useRef(target)
   targetRef.current = target
+
+  // The element in hand can go away while the step is open: React replaces
+  // it with a new node (same selector), or it was not there yet when the
+  // step opened (data still loading). Look again whenever the page changes
+  // and the current one is gone or missing. A connected target is kept, so
+  // the common case costs one `isConnected` per mutation.
+  React.useEffect(() => {
+    if (!open || typeof MutationObserver === "undefined") return
+    const observer = new MutationObserver(() => {
+      const current = targetRef.current
+      if (current?.isConnected) return
+      const next = resolveTarget(stepsRef.current[index]?.target)
+      if (next === current) return
+      targetRef.current = next
+      setTarget(next)
+      next?.scrollIntoView?.({ block: "nearest", inline: "nearest" })
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [open, index])
   const virtualRef = React.useRef({
     getBoundingClientRect: () => targetRef.current?.getBoundingClientRect() ?? fallbackRect(),
   })

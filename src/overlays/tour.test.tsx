@@ -345,6 +345,65 @@ describe("Tour", () => {
     })
   })
 
+  // The target was resolved once per step. A node replaced by a new one
+  // (same selector: React remounted it) left the spotlight at 8×8 in the top
+  // corner; a target that appears later (data still loading) was never found.
+  describe("target that changes", () => {
+    const spotlight = () => document.querySelector('[data-slot="tour-spotlight"]') as HTMLElement
+
+    it("follows a target replaced by a new node", async () => {
+      function Screen({ version }: { version: number }) {
+        return (
+          <div>
+            <button type="button" id="alvo" key={version}>
+              Exportar
+            </button>
+          </div>
+        )
+      }
+      const { rerender } = render(<Screen version={1} />)
+      const first = document.getElementById("alvo") as HTMLElement
+      mockRect(first, { x: 10, y: 20, width: 80, height: 30 })
+      const tour = <Tour open steps={[{ target: "#alvo", title: "Exporte" }]} />
+      const { rerender: rerenderTour } = render(tour)
+      expect(spotlight().style.left).toBe("6px")
+
+      rerender(<Screen version={2} />)
+      const second = document.getElementById("alvo") as HTMLElement
+      expect(second).not.toBe(first)
+      mockRect(second, { x: 300, y: 400, width: 80, height: 30 })
+      rerenderTour(tour)
+      await waitFor(() => expect(spotlight().style.left).toBe("296px"))
+      expect(spotlight().style.top).toBe("396px")
+      expect(dialog()).toHaveAttribute("data-align", "start")
+    })
+
+    it("finds a target that appears after the step opened", async () => {
+      function Screen({ loaded }: { loaded: boolean }) {
+        return (
+          <div>
+            {loaded ? (
+              <button type="button" id="tardio">
+                Exportar
+              </button>
+            ) : (
+              <p>Carregando…</p>
+            )}
+          </div>
+        )
+      }
+      const { rerender } = render(<Screen loaded={false} />)
+      render(<Tour open steps={[{ target: "#tardio", title: "Exporte" }]} />)
+      // Missing: the centred fallback, no spotlight.
+      expect(dialog()).toHaveAttribute("data-align", "center")
+      expect(spotlight()).toBeNull()
+
+      rerender(<Screen loaded />)
+      await waitFor(() => expect(spotlight()).not.toBeNull())
+      expect(dialog()).toHaveAttribute("data-align", "start")
+    })
+  })
+
   describe("spotlight", () => {
     it("outlines the target with padding and follows scroll and resize", () => {
       render(<Page />)

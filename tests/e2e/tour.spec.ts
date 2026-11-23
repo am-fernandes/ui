@@ -141,6 +141,24 @@ test.describe("Tour", () => {
     await expect(page.getByRole("button", { name: "Exportar" })).toBeVisible()
   })
 
+  // The target was looked up once per step: one that appears later (data
+  // still loading) was never found, and the callout stayed in the fallback.
+  test("a target that appears after the step opened is found and pointed at", async ({ page }) => {
+    await gotoTour(page, "overlays-tour--late-target")
+    await startTour(page)
+    const target = page.getByRole("button", { name: "Baixar relatório" })
+    await expect(target).toBeVisible()
+    const spotlight = page.locator('[data-slot="tour-spotlight"]')
+    await expect(spotlight).toBeAttached()
+    const t = (await target.boundingBox())!
+    const s = await settledBox(page, '[data-slot="tour-spotlight"]')
+    expect(Math.abs(s.x - (t.x - 4))).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(s.y - (t.y - 4))).toBeLessThanOrEqual(0.5)
+    const callout = await settledBox(page, '[data-slot="tour-step"]')
+    expect(callout.y).toBeGreaterThanOrEqual(t.y + t.height)
+    expect(Math.abs(callout.x - t.x)).toBeLessThanOrEqual(1)
+  })
+
   test("no spotlight when turned off", async ({ page }) => {
     await gotoTour(page, "overlays-tour--without-spotlight")
     await startTour(page)
