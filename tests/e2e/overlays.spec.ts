@@ -59,13 +59,76 @@ test.describe("Dialog", () => {
   })
 
   test("dismissible=false blocks Escape and overlay click", async ({ page }) => {
-    await page.goto(story("overlays-dialog--non-dismissible"))
-    await page.getByRole("button", { name: /abrir/i }).click()
-    const dialog = page.getByRole("dialog")
+    await gotoStory(page, "overlays-dialog--non-dismissible", "Abrir não-dismissível")
+    await page.getByRole("button", { name: "Abrir não-dismissível" }).click()
+    const dialog = page.getByRole("dialog", { name: "Confirmação obrigatória" })
     await expect(dialog).toBeVisible()
+    await settledBox(dialog)
     await page.keyboard.press("Escape")
-    // Dialog must still be open.
     await expect(dialog).toBeVisible()
+    // A real click on the backdrop, away from the dialog.
+    await page.mouse.click(5, 5)
+    await page.waitForTimeout(300)
+    await expect(dialog).toBeVisible()
+    // No X either: the footer is the only way out.
+    await expect(dialog.getByRole("button")).toHaveCount(1)
+    await expect(dialog.getByRole("button", { name: "Entendi" })).toBeVisible()
+  })
+
+  test("a click on the backdrop closes, whatever the page behind contains", async ({ page }) => {
+    await gotoStory(page, "overlays-dialog--with-footer", "Editar com footer")
+    // A page with a data table, a calendar, a command list and an open popper
+    // behind the dialog: each of them used to keep it open.
+    await page.evaluate(() => {
+      const behind = document.createElement("div")
+      behind.innerHTML =
+        '<div role="grid" aria-label="Propostas"></div><div class="rdp rdp-root"></div>' +
+        '<div cmdk-root=""><div cmdk-list=""></div></div>' +
+        '<div data-radix-popper-content-wrapper=""></div>'
+      document.getElementById("storybook-root")?.append(behind)
+    })
+    await page.getByRole("button", { name: "Editar com footer" }).click()
+    const dialog = page.getByRole("dialog", { name: "Editar perfil" })
+    const box = await settledBox(dialog)
+    // Inside the dialog, on its padding: stays.
+    await page.mouse.click(box.x + 8, box.y + 8)
+    await page.waitForTimeout(300)
+    await expect(dialog).toBeVisible()
+    // On the backdrop: closes.
+    await page.mouse.click(5, 5)
+    await expect(dialog).toHaveCount(0)
+  })
+
+  test("the CommandPalette closes on a click outside", async ({ page }) => {
+    // It is a Dialog around a command list, with no X button: on a touch
+    // screen, the backdrop is the only way out without choosing an item.
+    await gotoStory(page, "navigation-commandpalette--default", "Abrir paleta")
+    await page.getByRole("button", { name: "Abrir paleta" }).click()
+    const palette = page.getByRole("dialog", { name: "Comandos" })
+    await expect(palette).toBeVisible()
+    const box = await settledBox(palette)
+
+    // A click on an item's row or on the search field is not "outside".
+    await palette.getByPlaceholder("Buscar...").click()
+    await page.waitForTimeout(300)
+    await expect(palette).toBeVisible()
+
+    await page.mouse.click(box.x - 40, box.y + box.height / 2)
+    await expect(palette).toHaveCount(0)
+    await expect(page.getByRole("button", { name: "Abrir paleta" })).toBeFocused()
+  })
+
+  test.describe("touch", () => {
+    test.use({ hasTouch: true, viewport: { width: 390, height: 740 } })
+
+    test("the CommandPalette closes on a tap outside", async ({ page }) => {
+      await gotoStory(page, "navigation-commandpalette--default", "Abrir paleta")
+      await page.getByRole("button", { name: "Abrir paleta" }).tap()
+      const palette = page.getByRole("dialog", { name: "Comandos" })
+      const box = await settledBox(palette)
+      await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height + 60)
+      await expect(palette).toHaveCount(0)
+    })
   })
 
   // A long form on a notebook, on a short window and on a phone: the dialog

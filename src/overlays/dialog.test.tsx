@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
 import { Dialog } from "./dialog"
+import { DropdownMenu } from "./dropdown-menu"
+import { Popover } from "./popover"
 
 // Radix DismissableLayer registers its document pointerdown listener inside a
 // setTimeout(..., 0) — let timers drain so outside-click handling is wired up.
@@ -129,6 +131,98 @@ describe("Dialog", () => {
     expect(overlay).not.toBeNull()
     if (overlay) fireEvent.pointerDown(overlay)
     expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  describe("press outside", () => {
+    const pressOverlay = async () => {
+      await flushDismissableLayerSetup()
+      fireEvent.pointerDown(document.querySelector('[data-slot="dialog-overlay"]') as Element)
+    }
+
+    // The dialog used to stay open whenever the document held one of these
+    // anywhere, which a page with a table, a date field or a search list does.
+    it.each([
+      ["a grid (a data table)", <div key="g" role="grid" />],
+      ["a calendar", <div key="c" className="rdp rdp-root" />],
+      ["a command list", <div key="l" cmdk-root="" cmdk-list="" />],
+      ["an open popper", <div key="p" data-radix-popper-content-wrapper="" />],
+    ])("closes on a press on the backdrop when the page behind has %s", async (_, behind) => {
+      const onOpenChange = vi.fn()
+      render(
+        <>
+          <main>{behind}</main>
+          <Dialog open onOpenChange={onOpenChange} title="X" description="d">
+            body
+          </Dialog>
+        </>,
+      )
+      await pressOverlay()
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+    })
+
+    it("closes on a press on the backdrop when its own content is a command list", async () => {
+      // The CommandPalette: a Dialog around a cmdk list, with no X button. On a
+      // touch screen the backdrop is the only way out besides choosing an item.
+      const onOpenChange = vi.fn()
+      render(
+        <Dialog open onOpenChange={onOpenChange} title="Comandos" hideCloseButton>
+          <div cmdk-root="">
+            <div cmdk-list="">Dashboard</div>
+          </div>
+        </Dialog>,
+      )
+      await pressOverlay()
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+    })
+
+    it("stays open on a press inside a popover, a calendar or a list that belongs to it", async () => {
+      const onOpenChange = vi.fn()
+      render(
+        <Dialog open onOpenChange={onOpenChange} title="X" description="d">
+          <Popover trigger={<button type="button">Data</button>} aria-label="Calendário">
+            {/* The shape of the Calendar (react-day-picker). */}
+            <div className="rdp-root">
+              <table aria-label="Maio">
+                <tbody>
+                  <tr>
+                    <td>
+                      <button type="button">15</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </Popover>
+        </Dialog>,
+      )
+      await flushDismissableLayerSetup()
+      await userEvent.click(screen.getByRole("button", { name: "Data" }))
+      const day = screen.getByRole("button", { name: "15" })
+      fireEvent.pointerDown(day)
+      await userEvent.click(day)
+      expect(onOpenChange).not.toHaveBeenCalled()
+      expect(screen.getByRole("dialog", { name: "X" })).toBeInTheDocument()
+    })
+
+    it("stays open on a press inside a menu that belongs to it", async () => {
+      const onOpenChange = vi.fn()
+      const onSelect = vi.fn()
+      render(
+        <Dialog open onOpenChange={onOpenChange} title="X" description="d">
+          <DropdownMenu
+            trigger={<button type="button">Ações</button>}
+            items={[{ label: "Duplicar", onSelect }]}
+          />
+        </Dialog>,
+      )
+      await flushDismissableLayerSetup()
+      await userEvent.click(screen.getByRole("button", { name: "Ações" }))
+      const item = screen.getByRole("menuitem", { name: "Duplicar" })
+      fireEvent.pointerDown(item)
+      await userEvent.click(item)
+      expect(onSelect).toHaveBeenCalledTimes(1)
+      expect(onOpenChange).not.toHaveBeenCalled()
+    })
   })
 
   it.each([
