@@ -210,6 +210,36 @@ function CityPicker() {
   )
 }
 
+export const Anchored: Story = {
+  render: () => {
+    const [open, setOpen] = useState(false)
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <Popover
+          open={open}
+          onOpenChange={setOpen}
+          align="start"
+          aria-label="Detalhes da unidade"
+          anchor={<span className="text-sm font-medium">Unidade 101 · Bloco A</span>}
+        >
+          <p className="text-sm">3 quartos, 92 m², vaga coberta.</p>
+        </Popover>
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          Ver detalhes
+        </Button>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Quando outra coisa abre o popover (um botão, um atalho), `anchor` diz para onde ele aponta. Sem `trigger` nem `anchor` ele não tem onde se posicionar: a lib avisa no console em desenvolvimento.",
+      },
+    },
+  },
+}
+
 export const TallContent: Story = {
   render: () => (
     <Popover

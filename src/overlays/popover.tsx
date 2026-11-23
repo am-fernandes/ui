@@ -1,7 +1,7 @@
 "use client"
 
 import * as PopoverPrimitive from "@radix-ui/react-popover"
-import type * as React from "react"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { motionPopover } from "./_internal/animations"
@@ -10,7 +10,15 @@ import { useOverlayContainer } from "./_internal/overlay-container"
 type PopoverContentProps = React.ComponentProps<typeof PopoverPrimitive.Content>
 
 export interface PopoverProps {
+  /** Element that opens and closes the popover, and that it points at. */
   trigger?: React.ReactNode
+  /**
+   * Element the popover points at without opening it: a table cell, a field,
+   * a line of text. Open it with `open`. Use it instead of `trigger` when
+   * something else opens the popover; without either one the popover has
+   * nowhere to go.
+   */
+  anchor?: React.ReactNode
   children?: React.ReactNode
   open?: boolean
   defaultOpen?: boolean
@@ -32,6 +40,7 @@ export interface PopoverProps {
 
 function Popover({
   trigger,
+  anchor,
   children,
   open,
   defaultOpen,
@@ -54,6 +63,15 @@ function Popover({
   // `null`: the modal is mounting; its element comes in the next pass.
   const container = useOverlayContainer()
 
+  const placed = Boolean(trigger || anchor)
+  React.useEffect(() => {
+    if (process.env.NODE_ENV !== "production" && !placed) {
+      console.warn(
+        "[Popover] Sem `trigger` nem `anchor`, o popover não tem onde se posicionar e abre fora da tela. Passe `anchor` com o elemento para onde ele aponta.",
+      )
+    }
+  }, [placed])
+
   return (
     <PopoverPrimitive.Root
       open={open}
@@ -65,6 +83,11 @@ function Popover({
         <PopoverPrimitive.Trigger asChild data-slot="popover-trigger">
           {trigger}
         </PopoverPrimitive.Trigger>
+      ) : null}
+      {anchor ? (
+        <PopoverPrimitive.Anchor asChild data-slot="popover-anchor">
+          {anchor}
+        </PopoverPrimitive.Anchor>
       ) : null}
       {container === null ? null : (
         <PopoverPrimitive.Portal container={container}>

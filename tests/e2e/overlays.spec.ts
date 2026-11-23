@@ -694,6 +694,19 @@ test.describe("Tooltip", () => {
 test.describe("Popover", () => {
   // No max height: 1526px of content ran past the bottom of the screen,
   // although Radix reported 472px available.
+  // Without `trigger` the content had nothing to point at and opened above
+  // the screen (y = -116), with the focus in it.
+  test("anchor: opened by another button, it sits next to its anchor", async ({ page }) => {
+    await gotoStory(page, "overlays-popover--anchored", "Ver detalhes")
+    await page.getByRole("button", { name: "Ver detalhes" }).click()
+    const popover = page.getByRole("dialog", { name: "Detalhes da unidade" })
+    const box = await settledBox(popover)
+    const anchor = (await page.getByText("Unidade 101 · Bloco A").boundingBox())!
+    expect(box.y).toBeCloseTo(anchor.y + anchor.height + 4, 0)
+    expect(box.x).toBeCloseTo(anchor.x, 0)
+    await expect(popover).toBeInViewport()
+  })
+
   test("tall content stops at the room left on screen and scrolls", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 600 })
     await gotoStory(page, "overlays-popover--tall-content", "Colunas visíveis")

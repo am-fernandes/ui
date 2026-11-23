@@ -220,3 +220,57 @@ describe("Popover height", () => {
     )
   })
 })
+
+// `trigger` is optional, but without it the content had nothing to point at:
+// Radix left it at translate(0, -200%), above the screen, and focused it.
+describe("Popover anchor", () => {
+  it("renders the anchor element in place, with no trigger behaviour", async () => {
+    const onOpenChange = vi.fn()
+    render(
+      <Popover
+        open={false}
+        onOpenChange={onOpenChange}
+        anchor={<span data-testid="ancora">Unidade 101</span>}
+        aria-label="Detalhes"
+      >
+        conteúdo
+      </Popover>,
+    )
+    const anchor = screen.getByTestId("ancora")
+    expect(anchor).toHaveTextContent("Unidade 101")
+    expect(anchor).not.toHaveAttribute("aria-haspopup")
+    await userEvent.click(anchor)
+    expect(onOpenChange).not.toHaveBeenCalled()
+  })
+
+  it("opens by `open` next to the anchor", () => {
+    render(
+      <Popover open anchor={<span>Unidade 101</span>} aria-label="Detalhes">
+        conteúdo
+      </Popover>,
+    )
+    expect(screen.getByRole("dialog", { name: "Detalhes" })).toHaveTextContent("conteúdo")
+  })
+
+  it("warns in development when there is neither trigger nor anchor", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    render(
+      <Popover open aria-label="Solto">
+        conteúdo
+      </Popover>,
+    )
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("[Popover]"))
+    warn.mockRestore()
+  })
+
+  it("does not warn with a trigger", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    render(
+      <Popover open trigger={<button type="button">Abrir</button>} aria-label="Ok">
+        conteúdo
+      </Popover>,
+    )
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining("[Popover]"))
+    warn.mockRestore()
+  })
+})
