@@ -870,6 +870,10 @@ test.describe("Toaster", () => {
       // The form is still there, with what was typed.
       await expect(dialog.getByLabel("Cliente")).toHaveValue("Bruno Lima")
 
+      // The action dismisses its toast, which takes a moment to leave: wait,
+      // or the next one would share the screen with it.
+      await expect(toast).toHaveCount(0)
+
       // A click on the text of a toast is not a click outside either.
       await dialog.getByRole("button", { name: "Salvar" }).click()
       await toast.getByText("Confira a conexão e tente de novo.").click()
@@ -908,6 +912,8 @@ test.describe("Toaster", () => {
       await page.keyboard.press("Enter")
       await expect(page.getByTestId("retry-count")).toHaveText("Tentativas: 1")
       await expect(dialog).toBeVisible()
+      // The action dismissed its toast: wait for it to leave before the next.
+      await expect(page.locator("[data-sonner-toast]")).toHaveCount(0)
 
       await dialog.getByRole("button", { name: "Salvar" }).click()
       await expect(action).toBeVisible()
