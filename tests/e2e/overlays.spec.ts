@@ -701,6 +701,22 @@ test.describe("Tooltip", () => {
 
   // The enter animation keyed on data-state="open", which Radix never sets on
   // a tooltip ("delayed-open" or "instant-open"): it just popped in.
+  // No max width: a 200-character text was a single line of 1202px.
+  test("a long text wraps, within 320px", async ({ page }) => {
+    await gotoStory(page, "overlays-tooltip--long-text", "Como a comissão é calculada?")
+    await page.getByRole("button", { name: "Como a comissão é calculada?" }).hover()
+    const content = page.locator('[data-slot="tooltip-content"]')
+    await expect(content).toBeVisible()
+    const box = await settledBox(content)
+    expect(box.width).toBeLessThanOrEqual(320)
+    const lines = await content.evaluate((el) => {
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size
+    })
+    expect(lines).toBeGreaterThan(1)
+  })
+
   test("fades and zooms in when it appears", async ({ page }) => {
     await gotoStory(page, "overlays-tooltip--sides", "top")
     await page.getByRole("button", { name: "top", exact: true }).hover()

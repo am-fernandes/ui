@@ -77,7 +77,8 @@ function Tooltip({
               align={align}
               sideOffset={sideOffset}
               className={cn(
-                "z-[var(--z-tooltip)] overflow-hidden rounded-element bg-primary px-3 py-1.5 text-xs text-primary-foreground",
+                // At most 320px (or the screen less 16px): longer texts wrap.
+                "z-[var(--z-tooltip)] max-w-[min(20rem,calc(100vw-1rem))] overflow-hidden rounded-element bg-primary px-3 py-1.5 text-xs text-pretty break-words text-primary-foreground",
                 motionTooltip,
                 // A tooltip opens as "delayed-open" (after the hover delay) or
                 // "instant-open" (moving from one tooltip to the next), never

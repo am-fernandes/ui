@@ -191,3 +191,19 @@ export const OnDisabledButton: Story = {
     },
   },
 }
+
+export const LongText: Story = {
+  render: () => (
+    <Tooltip content="A comissão é calculada sobre o valor de venda da unidade, já descontados o desconto à vista, as taxas do cartório e o ITBI, e é paga em duas parcelas: metade na assinatura do contrato e metade no registro.">
+      <Button variant="outline">Como a comissão é calculada?</Button>
+    </Tooltip>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Texto longo quebra em linhas: o tooltip não passa de 320px de largura. Se a explicação precisa de mais que duas ou três linhas, considere um `Popover`.",
+      },
+    },
+  },
+}
