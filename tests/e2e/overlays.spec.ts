@@ -250,15 +250,37 @@ test.describe("AlertDialog", () => {
     await expect(page.getByRole("alertdialog")).toHaveCount(0)
     await expect(count).toHaveText("Aprovações enviadas: 2")
 
-    // Enter held down on the focused button repeats the key.
-    await page.getByRole("button", { name: "Aprovar proposta" }).click()
+    // A key held down repeats, and on a focused button every repeat of Enter
+    // is one more activation. They are sent from inside the page, 5ms apart,
+    // to the confirm button itself. Sent as key presses from here, a slow
+    // machine lets the dialog close in between: focus goes back to "Aprovar
+    // proposta", the next Enter opens the dialog again and the one after that
+    // lands on "Cancelar", which has the initial focus.
     const confirm = page.getByRole("alertdialog").getByRole("button", { name: "Aprovar" })
-    await confirm.focus()
-    await page.keyboard.down("Enter")
-    for (let i = 0; i < 5; i++) await page.keyboard.down("Enter")
-    await page.keyboard.up("Enter")
+    await page.getByRole("button", { name: "Aprovar proposta" }).click()
+    await expect(confirm).toBeVisible()
+    await confirm.evaluate(async (button: HTMLElement) => {
+      button.focus()
+      for (let repeat = 0; repeat < 6; repeat++) {
+        button.click()
+        // Each repeat is an event of its own: the page handles one before the
+        // next arrives, as it does with a real keyboard.
+        await new Promise((resolve) => setTimeout(resolve, 5))
+      }
+    })
     await expect(page.getByRole("alertdialog")).toHaveCount(0)
     await expect(count).toHaveText("Aprovações enviadas: 3")
+
+    // One real press of Enter on the focused button: it cannot open the
+    // dialog again, the key is up before focus returns to the trigger.
+    await page.getByRole("button", { name: "Aprovar proposta" }).click()
+    await expect(confirm).toBeVisible()
+    await confirm.focus()
+    await page.keyboard.press("Enter")
+    await expect(page.getByRole("alertdialog")).toHaveCount(0)
+    await expect(count).toHaveText("Aprovações enviadas: 4")
+
+    // Nothing above ever reached "Cancelar".
     await expect(page.getByTestId("cancel-count")).toHaveText("Cancelamentos: 0")
   })
 
