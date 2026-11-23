@@ -60,8 +60,12 @@ export interface FileUploadLabels {
   imageClose?: string
   /** Aria-label of the lightbox-open button for image rows: `(fileName) => ...`. */
   zoomImage: (fileName: string) => string
-  /** Aria-label of the open-in-new-tab button for non-image rows. */
+  /** Aria-label of the open-in-new-tab button of a PDF row. */
   openFile: (fileName: string) => string
+  /** Aria-label of the download button of a row that is neither an image nor a PDF. */
+  downloadFile?: (fileName: string) => string
+  /** Download name of a file that has none. */
+  fileFallbackName?: string
   /** Aria-label of the remove-row button. */
   removeFile: (fileName: string) => string
 }
@@ -88,6 +92,8 @@ export const defaultFileUploadLabels: ResolvedFileUploadLabels = {
   imageClose: "Fechar",
   zoomImage: (fileName) => `Ampliar ${fileName}`,
   openFile: (fileName) => `Abrir ${fileName} em nova aba`,
+  downloadFile: (fileName) => `Baixar ${fileName}`,
+  fileFallbackName: "Arquivo",
   removeFile: (fileName) => `Remover ${fileName}`,
 }
 
@@ -100,7 +106,7 @@ export interface FileUploadProps {
   maxSize?: number
   /** Maximum number of files when `multiple`. Extra files are rejected. */
   maxFiles?: number
-  /** How to display selected files. `"thumbnail"` (default) shows an image preview tile (clickable: image opens fullscreen, document opens in a new tab). `"none"` hides previews. */
+  /** How to display selected files. `"thumbnail"` (default) shows an image preview tile (clickable: an image opens fullscreen, a PDF opens in a new tab, any other file is downloaded). `"none"` hides previews. */
   preview?: "thumbnail" | "none"
   /** Show an extra "Capturar foto" button that opens the device camera and snapshots a photo as `image/jpeg`. Requires HTTPS or localhost (`getUserMedia`). */
   camera?: boolean
@@ -383,6 +389,7 @@ function FileRow({
   labels: ResolvedFileUploadLabels
 }) {
   const isImage = file.type.startsWith("image/")
+  const isPdf = file.type === "application/pdf"
   const [thumb, setThumb] = React.useState<string | null>(null)
 
   React.useEffect(() => {
@@ -392,19 +399,34 @@ function FileRow({
     return () => URL.revokeObjectURL(url)
   }, [file, isImage])
 
-  function openInNewTab() {
+  // Only a PDF is opened in a tab. A blob URL belongs to the page's origin:
+  // an .html (or .svg, .xml…) opened this way would run its script with the
+  // application's cookies and storage. A blob URL is served with the blob's
+  // own type, so this tab can only ever show the PDF viewer.
+  function openPdfInNewTab() {
     const url = URL.createObjectURL(file)
     window.open(url, "_blank", "noopener,noreferrer")
     setTimeout(() => URL.revokeObjectURL(url), OBJECT_URL_REVOKE_MS)
   }
 
+  function download() {
+    downloadWithAnchor(file, resolveDownloadName(file, labels.fileFallbackName))
+  }
+
+  const action = isImage
+    ? { run: onOpenImage, label: labels.zoomImage(file.name) }
+    : isPdf
+      ? { run: openPdfInNewTab, label: labels.openFile(file.name) }
+      : { run: download, label: labels.downloadFile(file.name) }
+
   return (
     <li className="flex items-center gap-3 rounded-element border bg-card px-2 py-1.5 text-sm">
       <button
         type="button"
-        onClick={isImage ? onOpenImage : openInNewTab}
+        onClick={action.run}
         disabled={disabled}
-        aria-label={isImage ? labels.zoomImage(file.name) : labels.openFile(file.name)}
+        aria-label={action.label}
+        title={action.label}
         className={cn(
           "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-element bg-muted text-muted-foreground cursor-pointer transition-opacity",
           "hover:opacity-80 focus-visible:focus-outline",
@@ -415,8 +437,10 @@ function FileRow({
           <img src={thumb} alt={file.name} className="size-full object-cover" />
         ) : isImage ? (
           <ImageIcon className="size-4" />
-        ) : (
+        ) : isPdf ? (
           <FileIcon className="size-4" />
+        ) : (
+          <Download className="size-4" />
         )}
       </button>
       <span className="flex min-w-0 flex-1 flex-col">

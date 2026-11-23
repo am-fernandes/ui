@@ -145,10 +145,10 @@ describe("FileUpload", () => {
 
   it("removable={false} keeps the row visible but drops the Remover button", () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null)
-    render(<FileUpload multiple removable={false} value={[makeFile("a.txt", "text/plain")]} />)
-    expect(screen.getByText("a.txt")).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /Remover a\.txt/ })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: /Abrir a\.txt/ }))
+    render(<FileUpload multiple removable={false} value={[makeFile("a.pdf", "application/pdf")]} />)
+    expect(screen.getByText("a.pdf")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Remover a\.pdf/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /Abrir a\.pdf/ }))
     expect(openSpy).toHaveBeenCalledTimes(1)
     openSpy.mockRestore()
   })
@@ -744,6 +744,76 @@ describe("FileUpload", () => {
       )
       expect(abort).toHaveBeenCalled()
       expect(toast.success).not.toHaveBeenCalled()
+    })
+  })
+
+  // Regressão de segurança: qualquer arquivo que não fosse imagem abria numa
+  // nova aba por um blob URL. Um .html escolhido pelo usuário rodava o script
+  // dele na origem da aplicação e lia o localStorage dela.
+  describe("abrir ou baixar um arquivo da lista", () => {
+    function captureDownloads() {
+      const names: string[] = []
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+        this: HTMLAnchorElement,
+      ) {
+        names.push(this.download)
+      })
+      return names
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it.each([
+      ["pagina.html", "text/html"],
+      ["notas.txt", "text/plain"],
+      ["dados.json", "application/json"],
+      ["script.js", "text/javascript"],
+      ["contrato.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+      ["sem-tipo.bin", ""],
+    ])("%s (%s) é baixado, nunca aberto em outra aba", (name, type) => {
+      const openSpy = vi.spyOn(window, "open").mockImplementation(() => null)
+      const downloads = captureDownloads()
+      render(<FileUpload value={[makeFile(name, type)]} />)
+      expect(screen.queryByRole("button", { name: /em nova aba/ })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole("button", { name: `Baixar ${name}` }))
+      expect(openSpy).not.toHaveBeenCalled()
+      expect(downloads).toEqual([name])
+    })
+
+    it("um PDF abre em outra aba, servido como application/pdf", () => {
+      const openSpy = vi.spyOn(window, "open").mockImplementation(() => null)
+      const createSpy = vi.spyOn(URL, "createObjectURL")
+      const downloads = captureDownloads()
+      render(<FileUpload value={[makeFile("contrato.pdf", "application/pdf")]} />)
+      fireEvent.click(screen.getByRole("button", { name: "Abrir contrato.pdf em nova aba" }))
+      expect(openSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/^blob:/),
+        "_blank",
+        "noopener,noreferrer",
+      )
+      const opened = createSpy.mock.calls.at(-1)?.[0] as Blob
+      expect(opened.type).toBe("application/pdf")
+      expect(downloads).toEqual([])
+    })
+
+    it("um SVG é imagem: abre na lightbox, dentro de um <img>, e não em outra aba", () => {
+      const openSpy = vi.spyOn(window, "open").mockImplementation(() => null)
+      render(<FileUpload value={[makeFile("logo.svg", "image/svg+xml")]} />)
+      fireEvent.click(screen.getByRole("button", { name: "Ampliar logo.svg" }))
+      expect(openSpy).not.toHaveBeenCalled()
+      expect(screen.getByRole("dialog")).toBeInTheDocument()
+    })
+
+    it("o texto do botão de baixar vem de labels", () => {
+      render(
+        <FileUpload
+          value={[makeFile("notes.txt", "text/plain")]}
+          labels={{ downloadFile: (name) => `Download ${name}` }}
+        />,
+      )
+      expect(screen.getByRole("button", { name: "Download notes.txt" })).toBeInTheDocument()
     })
   })
 })

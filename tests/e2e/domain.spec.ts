@@ -826,6 +826,60 @@ test.describe("MultiInput: modo número", () => {
   })
 })
 
+test.describe("FileUpload: abrir um arquivo da lista", () => {
+  const fileInput = (page: Page) => page.locator('[data-slot="file-upload"] input[type=file]')
+
+  test("um .html escolhido é baixado e o script dele não roda na origem da aplicação", async ({
+    page,
+    context,
+  }) => {
+    await gotoStory(page, "domain-fileupload--default")
+    await page.evaluate(() => localStorage.setItem("segredo", "token-da-sessao"))
+    await fileInput(page).setInputFiles({
+      name: "relatorio.html",
+      mimeType: "text/html",
+      buffer: Buffer.from(
+        "<script>document.title = 'leu: ' + localStorage.getItem('segredo')</script>",
+      ),
+    })
+    await expect(page.getByRole("button", { name: /em nova aba/ })).toHaveCount(0)
+
+    const download = page.waitForEvent("download")
+    await page.getByRole("button", { name: "Baixar relatorio.html" }).click()
+    expect((await download).suggestedFilename()).toBe("relatorio.html")
+    // Nenhuma aba foi aberta com o conteúdo do arquivo.
+    expect(context.pages()).toHaveLength(1)
+  })
+
+  test("um PDF abre em outra aba", async ({ page, context }) => {
+    await gotoStory(page, "domain-fileupload--default")
+    await fileInput(page).setInputFiles({
+      name: "contrato.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("%PDF-1.4\n%%EOF"),
+    })
+    // The headless browser has no PDF viewer, so the new tab may stay blank:
+    // what is checked is that a tab opens, and with what address.
+    await page.evaluate(() => {
+      const open = window.open.bind(window)
+      const opened: string[] = []
+      Object.assign(window, { openedUrls: opened })
+      window.open = (url, ...rest) => {
+        opened.push(String(url))
+        return open(url, ...rest)
+      }
+    })
+    const popup = context.waitForEvent("page")
+    await page.getByRole("button", { name: "Abrir contrato.pdf em nova aba" }).click()
+    await popup
+    const opened = await page.evaluate(
+      () => (window as unknown as { openedUrls: string[] }).openedUrls,
+    )
+    expect(opened).toHaveLength(1)
+    expect(opened[0]).toMatch(/^blob:/)
+  })
+})
+
 test.describe("InputOTP", () => {
   test("typing 6 digits fires onComplete", async ({ page }) => {
     await gotoStory(page, "domain-inputotp--default")

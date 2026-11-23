@@ -33,7 +33,7 @@ const meta = {
           "- `multiple` — habilita seleção/drag de múltiplos arquivos.",
           "- `maxSize` — limite em bytes. Use `kb()` / `mb()` / `gb()` da própria lib para ergonomia.",
           "- `maxFiles` — número máximo de arquivos quando `multiple`.",
-          "- `preview` — `'thumbnail'` (default) ou `'none'`.",
+          "- `preview` — `'thumbnail'` (default) ou `'none'`. Na lista, uma imagem abre ampliada, um PDF abre em outra aba e qualquer outro arquivo é baixado: um `.html` aberto por blob URL rodaria script na origem da aplicação.",
           "- `camera` — adiciona botão de captura via `getUserMedia` (HTTPS/localhost).",
           "- `value` / `onValueChange` — modo controlado.",
           "- `onReject` — chamado com `{ file, reason: 'type' | 'size' | 'max-files' }[]`.",
