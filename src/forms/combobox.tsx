@@ -18,9 +18,11 @@ import { assignRef } from "./_internal/assign-ref"
 
 const CREATE_ACTION_VALUE = "__create_action__"
 
+// The search looks at what the user reads (the label) and at the option's
+// keywords, never at `value`: with numeric ids, "10" would match id 101.
 function filterOption(value: string, search: string, keywords?: string[]) {
   if (value === CREATE_ACTION_VALUE) return 1
-  return matchesSearch([value, ...(keywords ?? [])].join(" "), search) ? 1 : 0
+  return (keywords ?? []).some((keyword) => matchesSearch(keyword, search)) ? 1 : 0
 }
 
 function toArray<T>(v: T | T[] | undefined | null): T[] {
@@ -32,6 +34,11 @@ export interface ComboboxOption {
   value: string
   label: string
   disabled?: boolean
+  /**
+   * Other words that find this option in the search, besides its label (a
+   * code, an old name, a synonym). The search never looks at `value`.
+   */
+  keywords?: string[]
 }
 
 interface ComboboxBaseProps {
@@ -358,7 +365,7 @@ export function Combobox(props: ComboboxProps) {
                       <CommandPrimitive.Item
                         key={option.value}
                         value={option.value}
-                        keywords={[option.label]}
+                        keywords={[option.label, ...(option.keywords ?? [])]}
                         disabled={option.disabled}
                         onSelect={() => {
                           if (isMultiple) handleMultipleSelect(option.value)

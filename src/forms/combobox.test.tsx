@@ -163,6 +163,30 @@ describe("Combobox", () => {
     expect(screen.queryByRole("option", { name: /Alpha/ })).not.toBeInTheDocument()
   })
 
+  it("does not match the search against the option's value (numeric ids)", async () => {
+    const idOptions: ComboboxOption[] = [
+      { value: "101", label: "Alpha" },
+      { value: "202", label: "Bravo" },
+    ]
+    render(<Combobox options={idOptions} placeholder="Pick" emptyMessage="Nada" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.type(await screen.findByPlaceholderText("Buscar..."), "10")
+    expect(screen.queryByRole("option", { name: /Alpha/ })).not.toBeInTheDocument()
+    expect(await screen.findByText("Nada")).toBeInTheDocument()
+  })
+
+  it("finds an option by one of its keywords", async () => {
+    const cities: ComboboxOption[] = [
+      { value: "1", label: "São Paulo", keywords: ["SP", "Sampa"] },
+      { value: "2", label: "Rio de Janeiro", keywords: ["RJ"] },
+    ]
+    render(<Combobox options={cities} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.type(await screen.findByPlaceholderText("Buscar..."), "sampa")
+    expect(await screen.findByRole("option", { name: /São Paulo/ })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /Rio/ })).not.toBeInTheDocument()
+  })
+
   it("creatable: filters existing options by label, not just value", async () => {
     const idOptions: ComboboxOption[] = [{ value: "7f3a", label: "Alpha" }]
     render(<Combobox creatable options={idOptions} placeholder="Pick" />)
