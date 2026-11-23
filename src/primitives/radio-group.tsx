@@ -36,6 +36,7 @@ function RadioGroup({
   orientation = "vertical",
   values,
   className,
+  "aria-describedby": describedBy,
   ref,
   ...props
 }: RadioGroupProps) {
@@ -64,7 +65,10 @@ function RadioGroup({
         disabled={disabled}
         required={required}
         aria-labelledby={hasLabel ? ids.labelId : undefined}
-        aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
+        aria-describedby={ids.describedBy(
+          { description: hasDescription, error: hasError },
+          describedBy,
+        )}
         aria-invalid={hasError ? true : undefined}
         className={cn(
           orientation === "horizontal" ? "flex flex-row flex-wrap gap-6" : "grid gap-3",

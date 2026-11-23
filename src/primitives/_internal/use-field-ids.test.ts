@@ -37,4 +37,28 @@ describe("useFieldIds", () => {
       `${result.current.descriptionId} ${result.current.errorId}`,
     )
   })
+
+  it("adds the ids of the consumer after its own instead of being replaced by them", () => {
+    const { result } = renderHook(() => useFieldIds())
+    const { describedBy, descriptionId, errorId } = result.current
+    expect(describedBy({ description: true, error: true }, "hint")).toBe(
+      `${descriptionId} ${errorId} hint`,
+    )
+    expect(describedBy({ description: false, error: false }, "hint")).toBe("hint")
+    expect(describedBy({ description: false, error: true }, "counter", "hint")).toBe(
+      `${errorId} counter hint`,
+    )
+  })
+
+  it("accepts several ids in one value, skips empty ones and never repeats an id", () => {
+    const { result } = renderHook(() => useFieldIds())
+    const { describedBy, descriptionId } = result.current
+    expect(describedBy({ description: true, error: false }, "  a   b ", undefined, false, "")).toBe(
+      `${descriptionId} a b`,
+    )
+    expect(describedBy({ description: true, error: false }, `a ${descriptionId}`, "a")).toBe(
+      `${descriptionId} a`,
+    )
+    expect(describedBy({ description: false, error: false }, undefined, "")).toBeUndefined()
+  })
 })

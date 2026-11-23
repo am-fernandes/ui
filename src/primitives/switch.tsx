@@ -23,6 +23,7 @@ function Switch({
   required,
   disabled,
   className,
+  "aria-describedby": describedBy,
   ref,
   ...props
 }: SwitchProps) {
@@ -39,7 +40,10 @@ function Switch({
       disabled={disabled}
       required={required}
       aria-invalid={hasError ? true : undefined}
-      aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
+      aria-describedby={ids.describedBy(
+        { description: hasDescription, error: hasError },
+        describedBy,
+      )}
       className={cn(
         "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent",
         hasDescription && "mt-0.5",

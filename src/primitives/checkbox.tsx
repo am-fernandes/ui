@@ -39,6 +39,7 @@ function Checkbox({
   className,
   checked,
   onCheckedChange,
+  "aria-describedby": describedBy,
   ref,
   ...props
 }: CheckboxProps) {
@@ -59,7 +60,10 @@ function Checkbox({
           disabled={disabled}
           required={required}
           aria-invalid={hasError ? true : undefined}
-          aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
+          aria-describedby={ids.describedBy(
+            { description: hasDescription, error: hasError },
+            describedBy,
+          )}
           className={cn(
             "peer size-4 shrink-0 cursor-pointer rounded-inner border border-input",
             hasDescription && "mt-0.5",

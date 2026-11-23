@@ -46,6 +46,7 @@ function Textarea({
   maxLength,
   className,
   disabled,
+  "aria-describedby": describedBy,
   ref,
   value,
   defaultValue,
@@ -172,7 +173,10 @@ function Textarea({
       id={ids.controlId}
       data-slot="textarea"
       aria-invalid={hasError ? true : undefined}
-      aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
+      aria-describedby={ids.describedBy(
+        { description: hasDescription, error: hasError },
+        describedBy,
+      )}
       disabled={disabled}
       required={required}
       maxLength={maxLength}

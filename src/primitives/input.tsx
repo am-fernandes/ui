@@ -43,6 +43,7 @@ function Input({
   size = "md",
   className,
   disabled,
+  "aria-describedby": describedBy,
   ref,
   ...props
 }: InputProps) {
@@ -73,7 +74,10 @@ function Input({
         id={ids.controlId}
         data-slot="input"
         aria-invalid={hasError ? true : undefined}
-        aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
+        aria-describedby={ids.describedBy(
+          { description: hasDescription, error: hasError },
+          describedBy,
+        )}
         disabled={disabled}
         required={required}
         className={cn(
