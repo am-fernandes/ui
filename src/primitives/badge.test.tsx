@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import * as React from "react"
+import { describe, expect, it, vi } from "vitest"
 
 import { Badge } from "./badge"
 
@@ -73,5 +74,25 @@ describe("Badge", () => {
     expect(link).toHaveAttribute("href", "/tag")
     expect(link).toHaveAttribute("data-slot", "badge")
     expect(link).toHaveClass("bg-primary")
+  })
+
+  // A <div> inside a <p> (a badge in a sentence) is invalid HTML: React
+  // reports it and the server markup does not hydrate.
+  it("is a <span>, so it can sit inside a paragraph", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {})
+    const ref = React.createRef<HTMLSpanElement>()
+    render(
+      <p>
+        Proposta{" "}
+        <Badge ref={ref} variant="success">
+          Aprovada
+        </Badge>{" "}
+        ontem.
+      </p>,
+    )
+    expect(screen.getByText("Aprovada").tagName).toBe("SPAN")
+    expect(ref.current).toBe(screen.getByText("Aprovada"))
+    expect(error).not.toHaveBeenCalled()
+    error.mockRestore()
   })
 })

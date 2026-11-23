@@ -44,7 +44,7 @@ const dotColor: Record<BadgeVariant, string> = {
 }
 
 export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends React.HTMLAttributes<HTMLSpanElement>,
     VariantProps<typeof badgeVariants> {
   asChild?: boolean
   /**
@@ -52,14 +52,19 @@ export interface BadgeProps
    * column of filled badges would outweigh the content.
    */
   dot?: boolean
-  ref?: React.Ref<HTMLDivElement>
+  ref?: React.Ref<HTMLSpanElement>
 }
 
+/**
+ * A short status label ("Aprovado", "Pendente", a count). It is a `<span>`, so
+ * it can sit in a sentence or a table cell; with `asChild` it takes the
+ * element of its child.
+ */
 function Badge({ className, variant, dot = false, asChild = false, ref, ...props }: BadgeProps) {
-  const Comp = asChild ? Slot : "div"
+  const Comp = asChild ? Slot : "span"
   return (
     <Comp
-      ref={ref as React.Ref<HTMLDivElement>}
+      ref={ref}
       data-slot="badge"
       data-dot={dot ? "true" : undefined}
       className={cn(
