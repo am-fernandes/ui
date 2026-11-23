@@ -12,14 +12,21 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Input controlado para valores monetários em **BRL**. O display é formatado em pt-BR (`R$ 1.234,56`) enquanto o valor interno permanece como **número decimal em reais** (ex.: `1234.56`).",
+          "Input para valores monetários em **BRL**. O display é formatado em pt-BR (`R$ 1.234,56`) enquanto o valor é um **número decimal em reais** (ex.: `1234.56`).",
+          "",
+          "**Digitação e colagem.** Os dígitos digitados preenchem os centavos primeiro (`1`, `5`, `0`, `0` mostra `0,01`, `0,15`, `1,50`, `15,00`). Um texto colado é lido como um número escrito por um brasileiro e substitui o valor: `1500` e `1.500` são R$ 1.500,00; `1500,5` é R$ 1.500,50; `2350.9` é R$ 2.350,90.",
           "",
           "**Props principais:**",
-          "- `value` — valor atual em reais (float). Use `toCents`/`fromCents` quando precisar persistir centavos inteiros.",
+          "- `value` — valor em reais (float), controlado. Use `toCents`/`fromCents` quando precisar persistir centavos inteiros.",
+          "- `defaultValue` — valor inicial quando o campo não é controlado: sem `value`, ele guarda o próprio valor.",
           "- `onValueChange` — callback `(value: number) => void` disparado a cada edição com o novo valor em reais.",
+          '- `emptyValue` — o que vale um campo vazio. `"zero"` (padrão): o campo sempre tem um número e limpar volta a `0,00`. `"null"`: o campo pode ficar vazio, `value` aceita `null`, `onValueChange` passa a receber `number | null`, o placeholder aparece e o `required` nativo funciona.',
+          "- `allowNegative` — aceita valores negativos (estorno, desconto, saldo devedor).",
+          "- `name` — nome no formulário nativo. O form recebe o número (`1234.56`), por um input oculto.",
+          "- `size` — altura do campo: `sm` (32px), `md` (40px, padrão) ou `lg` (44px).",
+          "- `readOnly` — somente leitura: o valor fica legível, recebe foco e é enviado, mas não é editável.",
           "- `disabled` — desabilita a edição e aplica estilo desativado.",
-          "- `placeholder` — texto exibido quando o campo está vazio (apesar da máscara, é repassado ao `<input>`).",
-          "- Demais props do `<input>` nativo (exceto `value`, `onChange`, `type`) são repassadas, incluindo `id`, `name`, `aria-*`, `className`.",
+          "- Demais props do `<input>` nativo (exceto `value`, `onChange`, `type`) são repassadas, incluindo `id`, `aria-*`, `className`.",
           "",
           "**Rótulo:** prefira a prop `label` (renderizada internamente pelo `FieldShell` como `<label htmlFor>`) em vez de um `<Label>` externo.",
           "",
@@ -85,11 +92,13 @@ export const Playground: Story = {
     disabled: false,
     placeholder: "",
   },
-  render: (args) => {
-    const [value, setValue] = React.useState<number>(args.value ?? 0)
+  // `emptyValue` e `defaultValue` ficam de fora: esta story é a do campo
+  // controlado que sempre tem um número.
+  render: ({ value: initial, onValueChange, emptyValue, defaultValue, ...args }) => {
+    const [value, setValue] = React.useState<number>(initial ?? 0)
     React.useEffect(() => {
-      setValue(args.value ?? 0)
-    }, [args.value])
+      setValue(initial ?? 0)
+    }, [initial])
     return (
       <div className="flex flex-col gap-2 w-80">
         <CurrencyInput
@@ -99,7 +108,7 @@ export const Playground: Story = {
           value={value}
           onValueChange={(next) => {
             setValue(next)
-            args.onValueChange?.(next)
+            onValueChange?.(next)
           }}
         />
         <p className="text-xs text-muted-foreground">Valor interno: {value}</p>
@@ -230,6 +239,34 @@ export const Negative: Story = {
       description: {
         story:
           "`allowNegative` aceita valores negativos: a tecla de menos torna o valor negativo, uma segunda (ou `+`) volta a positivo, e um número negativo colado mantém o sinal. O campo abre o teclado de texto no celular, porque o teclado numérico do iOS não tem o sinal de menos.",
+      },
+    },
+  },
+}
+
+export const Empty: Story = {
+  args: {},
+  render: () => {
+    const [value, setValue] = React.useState<number | null>(null)
+    return (
+      <div className="flex w-80 flex-col gap-2">
+        <CurrencyInput
+          id="entry-value"
+          label="Valor de entrada (R$)"
+          description="Deixe em branco se não houver entrada."
+          emptyValue="null"
+          value={value}
+          onValueChange={setValue}
+        />
+        <p className="text-xs text-muted-foreground">Valor interno: {String(value)}</p>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Com `emptyValue="null"` o campo sabe ficar vazio: `null` é "não informado", diferente de zero. Limpar o campo reporta `null`, o placeholder aparece e o `required` nativo passa a acusar. Zero digitado continua sendo um valor.',
       },
     },
   },

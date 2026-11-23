@@ -589,4 +589,195 @@ describe("CurrencyInput", () => {
       })
     })
   })
+
+  // Regressão: o campo não sabia ficar vazio. Limpar voltava a "0,00", o
+  // `required` nativo nunca falhava e "não informado" era igual a zero.
+  describe('emptyValue="null"', () => {
+    function Nullable({ initial = null }: { initial?: number | null }) {
+      const [value, setValue] = React.useState<number | null>(initial)
+      return (
+        <>
+          <CurrencyInput
+            label="Campo"
+            emptyValue="null"
+            placeholder="Informe"
+            value={value}
+            onValueChange={setValue}
+          />
+          <output data-testid="value">{String(value)}</output>
+        </>
+      )
+    }
+
+    it("value null mostra o campo vazio, com o placeholder", () => {
+      render(<Nullable />)
+      const input = screen.getByRole("textbox")
+      expect(input).toHaveValue("")
+      expect(input).toHaveAttribute("placeholder", "Informe")
+    })
+
+    it("sem placeholder próprio, sugere o formato", () => {
+      render(<CurrencyInput emptyValue="null" value={null} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveAttribute("placeholder", "0,00")
+    })
+
+    it("o primeiro dígito já vale, como centavo", async () => {
+      const user = userEvent.setup()
+      render(<Nullable />)
+      const input = screen.getByRole("textbox")
+      await user.type(input, "5")
+      expect(input).toHaveValue("0,05")
+      expect(screen.getByTestId("value")).toHaveTextContent("0.05")
+    })
+
+    it("zero digitado é um valor, diferente de vazio", async () => {
+      const user = userEvent.setup()
+      render(<Nullable />)
+      const input = screen.getByRole("textbox")
+      await user.type(input, "0")
+      expect(input).toHaveValue("0,00")
+      expect(screen.getByTestId("value")).toHaveTextContent("0")
+    })
+
+    it("apagar tudo de uma vez reporta null", async () => {
+      const user = userEvent.setup()
+      render(<Nullable initial={12.5} />)
+      const input = screen.getByRole("textbox")
+      await user.clear(input)
+      expect(input).toHaveValue("")
+      expect(screen.getByTestId("value")).toHaveTextContent("null")
+    })
+
+    it("Backspace passa por zero e depois esvazia", async () => {
+      const user = userEvent.setup()
+      render(<Nullable />)
+      const input = screen.getByRole("textbox")
+      await user.type(input, "5")
+      await user.keyboard("{Backspace}")
+      expect(input).toHaveValue("0,00")
+      expect(screen.getByTestId("value")).toHaveTextContent("0")
+      await user.keyboard("{Backspace}")
+      expect(input).toHaveValue("")
+      expect(screen.getByTestId("value")).toHaveTextContent("null")
+    })
+
+    it("vazio, o form recebe texto vazio e o required nativo acusa", () => {
+      const { container } = render(
+        <form>
+          <CurrencyInput
+            name="campo"
+            emptyValue="null"
+            value={null}
+            onValueChange={vi.fn()}
+            required
+          />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("campo")).toBe("")
+      expect((screen.getByRole("textbox") as HTMLInputElement).validity.valueMissing).toBe(true)
+      expect(form.checkValidity()).toBe(false)
+    })
+
+    it("um valor que não é número é campo vazio", () => {
+      render(
+        <CurrencyInput
+          emptyValue="null"
+          value={Number.NaN}
+          onValueChange={vi.fn()}
+          placeholder="Informe"
+        />,
+      )
+      expect(screen.getByRole("textbox")).toHaveValue("")
+    })
+
+    it("colar um número preenche o campo vazio", async () => {
+      const user = userEvent.setup()
+      render(<Nullable />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.paste("12,5")
+      expect(input).toHaveValue("12,50")
+      expect(screen.getByTestId("value")).toHaveTextContent("12.5")
+    })
+  })
+
+  describe('emptyValue="zero" (padrão)', () => {
+    it("limpar o campo volta a zero, como sempre foi", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      function Harness() {
+        const [value, setValue] = React.useState(12.5)
+        return (
+          <CurrencyInput
+            value={value}
+            onValueChange={(next) => {
+              onValueChange(next)
+              setValue(next)
+            }}
+          />
+        )
+      }
+      render(<Harness />)
+      const input = screen.getByRole("textbox")
+      await user.clear(input)
+      expect(input).toHaveValue("0,00")
+      expect(onValueChange).toHaveBeenLastCalledWith(0)
+    })
+
+    it('onValueChange recebe sempre número; null só existe com emptyValue="null"', () => {
+      const onNumber = (_value: number) => {}
+      const onNullable = (_value: number | null) => {}
+      render(
+        <>
+          <CurrencyInput value={1} onValueChange={onNumber} />
+          <CurrencyInput emptyValue="null" value={null} onValueChange={onNullable} />
+          {/* @ts-expect-error sem emptyValue="null", value não aceita null */}
+          <CurrencyInput value={null} onValueChange={onNumber} />
+          {/* @ts-expect-error com emptyValue="null", o callback precisa aceitar null */}
+          <CurrencyInput emptyValue="null" value={null} onValueChange={onNumber} />
+        </>,
+      )
+      expect(screen.getAllByRole("textbox")).toHaveLength(4)
+    })
+  })
+
+  describe("modo não controlado", () => {
+    it("sem value, parte de defaultValue e guarda o que é digitado", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const { container } = render(
+        <form>
+          <CurrencyInput name="campo" defaultValue={12.5} onValueChange={onValueChange} />
+          <button type="reset">Desfazer</button>
+        </form>,
+      )
+      const input = screen.getByRole("textbox")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(input).toHaveValue("12,50")
+      await user.click(input)
+      await user.keyboard("{End}{Backspace}")
+      expect(input).toHaveValue("1,25")
+      expect(onValueChange).toHaveBeenLastCalledWith(1.25)
+      expect(new FormData(form).get("campo")).toBe("1.25")
+      await user.click(screen.getByRole("button", { name: "Desfazer" }))
+      expect(input).toHaveValue("12,50")
+      expect(new FormData(form).get("campo")).toBe("12.5")
+    })
+
+    it("sem value nem defaultValue começa em zero e funciona sem onValueChange", async () => {
+      const user = userEvent.setup()
+      render(<CurrencyInput />)
+      const input = screen.getByRole("textbox")
+      expect(input).toHaveValue("0,00")
+      await user.click(input)
+      await user.keyboard("{End}1250")
+      expect(input).toHaveValue("12,50")
+    })
+
+    it('com emptyValue="null" e sem defaultValue começa vazio', () => {
+      render(<CurrencyInput emptyValue="null" />)
+      expect(screen.getByRole("textbox")).toHaveValue("")
+    })
+  })
 })

@@ -519,6 +519,40 @@ test.describe("CurrencyInput: valores negativos", () => {
   })
 })
 
+test.describe("CurrencyInput e PercentageInput: campo vazio", () => {
+  const stories = [
+    { name: "CurrencyInput", id: "domain-currencyinput--empty", label: /Valor de entrada/ },
+    { name: "PercentageInput", id: "domain-percentageinput--empty", label: /Desconto/ },
+  ]
+
+  for (const item of stories) {
+    test(`${item.name}: com emptyValue="null" o campo começa vazio, aceita zero e volta a vazio`, async ({
+      page,
+    }) => {
+      await gotoStory(page, item.id)
+      const input = page.getByRole("textbox", { name: item.label })
+      const internal = page.getByText(/^Valor interno:/)
+      await expect(input).toHaveValue("")
+      await expect(input).toHaveAttribute("placeholder", "0,00")
+      await expect(internal).toHaveText("Valor interno: null")
+
+      await input.pressSequentially("125")
+      await expect(input).toHaveValue("1,25")
+      await expect(internal).toHaveText("Valor interno: 1.25")
+
+      // Três Backspaces levam a zero, que é um valor; o quarto esvazia.
+      await page.keyboard.press("Backspace")
+      await page.keyboard.press("Backspace")
+      await page.keyboard.press("Backspace")
+      await expect(input).toHaveValue("0,00")
+      await expect(internal).toHaveText("Valor interno: 0")
+      await page.keyboard.press("Backspace")
+      await expect(input).toHaveValue("")
+      await expect(internal).toHaveText("Valor interno: null")
+    })
+  }
+})
+
 test.describe("CurrencyInput: colar", () => {
   test.beforeEach(async ({ context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"])
