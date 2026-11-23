@@ -1025,6 +1025,24 @@ test.describe("Toaster", () => {
     await expectReadable(toast.locator("[data-description]"))
   })
 
+  // Sonner's errors left after 4s, before they could be read, and the X
+  // existed only when the consumer asked for it, labelled in English.
+  test("an error toast stays until its X (“Fechar notificação”) closes it", async ({ page }) => {
+    const toast = await playgroundToast(
+      page,
+      "variant:error;message:Falha+ao+salvar;description:Confira+a+conexao",
+      "light",
+    )
+    await expect(page.getByRole("region", { name: /^Notificações/ })).toBeAttached()
+    // Well past Sonner's 4s lifetime.
+    await page.waitForTimeout(5_500)
+    await expect(toast).toBeVisible()
+    await expect(toast).not.toHaveAttribute("data-removed", "true")
+
+    await toast.getByRole("button", { name: "Fechar notificação" }).click()
+    await expect(toast).toHaveCount(0)
+  })
+
   test("Toaster props add to the library's defaults instead of replacing them", async ({
     page,
   }) => {

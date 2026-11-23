@@ -207,7 +207,13 @@ export {
 export { Popover, type PopoverProps } from "./overlays/popover"
 export { Progress, type ProgressProps } from "./overlays/progress"
 export { Sheet, type SheetProps } from "./overlays/sheet"
-export { Toaster, toast, type ToasterProps } from "./overlays/sonner"
+export {
+  Toaster,
+  defaultToasterLabels,
+  toast,
+  type ToasterLabels,
+  type ToasterProps,
+} from "./overlays/sonner"
 export { Tooltip, type TooltipProps } from "./overlays/tooltip"
 export {
   Tour,

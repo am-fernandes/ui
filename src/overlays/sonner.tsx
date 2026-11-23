@@ -8,7 +8,12 @@ import {
   TriangleAlertIcon,
 } from "lucide-react"
 import * as React from "react"
-import { Toaster as Sonner, type ToasterProps } from "sonner"
+import {
+  type ExternalToast,
+  Toaster as Sonner,
+  type ToasterProps as SonnerToasterProps,
+  toast as sonnerToast,
+} from "sonner"
 
 import { cn } from "@/lib/utils"
 
@@ -110,6 +115,32 @@ function useToastsAboveModals(sectionRef: React.RefObject<HTMLElement | null>) {
   }, [sectionRef])
 }
 
+export interface ToasterLabels {
+  /** Name of the notification region. Sonner appends the shortcut ("alt+T"). */
+  region: string
+  /** Name of the X of each toast. */
+  close: string
+}
+
+export const defaultToasterLabels: ToasterLabels = {
+  region: "Notificações",
+  close: "Fechar notificação",
+}
+
+export interface ToasterProps extends SonnerToasterProps {
+  /**
+   * Shows an X on every toast. On by default: an error stays until it is
+   * closed, and nobody should have to wait for a toast to leave.
+   * @default true
+   */
+  closeButton?: boolean
+  /**
+   * Texts read by screen readers. Sonner's own `containerAriaLabel` and
+   * `toastOptions.closeButtonAriaLabel` still work, and win when given.
+   */
+  labels?: Partial<ToasterLabels>
+}
+
 /**
  * Container of the toasts. Mount one at the root of the app and fire them with
  * `toast()` from anywhere.
@@ -119,9 +150,19 @@ function useToastsAboveModals(sectionRef: React.RefObject<HTMLElement | null>) {
  * own, key by key: a prop given here adds to or replaces that one key, it
  * does not throw the rest away.
  */
-const Toaster = ({ className, style, icons, toastOptions, ...props }: ToasterProps) => {
+const Toaster = ({
+  className,
+  style,
+  icons,
+  toastOptions,
+  closeButton = true,
+  labels,
+  containerAriaLabel,
+  ...props
+}: ToasterProps) => {
   const sectionRef = React.useRef<HTMLElement>(null)
   useToastsAboveModals(sectionRef)
+  const l: ToasterLabels = { ...defaultToasterLabels, ...labels }
 
   return (
     <Sonner
@@ -130,7 +171,10 @@ const Toaster = ({ className, style, icons, toastOptions, ...props }: ToasterPro
       // tag via class instead — tests query for the toaster element below.
       className={cn("toaster group [&_section]:data-[sonner-toaster]", className)}
       icons={{ ...defaultIcons, ...icons }}
+      closeButton={closeButton}
+      containerAriaLabel={containerAriaLabel ?? l.region}
       toastOptions={{
+        closeButtonAriaLabel: l.close,
         ...toastOptions,
         classNames: mergeClassNames(defaultClassNames, toastOptions?.classNames),
       }}
@@ -142,6 +186,48 @@ const Toaster = ({ className, style, icons, toastOptions, ...props }: ToasterPro
 
 Toaster.displayName = "Toaster"
 
-export { Toaster }
-export { toast } from "sonner"
-export type { ToasterProps } from "sonner"
+// ---- toast() ------------------------------------------------------------------
+
+/**
+ * An error has to be read, and usually acted on ("Tentar de novo"): it stays
+ * until the user closes it, instead of Sonner's 4 seconds. A `duration` given
+ * to the toast still wins.
+ */
+const errorDefaults: ExternalToast = { duration: Number.POSITIVE_INFINITY }
+
+type PromiseData = NonNullable<Parameters<typeof sonnerToast.promise>[1]>
+type PromiseError = PromiseData["error"]
+
+/** The error of `toast.promise`, made to stay like the one of `toast.error`. */
+function persistentError(error: PromiseError): PromiseError {
+  if (error === undefined) return undefined
+  // Sonner takes a node (the message) or an object with the toast's options.
+  const extend = (result: unknown) =>
+    typeof result === "object" && result !== null && !React.isValidElement(result)
+      ? { ...errorDefaults, ...(result as { message: React.ReactNode }) }
+      : { ...errorDefaults, message: result as React.ReactNode }
+  if (typeof error === "function") {
+    return async (reason: unknown) => extend(await (error as (reason: unknown) => unknown)(reason))
+  }
+  return extend(error)
+}
+
+/**
+ * Sonner's `toast`, with one difference: errors (`toast.error` and the error
+ * of `toast.promise`) stay until they are closed. Everything else is Sonner's.
+ */
+const toast: typeof sonnerToast = Object.assign(
+  (...args: Parameters<typeof sonnerToast>) => sonnerToast(...args),
+  sonnerToast,
+  {
+    error: (message: Parameters<typeof sonnerToast.error>[0], data?: ExternalToast) =>
+      sonnerToast.error(message, { ...errorDefaults, ...data }),
+    promise: ((promise, data) =>
+      sonnerToast.promise(
+        promise,
+        data && { ...data, error: persistentError(data.error) },
+      )) as typeof sonnerToast.promise,
+  },
+)
+
+export { Toaster, toast }

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { Toaster, toast } from "./sonner"
 
@@ -182,12 +182,119 @@ describe("Toaster", () => {
     })
   })
 
+  // An error vanished after Sonner's 4s, before it could be read or acted on,
+  // and a toast had no close button unless the consumer asked for one; the
+  // labels were Sonner's English ones.
+  describe("errors stay, every toast can be closed, labels in Portuguese", () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    /** Lets Sonner's timers run past its 4s lifetime and the exit animation. */
+    const waitPastLifetime = () =>
+      act(async () => {
+        await vi.advanceTimersByTimeAsync(10_000)
+      })
+
+    it("toast.error stays until it is closed; the other types still expire", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      render(<Toaster />)
+      act(() => {
+        toast.error("erro-fica")
+        toast.success("sucesso-sai")
+      })
+      await screen.findByText("erro-fica")
+      await screen.findByText("sucesso-sai")
+      await waitPastLifetime()
+      expect(screen.getByText("erro-fica")).toBeInTheDocument()
+      expect(screen.queryByText("sucesso-sai")).not.toBeInTheDocument()
+    })
+
+    it("an explicit duration on toast.error still wins", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      render(<Toaster />)
+      act(() => {
+        toast.error("erro-com-prazo", { duration: 3000 })
+      })
+      await screen.findByText("erro-com-prazo")
+      await waitPastLifetime()
+      expect(screen.queryByText("erro-com-prazo")).not.toBeInTheDocument()
+    })
+
+    it("the error of toast.promise stays too, its success does not", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      render(<Toaster />)
+      act(() => {
+        toast.promise(Promise.reject(new Error("x")), {
+          loading: "enviando-1",
+          error: (e: Error) => `falhou-${e.message}`,
+        })
+        toast.promise(Promise.resolve("ok"), { loading: "enviando-2", success: "foi" })
+      })
+      await screen.findByText("falhou-x")
+      await screen.findByText("foi")
+      await waitPastLifetime()
+      expect(screen.getByText("falhou-x")).toBeInTheDocument()
+      expect(screen.queryByText("foi")).not.toBeInTheDocument()
+    })
+
+    it("an extended error result of toast.promise keeps its own options", async () => {
+      render(<Toaster />)
+      act(() => {
+        toast.promise(Promise.reject(new Error("x")), {
+          loading: "enviando-3",
+          error: { message: "falhou-estendido", description: "detalhe-estendido" },
+        })
+      })
+      expect(await screen.findByText("falhou-estendido")).toBeInTheDocument()
+      expect(screen.getByText("detalhe-estendido")).toBeInTheDocument()
+    })
+
+    it("shows a close button by default, labelled in Portuguese", async () => {
+      render(<Toaster />)
+      toast("com-x")
+      await screen.findByText("com-x")
+      expect(screen.getByRole("button", { name: "Fechar notificação" })).toBeInTheDocument()
+      expect(screen.queryByLabelText("Close toast")).not.toBeInTheDocument()
+    })
+
+    it("closeButton={false} still hides it", async () => {
+      render(<Toaster closeButton={false} />)
+      toast("sem-x")
+      await screen.findByText("sem-x")
+      expect(screen.queryByRole("button", { name: "Fechar notificação" })).not.toBeInTheDocument()
+    })
+
+    it("names the notification region in Portuguese, with the shortcut", async () => {
+      render(<Toaster />)
+      toast("regiao")
+      await screen.findByText("regiao")
+      const region = document.querySelector("section[aria-live]") as HTMLElement
+      expect(region.getAttribute("aria-label")).toMatch(/^Notificações /)
+      expect(region.getAttribute("aria-label")).not.toMatch(/Notifications/)
+    })
+
+    it("the labels can still be changed", async () => {
+      render(
+        <Toaster
+          containerAriaLabel="Avisos"
+          toastOptions={{ closeButtonAriaLabel: "Dispensar aviso" }}
+        />,
+      )
+      toast("rotulos")
+      await screen.findByText("rotulos")
+      expect(screen.getByRole("button", { name: "Dispensar aviso" })).toBeInTheDocument()
+      expect(document.querySelector("section[aria-live]")?.getAttribute("aria-label")).toMatch(
+        /^Avisos /,
+      )
+    })
+  })
+
   it("renders a close button when closeButton is enabled and clicking it dismisses", async () => {
     render(<Toaster closeButton />)
     toast("with-close")
     await screen.findByText("with-close")
-    // Sonner's close button carries an aria-label of "Close toast" by default.
-    const closeBtn = await screen.findByLabelText("Close toast")
+    const closeBtn = await screen.findByLabelText("Fechar notificação")
     // Use fireEvent.click here so we skip the pointerdown phase — sonner calls
     // event.target.setPointerCapture() which is not implemented in jsdom and
     // would otherwise raise an unhandled exception (harmless but noisy).
