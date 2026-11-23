@@ -308,8 +308,11 @@ function Tour({
               returnFocusRef.current = null
               if (previous?.isConnected) previous.focus()
             }}
+            // On the modal layer, not the popover one: the page stays usable,
+            // and a Dialog opened from it (the target itself, often) renders
+            // later in the DOM and goes over the callout instead of under.
             className={cn(
-              "z-(--z-popover) w-80 max-w-[calc(100vw-16px)] rounded-container border border-border-strong bg-popover p-4 text-popover-foreground outline-none",
+              "z-(--z-modal) w-80 max-w-[calc(100vw-16px)] rounded-container border border-border-strong bg-popover p-4 text-popover-foreground outline-none",
               motionPopover,
               "data-[state=open]:animate-in data-[state=closed]:animate-out",
               "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",

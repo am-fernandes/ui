@@ -159,6 +159,40 @@ test.describe("Tour", () => {
     expect(Math.abs(callout.x - t.x)).toBeLessThanOrEqual(1)
   })
 
+  // The callout sat on the popover layer (60), above every modal (50): a
+  // Dialog opened by the very element the step points at came up under it.
+  test("a Dialog opened by the target goes over the callout", async ({ page }) => {
+    await gotoTour(page, "overlays-tour--target-opens-dialog")
+    await startTour(page)
+    const callout = await settledBox(page, '[data-slot="tour-step"]')
+    await page.getByRole("button", { name: "Nova proposta" }).click()
+    const dialog = page.getByRole("dialog", { name: "Nova proposta" })
+    await expect(dialog).toBeVisible()
+    // What is painted on top in the middle of the callout. Layers below a
+    // modal have pointer events off, and elementFromPoint skips those: they
+    // are turned on for the probe only.
+    const topmost = await page.evaluate(
+      ({ x, y }) => {
+        const layers = [...document.querySelectorAll<HTMLElement>("[data-slot], body *")]
+        const saved = layers.map((el) => el.style.pointerEvents)
+        for (const el of layers) el.style.pointerEvents = "auto"
+        const hit = document.elementFromPoint(x, y)
+        layers.forEach((el, i) => {
+          el.style.pointerEvents = saved[i] ?? ""
+        })
+        return hit?.closest("[data-slot]")?.getAttribute("data-slot") ?? null
+      },
+      { x: callout.x + callout.width / 2, y: callout.y + callout.height / 2 },
+    )
+    expect(topmost).not.toBe("tour-step")
+    expect(["dialog-overlay", "dialog-content"]).toContain(topmost)
+
+    // Escape closes the Dialog first; the tour is still there after it.
+    await page.keyboard.press("Escape")
+    await expect(dialog).toHaveCount(0)
+    await expect(page.getByRole("dialog", { name: "Crie uma proposta" })).toBeVisible()
+  })
+
   test("no spotlight when turned off", async ({ page }) => {
     await gotoTour(page, "overlays-tour--without-spotlight")
     await startTour(page)

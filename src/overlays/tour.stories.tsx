@@ -5,6 +5,7 @@ import * as React from "react"
 
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
+import { Dialog } from "./dialog"
 import { Tour, type TourCloseReason, type TourProps, type TourStep } from "./tour"
 
 const steps: TourStep[] = [
@@ -183,6 +184,51 @@ export const LateTarget: Story = {
       description: {
         story:
           "O alvo só aparece depois que os dados carregam: o balão começa centrado e passa a apontar para ele assim que ele entra na página. O mesmo vale para um alvo trocado por outro nó com o mesmo seletor.",
+      },
+    },
+  },
+}
+
+function TargetOpensDialogDemo() {
+  const [open, setOpen] = React.useState(false)
+  return (
+    <div className="flex flex-col items-start gap-4">
+      <Button variant="secondary" onClick={() => setOpen(true)}>
+        Iniciar tour
+      </Button>
+      <Dialog
+        trigger={
+          <Button id="tour-nova-proposta">
+            <Plus /> Nova proposta
+          </Button>
+        }
+        title="Nova proposta"
+        description="Escolha a unidade e o comprador."
+      >
+        <Input label="Unidade" />
+      </Dialog>
+      <Tour
+        open={open}
+        onClose={() => setOpen(false)}
+        steps={[
+          {
+            target: "#tour-nova-proposta",
+            title: "Crie uma proposta",
+            content: "Experimente: clique em Nova proposta.",
+          },
+        ]}
+      />
+    </div>
+  )
+}
+
+export const TargetOpensDialog: Story = {
+  render: () => <TargetOpensDialogDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "O tour não é modal: o alvo continua clicável. Se ele abre um `Dialog`, o diálogo fica por cima do balão (e o escurece) até ser fechado.",
       },
     },
   },
