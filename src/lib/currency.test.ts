@@ -136,6 +136,39 @@ describe("toBRLMoney", () => {
     expect(toBRLMoney(undefined)).toBe("")
     expect(toBRLMoney("")).toBe("")
   })
+
+  // Regressão: sem limite de casas, 1000/3 saía como "333,333".
+  it("nunca mostra mais de duas casas", () => {
+    expect(toBRLMoney(1000 / 3)).toBe("333,33")
+    expect(toBRLMoney(1234.567)).toBe("1.234,57")
+    expect(toBRLMoney(0.1 + 0.2)).toBe("0,30")
+    expect(toBRLMoney("1234.567")).toBe("1.234,57")
+  })
+
+  // Regressão: parseFloat lia "1.234,56" como 1.234 e o resultado era "1,234".
+  it("lê um texto já em formato brasileiro", () => {
+    expect(toBRLMoney("1.234,56")).toBe("1.234,56")
+    expect(toBRLMoney("R$ 1.234,56")).toBe("1.234,56")
+    expect(toBRLMoney("1234,5")).toBe("1.234,50")
+    expect(toBRLMoney("350.000")).toBe("350.000,00")
+  })
+
+  it("continua lendo o número em formato de máquina", () => {
+    expect(toBRLMoney("1234.56")).toBe("1.234,56")
+    expect(toBRLMoney("0.5")).toBe("0,50")
+    expect(toBRLMoney("1500")).toBe("1.500,00")
+  })
+
+  it("formata negativos", () => {
+    expect(toBRLMoney(-1234.5)).toBe("-1.234,50")
+    expect(toBRLMoney("-1.234,50")).toBe("-1.234,50")
+  })
+
+  it("o que não é número vira texto vazio, não NaN", () => {
+    expect(toBRLMoney("abc")).toBe("")
+    expect(toBRLMoney(Number.NaN)).toBe("")
+    expect(toBRLMoney(Number.POSITIVE_INFINITY)).toBe("")
+  })
 })
 
 describe("parseMaskedValue", () => {

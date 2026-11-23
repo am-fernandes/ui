@@ -59,15 +59,25 @@ export function formatBRL(value: number): string {
   return `R$ ${centsToDisplay(toCents(value))}`
 }
 
+const brlMoney = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
 /**
- * Formata número para exibição BRL sem prefixo: 1234.5 → "1.234,50"
+ * Formata número para exibição BRL sem prefixo, sempre com duas casas:
+ * 1234.5 → "1.234,50", 1000 / 3 → "333,33".
  * Útil para tabelas e campos onde o símbolo R$ já está no label.
+ *
+ * Um texto é lido por `parseBRNumber`: tanto o formato de máquina
+ * (`"1234.5"`) quanto o brasileiro (`"1.234,50"`, `"R$ 1.234,50"`). O que não
+ * for número devolve `""`.
  */
 export function toBRLMoney(value?: string | number | null): string {
   if (value === null || value === undefined || value === "") return ""
-  return new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2 }).format(
-    Number.parseFloat(String(value)),
-  )
+  const amount = typeof value === "number" ? value : parseBRNumber(value)
+  if (amount === null || !Number.isFinite(amount)) return ""
+  return brlMoney.format(amount)
 }
 
 /**
