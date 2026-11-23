@@ -17,9 +17,11 @@ export interface AvatarProps
   /** Shown while the photo loads, when it fails or without `src`: initials or an icon. */
   fallback: React.ReactNode
   /**
-   * Allowed URL protocols for `src`. Defaults to `["http:", "https:"]`.
-   * Pass `["data:"]` to opt in to base64 thumbnails. `javascript:` is
-   * always blocked, regardless of allowlist.
+   * Allowed URL protocols for `src`. Defaults to `["http:", "https:"]`
+   * (`DEFAULT_ALLOWED_RESOURCE_PROTOCOLS`). The list replaces the default, so
+   * to accept base64 thumbnails as well, add to it:
+   * `[...DEFAULT_ALLOWED_RESOURCE_PROTOCOLS, "data:"]` (`["data:"]` alone
+   * would block https photos). `javascript:` is always blocked.
    */
   allowedProtocols?: string[]
   ref?: React.Ref<HTMLSpanElement>
@@ -46,7 +48,11 @@ function Avatar({ src, alt, fallback, className, allowedProtocols, ref, ...props
       // the initials and while the photo loads.
       role="img"
       aria-label={alt}
-      className={cn("relative flex size-10 shrink-0 overflow-hidden rounded-full", className)}
+      className={cn(
+        // `@container`: the initials are sized from the avatar's own width.
+        "@container relative flex size-10 shrink-0 overflow-hidden rounded-full",
+        className,
+      )}
       {...props}
     >
       {srcIsValid ? (
@@ -61,7 +67,9 @@ function Avatar({ src, alt, fallback, className, allowedProtocols, ref, ...props
       <AvatarPrimitive.Fallback
         data-slot="avatar-fallback"
         aria-hidden="true"
-        className="flex h-full w-full items-center justify-center rounded-full bg-muted text-sm"
+        // 35% of the width: 14px in the default 40px, and in step with any
+        // `size-*` given to the avatar.
+        className="flex h-full w-full items-center justify-center rounded-full bg-muted text-[length:35cqi] leading-none"
       >
         {fallback}
       </AvatarPrimitive.Fallback>

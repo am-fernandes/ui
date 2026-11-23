@@ -686,3 +686,22 @@ test.describe("Avatar", () => {
     }
   })
 })
+
+test.describe("Avatar fallback", () => {
+  test("the initials grow and shrink with the avatar", async ({ page }) => {
+    await open(page, "primitives-avatar--sizes")
+    const sizes = await page.locator('[data-slot="avatar"]').evaluateAll((avatars) =>
+      avatars.map((avatar) => {
+        const fallback = avatar.querySelector('[data-slot="avatar-fallback"]') as HTMLElement
+        return {
+          width: avatar.getBoundingClientRect().width,
+          fontSize: Number.parseFloat(getComputedStyle(fallback).fontSize),
+        }
+      }),
+    )
+    expect(sizes.map((size) => size.width)).toEqual([24, 32, 40, 64])
+    // The default stays where it was: 14px in 40px.
+    expect(sizes[2]?.fontSize).toBeCloseTo(14, 0)
+    for (const size of sizes) expect(size.fontSize / size.width).toBeCloseTo(0.35, 2)
+  })
+})

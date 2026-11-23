@@ -23,9 +23,10 @@ const meta: Meta<typeof Avatar> = {
           "",
           "**API:**",
           "- `src` — URL da imagem. Quando ausente ou inválida, renderiza `fallback`.",
-          "- `alt` — obrigatório para a11y.",
+          '- `alt` — obrigatório: é o nome do avatar inteiro (`role="img"`), com foto ou com fallback.',
           "- `fallback` — `string` (iniciais) ou `ReactNode` (ícone, qualquer JSX).",
-          "- `className` — `size-*` para mudar tamanho, `rounded-*` para mudar formato.",
+          "- `className` — `size-*` para mudar tamanho (as iniciais acompanham), `rounded-*` para mudar formato.",
+          '- `allowedProtocols` — protocolos aceitos no `src`, padrão `http:` e `https:`. A lista substitui a padrão: para aceitar também `data:`, passe `[...DEFAULT_ALLOWED_RESOURCE_PROTOCOLS, "data:"]`.',
           "",
           "**Exemplo:**",
           "```tsx",
@@ -84,6 +85,25 @@ export const WithStatusDot: Story = {
       description: {
         story:
           "Pattern para indicar status online: envolver o `Avatar` em `relative` e posicionar um `span` absoluto.",
+      },
+    },
+  },
+}
+
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex items-center gap-3">
+      <Avatar alt="Ana Souza" fallback="AS" className="size-6" />
+      <Avatar alt="Ana Souza" fallback="AS" className="size-8" />
+      <Avatar alt="Ana Souza" fallback="AS" />
+      <Avatar alt="Ana Souza" fallback="AS" className="size-16" />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "O tamanho vem de `size-*` no `className`; as iniciais acompanham (35% da largura: 14px no padrão de 40px).",
       },
     },
   },
