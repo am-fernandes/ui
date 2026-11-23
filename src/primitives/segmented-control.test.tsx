@@ -109,6 +109,53 @@ describe("SegmentedControl", () => {
     expect(screen.getByRole("button", { name: "depois" })).toHaveFocus()
   })
 
+  // Controlled, the value only changes when the parent re-renders, so a second
+  // selection of the same segment in the same tick is reported again: a
+  // doubled fetch, analytics event or router.push.
+  it("reports one change per arrow press when controlled, key held or tapped", async () => {
+    const onValueChange = vi.fn()
+    function Controlled() {
+      const [value, setValue] = React.useState("dia")
+      return (
+        <SegmentedControl
+          label="Período"
+          options={options}
+          value={value}
+          onValueChange={(next) => {
+            onValueChange(next)
+            setValue(next)
+          }}
+        />
+      )
+    }
+    render(<Controlled />)
+    await userEvent.tab()
+
+    await pressArrow("ArrowRight")
+    expect(screen.getByRole("radio", { name: "Semana" })).toHaveAttribute("aria-checked", "true")
+    expect(onValueChange.mock.calls).toEqual([["semana"]])
+
+    // keydown and keyup in the same tick.
+    await userEvent.keyboard("{ArrowRight}")
+    expect(screen.getByRole("radio", { name: "Mês" })).toHaveAttribute("aria-checked", "true")
+    expect(onValueChange.mock.calls).toEqual([["semana"], ["mes"]])
+  })
+
+  it("reports one change per arrow press even when the parent ignores it", async () => {
+    const onValueChange = vi.fn()
+    render(
+      <SegmentedControl
+        label="Período"
+        options={options}
+        value="dia"
+        onValueChange={onValueChange}
+      />,
+    )
+    await userEvent.tab()
+    await pressArrow("ArrowRight")
+    expect(onValueChange.mock.calls).toEqual([["semana"]])
+  })
+
   it("selects even when the arrow key is released before focus moves", async () => {
     const onValueChange = vi.fn()
     render(

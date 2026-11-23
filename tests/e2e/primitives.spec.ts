@@ -347,6 +347,28 @@ test.describe("Textarea", () => {
 })
 
 test.describe("SegmentedControl", () => {
+  test("controlled: one onValueChange per arrow, key held or tapped", async ({ page }) => {
+    await open(page, "primitives-segmentedcontrol--controlled")
+    const changes = page.getByTestId("changes")
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("radio", { name: "Dia" })).toBeFocused()
+
+    // Held, the way a person presses a key: down, a moment, up.
+    await page.keyboard.down("ArrowRight")
+    await page.waitForTimeout(60)
+    await page.keyboard.up("ArrowRight")
+    await expect(page.getByRole("radio", { name: "Semana" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    )
+    await expect(changes).toHaveText("onValueChange: semana")
+
+    // Tapped: released in the same tick.
+    await page.keyboard.press("ArrowRight")
+    await expect(page.getByRole("radio", { name: "Mês" })).toHaveAttribute("aria-checked", "true")
+    await expect(changes).toHaveText("onValueChange: semana, mes")
+  })
+
   test("arrows move and select in a real browser; one Tab stop", async ({ page }) => {
     await open(page, "primitives-segmentedcontrol--default")
     await page.keyboard.press("Tab")

@@ -85,6 +85,26 @@ function SegmentedControl({
   // key first, leaving focus on an unselected segment. Remember when an arrow
   // was pressed instead, and select whatever receives focus right after.
   const lastArrowAt = React.useRef(Number.NEGATIVE_INFINITY)
+  // Whether Radix is going to select on that focus. It tracks the arrow keys
+  // with keydown and keyup on the document; this mirrors it with the same
+  // events, so exactly one of the two selects. Both selecting would report
+  // the same change twice to a controlled parent, whose value only changes
+  // on its next render.
+  const isArrowHeld = React.useRef(false)
+  React.useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (ARROW_KEYS.has(event.key)) isArrowHeld.current = true
+    }
+    const onKeyUp = () => {
+      isArrowHeld.current = false
+    }
+    document.addEventListener("keydown", onKeyDown)
+    document.addEventListener("keyup", onKeyUp)
+    return () => {
+      document.removeEventListener("keydown", onKeyDown)
+      document.removeEventListener("keyup", onKeyUp)
+    }
+  }, [])
 
   return (
     <RadioGroupPrimitive.Root
@@ -121,10 +141,10 @@ function SegmentedControl({
             aria-label={iconOnly ? option.label : undefined}
             data-slot="segmented-control-item"
             onFocus={(event) => {
-              if (performance.now() - lastArrowAt.current < ARROW_FOCUS_WINDOW_MS) {
-                lastArrowAt.current = Number.NEGATIVE_INFINITY
-                event.currentTarget.click()
-              }
+              const wasArrow = performance.now() - lastArrowAt.current < ARROW_FOCUS_WINDOW_MS
+              lastArrowAt.current = Number.NEGATIVE_INFINITY
+              // Key still down: Radix selects on this very focus.
+              if (wasArrow && !isArrowHeld.current) event.currentTarget.click()
             }}
             className={cn(
               "inline-flex min-w-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-inner font-medium transition-colors",

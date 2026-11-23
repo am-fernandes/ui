@@ -145,6 +145,39 @@ export const SameContentDifferentLayout: Story = {
   },
 }
 
+function ControlledExample() {
+  const [period, setPeriod] = React.useState("dia")
+  const [changes, setChanges] = React.useState<string[]>([])
+  return (
+    <div className="flex flex-col items-start gap-3">
+      <SegmentedControl
+        label="Período"
+        options={periods}
+        value={period}
+        onValueChange={(next) => {
+          setPeriod(next)
+          setChanges((current) => [...current, next])
+        }}
+      />
+      <output className="text-sm" data-testid="changes">
+        onValueChange: {changes.length ? changes.join(", ") : "nenhum"}
+      </output>
+    </div>
+  )
+}
+
+export const Controlled: Story = {
+  render: () => <ControlledExample />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Modo controlado: `value` e `onValueChange`. Cada troca, por clique ou por seta, chama `onValueChange` uma vez só, então dá para buscar dados ou trocar de rota direto nele.",
+      },
+    },
+  },
+}
+
 function FormExample() {
   const [sent, setSent] = React.useState<string | null>(null)
   return (
