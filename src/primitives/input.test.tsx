@@ -158,6 +158,47 @@ describe("Input", () => {
     })
   })
 
+  describe("a click on the box", () => {
+    it("on the leading icon focuses the field, as a click on the text would", async () => {
+      const user = userEvent.setup()
+      render(<Input label="Busca" leadingIcon={<svg data-testid="icon" />} />)
+      await user.click(screen.getByTestId("icon"))
+      expect(screen.getByRole("textbox")).toHaveFocus()
+    })
+
+    it("on the padding of the box focuses the field", async () => {
+      const user = userEvent.setup()
+      render(<Input label="Busca" trailingIcon={<svg data-testid="icon" />} />)
+      await user.click(document.querySelector('[data-slot="input-wrapper"]') as HTMLElement)
+      expect(screen.getByRole("textbox")).toHaveFocus()
+    })
+
+    it("on a button in a slot leaves the click to the button", async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      render(
+        <Input
+          label="Senha"
+          trailingIcon={
+            <button type="button" onClick={onClick}>
+              Mostrar
+            </button>
+          }
+        />,
+      )
+      await user.click(screen.getByRole("button", { name: "Mostrar" }))
+      expect(onClick).toHaveBeenCalledTimes(1)
+      expect(screen.getByRole("button", { name: "Mostrar" })).toHaveFocus()
+    })
+
+    it("does nothing when the field is disabled", async () => {
+      const user = userEvent.setup()
+      render(<Input label="Busca" disabled leadingIcon={<svg data-testid="icon" />} />)
+      await user.click(screen.getByTestId("icon"))
+      expect(screen.getByRole("textbox")).not.toHaveFocus()
+    })
+  })
+
   it("forwards ref to the input element", () => {
     let captured: HTMLInputElement | null = null
     render(

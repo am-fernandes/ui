@@ -1,8 +1,9 @@
 "use client"
 
-import type * as React from "react"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useComposedRefs } from "./_internal/compose-refs"
 import { type ControlSize, controlHeight, controlPaddingX } from "./_internal/control-size"
 import { FieldShell, type LabelPosition, fieldReadOnlyClass } from "./_internal/field-shell"
 import { useFieldIds } from "./_internal/use-field-ids"
@@ -61,6 +62,8 @@ function Input({
   ...props
 }: InputProps) {
   const ids = useFieldIds(id)
+  const inputRef = React.useRef<HTMLInputElement | null>(null)
+  const mergedRef = useComposedRefs(inputRef, ref)
   // Disabled wins: a disabled field is dimmed, not filled.
   const isReadOnly = Boolean(readOnly) && !disabled
   const hasError = error != null && error !== ""
@@ -70,6 +73,18 @@ function Input({
     <div
       data-slot="input-wrapper"
       data-readonly={isReadOnly ? "" : undefined}
+      // The whole box is the field: a press on an icon or on the padding
+      // focuses the input, as one on its text does. A button or a link in a
+      // slot (show password, clear) keeps its own click.
+      onMouseDown={(event) => {
+        const input = inputRef.current
+        if (!input || disabled || event.button !== 0) return
+        const target = event.target as Element
+        if (target === input || target.closest("button, a, input, select, textarea, [tabindex]"))
+          return
+        event.preventDefault()
+        input.focus()
+      }}
       className={cn(
         "relative flex w-full items-center rounded-element border border-input bg-card text-sm field-states",
         fieldReadOnlyClass,
@@ -88,7 +103,7 @@ function Input({
         </span>
       ) : null}
       <input
-        ref={ref}
+        ref={mergedRef}
         id={ids.controlId}
         data-slot="input"
         aria-invalid={hasError ? true : undefined}

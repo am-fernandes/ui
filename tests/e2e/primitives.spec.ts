@@ -462,6 +462,19 @@ test.describe("Input", () => {
     await expect(input).toHaveValue("user-123456")
   })
 
+  test("a click on the icon or the padding of the box focuses the field", async ({ page }) => {
+    await open(page, "primitives-input--with-leading-icon")
+    const input = page.getByRole("textbox", { name: "Buscar" })
+    await page.locator('[data-slot="input-leading"] svg').click()
+    await expect(input).toBeFocused()
+
+    await input.blur()
+    const box = await page.locator('[data-slot="input-wrapper"]').boundingBox()
+    // 2px inside the right edge: the padding, not the text.
+    await page.mouse.click((box?.x ?? 0) + (box?.width ?? 0) - 2, (box?.y ?? 0) + 20)
+    await expect(input).toBeFocused()
+  })
+
   test("password toggle changes input type", async ({ page }) => {
     await open(page, "primitives-input--password-toggle")
     // `exact`: the toggle button is named "Mostrar senha", which also contains "Senha".
