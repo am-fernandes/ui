@@ -37,6 +37,13 @@ export interface ButtonProps
   asChild?: boolean
   /** When true, renders a spinner before children and disables the button. */
   loading?: boolean
+  /**
+   * `"button"` by default, so a button inside a `<form>` (Cancelar, Voltar,
+   * Adicionar item) never submits it by accident. Pass `"submit"` on the
+   * button that sends the form. Not applied with `asChild`.
+   * @default "button"
+   */
+  type?: "button" | "submit" | "reset"
   ref?: React.Ref<HTMLButtonElement>
 }
 
@@ -46,6 +53,7 @@ function Button({
   asChild = false,
   loading = false,
   disabled,
+  type,
   children,
   ref,
   ...props
@@ -64,6 +72,8 @@ function Button({
   return (
     <Comp
       ref={ref as React.Ref<HTMLButtonElement>}
+      // The child of `asChild` may be a link: it only gets a type if one was given.
+      type={asChild ? type : (type ?? "button")}
       data-slot="button"
       className={cn(buttonVariants({ variant, className }))}
       disabled={loading || disabled}

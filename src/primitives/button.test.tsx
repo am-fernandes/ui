@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import type * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
 import { Button } from "./button"
@@ -38,6 +39,44 @@ describe("Button", () => {
     )
     await userEvent.click(screen.getByRole("button"))
     expect(onClick).not.toHaveBeenCalled()
+  })
+
+  describe("inside a form", () => {
+    function renderForm(children: React.ReactNode) {
+      const onSubmit = vi.fn((event: React.FormEvent<HTMLFormElement>) => event.preventDefault())
+      render(<form onSubmit={onSubmit}>{children}</form>)
+      return onSubmit
+    }
+
+    it("does not submit unless asked to: the default type is button", async () => {
+      const onClick = vi.fn()
+      const onSubmit = renderForm(<Button onClick={onClick}>Cancelar</Button>)
+      const button = screen.getByRole("button", { name: "Cancelar" })
+      expect(button).toHaveAttribute("type", "button")
+      await userEvent.click(button)
+      expect(onClick).toHaveBeenCalledOnce()
+      expect(onSubmit).not.toHaveBeenCalled()
+    })
+
+    it("submits with type=submit", async () => {
+      const onSubmit = renderForm(<Button type="submit">Salvar</Button>)
+      await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+      expect(onSubmit).toHaveBeenCalledOnce()
+    })
+
+    it("resets with type=reset", () => {
+      renderForm(<Button type="reset">Limpar</Button>)
+      expect(screen.getByRole("button", { name: "Limpar" })).toHaveAttribute("type", "reset")
+    })
+
+    it("puts no type on the child when asChild renders a link", () => {
+      renderForm(
+        <Button asChild>
+          <a href="/x">link</a>
+        </Button>,
+      )
+      expect(screen.getByRole("link", { name: "link" })).not.toHaveAttribute("type")
+    })
   })
 
   it("renders as child with asChild (Slot)", () => {

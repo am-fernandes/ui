@@ -21,7 +21,8 @@ const meta: Meta<typeof Button> = {
           "- `loading` — exibe um spinner antes do conteúdo e desabilita o botão.",
           "- `disabled` — desabilita o botão.",
           "- `asChild` — renderiza o filho como elemento raiz (use com `<a>` ou `<Link>`).",
-          "- Repassa todos os atributos HTML de `<button>` (`onClick`, `type`, `aria-*`, etc).",
+          '- `type` — `"button"` por padrão: dentro de um `<form>` o botão não envia nada. Use `type="submit"` no botão que envia.',
+          "- Repassa os demais atributos HTML de `<button>` (`onClick`, `aria-*`, etc).",
           "",
           "**Exemplo:**",
           "",
@@ -58,6 +59,16 @@ const meta: Meta<typeof Button> = {
       control: "boolean",
       description: "Desabilita o botão.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
+    type: {
+      control: "inline-radio",
+      options: ["button", "submit", "reset"],
+      description:
+        'Tipo nativo do botão. O padrão é `"button"`, que não envia o formulário em que estiver.',
+      table: {
+        type: { summary: "'button' | 'submit' | 'reset'" },
+        defaultValue: { summary: "'button'" },
+      },
     },
     asChild: {
       control: "boolean",
@@ -282,6 +293,49 @@ export const AsChild: Story = {
           "`asChild` faz o botão renderizar como o filho (aqui um `<a>`), preservando estilos. Útil para integrar com bibliotecas de roteamento (Next.js `Link`, etc.).",
       },
     },
+  },
+}
+
+function FormExample() {
+  const [log, setLog] = useState<string[]>([])
+  return (
+    <form
+      className="flex flex-col items-start gap-3"
+      onSubmit={(event) => {
+        event.preventDefault()
+        setLog((current) => [...current, "enviado"])
+      }}
+    >
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => setLog((current) => [...current, "cancelado"])}>
+          Cancelar
+        </Button>
+        <Button type="submit">Salvar</Button>
+      </div>
+      <output className="text-sm" data-testid="log">
+        {log.length ? log.join(", ") : "nada ainda"}
+      </output>
+    </form>
+  )
+}
+
+export const InForm: Story = {
+  render: () => <FormExample />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'O `Button` nasce com `type="button"`: dentro de um `<form>`, "Cancelar" só dispara o próprio `onClick`. Quem envia o formulário recebe `type="submit"`.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole("button", { name: "Cancelar" }))
+    await expect(canvas.getByTestId("log")).toHaveTextContent("cancelado")
+    await expect(canvas.getByTestId("log")).not.toHaveTextContent("enviado")
+    await userEvent.click(canvas.getByRole("button", { name: "Salvar" }))
+    await expect(canvas.getByTestId("log")).toHaveTextContent("cancelado, enviado")
   },
 }
 
