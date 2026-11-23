@@ -50,24 +50,34 @@ describe("IconButton", () => {
     expect(screen.getByRole("button")).toHaveClass("bg-secondary")
   })
 
-  it("is a square with no padding, sized by `size`", () => {
+  // The measured squares (32, 40 and 44px) are asserted in a real browser by
+  // tests/e2e/control-size.spec.ts.
+  it("is a square of the shared control height, with no padding", () => {
     const { rerender } = render(<IconButton icon={<Bell />} label="A" />)
     const button = () => screen.getByRole("button")
-    expect(button()).toHaveClass("size-10", "p-0")
+    expect(button()).toHaveClass("size-control-md", "p-0")
+    // The square replaces the height and the padding of the Button it is built on.
+    expect(button()).not.toHaveClass("h-control-md")
     expect(button()).not.toHaveClass("px-3")
-    expect(button()).not.toHaveClass("py-2.5")
 
     rerender(<IconButton icon={<Bell />} label="A" size="sm" />)
-    expect(button()).toHaveClass("size-8")
+    expect(button()).toHaveClass("size-control-sm")
+    expect(button()).not.toHaveClass("px-2.5")
 
     rerender(<IconButton icon={<Bell />} label="A" size="lg" />)
-    expect(button()).toHaveClass("size-11", "[&_svg]:size-5")
+    expect(button()).toHaveClass("size-control-lg", "[&_svg]:size-5")
     expect(button()).not.toHaveClass("[&_svg]:size-4")
   })
 
   it("merges className", () => {
     render(<IconButton icon={<Bell />} label="A" className="rounded-full" />)
-    expect(screen.getByRole("button")).toHaveClass("rounded-full", "size-10")
+    expect(screen.getByRole("button")).toHaveClass("rounded-full", "size-control-md")
+  })
+
+  it("lets a className size replace the square", () => {
+    render(<IconButton icon={<Bell />} label="A" className="size-6" />)
+    expect(screen.getByRole("button")).toHaveClass("size-6")
+    expect(screen.getByRole("button")).not.toHaveClass("size-control-md")
   })
 
   it("fires onClick", async () => {

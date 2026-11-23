@@ -2,8 +2,14 @@ import { expect, test } from "@playwright/test"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
-/** The whole box of each control, border included. */
-const CONTROL_BOXES = ['[data-slot="button"]'].join(", ")
+/**
+ * The controls of each row of the story, by the `data-slot` of the element
+ * that is the whole box (border included), and how many of each a row has.
+ */
+const CONTROLS = [
+  { slot: "button", count: 6 },
+  { slot: "icon-button", count: 2, square: true },
+]
 
 const HEIGHTS = { sm: 32, md: 40, lg: 44 } as const
 
@@ -16,25 +22,30 @@ test.describe("Control size", () => {
       const row = page.getByTestId(`row-${size}`)
       await expect(row).toBeVisible({ timeout: 15_000 })
 
-      const boxes = await row.locator(CONTROL_BOXES).evaluateAll((elements) =>
-        elements.map((element) => {
-          const rect = element.getBoundingClientRect()
-          return {
-            name: `${element.getAttribute("data-slot")} "${(
-              element.getAttribute("aria-label") ?? element.textContent ?? ""
-            ).trim()}"`,
-            height: rect.height,
-            centre: rect.top + rect.height / 2,
-          }
-        }),
-      )
-
-      // One box per control of the row: nothing wrapped to a second line.
-      expect(boxes.length).toBeGreaterThanOrEqual(6)
-      for (const box of boxes) {
-        expect(box.height, `height of ${box.name}`).toBe(height)
-        expect(box.centre, `centre of ${box.name}`).toBe(boxes[0]?.centre)
+      const centres: number[] = []
+      for (const control of CONTROLS) {
+        const boxes = await row.locator(`[data-slot="${control.slot}"]`).evaluateAll((elements) =>
+          elements.map((element) => {
+            const rect = element.getBoundingClientRect()
+            const label = element.getAttribute("aria-label") ?? element.textContent ?? ""
+            return {
+              name: `${element.getAttribute("data-slot")} "${label.trim()}"`,
+              width: rect.width,
+              height: rect.height,
+              centre: rect.top + rect.height / 2,
+            }
+          }),
+        )
+        expect(boxes, `${control.slot} in the ${size} row`).toHaveLength(control.count)
+        for (const box of boxes) {
+          expect(box.height, `height of ${box.name}`).toBe(height)
+          if (control.square) expect(box.width, `width of ${box.name}`).toBe(height)
+          centres.push(box.centre)
+        }
       }
+
+      // One line: every box is centred on the same y.
+      expect(new Set(centres).size, `centres: ${centres.join(", ")}`).toBe(1)
     })
   }
 })

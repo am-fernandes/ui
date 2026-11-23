@@ -437,7 +437,7 @@ describe("Pagination", () => {
     it("uses 40px controls by default and 32px with size=sm", () => {
       const { rerender, onPageChange } = renderPagination({ page: 5, pageSizeOptions: [10] })
       expect(screen.getByRole("button", { name: "Página 5" })).toHaveClass("h-10", "min-w-10")
-      expect(screen.getByRole("button", { name: "Página anterior" })).toHaveClass("size-10")
+      expect(screen.getByRole("button", { name: "Página anterior" })).toHaveClass("size-control-md")
       expect(screen.getByRole("combobox")).toHaveClass("h-9")
       rerender(
         <Pagination
@@ -453,7 +453,7 @@ describe("Pagination", () => {
         "min-w-8",
         "text-xs",
       )
-      expect(screen.getByRole("button", { name: "Página anterior" })).toHaveClass("size-8")
+      expect(screen.getByRole("button", { name: "Página anterior" })).toHaveClass("size-control-sm")
       expect(screen.getByRole("combobox")).toHaveClass("h-8")
       const ellipsis = document.querySelector('[data-slot="pagination-ellipsis"]')
       expect(ellipsis).toHaveClass("h-8")

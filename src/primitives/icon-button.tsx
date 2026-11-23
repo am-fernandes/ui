@@ -5,18 +5,15 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Tooltip, type TooltipProps } from "../overlays/tooltip"
+import { type ControlSize, controlSquare } from "./_internal/control-size"
 import { buttonVariants } from "./button"
 
-const iconButtonSizes = {
-  /** 32px — dense rows (table actions, menu footers). */
-  sm: "size-8",
-  /** 40px — same height as `Button`, so they line up side by side. */
-  md: "size-10",
-  /** 44px — touch target. */
-  lg: "size-11 [&_svg]:size-5",
-} as const
-
-export type IconButtonSize = keyof typeof iconButtonSizes
+/**
+ * `sm` 32px — dense rows (table actions, menu footers); `md` 40px; `lg` 44px —
+ * touch target. A square of the shared control height, so it lines up with a
+ * `Button` or an `Input` of the same size.
+ */
+export type IconButtonSize = ControlSize
 
 export type IconButtonVariant = "default" | "destructive" | "outline" | "secondary" | "ghost"
 
@@ -101,7 +98,13 @@ function IconButton({
       aria-label={label}
       aria-busy={loading || undefined}
       disabled={loading || disabled}
-      className={cn(buttonVariants({ variant }), "p-0", iconButtonSizes[size], className)}
+      className={cn(
+        buttonVariants({ variant, size }),
+        "p-0",
+        controlSquare[size],
+        size === "lg" && "[&_svg]:size-5",
+        className,
+      )}
       {...props}
     >
       {loading ? <Loader2 className="animate-spin" aria-hidden="true" /> : icon}

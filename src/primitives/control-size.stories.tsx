@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { Pencil, Trash2 } from "lucide-react"
 
 import type { ControlSize } from "./_internal/control-size"
 import { Button } from "./button"
+import { IconButton } from "./icon-button"
 
 const meta: Meta = {
   title: "Primitives/Control Size",
@@ -40,6 +42,8 @@ function Row({ size }: { size: ControlSize }) {
             {variant}
           </Button>
         ))}
+        <IconButton icon={<Pencil />} label="Editar" size={size} variant="outline" />
+        <IconButton icon={<Trash2 />} label="Excluir" size={size} />
       </div>
     </div>
   )
