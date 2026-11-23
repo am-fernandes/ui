@@ -3,8 +3,10 @@
 import { X } from "lucide-react"
 import type * as React from "react"
 
+import { type RenderLink, type RenderLinkProps, renderLinkElement } from "@/lib/render-link"
 import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
+import { ignoreActivation } from "./_internal/soft-disabled"
 
 export type TokenColor =
   | "gray"
@@ -87,13 +89,22 @@ export interface TokenProps {
   icon?: React.ComponentType<{ className?: string }>
   /** Renders an × button ("Remover {label}"). */
   onRemove?: () => void
-  /** Makes the whole token a button. */
-  onClick?: () => void
+  /**
+   * Makes the whole token a button; with `href`, runs on the link's click.
+   * Receives the event: `event.preventDefault()` stops the link.
+   */
+  onClick?: (event: React.MouseEvent<HTMLElement>) => void
   /**
    * Makes the whole token a link. Unsafe protocols (`javascript:`…) are
    * dropped and the token renders as plain text (or a button with `onClick`).
    */
   href?: string
+  /**
+   * Renders the link with your router's `<Link>`, so it navigates without
+   * reloading the page: `renderLink={({ href, ...props }) => <Link to={href} {...props} />}`.
+   * Pass every prop on: they carry the classes and the click handler.
+   */
+  renderLink?: RenderLink
   /** Link target. `"_blank"` also sets `rel="noopener noreferrer"`. */
   target?: React.HTMLAttributeAnchorTarget
   disabled?: boolean
@@ -119,6 +130,7 @@ function Token({
   onClick,
   href,
   target,
+  renderLink,
   disabled = false,
   labels,
   className,
@@ -146,27 +158,33 @@ function Token({
   )
 
   let content: React.ReactNode
-  if (hrefIsSafe) {
+  if (hrefIsSafe && disabled) {
+    // Nowhere to go: a link with no href, still announced as a link,
+    // unavailable. Never through `renderLink`: a router link needs an href.
     content = (
       <a
         data-slot="token-action"
-        href={disabled ? undefined : href}
-        target={target}
-        rel={target === "_blank" ? "noopener noreferrer" : undefined}
-        role={disabled ? "link" : undefined}
-        aria-disabled={disabled ? "true" : undefined}
-        onClick={(event) => {
-          if (disabled) {
-            event.preventDefault()
-            return
-          }
-          onClick?.()
-        }}
+        // biome-ignore lint/a11y/useSemanticElements: without an href an <a> has no role of its own.
+        role="link"
+        aria-disabled="true"
+        // biome-ignore lint/a11y/useValidAnchor: a disabled link has no href; the click only stops here.
+        onClick={ignoreActivation}
         className={actionClass}
       >
         {label}
       </a>
     )
+  } else if (hrefIsSafe) {
+    const linkProps: RenderLinkProps & { "data-slot": string } = {
+      "data-slot": "token-action",
+      href,
+      target,
+      rel: target === "_blank" ? "noopener noreferrer" : undefined,
+      onClick,
+      className: actionClass,
+      children: label,
+    }
+    content = renderLinkElement(renderLink, linkProps)
   } else if (onClick) {
     content = (
       <button

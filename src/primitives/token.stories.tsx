@@ -3,6 +3,7 @@ import { expect, userEvent, within } from "@storybook/test"
 import { Building2, CalendarDays, MapPin, Tag } from "lucide-react"
 import * as React from "react"
 
+import type { RenderLinkProps } from "@/lib/render-link"
 import { Badge } from "./badge"
 import { Token, type TokenColor } from "./token"
 
@@ -30,6 +31,7 @@ const meta = {
           "",
           "- **Token × Badge** — o `Badge` é um rótulo de **status** em cor sólida (“Aprovado”, “Pendente”). O `Token` é um chip **claro** de categoria, filtro ou seleção, que dá para clicar e remover.",
           "- `onRemove` mostra o × (nome acessível “Remover {label}”). `onClick` torna o chip inteiro um botão; `href`, um link.",
+          "- **Roteador:** `renderLink` troca o `<a>` pelo `<Link>` do seu roteador, sem recarregar a página: `renderLink={({ href, ...props }) => <Link to={href} {...props} />}`. O `onClick` recebe o evento, então `event.preventDefault()` também segura o link.",
           "- O clique e o × são irmãos, nunca aninhados: a área clicável cobre o chip todo e o × fica por cima.",
           "- Cores: `gray` (padrão), `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `purple`, `pink`. Texto ≥ 7,3:1 sobre o fundo.",
         ].join("\n"),
@@ -139,6 +141,47 @@ export const ClickableAndRemovable: Story = {
 
 export const Link: Story = {
   args: { label: "Proposta #1042", href: "#proposta-1042", color: "blue" },
+}
+
+function RouterLinkDemo() {
+  const [path, setPath] = React.useState("/propostas")
+  // Stands in for a router's <Link>: it navigates in the app, with no reload.
+  const renderLink = ({ href, onClick, ...props }: RenderLinkProps) => (
+    <a
+      {...props}
+      href={href}
+      data-router-link=""
+      onClick={(event) => {
+        onClick?.(event)
+        if (event.defaultPrevented) return
+        event.preventDefault()
+        setPath(href)
+      }}
+    />
+  )
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap gap-2">
+        <Token label="Proposta #1042" href="/propostas/1042" color="blue" renderLink={renderLink} />
+        <Token label="Proposta #1043" href="/propostas/1043" color="blue" renderLink={renderLink} />
+      </div>
+      <p className="text-sm" data-testid="router-path">
+        Rota atual: {path}
+      </p>
+    </div>
+  )
+}
+
+export const RouterLink: Story = {
+  render: () => <RouterLinkDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com `renderLink`, o link é o do roteador: navega dentro da aplicação, sem recarregar a página e sem perder um formulário aberto.",
+      },
+    },
+  },
 }
 
 export const Disabled: Story = {

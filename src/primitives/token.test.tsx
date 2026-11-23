@@ -4,6 +4,7 @@ import { MapPin } from "lucide-react"
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
+import type { RenderLinkProps } from "@/lib/render-link"
 import { Token, type TokenColor, defaultTokenLabels } from "./token"
 
 const COLORS: TokenColor[] = [
@@ -131,6 +132,7 @@ describe("Token", () => {
       )
       await userEvent.click(action)
       expect(onClick).toHaveBeenCalledTimes(1)
+      expect(onClick.mock.calls[0]?.[0]?.type).toBe("click")
     })
   })
 
@@ -144,6 +146,46 @@ describe("Token", () => {
       expect(link).not.toHaveAttribute("rel")
       await userEvent.click(link)
       expect(onClick).toHaveBeenCalledTimes(1)
+    })
+
+    // A router link needs the event to stop the full page load, and its own
+    // <Link> to navigate: href="/propostas/1042" reloaded the page and lost
+    // the form that was open.
+    it("hands the click event to onClick, so a router can prevent the load", async () => {
+      const onClick = vi.fn((event: React.MouseEvent) => event.preventDefault())
+      render(<Token label="Proposta 1042" href="/propostas/1042" onClick={onClick} />)
+      await userEvent.click(screen.getByRole("link", { name: "Proposta 1042" }))
+      const event = onClick.mock.calls[0]?.[0]
+      expect(event?.type).toBe("click")
+      expect(event?.defaultPrevented).toBe(true)
+    })
+
+    it("renders the link through renderLink", async () => {
+      const renderLink = vi.fn(({ href, ...props }: RenderLinkProps) => (
+        <a data-router-link="" data-to={href} href={href} {...props} />
+      ))
+      render(
+        <Token
+          label="Proposta 1042"
+          href="/propostas/1042"
+          target="_blank"
+          renderLink={renderLink}
+        />,
+      )
+      const link = screen.getByRole("link", { name: "Proposta 1042" })
+      expect(link).toHaveAttribute("data-router-link")
+      expect(link).toHaveAttribute("data-to", "/propostas/1042")
+      // What the lib gives the link still arrives: slot, classes, rel.
+      expect(link).toHaveAttribute("data-slot", "token-action")
+      expect(link).toHaveAttribute("rel", "noopener noreferrer")
+      expect(link).toHaveClass("after:inset-0")
+    })
+
+    it("does not render a disabled link through renderLink: there is nowhere to go", () => {
+      const renderLink = vi.fn((props: RenderLinkProps) => <a {...props} />)
+      render(<Token label="Proposta" href="/propostas/1" disabled renderLink={renderLink} />)
+      expect(renderLink).not.toHaveBeenCalled()
+      expect(screen.getByRole("link", { name: "Proposta" })).not.toHaveAttribute("href")
     })
 
     it("adds rel=noopener for target=_blank", () => {

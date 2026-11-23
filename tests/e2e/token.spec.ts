@@ -51,6 +51,14 @@ test.describe("Token", () => {
     await expect(page).toHaveURL(/#proposta-1042$/)
   })
 
+  test("renderLink navigates in the app, without a page load", async ({ page }) => {
+    await gotoToken(page, "primitives-token--router-link")
+    const before = page.url()
+    await page.getByRole("link", { name: "Proposta #1043" }).click()
+    await expect(page.getByTestId("router-path")).toHaveText("Rota atual: /propostas/1043")
+    expect(page.url()).toBe(before)
+  })
+
   test("sizes: 24px (sm) and 28px (md) tall", async ({ page }) => {
     await gotoToken(page, "primitives-token--sizes")
     const small = await page.locator('[data-slot="token"][data-size="sm"]').boundingBox()
