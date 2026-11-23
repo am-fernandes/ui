@@ -12,7 +12,10 @@ const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
  */
 async function open(page: Page, id: string) {
   await page.goto(story(id))
-  await expect(page.locator("#storybook-root > *").first()).toBeVisible({ timeout: 15_000 })
+  // Any visible element: the story's own root may draw no box (`display: contents`).
+  await expect(page.locator("#storybook-root *:visible").first()).toBeVisible({
+    timeout: 15_000,
+  })
 }
 
 /**
@@ -585,6 +588,42 @@ test.describe("SegmentedControl", () => {
     await open(page, "primitives-segmentedcontrol--disabled-option")
     expect(await effectiveOpacity(radio("Mês"))).toBe(0.5)
     expect(await effectiveOpacity(radio("Dia"))).toBe(1)
+
+    // With a label and a description: the field dims, once, all of it.
+    await open(page, "primitives-segmentedcontrol--as-field")
+    const field = page.getByRole("radiogroup", { name: "Período (desabilitado)" })
+    expect(await effectiveOpacity(field.getByRole("radio", { name: "Dia" }))).toBe(0.5)
+    expect(await effectiveOpacity(page.getByText("Período (desabilitado)"))).toBe(0.5)
+  })
+
+  test("as a field: the drawn label names the group, its messages describe it", async ({
+    page,
+  }) => {
+    await open(page, "primitives-segmentedcontrol--as-field")
+    const period = page.getByRole("radiogroup", { name: "Período", exact: true })
+    await expect(period).toHaveAccessibleDescription("Afeta o gráfico e a tabela.")
+    const mode = page.getByRole("radiogroup", { name: "Modalidade" })
+    await expect(mode).toHaveAccessibleDescription("Escolha a modalidade.")
+    await expect(mode).toHaveAttribute("aria-invalid", "true")
+    // The text of the label beside the track sits on its centre line.
+    const textCentre = await page.getByText("Modalidade", { exact: true }).evaluate((el) => {
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      const line = range.getClientRects()[0]
+      return line ? line.top + line.height / 2 : 0
+    })
+    const track = await mode.boundingBox()
+    expect(Math.abs(textCentre - ((track?.y ?? 0) + (track?.height ?? 0) / 2))).toBeLessThanOrEqual(
+      1,
+    )
+  })
+
+  test("alone in a row, the control lays out as before: no box around it", async ({ page }) => {
+    await open(page, "primitives-segmentedcontrol--default")
+    const display = await page
+      .locator('[data-slot="segmented-control-field"]')
+      .evaluate((el) => getComputedStyle(el).display)
+    expect(display).toBe("contents")
   })
 
   test("arrows move and select in a real browser; one Tab stop", async ({ page }) => {

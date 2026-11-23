@@ -7,7 +7,10 @@ import { cn } from "@/lib/utils"
 import { Tooltip } from "../overlays/tooltip"
 import { useComposedRefs } from "./_internal/compose-refs"
 import { type ControlSize, controlHeight } from "./_internal/control-size"
+import type { LabelPosition } from "./_internal/field-shell"
+import { Label } from "./_internal/label"
 import { useControllableState } from "./_internal/use-controllable-state"
+import { useFieldIds } from "./_internal/use-field-ids"
 import { useFormReset } from "./_internal/use-form-reset"
 
 // Horizontal padding and text of a segment. The height comes from the track
@@ -16,6 +19,14 @@ const segmentSize: Record<ControlSize, { text: string; iconOnly: string }> = {
   sm: { text: "px-2.5 text-xs", iconOnly: "px-1.5" },
   md: { text: "px-3 text-sm", iconOnly: "px-2" },
   lg: { text: "px-4 text-sm", iconOnly: "px-2.5" },
+}
+
+// A label beside the track (`labelPosition="left"`): its 20px line centred
+// on the track of the size.
+const labelBesideTrack: Record<ControlSize, string> = {
+  sm: "pt-1.5",
+  md: "pt-2.5",
+  lg: "pt-3",
 }
 
 const ARROW_KEYS = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"])
@@ -29,18 +40,31 @@ export interface SegmentedControlOption {
   disabled?: boolean
 }
 
-export interface SegmentedControlProps {
+export interface SegmentedControlProps
+  extends Omit<
+    React.HTMLAttributes<HTMLDivElement>,
+    "defaultValue" | "onChange" | "children" | "dir"
+  > {
   /** 2–5 mutually exclusive options, always visible. */
   options: SegmentedControlOption[]
   value?: string
   defaultValue?: string
   onValueChange?: (value: string) => void
   /**
-   * Accessible name of the group ("Visualização", "Período"). Not rendered —
-   * the options are expected to make sense on their own next to the content
-   * they control.
+   * Name of the group ("Visualização", "Período"). By default it is not drawn
+   * (`labelPosition="hidden"`): the options are expected to make sense on
+   * their own next to the content they control. In a form, draw it with
+   * `labelPosition="up"` or `"left"`.
    */
   label: string
+  /** Where the label goes. @default "hidden" */
+  labelPosition?: LabelPosition
+  /** Help text under the control, read with the group. */
+  description?: React.ReactNode
+  /** Error message under the control: marks the group invalid and is read with it. */
+  error?: string
+  /** Classes for the field around the control, label and messages. */
+  fieldClassName?: string
   /**
    * `sm` 32px, `md` 40px, `lg` 44px: the height of the whole track, the same
    * as a `Button` or an `Input` of that size. @default "md"
@@ -74,6 +98,12 @@ function SegmentedControl({
   defaultValue,
   onValueChange,
   label,
+  labelPosition = "hidden",
+  description,
+  error,
+  fieldClassName,
+  id,
+  "aria-describedby": describedBy,
   size = "md",
   fill = false,
   iconOnly = false,
@@ -82,7 +112,17 @@ function SegmentedControl({
   required,
   className,
   ref,
+  ...props
 }: SegmentedControlProps) {
+  const ids = useFieldIds(id)
+  const hasDescription = description != null && description !== ""
+  const hasError = error != null && error !== ""
+  const showLabel = labelPosition !== "hidden"
+  // Nothing drawn around the control: the field takes no box of its own
+  // (`contents`), so the control sits in its parent's layout as if alone (a
+  // toolbar, `ml-auto` in its `className`) and still does when an error
+  // shows up later, with no remount.
+  const drawsSomething = showLabel || hasDescription || hasError
   // `null`: no segment chosen (Radix takes `undefined` as "uncontrolled").
   // Going back to it on a reset is not reported: `onValueChange` only ever
   // receives an option.
@@ -125,14 +165,23 @@ function SegmentedControl({
     }
   }, [])
 
-  return (
+  const control = (
     <RadioGroupPrimitive.Root
+      {...props}
+      id={ids.controlId}
       onKeyDownCapture={(event) => {
         if (ARROW_KEYS.has(event.key)) lastArrowAt.current = performance.now()
       }}
       ref={composedRef}
       data-slot="segmented-control"
-      aria-label={label}
+      // Drawn, the label names the group; hidden, it is the group's name.
+      aria-label={showLabel ? undefined : label}
+      aria-labelledby={showLabel ? ids.labelId : props["aria-labelledby"]}
+      aria-describedby={ids.describedBy(
+        { description: hasDescription, error: hasError },
+        describedBy,
+      )}
+      aria-invalid={hasError ? true : undefined}
       value={value}
       onValueChange={setValue}
       disabled={disabled}
@@ -146,7 +195,9 @@ function SegmentedControl({
         "items-stretch gap-1 rounded-element bg-muted p-1 text-muted-foreground",
         controlHeight[size],
         fill ? "flex w-full" : "inline-flex max-w-full",
-        disabled && "opacity-50",
+        // Disabled dims once: here when the control is alone, on the field
+        // when it has a label or messages.
+        disabled && !drawsSomething && "opacity-50",
         className,
       )}
     >
@@ -193,6 +244,50 @@ function SegmentedControl({
         )
       })}
     </RadioGroupPrimitive.Root>
+  )
+
+  return (
+    <div
+      data-slot="segmented-control-field"
+      data-label-position={labelPosition}
+      className={cn(
+        !drawsSomething && "contents",
+        drawsSomething &&
+          (labelPosition === "left" ? "flex items-start gap-3" : "flex flex-col gap-1.5"),
+        drawsSomething && (fill ? "w-full" : "max-w-full"),
+        disabled && drawsSomething && "opacity-50",
+        fieldClassName,
+      )}
+    >
+      {showLabel ? (
+        <Label
+          as="span"
+          id={ids.labelId}
+          required={required}
+          className={cn(labelPosition === "left" && cn("shrink-0", labelBesideTrack[size]))}
+        >
+          {label}
+        </Label>
+      ) : null}
+      <div
+        className={cn(
+          drawsSomething ? "flex min-w-0 flex-col gap-1.5" : "contents",
+          drawsSomething && fill && "w-full",
+        )}
+      >
+        {control}
+        {hasDescription ? (
+          <p id={ids.descriptionId} className="text-xs text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
+        {hasError ? (
+          <p id={ids.errorId} role="alert" className="text-xs text-destructive-text">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    </div>
   )
 }
 

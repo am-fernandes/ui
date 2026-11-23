@@ -188,11 +188,9 @@ function FormExample() {
         setSent(String(new FormData(event.currentTarget).get("pessoa")))
       }}
     >
-      <span className="text-sm font-medium" aria-hidden="true">
-        Tipo de cliente
-      </span>
       <SegmentedControl
         label="Tipo de cliente"
+        labelPosition="up"
         name="pessoa"
         options={[
           { value: "pf", label: "Pessoa física" },
@@ -211,7 +209,47 @@ export const InForm: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Com `name`, a escolha vai junto quando o formulário é enviado.",
+        story:
+          'Com `name`, a escolha vai junto quando o formulário é enviado. `labelPosition="up"` desenha o rótulo, que nomeia o grupo.',
+      },
+    },
+  },
+}
+
+export const AsField: Story = {
+  render: () => (
+    <div className="flex w-96 flex-col gap-6">
+      <SegmentedControl
+        label="Período"
+        labelPosition="up"
+        description="Afeta o gráfico e a tabela."
+        options={periods}
+        defaultValue="semana"
+      />
+      <SegmentedControl
+        label="Modalidade"
+        labelPosition="left"
+        error="Escolha a modalidade."
+        options={[
+          { value: "venda", label: "Venda" },
+          { value: "locacao", label: "Locação" },
+        ]}
+      />
+      <SegmentedControl
+        label="Período (desabilitado)"
+        labelPosition="up"
+        description="Disponível depois de escolher o empreendimento."
+        options={periods}
+        defaultValue="dia"
+        disabled
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Como campo de formulário: `labelPosition` (`"up"`, `"left"` ou `"hidden"`, o padrão), `description` e `error`, ligados ao grupo por `aria-labelledby` e `aria-describedby`. Desabilitado, o campo inteiro fica a 50% uma vez.',
       },
     },
   },

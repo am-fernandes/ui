@@ -399,4 +399,67 @@ describe("SegmentedControl", () => {
       expect(new FormData(form).get("periodo")).toBe("dia")
     })
   })
+
+  // The API was closed: no id, aria-*, onBlur or data-*; the label was never
+  // drawn and there was no description or error, so a form drew its own label
+  // by hand with aria-hidden.
+  describe("as a form field", () => {
+    it("passes id, data-*, aria-* and handlers to the group", async () => {
+      const user = userEvent.setup()
+      const onBlur = vi.fn()
+      render(
+        <>
+          <SegmentedControl
+            label="Período"
+            options={options}
+            defaultValue="dia"
+            id="periodo"
+            data-testid="periodo"
+            aria-describedby="dica"
+            onBlur={onBlur}
+          />
+          <p id="dica">Afeta o gráfico.</p>
+          <button type="button">depois</button>
+        </>,
+      )
+      const group = screen.getByRole("radiogroup", { name: "Período" })
+      expect(group).toHaveAttribute("id", "periodo")
+      expect(group).toHaveAttribute("data-testid", "periodo")
+      expect(group).toHaveAccessibleDescription("Afeta o gráfico.")
+      await user.click(screen.getByRole("radio", { name: "Semana" }))
+      await user.click(screen.getByRole("button", { name: "depois" }))
+      expect(onBlur).toHaveBeenCalled()
+    })
+
+    it("keeps the label for screen readers only by default", () => {
+      render(<SegmentedControl label="Visualização" options={options} />)
+      expect(screen.getByRole("radiogroup", { name: "Visualização" })).toBeInTheDocument()
+      expect(screen.queryByText("Visualização")).not.toBeInTheDocument()
+    })
+
+    it("draws the label with labelPosition='up' and is named by it", () => {
+      render(<SegmentedControl label="Tipo de cliente" labelPosition="up" options={options} />)
+      const label = screen.getByText("Tipo de cliente")
+      const group = screen.getByRole("radiogroup", { name: "Tipo de cliente" })
+      expect(group).toHaveAttribute("aria-labelledby", label.id)
+      expect(group).not.toHaveAttribute("aria-label")
+    })
+
+    it("draws a description and an error, both describing the group", () => {
+      render(
+        <SegmentedControl
+          label="Período"
+          options={options}
+          description="Afeta o gráfico."
+          error="Escolha um período."
+          aria-describedby="extra"
+        />,
+      )
+      const group = screen.getByRole("radiogroup", { name: "Período" })
+      expect(group).toHaveAccessibleDescription(/Afeta o gráfico\. Escolha um período\./)
+      expect(group.getAttribute("aria-describedby")?.split(" ")).toContain("extra")
+      expect(group).toHaveAttribute("aria-invalid", "true")
+      expect(screen.getByRole("alert")).toHaveTextContent("Escolha um período.")
+    })
+  })
 })
