@@ -49,3 +49,39 @@ describe("Progress", () => {
     expect(indicator).toHaveStyle({ transform: "translateX(-100%)" })
   })
 })
+
+// `max` was ignored (value={3} max={7} drew 3%), and value={null} became 0:
+// there was no indeterminate state.
+describe("Progress max and indeterminate", () => {
+  const indicatorOf = () =>
+    screen.getByRole("progressbar").querySelector('[data-slot="progress-indicator"]') as HTMLElement
+
+  it("draws value / max: step 3 of 7 is 3/7 of the bar", () => {
+    render(<Progress value={3} max={7} aria-label="Etapas" />)
+    const bar = screen.getByRole("progressbar", { name: "Etapas" })
+    expect(bar).toHaveAttribute("aria-valuenow", "3")
+    expect(bar).toHaveAttribute("aria-valuemax", "7")
+    const shown = 100 - Number.parseFloat(/-([\d.]+)%/.exec(indicatorOf().style.transform)![1]!)
+    expect(shown).toBeCloseTo((3 / 7) * 100, 5)
+  })
+
+  it("clamps to max", () => {
+    render(<Progress value={9} max={7} aria-label="Etapas" />)
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "7")
+    expect(indicatorOf()).toHaveStyle({ transform: "translateX(-0%)" })
+  })
+
+  it.each([null, undefined])("value=%s is indeterminate", (value) => {
+    render(<Progress value={value} aria-label="Importando" />)
+    const bar = screen.getByRole("progressbar", { name: "Importando" })
+    expect(bar).toHaveAttribute("data-state", "indeterminate")
+    expect(bar).not.toHaveAttribute("aria-valuenow")
+    expect(indicatorOf()).toHaveAttribute("data-state", "indeterminate")
+    expect(indicatorOf().style.transform).toBe("")
+  })
+
+  it("value=0 is not indeterminate", () => {
+    render(<Progress value={0} aria-label="Envio" />)
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "0")
+  })
+})

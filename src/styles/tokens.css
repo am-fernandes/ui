@@ -604,3 +604,19 @@
   );
   border-color: inherit;
 }
+
+/* ---- Progress ----------------------------------------------------------------
+   Indeterminate bar (`value` null or undefined): a third of the track that
+   crosses it, from just outside the left edge to just outside the right. */
+@theme {
+  --animate-progress-indeterminate: progress-indeterminate 1.5s var(--ease-standard) infinite;
+
+  @keyframes progress-indeterminate {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(300%);
+    }
+  }
+}

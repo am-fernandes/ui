@@ -21,8 +21,8 @@ const meta: Meta<typeof Progress> = {
           "Barra de progresso linear. Use para indicar avanço de upload, processamento ou wizards.",
           "",
           "**Props principais:**",
-          "- `value: number` — progresso atual de 0 a 100.",
-          "- `max: number` — valor máximo. Default `100`.",
+          "- `value: number | null` — progresso atual, de 0 a `max`. `null` ou ausente: indeterminado (uma faixa que corre a barra).",
+          "- `max: number` — valor de “concluído”, por exemplo `7` na etapa 3 de 7. Default `100`.",
           "- Aceita demais props do `Radix Progress.Root` e do `<div>` nativo (`className`, `aria-label`, etc.).",
           "",
           "**Exemplo de uso:**",
@@ -75,4 +75,25 @@ export const Zero: Story = {
 
 export const Full: Story = {
   args: { value: 100 },
+}
+
+export const WithMax: Story = {
+  args: { value: 3, max: 7, "aria-label": "Etapa 3 de 7" },
+  parameters: {
+    docs: {
+      description: { story: "`max` muda a escala: `value={3} max={7}` preenche 3/7 da barra." },
+    },
+  },
+}
+
+export const Indeterminate: Story = {
+  args: { value: null, "aria-label": "Importando planilha" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Sem `value` (ou com `null`): indeterminado, para quando não se sabe quanto falta. Uma faixa corre a barra; com movimento reduzido ela fica parada no meio.",
+      },
+    },
+  },
 }

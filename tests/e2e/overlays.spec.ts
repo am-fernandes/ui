@@ -1444,6 +1444,38 @@ test.describe("Collapsible", () => {
   })
 })
 
+test.describe("Progress", () => {
+  // `max` was ignored: value={3} max={7} drew 3%.
+  test("value={3} max={7} fills 3/7 of the track", async ({ page }) => {
+    await page.goto(story("overlays-progress--with-max"))
+    const bar = page.getByRole("progressbar", { name: "Etapa 3 de 7" })
+    await expect(bar).toHaveAttribute("aria-valuemax", "7")
+    const track = (await bar.boundingBox())!
+    const indicator = await settledBox(bar.locator('[data-slot="progress-indicator"]'))
+    const filled = indicator.x + indicator.width - track.x
+    expect(filled / track.width).toBeCloseTo(3 / 7, 2)
+  })
+
+  // value={null} drew an empty bar: there was no indeterminate state.
+  test("without a value it is indeterminate: a segment moves across the track", async ({
+    page,
+  }) => {
+    await page.goto(story("overlays-progress--indeterminate"))
+    const bar = page.getByRole("progressbar", { name: "Importando planilha" })
+    await expect(bar).toHaveAttribute("data-state", "indeterminate")
+    await expect(bar).not.toHaveAttribute("aria-valuenow")
+    const indicator = bar.locator('[data-slot="progress-indicator"]')
+    const xs = new Set<number>()
+    for (let i = 0; i < 6; i++) {
+      xs.add(Math.round((await indicator.boundingBox())!.x))
+      await page.waitForTimeout(120)
+    }
+    expect(xs.size).toBeGreaterThan(1)
+    const track = (await bar.boundingBox())!
+    expect((await indicator.boundingBox())!.width).toBeCloseTo(track.width / 3, 0)
+  })
+})
+
 test.describe("IconButton", () => {
   test("shows its label as a tooltip on hover", async ({ page }) => {
     await gotoStory(page, "primitives-iconbutton--variants", "Excluir")
