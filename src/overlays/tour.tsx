@@ -238,7 +238,10 @@ function Tour({
             <div
               aria-hidden="true"
               data-slot="tour-spotlight"
-              className="pointer-events-none fixed z-(--z-overlay) rounded-element outline-[9999px] outline-solid outline-black/50"
+              // The page is dimmed by a huge translucent outline. Forced
+              // colours would make it opaque and hide the page: there it is
+              // a ring of the system highlight around the target instead.
+              className="pointer-events-none fixed z-(--z-overlay) rounded-element outline-[9999px] outline-solid outline-black/50 forced-colors:outline-2 forced-colors:outline-[Highlight]"
               style={{
                 top: box.top - SPOTLIGHT_PADDING,
                 left: box.left - SPOTLIGHT_PADDING,

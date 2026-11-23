@@ -122,6 +122,25 @@ test.describe("Tour", () => {
     await expect(page.getByRole("dialog")).toHaveAccessibleName("Cadastre um lead")
   })
 
+  // The spotlight dims the page with a 9999px outline at 50% black. Forced
+  // colours made that outline opaque: the whole page was covered.
+  test("in forced colours the spotlight is a ring around the target, not a cover", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ forcedColors: "active" })
+    await gotoTour(page)
+    await startTour(page)
+    const spotlight = page.locator('[data-slot="tour-spotlight"]')
+    await expect(spotlight).toBeAttached()
+    const outline = await spotlight.evaluate((el) => {
+      const s = getComputedStyle(el)
+      return { width: s.outlineWidth, style: s.outlineStyle }
+    })
+    expect(outline).toEqual({ width: "2px", style: "solid" })
+    // The rest of the page is still there to read.
+    await expect(page.getByRole("button", { name: "Exportar" })).toBeVisible()
+  })
+
   test("no spotlight when turned off", async ({ page }) => {
     await gotoTour(page, "overlays-tour--without-spotlight")
     await startTour(page)
