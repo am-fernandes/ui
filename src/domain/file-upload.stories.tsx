@@ -431,3 +431,38 @@ export const ExistingAttachments: Story = {
     },
   },
 }
+
+export const NativeForm: Story = {
+  render: () => {
+    const [sent, setSent] = useState<string | null>(null)
+    return (
+      <form
+        className="flex w-[460px] flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault()
+          const names = new FormData(e.currentTarget)
+            .getAll("anexos")
+            .map((entry) => (entry instanceof File ? entry.name : String(entry)))
+            .filter((entry) => entry !== "")
+          setSent(names.length > 0 ? names.join(", ") : "(nenhum arquivo)")
+        }}
+      >
+        <FileUpload multiple name="anexos" required label="Anexar documentos" />
+        <div className="flex items-center gap-3">
+          <Button type="submit">Enviar</Button>
+          <output data-testid="form-data" className="text-sm text-muted-foreground">
+            {sent ?? ""}
+          </output>
+        </div>
+      </form>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Num `<form>` nativo, `name` faz o `FormData` receber os arquivos da lista e `required` impede o envio com a lista vazia: o aviso aparece embaixo da dropzone e o foco vai para ela. `id` vai para a dropzone e `ref` aponta para ela.",
+      },
+    },
+  },
+}

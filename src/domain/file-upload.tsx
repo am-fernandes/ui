@@ -113,6 +113,10 @@ export interface FileUploadLabels {
   uploadFailed?: string
   /** Accessible name of the progress bar of an item being sent. */
   uploadProgress?: (fileName: string) => string
+  /** Added to the dropzone's accessible name when `required` (after a visible `*`). */
+  required?: string
+  /** Shown, and announced, when a form is sent with a `required` field still empty. */
+  requiredError?: string
   /** Part of the default hint that tells the size limit; `limit` is formatted. */
   maxSizeHint?: (limit: string) => string
   /**
@@ -164,6 +168,8 @@ export const defaultFileUploadLabels: ResolvedFileUploadLabels = {
   uploading: (progress) => (progress == null ? "Enviando…" : `Enviando… ${Math.round(progress)}%`),
   uploadFailed: "Falha no envio",
   uploadProgress: (fileName) => `Envio de ${fileName}`,
+  required: "obrigatório",
+  requiredError: "Selecione um arquivo.",
   maxSizeHint: (limit) => `até ${limit}`,
   sizeUnits: { bytes: "B", kilobytes: "KB", megabytes: "MB", gigabytes: "GB" },
 }
@@ -225,6 +231,22 @@ export interface FileUploadProps {
   downloadable?: boolean
   /** Override individual UI strings. Defaults are pt-BR. */
   labels?: Partial<FileUploadLabels>
+  /** `id` of the dropzone button, for a `<label htmlFor>` or a link to the field. */
+  id?: string
+  /**
+   * Name of the field in a native form: a hidden `<input type="file">`
+   * carries the files of the list, so `FormData` gets them under this name.
+   * `items` are not sent: they are already on the server.
+   */
+  name?: string
+  /**
+   * The list cannot be empty (chosen files or `items`). A native form is not
+   * sent while it is: the message in `labels.requiredError` shows under the
+   * dropzone and the focus goes to it.
+   */
+  required?: boolean
+  /** The dropzone button: it takes the focus (`ref.current.focus()`), as React Hook Form does on an error. */
+  ref?: React.Ref<HTMLButtonElement>
 }
 
 function normalizeAccept(accept?: string | string[]): string | undefined {
@@ -312,6 +334,10 @@ function FileUpload({
   removable = true,
   downloadable = false,
   labels,
+  id,
+  name,
+  required = false,
+  ref,
 }: FileUploadProps) {
   const mergedLabels: ResolvedFileUploadLabels = { ...defaultFileUploadLabels, ...labels }
   const resolvedLabel: React.ReactNode =
@@ -322,6 +348,7 @@ function FileUpload({
   const hintId = `${baseId}-hint`
   const errorId = `${baseId}-error`
   const rejectionsId = `${baseId}-rejections`
+  const requiredErrorId = `${baseId}-required`
   const [internal, setInternal] = React.useState<File[]>([])
   // What the last attempt refused: shown until the next one.
   const [rejected, setRejected] = React.useState<FileUploadRejection[]>([])
@@ -331,6 +358,33 @@ function FileUpload({
 
   const isControlled = value !== undefined
   const files = isControlled ? value : internal
+  const isEmpty = files.length + items.length === 0
+  // A native form was sent while the required list was empty. The message
+  // goes away as soon as something is in the list.
+  const [missing, setMissing] = React.useState(false)
+  if (missing && !isEmpty) setMissing(false)
+  const showMissing = required && missing && isEmpty
+
+  const dropzoneRef = React.useRef<HTMLButtonElement | null>(null)
+  const setDropzoneRef = React.useCallback(
+    (node: HTMLButtonElement | null) => {
+      dropzoneRef.current = node
+      if (typeof ref === "function") ref(node)
+      else if (ref != null) (ref as React.RefObject<HTMLButtonElement | null>).current = node
+    },
+    [ref],
+  )
+
+  // The files a native form sends: the browser only submits what an
+  // <input type="file"> holds, so the list is copied into one.
+  const formInputRef = React.useRef<HTMLInputElement>(null)
+  React.useEffect(() => {
+    const input = formInputRef.current
+    if (input == null || typeof DataTransfer === "undefined") return
+    const transfer = new DataTransfer()
+    for (const file of files) transfer.items.add(file)
+    input.files = transfer.files
+  }, [files])
 
   const setFiles = React.useCallback(
     (next: File[]) => {
@@ -405,14 +459,15 @@ function FileUpload({
   const renderedDescription =
     description !== undefined ? description : defaultDescription(mergedLabels, accept, maxSize)
 
-  const hasError = error != null && error !== ""
+  const hasError = (error != null && error !== "") || showMissing
   const hasHint = renderedDescription != null && renderedDescription !== ""
   const hasRejections = showRejections && rejected.length > 0
   // The label names the dropzone; the type and size hint, the error and the
   // reasons of the last refusal describe it, so a screen reader hears them.
   const describedBy = [
     hasHint ? hintId : null,
-    hasError ? errorId : null,
+    error != null && error !== "" ? errorId : null,
+    showMissing ? requiredErrorId : null,
     hasRejections ? rejectionsId : null,
   ]
     .filter((id) => id !== null)
@@ -426,9 +481,11 @@ function FileUpload({
   }
 
   return (
-    <div className={cn("flex flex-col gap-3", className)} data-slot="file-upload">
+    <div className={cn("relative flex flex-col gap-3", className)} data-slot="file-upload">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <button
+          ref={setDropzoneRef}
+          id={id}
           type="button"
           onClick={openPicker}
           onDragOver={(e) => {
@@ -458,6 +515,18 @@ function FileUpload({
           <UploadCloud className="size-6 text-muted-foreground" aria-hidden />
           <span id={labelId} className="font-medium">
             {resolvedLabel}
+            {required ? (
+              <>
+                <span
+                  aria-hidden
+                  data-slot="file-upload-required"
+                  className="ml-0.5 text-destructive-text"
+                >
+                  *
+                </span>
+                <span className="sr-only"> ({mergedLabels.required})</span>
+              </>
+            ) : null}
           </span>
           {hasHint ? (
             <span id={hintId} className="text-xs text-muted-foreground">
@@ -478,9 +547,14 @@ function FileUpload({
           </Button>
         ) : null}
       </div>
-      {hasError ? (
+      {error != null && error !== "" ? (
         <p id={errorId} role="alert" className="text-xs text-destructive-text">
           {error}
+        </p>
+      ) : null}
+      {showMissing ? (
+        <p id={requiredErrorId} role="alert" className="text-xs text-destructive-text">
+          {mergedLabels.requiredError}
         </p>
       ) : null}
       {hasRejections ? (
@@ -511,12 +585,33 @@ function FileUpload({
         accept={normalizeAccept(accept)}
         multiple={multiple}
         disabled={disabled}
+        // Native validation sees an empty required list here. The browser's
+        // own bubble would point at this hidden input: the message shows
+        // under the dropzone instead, and the dropzone takes the focus.
+        required={required && isEmpty}
+        onInvalid={(e) => {
+          e.preventDefault()
+          setMissing(true)
+          dropzoneRef.current?.focus()
+        }}
         className="sr-only"
         onChange={(e) => {
           ingest(e.target.files)
           e.target.value = ""
         }}
       />
+      {name != null && name !== "" ? (
+        <input
+          ref={formInputRef}
+          type="file"
+          name={name}
+          multiple
+          hidden
+          disabled={disabled}
+          tabIndex={-1}
+          aria-hidden="true"
+        />
+      ) : null}
       {preview === "thumbnail" && items.length + files.length > 0 ? (
         <ul className="space-y-2" aria-label={mergedLabels.fileListAriaLabel}>
           {items.map((item) => (

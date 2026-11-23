@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { toast } from "../overlays/sonner"
@@ -980,6 +981,116 @@ describe("FileUpload", () => {
       expect(alert).toHaveTextContent("a.txt: file type not allowed")
       expect(alert).toHaveTextContent("b.pdf: larger than 1,0 KB")
       expect(alert).toHaveTextContent("d.pdf: over the limit of 1")
+    })
+  })
+
+  // O campo não tinha id, name, required nem ref: um <label htmlFor>, um form
+  // nativo, a validação do navegador e o foco do React Hook Form no erro não
+  // tinham onde se prender.
+  describe("id, name, required e ref", () => {
+    function choose(...files: File[]) {
+      const input = document.querySelector("input[type=file]:not([name])") as HTMLInputElement
+      fireEvent.change(input, { target: { files } })
+    }
+
+    it("id fica na dropzone, e um <label htmlFor> de fora abre o seletor", () => {
+      const click = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {})
+      render(
+        <>
+          <label htmlFor="anexos">Anexos do processo</label>
+          <FileUpload id="anexos" />
+        </>,
+      )
+      expect(document.getElementById("anexos")?.tagName).toBe("BUTTON")
+      fireEvent.click(screen.getByText("Anexos do processo"))
+      expect(click).toHaveBeenCalledTimes(1)
+      click.mockRestore()
+    })
+
+    it("ref aponta para a dropzone, que recebe o foco", () => {
+      const ref = React.createRef<HTMLButtonElement>()
+      render(<FileUpload ref={ref} label="Anexar" />)
+      expect(ref.current).toBe(screen.getByRole("button", { name: "Anexar" }))
+      act(() => ref.current?.focus())
+      expect(screen.getByRole("button", { name: "Anexar" })).toHaveFocus()
+    })
+
+    it("com name, um input de arquivo oculto leva o nome para o form; sem name, não", () => {
+      const { rerender } = render(<FileUpload name="anexos" />)
+      const carrier = document.querySelector("input[type=file][name=anexos]") as HTMLInputElement
+      expect(carrier).not.toBeNull()
+      expect(carrier).toHaveAttribute("hidden")
+      expect(carrier.multiple).toBe(true)
+      // Só um input fica com o nome: o que abre o seletor continua sem.
+      expect(document.querySelectorAll("input[name]")).toHaveLength(1)
+      rerender(<FileUpload />)
+      expect(document.querySelector("input[name]")).toBeNull()
+    })
+
+    it("required marca o rótulo e entra no nome da dropzone", () => {
+      render(<FileUpload label="Anexar contrato" required />)
+      expect(screen.getByRole("button", { name: "Anexar contrato (obrigatório)" })).toBeVisible()
+      expect(document.querySelector("[data-slot=file-upload-required]")).toHaveTextContent("*")
+    })
+
+    it("required: o form não passa vazio; aparece o aviso e o foco vai à dropzone", () => {
+      render(
+        <form>
+          <FileUpload label="Anexar contrato" required />
+        </form>,
+      )
+      const form = document.querySelector("form") as HTMLFormElement
+      let valid = true
+      act(() => {
+        valid = form.reportValidity()
+      })
+      expect(valid).toBe(false)
+      const dropzone = screen.getByRole("button", { name: /Anexar contrato/ })
+      expect(dropzone).toHaveFocus()
+      expect(screen.getByRole("alert")).toHaveTextContent("Selecione um arquivo.")
+      expect(dropzone).toHaveAccessibleDescription(/Selecione um arquivo\./)
+    })
+
+    it("required: com um arquivo na lista, ou um item, o form passa e o aviso some", () => {
+      const { rerender } = render(
+        <form>
+          <FileUpload label="Anexar" required />
+        </form>,
+      )
+      const form = document.querySelector("form") as HTMLFormElement
+      act(() => {
+        form.reportValidity()
+      })
+      choose(makeFile("a.pdf", "application/pdf"))
+      expect(screen.queryByText("Selecione um arquivo.")).not.toBeInTheDocument()
+      expect(form.checkValidity()).toBe(true)
+      // Tirar o arquivo não traz o aviso de volta antes de um novo envio.
+      fireEvent.click(screen.getByRole("button", { name: "Remover a.pdf" }))
+      expect(screen.queryByText("Selecione um arquivo.")).not.toBeInTheDocument()
+      choose(makeFile("a.pdf", "application/pdf"))
+      rerender(
+        <form>
+          <FileUpload label="Anexar" required items={[{ id: "1", name: "salvo.pdf" }]} />
+        </form>,
+      )
+      expect(form.checkValidity()).toBe(true)
+    })
+
+    it("o aviso de obrigatório vem de labels", () => {
+      render(
+        <form>
+          <FileUpload
+            label="Attach"
+            required
+            labels={{ required: "required", requiredError: "Choose a file." }}
+          />
+        </form>,
+      )
+      act(() => {
+        ;(document.querySelector("form") as HTMLFormElement).reportValidity()
+      })
+      expect(screen.getByRole("button", { name: "Attach (required)" })).toBeInTheDocument()
+      expect(screen.getByRole("alert")).toHaveTextContent("Choose a file.")
     })
   })
 

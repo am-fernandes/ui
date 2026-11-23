@@ -972,3 +972,43 @@ test.describe("InputOTP", () => {
     await expect(slots.nth(5)).toContainText("6")
   })
 })
+
+test.describe("FileUpload: form nativo", () => {
+  const id = "domain-fileupload--native-form"
+  const picker = 'input[type="file"]:not([name])'
+
+  test("o FormData recebe os arquivos da lista, e não os removidos", async ({ page }) => {
+    await gotoStory(page, id)
+    await page.locator(picker).setInputFiles([
+      { name: "contrato.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4") },
+      { name: "planta.png", mimeType: "image/png", buffer: Buffer.from("png") },
+    ])
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByTestId("form-data")).toHaveText("contrato.pdf, planta.png")
+
+    await page.getByRole("button", { name: "Remover contrato.pdf" }).click()
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByTestId("form-data")).toHaveText("planta.png")
+  })
+
+  test("required: vazio, o form não é enviado, o aviso aparece e a dropzone fica com o foco", async ({
+    page,
+  }) => {
+    await gotoStory(page, id)
+    await page.getByRole("button", { name: "Enviar" }).click()
+    const dropzone = page.getByRole("button", { name: "Anexar documentos (obrigatório)" })
+    await expect(dropzone).toBeFocused()
+    await expect(page.getByText("Selecione um arquivo.")).toBeVisible()
+    await expect(dropzone).toHaveAccessibleDescription(/Selecione um arquivo\./)
+    await expect(page.getByTestId("form-data")).toHaveText("")
+
+    await page.locator(picker).setInputFiles({
+      name: "contrato.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("%PDF-1.4"),
+    })
+    await expect(page.getByText("Selecione um arquivo.")).toHaveCount(0)
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByTestId("form-data")).toHaveText("contrato.pdf")
+  })
+})
