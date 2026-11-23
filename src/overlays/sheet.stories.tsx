@@ -283,6 +283,63 @@ export const WithForm: Story = {
   },
 }
 
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex gap-2">
+      {(["sm", "md", "lg"] as const).map((size) => (
+        <Sheet
+          key={size}
+          size={size}
+          trigger={<Button variant="outline">Painel {size}</Button>}
+          title={`Painel ${size}`}
+          description="Largura do painel lateral a partir do breakpoint sm."
+        >
+          <Input label="Nome" />
+        </Sheet>
+      ))}
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` muda a largura dos painéis laterais: `sm` 320px, `md` 384px (o padrão) e `lg` 672px, para detalhes com formulário em duas colunas. No celular o painel ocupa 3/4 da tela em qualquer tamanho.",
+      },
+    },
+  },
+}
+
+export const NonDismissible: Story = {
+  render: () => {
+    const [open, setOpen] = useState(false)
+    return (
+      <>
+        <Button onClick={() => setOpen(true)}>Importar planilha</Button>
+        <Sheet
+          open={open}
+          onOpenChange={setOpen}
+          dismissible={false}
+          title="Importando 1.240 leads"
+          description="Não feche a página enquanto a importação corre."
+          footer={<Button onClick={() => setOpen(false)}>Concluir</Button>}
+        >
+          <p className="text-sm text-muted-foreground">
+            O painel só fecha pelo botão do rodapé: o Esc e o clique fora não fazem nada.
+          </p>
+        </Sheet>
+      </>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`dismissible={false}`: sem X, e o Esc e o clique fora não fecham. Para uma etapa que precisa terminar num botão do rodapé.",
+      },
+    },
+  },
+}
+
 export const HideClose: Story = {
   args: {
     trigger: <Button>Abrir sem X</Button>,

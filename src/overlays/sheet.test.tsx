@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -258,5 +258,77 @@ describe("Sheet footer as a function", () => {
   it("still takes a plain node", () => {
     render(<Sheet open title="X" footer={<span>rodapé</span>} />)
     expect(screen.getByText("rodapé")).toBeInTheDocument()
+  })
+})
+
+// The Sheet had none of what the Dialog has: no way to keep it open, no
+// control over the first focus, one width (384px) for every content.
+describe("Sheet dismissible, onOpenAutoFocus and size", () => {
+  async function flushDismissableLayerSetup() {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  it("dismissible={false}: Escape and a press outside do not close, and there is no X", async () => {
+    const onOpenChange = vi.fn()
+    render(<Sheet open onOpenChange={onOpenChange} dismissible={false} title="Importando" />)
+    await flushDismissableLayerSetup()
+    await userEvent.keyboard("{Escape}")
+    const overlay = document.querySelector('[data-slot="sheet-overlay"]') as HTMLElement
+    fireEvent.pointerDown(overlay)
+    expect(onOpenChange).not.toHaveBeenCalled()
+    expect(screen.getByRole("dialog", { name: "Importando" })).toBeInTheDocument()
+    // The panel has no content of its own: the only button would be the X.
+    expect(screen.queryAllByRole("button")).toHaveLength(0)
+  })
+
+  it("dismissible (default): Escape closes", async () => {
+    const onOpenChange = vi.fn()
+    render(<Sheet open onOpenChange={onOpenChange} title="X" />)
+    await userEvent.keyboard("{Escape}")
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it("onOpenAutoFocus can send the first focus elsewhere", async () => {
+    function Panel() {
+      const ref = { current: null as HTMLInputElement | null }
+      return (
+        <Sheet
+          open
+          title="Filtros"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault()
+            ref.current?.focus()
+          }}
+        >
+          <input aria-label="Primeiro" />
+          <input
+            aria-label="Busca"
+            ref={(node) => {
+              ref.current = node
+            }}
+          />
+        </Sheet>
+      )
+    }
+    render(<Panel />)
+    expect(screen.getByLabelText("Busca")).toHaveFocus()
+  })
+
+  it.each([
+    ["sm", "sm:max-w-xs"],
+    ["md", "sm:max-w-sm"],
+    ["lg", "sm:max-w-2xl"],
+  ] as const)("size=%s on a side panel", (size, width) => {
+    render(<Sheet open side="right" size={size} title="X" />)
+    const panel = document.querySelector('[data-slot="sheet-content"]') as HTMLElement
+    expect(panel).toHaveClass(width)
+    expect(panel).toHaveAttribute("data-size", size)
+  })
+
+  it("size defaults to md, today's width", () => {
+    render(<Sheet open side="left" title="X" />)
+    expect(document.querySelector('[data-slot="sheet-content"]')).toHaveClass("sm:max-w-sm")
   })
 })

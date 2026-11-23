@@ -39,16 +39,31 @@ const sheetVariants = cva(
         top: "inset-x-0 top-0 max-h-[calc(100dvh-2rem)] border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
         bottom:
           "inset-x-0 bottom-0 max-h-[calc(100dvh-2rem)] border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-        left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
+        left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
         right:
-          "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
+          "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
       },
+      // Width of a side panel from the `sm` breakpoint up (below it, 3/4 of
+      // the screen). Top and bottom panels take the whole width.
+      size: { sm: "", md: "", lg: "" },
     },
-    defaultVariants: { side: "right" },
+    compoundVariants: [
+      { side: ["left", "right"], size: "sm", className: "sm:max-w-xs" },
+      { side: ["left", "right"], size: "md", className: "sm:max-w-sm" },
+      { side: ["left", "right"], size: "lg", className: "sm:max-w-2xl" },
+    ],
+    defaultVariants: { side: "right", size: "md" },
   },
 )
 
-export interface SheetProps extends VariantProps<typeof sheetVariants> {
+export interface SheetProps extends Omit<VariantProps<typeof sheetVariants>, "size"> {
+  /**
+   * Width of a side panel (`left`, `right`) from the `sm` breakpoint up:
+   * `sm` 320px, `md` 384px, `lg` 672px. Below it, 3/4 of the screen. Top and
+   * bottom panels take the whole width.
+   * @default "md"
+   */
+  size?: "sm" | "md" | "lg"
   trigger?: React.ReactNode
   title: React.ReactNode
   description?: React.ReactNode
@@ -76,8 +91,16 @@ export interface SheetProps extends VariantProps<typeof sheetVariants> {
   open?: boolean
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
+  /**
+   * When `false`, Escape and a press outside do not close the panel, and the
+   * X is hidden: for a step that has to end on one of the footer's buttons.
+   * @default true
+   */
+  dismissible?: boolean
   closeLabel?: string
   hideCloseButton?: boolean
+  /** Radix's auto-focus on open (e.g. to choose the first focused field). */
+  onOpenAutoFocus?: (event: Event) => void
   /**
    * Handler do foco ao fechar. Por padrão o foco volta para o `trigger`; sem
    * `trigger` (aberto por `open`, a partir de um botão da página ou de um item
@@ -98,8 +121,11 @@ function Sheet({
   defaultOpen,
   onOpenChange,
   side = "right",
+  size = "md",
+  dismissible = true,
   closeLabel = "Close",
   hideCloseButton = false,
+  onOpenAutoFocus,
   onCloseAutoFocus,
   className,
 }: SheetProps) {
@@ -124,18 +150,20 @@ function Sheet({
           ref={contentRef}
           data-slot="sheet-content"
           data-side={side}
-          className={cn(sheetVariants({ side }), className)}
+          data-size={size}
+          className={cn(sheetVariants({ side, size }), className)}
+          onOpenAutoFocus={onOpenAutoFocus}
           onCloseAutoFocus={returnFocus}
           // A toast floats above the panel and belongs to no modal: a press on
           // it, or Escape typed in it, is not for the panel.
           onEscapeKeyDown={(e) => {
-            if (isToastFocused()) e.preventDefault()
+            if (!dismissible || isToastFocused()) e.preventDefault()
           }}
           onPointerDownOutside={(e) => {
-            if (isToastPress(e)) e.preventDefault()
+            if (!dismissible || isToastPress(e)) e.preventDefault()
           }}
           onInteractOutside={(e) => {
-            if (isToastPress(e)) e.preventDefault()
+            if (!dismissible || isToastPress(e)) e.preventDefault()
           }}
         >
           <OverlayContainerProvider container={overlayContainer}>
@@ -165,7 +193,7 @@ function Sheet({
                 {footerContent}
               </div>
             ) : null}
-            {!hideCloseButton ? (
+            {dismissible && !hideCloseButton ? (
               <DialogPrimitive.Close
                 aria-label={closeLabel}
                 className="absolute right-4 top-4 cursor-pointer rounded-inner opacity-70 transition-opacity hover:opacity-100 focus-visible:focus-outline"

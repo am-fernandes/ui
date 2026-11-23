@@ -516,6 +516,49 @@ test.describe("Sheet", () => {
     await page.mouse.wheel(0, 300)
     await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
   })
+
+  // One width (384px) for every content: no room for a detail panel with a
+  // two-column form, too much for a short filter list.
+  test("size sets the width of a side panel; on a phone it stays 3/4 of the screen", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await gotoStory(page, "overlays-sheet--sizes", "Painel md")
+    for (const [size, width] of [
+      ["sm", 320],
+      ["md", 384],
+      ["lg", 672],
+    ] as const) {
+      await page.getByRole("button", { name: `Painel ${size}` }).click()
+      const panel = page.getByRole("dialog", { name: `Painel ${size}` })
+      const box = await settledBox(panel)
+      expect(box.width, `width of size=${size}`).toBeCloseTo(width, 0)
+      expect(box.x + box.width).toBeCloseTo(1280, 0)
+      await page.keyboard.press("Escape")
+      await expect(panel).toHaveCount(0)
+    }
+
+    await page.setViewportSize({ width: 360, height: 640 })
+    await page.getByRole("button", { name: "Painel lg" }).click()
+    const box = await settledBox(page.getByRole("dialog", { name: "Painel lg" }))
+    expect(box.width).toBeCloseTo(270, 0)
+  })
+
+  test("dismissible={false}: no X, and neither Escape nor a click outside closes it", async ({
+    page,
+  }) => {
+    await gotoStory(page, "overlays-sheet--non-dismissible", "Importar planilha")
+    await page.getByRole("button", { name: "Importar planilha" }).click()
+    const panel = page.getByRole("dialog", { name: "Importando 1.240 leads" })
+    await settledBox(panel)
+    await expect(panel.getByRole("button")).toHaveCount(1)
+    await page.keyboard.press("Escape")
+    await page.mouse.click(40, 400)
+    await page.waitForTimeout(300)
+    await expect(panel).toBeVisible()
+    await panel.getByRole("button", { name: "Concluir" }).click()
+    await expect(panel).toHaveCount(0)
+  })
 })
 
 test.describe("Tooltip", () => {
