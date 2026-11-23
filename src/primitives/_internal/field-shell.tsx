@@ -32,6 +32,14 @@ export function fieldTriggerSizeClass(size: ControlSize = "md"): string {
 export const fieldReadOnlyClass =
   "data-readonly:bg-muted data-readonly:[--field-hover-ring:transparent]"
 
+// `labelPosition="left"`: the label's 20px line on the centre of a control of
+// that height (and of the first row of a textarea of that size).
+const labelBesideControl: Record<ControlSize, string> = {
+  sm: "pt-1.5",
+  md: "pt-2.5",
+  lg: "pt-3",
+}
+
 /** The trigger at the default size (`md`). */
 export const fieldTriggerClass = fieldTriggerSizeClass("md")
 
@@ -57,6 +65,12 @@ export interface FieldShellProps {
    */
   nativeRequired?: boolean
   disabled?: boolean
+  /**
+   * The control's size, for a label on the left: it is lined up with the
+   * control box, not with the middle of box, description and error.
+   * @default "md"
+   */
+  size?: ControlSize
   className?: string
   children: React.ReactNode
 }
@@ -74,6 +88,7 @@ function FieldShell({
   requiredLabel = "obrigatório",
   nativeRequired = false,
   disabled,
+  size = "md",
   className,
   children,
 }: FieldShellProps) {
@@ -88,7 +103,9 @@ function FieldShell({
       data-disabled={disabled ? "true" : undefined}
       className={cn(
         "flex w-full",
-        labelPosition === "left" ? "flex-row items-center gap-3" : "flex-col gap-1",
+        // Left: the label lines up with the box (top-aligned, its line on the
+        // box's centre), however tall the description and error below are.
+        labelPosition === "left" ? "flex-row items-start gap-3" : "flex-col gap-1",
         disabled && "opacity-50",
         className,
       )}
@@ -102,7 +119,9 @@ function FieldShell({
           disabled={disabled}
           className={cn(
             labelPosition === "hidden" && "sr-only",
-            labelPosition === "left" && "shrink-0",
+            // `--field-label-width` on a container lines up a column of labels.
+            labelPosition === "left" &&
+              cn("w-(--field-label-width,auto) shrink-0", labelBesideControl[size]),
           )}
         >
           {label}

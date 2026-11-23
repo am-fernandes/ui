@@ -88,6 +88,36 @@ export const LabelLeft: Story = {
   args: { label: "Nome", labelPosition: "left", placeholder: "Layout inline" },
 }
 
+export const LabelLeftWithMessages: Story = {
+  render: () => (
+    <div className="flex w-[28rem] flex-col gap-4 [--field-label-width:7rem]">
+      <Input
+        label="Nome"
+        labelPosition="left"
+        size="sm"
+        description="Como no documento."
+        placeholder="sm"
+      />
+      <Input
+        label="E-mail"
+        labelPosition="left"
+        description="Usado para o login."
+        error="Formato inválido"
+        defaultValue="ana@"
+      />
+      <Input label="Telefone" labelPosition="left" size="lg" error="Obrigatório" />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Com `labelPosition="left"` o rótulo fica na altura da caixa, não no meio do bloco com descrição e erro. Para alinhar os rótulos de um formulário numa coluna, defina `--field-label-width` num contêiner (aqui `[--field-label-width:7rem]`).',
+      },
+    },
+  },
+}
+
 export const LabelHidden: Story = {
   args: { label: "Buscar", labelPosition: "hidden", placeholder: "Buscar..." },
   parameters: {

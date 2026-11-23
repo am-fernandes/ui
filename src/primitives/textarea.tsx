@@ -241,6 +241,7 @@ function Textarea({
       required={required}
       nativeRequired
       disabled={disabled}
+      size={size}
     >
       {textareaEl}
       {maxLength ? (

@@ -147,6 +147,7 @@ function Input({
       required={required}
       nativeRequired
       disabled={disabled}
+      size={size}
       className={fieldClassName}
     >
       {inputEl}

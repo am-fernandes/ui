@@ -478,6 +478,28 @@ test.describe("Input", () => {
     await expect(input).toBeFocused()
   })
 
+  // With a description and an error under the box, the left label was
+  // centred on the whole block: 22px below the box's centre.
+  test("a left label sits on the box, not in the middle of box and messages", async ({ page }) => {
+    await open(page, "primitives-input--label-left-with-messages")
+    const fields = page.locator('[data-slot="field-shell"]')
+    const lefts: number[] = []
+    for (const field of await fields.all()) {
+      const box = await field.locator('[data-slot="input-wrapper"]').boundingBox()
+      const label = field.locator('[data-slot="label"]')
+      const line = await label.evaluate((el) => {
+        const range = document.createRange()
+        range.selectNodeContents(el)
+        const rect = range.getClientRects()[0]
+        return rect ? rect.top + rect.height / 2 : 0
+      })
+      expect(Math.abs(line - ((box?.y ?? 0) + (box?.height ?? 0) / 2))).toBeLessThanOrEqual(1)
+      lefts.push(box?.x ?? 0)
+    }
+    // --field-label-width: the boxes start on one column.
+    expect(new Set(lefts).size).toBe(1)
+  })
+
   test("password toggle changes input type", async ({ page }) => {
     await open(page, "primitives-input--password-toggle")
     // `exact`: the toggle button is named "Mostrar senha", which also contains "Senha".
