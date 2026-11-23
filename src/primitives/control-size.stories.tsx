@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { Pencil, Star, Trash2 } from "lucide-react"
+import { Pencil, SearchIcon, Star, Trash2 } from "lucide-react"
 
 import type { ControlSize } from "./_internal/control-size"
 import { Button } from "./button"
 import { IconButton } from "./icon-button"
+import { Input } from "./input"
 import { Toggle } from "./toggle"
 
 const meta: Meta = {
@@ -37,7 +38,8 @@ function Row({ size }: { size: ControlSize }) {
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs text-muted-foreground">{size}</span>
-      <div data-testid={`row-${size}`} className="flex flex-wrap items-center gap-2">
+      {/* One line, never wrapped: the test compares the centre of every box. */}
+      <div data-testid={`row-${size}`} className="flex items-center gap-2">
         {BUTTON_VARIANTS.map((variant) => (
           <Button key={variant} variant={variant} size={size}>
             {variant}
@@ -52,6 +54,17 @@ function Row({ size }: { size: ControlSize }) {
         <Toggle size={size} variant="success" defaultPressed>
           Ativo
         </Toggle>
+        <div className="w-32 shrink-0">
+          <Input size={size} aria-label="Nome" placeholder="Nome" />
+        </div>
+        <div className="w-36 shrink-0">
+          <Input
+            size={size}
+            aria-label="Busca"
+            placeholder="Buscar"
+            leadingIcon={<SearchIcon className="size-4" />}
+          />
+        </div>
       </div>
     </div>
   )
@@ -59,7 +72,7 @@ function Row({ size }: { size: ControlSize }) {
 
 export const Alignment: Story = {
   render: () => (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 overflow-x-auto pb-2">
       {SIZES.map((size) => (
         <Row key={size} size={size} />
       ))}

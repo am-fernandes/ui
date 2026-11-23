@@ -3,6 +3,7 @@ import { expect, fn, userEvent, within } from "@storybook/test"
 import { EyeIcon, EyeOffIcon, MailIcon, SearchIcon } from "lucide-react"
 import { useState } from "react"
 
+import { Button } from "./button"
 import { Input } from "./input"
 
 const meta: Meta<typeof Input> = {
@@ -23,6 +24,7 @@ const meta: Meta<typeof Input> = {
           "",
           "**Posições do label:** `up` (default), `left`, `hidden` (sr-only para a11y sem visual).",
           "**Slots:** `leadingIcon` (esquerda) e `trailingIcon` (direita).",
+          "**Tamanhos:** `size` — `sm` (32px), `md` (40px, padrão) ou `lg` (44px). É a altura da caixa com a borda, igual à de um `Button` do mesmo tamanho.",
         ].join("\n"),
       },
     },
@@ -33,6 +35,12 @@ const meta: Meta<typeof Input> = {
     description: { control: "text" },
     error: { control: "text" },
     required: { control: "boolean" },
+    size: {
+      control: "inline-radio",
+      options: ["sm", "md", "lg"],
+      description: "Altura da caixa, borda incluída: 32, 40 ou 44px.",
+      table: { type: { summary: "'sm' | 'md' | 'lg'" }, defaultValue: { summary: "'md'" } },
+    },
     type: {
       control: "select",
       options: ["text", "email", "password", "number", "tel", "url", "search", "date"],
@@ -136,6 +144,28 @@ export const Disabled: Story = {
 
 export const ReadOnly: Story = {
   args: { label: "ID", readOnly: true, value: "user-123456" },
+}
+
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex w-80 flex-col gap-3">
+      <Input label="sm · 32px" size="sm" placeholder="Filtro de tabela" />
+      <Input label="md · 40px" size="md" placeholder="Formulário" />
+      <Input label="lg · 44px" size="lg" placeholder="Alvo de toque" />
+      <div className="flex items-end gap-2">
+        <Input label="Busca" size="sm" leadingIcon={<SearchIcon className="size-4" />} />
+        <Button size="sm">Buscar</Button>
+      </div>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` define a altura da caixa com a borda. Um `Input` e um `Button` do mesmo tamanho ficam alinhados na mesma linha.",
+      },
+    },
+  },
 }
 
 export const Types: Story = {

@@ -10,6 +10,7 @@ const CONTROLS = [
   { slot: "button", count: 6 },
   { slot: "icon-button", count: 2, square: true },
   { slot: "toggle", count: 2 },
+  { slot: "input-wrapper", count: 2 },
 ]
 
 const HEIGHTS = { sm: 32, md: 40, lg: 44 } as const
@@ -28,7 +29,10 @@ test.describe("Control size", () => {
         const boxes = await row.locator(`[data-slot="${control.slot}"]`).evaluateAll((elements) =>
           elements.map((element) => {
             const rect = element.getBoundingClientRect()
-            const label = element.getAttribute("aria-label") ?? element.textContent ?? ""
+            const named = element.matches("[aria-label]")
+              ? element
+              : element.querySelector("[aria-label]")
+            const label = named?.getAttribute("aria-label") ?? element.textContent ?? ""
             return {
               name: `${element.getAttribute("data-slot")} "${label.trim()}"`,
               width: rect.width,

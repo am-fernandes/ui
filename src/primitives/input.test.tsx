@@ -70,6 +70,33 @@ describe("Input", () => {
     expect(screen.getByLabelText("X")).toHaveAttribute("readonly")
   })
 
+  // The measured heights (32, 40 and 44px, border included) are asserted in a
+  // real browser by tests/e2e/control-size.spec.ts.
+  describe("size", () => {
+    const wrapper = () => document.querySelector('[data-slot="input-wrapper"]') as HTMLElement
+
+    it("gives the bordered box the shared control height, md by default", () => {
+      const { rerender } = render(<Input label="X" />)
+      expect(wrapper()).toHaveClass("h-control-md")
+      expect(screen.getByLabelText("X")).toHaveClass("px-3", "h-full")
+      // The height comes from the box, never from padding on the <input>.
+      expect(screen.getByLabelText("X").className).not.toMatch(/(^|\s)py-/)
+
+      rerender(<Input label="X" size="sm" />)
+      expect(wrapper()).toHaveClass("h-control-sm")
+      expect(screen.getByLabelText("X")).toHaveClass("px-2.5")
+
+      rerender(<Input label="X" size="lg" />)
+      expect(wrapper()).toHaveClass("h-control-lg")
+      expect(screen.getByLabelText("X")).toHaveClass("px-4")
+    })
+
+    it("is our prop, not the native `size` attribute", () => {
+      render(<Input label="X" size="sm" />)
+      expect(screen.getByLabelText("X")).not.toHaveAttribute("size")
+    })
+  })
+
   it("forwards ref to the input element", () => {
     let captured: HTMLInputElement | null = null
     render(

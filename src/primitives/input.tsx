@@ -3,8 +3,16 @@
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { type ControlSize, controlHeight, controlPaddingX } from "./_internal/control-size"
 import { FieldShell, type LabelPosition } from "./_internal/field-shell"
 import { useFieldIds } from "./_internal/use-field-ids"
+
+// The icon slots take the horizontal padding of the size on their outer side.
+const affixPadding: Record<ControlSize, { leading: string; trailing: string }> = {
+  sm: { leading: "pl-2.5", trailing: "pr-2.5" },
+  md: { leading: "pl-3", trailing: "pr-3" },
+  lg: { leading: "pl-4", trailing: "pr-4" },
+}
 
 export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
   label?: React.ReactNode
@@ -14,6 +22,12 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   required?: boolean
   leadingIcon?: React.ReactNode
   trailingIcon?: React.ReactNode
+  /**
+   * `sm` 32px, `md` 40px, `lg` 44px: the height of the bordered box, the same
+   * as a `Button` of that size. (Not the native `size` attribute.)
+   * @default "md"
+   */
+  size?: ControlSize
   ref?: React.Ref<HTMLInputElement>
 }
 
@@ -26,6 +40,7 @@ function Input({
   required,
   leadingIcon,
   trailingIcon,
+  size = "md",
   className,
   disabled,
   ref,
@@ -40,12 +55,16 @@ function Input({
       data-slot="input-wrapper"
       className={cn(
         "relative flex w-full items-center rounded-element border border-input bg-card text-sm field-states",
+        controlHeight[size],
         hasError && "border-destructive-text field-error",
         disabled && "cursor-default",
       )}
     >
       {leadingIcon ? (
-        <span data-slot="input-leading" className="flex items-center pl-3 text-muted-foreground">
+        <span
+          data-slot="input-leading"
+          className={cn("flex items-center text-muted-foreground", affixPadding[size].leading)}
+        >
           {leadingIcon}
         </span>
       ) : null}
@@ -58,7 +77,8 @@ function Input({
         disabled={disabled}
         required={required}
         className={cn(
-          "w-full bg-transparent px-3 py-2.5 placeholder:text-placeholder outline-none disabled:cursor-default",
+          "h-full w-full min-w-0 bg-transparent placeholder:text-placeholder outline-none disabled:cursor-default",
+          controlPaddingX[size],
           leadingIcon && "pl-2",
           trailingIcon && "pr-2",
           className,
@@ -66,7 +86,10 @@ function Input({
         {...props}
       />
       {trailingIcon ? (
-        <span data-slot="input-trailing" className="flex items-center pr-3 text-muted-foreground">
+        <span
+          data-slot="input-trailing"
+          className={cn("flex items-center text-muted-foreground", affixPadding[size].trailing)}
+        >
           {trailingIcon}
         </span>
       ) : null}
