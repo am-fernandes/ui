@@ -63,6 +63,10 @@
       "types": "./dist/primitives/textarea.d.ts",
       "import": "./dist/primitives/textarea.js"
     },
+    "./toggle": {
+      "types": "./dist/primitives/toggle.d.ts",
+      "import": "./dist/primitives/toggle.js"
+    },
     "./token": {
       "types": "./dist/primitives/token.d.ts",
       "import": "./dist/primitives/token.js"
