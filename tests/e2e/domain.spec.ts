@@ -2,6 +2,23 @@ import { type Locator, type Page, expect, test } from "@playwright/test"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
+/**
+ * Opens a story and waits until it is mounted. Storybook's dev server may
+ * still be compiling on the first hit, and on a busy machine that takes longer
+ * than the 5s an assertion waits.
+ */
+async function gotoStory(page: Page, id: string) {
+  await page.goto(story(id))
+  await page.waitForFunction(
+    () =>
+      document.body.classList.contains("sb-show-main") &&
+      !document.body.classList.contains("sb-show-preparing-story") &&
+      !!document.getElementById("storybook-root")?.firstChild,
+    null,
+    { timeout: 30_000 },
+  )
+}
+
 /** Puts the caret where a click would, without depending on glyph widths. */
 async function caretAt(input: Locator, position: number) {
   await input.evaluate((el: HTMLInputElement, pos) => {
@@ -24,7 +41,7 @@ test.describe("Campos com máscara: editar no meio", () => {
   test("CPF: Backspace no meio apaga aquele dígito e o próximo entra no mesmo ponto", async ({
     page,
   }) => {
-    await page.goto(story("domain-cpfinput--with-validation-feedback"))
+    await gotoStory(page, "domain-cpfinput--with-validation-feedback")
     const input = page.getByRole("textbox", { name: "CPF" })
     await input.pressSequentially("52998224725")
     await expect(input).toHaveValue("529.982.247-25")
@@ -41,7 +58,7 @@ test.describe("Campos com máscara: editar no meio", () => {
   })
 
   test("CPF: Backspace logo depois do ponto apaga o dígito antes dele", async ({ page }) => {
-    await page.goto(story("domain-cpfinput--filled"))
+    await gotoStory(page, "domain-cpfinput--filled")
     const input = page.getByRole("textbox", { name: "CPF" })
     await expect(input).toHaveValue("123.456.789-09")
     // "123.|456.789-09"
@@ -52,7 +69,7 @@ test.describe("Campos com máscara: editar no meio", () => {
   })
 
   test("CPF: Delete logo antes do ponto apaga o dígito depois dele", async ({ page }) => {
-    await page.goto(story("domain-cpfinput--filled"))
+    await gotoStory(page, "domain-cpfinput--filled")
     const input = page.getByRole("textbox", { name: "CPF" })
     await expect(input).toHaveValue("123.456.789-09")
     // "123|.456.789-09"
@@ -103,7 +120,7 @@ test.describe("Campos com máscara: editar no meio", () => {
 
   for (const edit of middleEdits) {
     test(`${edit.name}: o cursor fica no lugar ao apagar e redigitar no meio`, async ({ page }) => {
-      await page.goto(story(edit.id))
+      await gotoStory(page, edit.id)
       const input = page.getByRole("textbox", { name: edit.label })
       await expect(input).toHaveValue(edit.initial)
 
@@ -179,7 +196,7 @@ test.describe("Campos com máscara: colar", () => {
 
   for (const item of pastes) {
     test(`${item.name}: o número colado entra inteiro`, async ({ page }) => {
-      await page.goto(story(item.id))
+      await gotoStory(page, item.id)
       const input = page.getByRole("textbox", { name: item.label })
       await input.click()
       await paste(page, item.text)
@@ -189,7 +206,7 @@ test.describe("Campos com máscara: colar", () => {
   }
 
   test("um CPF completo colado substitui o que já estava no campo", async ({ page }) => {
-    await page.goto(story("domain-cpfinput--filled"))
+    await gotoStory(page, "domain-cpfinput--filled")
     const input = page.getByRole("textbox", { name: "CPF" })
     await expect(input).toHaveValue("123.456.789-09")
     await input.click()
@@ -198,7 +215,7 @@ test.describe("Campos com máscara: colar", () => {
   })
 
   test("um pedaço colado entra no ponto do cursor", async ({ page }) => {
-    await page.goto(story("domain-cpfinput--with-validation-feedback"))
+    await gotoStory(page, "domain-cpfinput--with-validation-feedback")
     const input = page.getByRole("textbox", { name: "CPF" })
     await input.pressSequentially("529247")
     await expect(input).toHaveValue("529.247")
@@ -210,7 +227,7 @@ test.describe("Campos com máscara: colar", () => {
   })
 
   test("digitar num campo cheio não troca nenhum dígito", async ({ page }) => {
-    await page.goto(story("domain-cpfinput--filled"))
+    await gotoStory(page, "domain-cpfinput--filled")
     const input = page.getByRole("textbox", { name: "CPF" })
     await expect(input).toHaveValue("123.456.789-09")
     await caretAt(input, 2)
@@ -223,7 +240,7 @@ test.describe("Campos com máscara: colar", () => {
 test.describe("CurrencyInput", () => {
   test("typing digits formats to BRL display", async ({ page }) => {
     // `Playground` has no play function; `Default` types by itself and would race.
-    await page.goto(story("domain-currencyinput--playground"))
+    await gotoStory(page, "domain-currencyinput--playground")
     const input = page.getByRole("textbox", { name: /Valor do contrato/ })
     await expect(input).toHaveValue("0,00")
     // A scripted focus leaves the caret at the start; a person types at the end.
@@ -236,7 +253,7 @@ test.describe("CurrencyInput", () => {
 
 test.describe("PercentageInput", () => {
   test("never goes above max", async ({ page }) => {
-    await page.goto(story("domain-percentageinput--default"))
+    await gotoStory(page, "domain-percentageinput--default")
     const input = page.getByRole("textbox", { name: /Comissão/ })
     await expect(input).toHaveValue("0,00")
     await input.press("End")
@@ -251,7 +268,7 @@ test.describe("PercentageInput", () => {
 
 test.describe("MultiInput", () => {
   test("Enter commits a tag", async ({ page }) => {
-    await page.goto(story("domain-multiinput--string-tags"))
+    await gotoStory(page, "domain-multiinput--string-tags")
     const input = page.getByRole("textbox").first()
     await input.fill("playwright")
     await input.press("Enter")
@@ -260,7 +277,7 @@ test.describe("MultiInput", () => {
   })
 
   test("Backspace removes last tag from empty input", async ({ page }) => {
-    await page.goto(story("domain-multiinput--string-tags"))
+    await gotoStory(page, "domain-multiinput--string-tags")
     const input = page.getByRole("textbox").first()
     await input.fill("removeme")
     await input.press("Enter")
@@ -273,7 +290,7 @@ test.describe("MultiInput", () => {
 
 test.describe("InputOTP", () => {
   test("typing 6 digits fires onComplete", async ({ page }) => {
-    await page.goto(story("domain-inputotp--default"))
+    await gotoStory(page, "domain-inputotp--default")
     // input-otp library renders an invisible input that captures keystrokes
     const input = page.getByRole("textbox").first()
     await input.fill("123456")
