@@ -10,6 +10,15 @@ describe("Avatar", () => {
     expect(screen.getByText("AM")).toBeInTheDocument()
   })
 
+  // `alt` is required, and it was dropped as soon as the fallback showed:
+  // "Ana Souza" was nowhere in the page, and a screen reader read "AS".
+  it("is named by alt when the fallback shows, not by the initials", () => {
+    render(<Avatar alt="Ana Souza" fallback="AS" />)
+    const avatar = screen.getByRole("img", { name: "Ana Souza" })
+    expect(avatar).toHaveAttribute("data-slot", "avatar")
+    expect(screen.getByText("AS")).toHaveAttribute("aria-hidden", "true")
+  })
+
   it("renders a ReactNode fallback (e.g. icon)", () => {
     render(<Avatar alt="Anônimo" fallback={<UserIcon data-testid="icon" />} />)
     expect(screen.getByTestId("icon")).toBeInTheDocument()
@@ -87,8 +96,11 @@ describe("Avatar", () => {
         expect(img).toBeInTheDocument()
       })
       const img = container.querySelector('[data-slot="avatar-image"]')
-      expect(img).toHaveAttribute("alt", "User avatar")
       expect(img).toHaveAttribute("src", "https://example.com/avatar.png")
+      // The name is on the avatar: the photo inside does not repeat it.
+      expect(img).toHaveAttribute("alt", "")
+      expect(screen.getAllByRole("img")).toHaveLength(1)
+      expect(screen.getByRole("img")).toHaveAccessibleName("User avatar")
     })
   })
 

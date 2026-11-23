@@ -9,7 +9,12 @@ import { cn } from "@/lib/utils"
 export interface AvatarProps
   extends Omit<React.ComponentProps<typeof AvatarPrimitive.Root>, "children"> {
   src?: string
+  /**
+   * Who or what the avatar is ("Ana Souza"). The accessible name of the whole
+   * avatar (`role="img"`), read the same with the photo or with the fallback.
+   */
   alt: string
+  /** Shown while the photo loads, when it fails or without `src`: initials or an icon. */
   fallback: React.ReactNode
   /**
    * Allowed URL protocols for `src`. Defaults to `["http:", "https:"]`.
@@ -37,6 +42,10 @@ function Avatar({ src, alt, fallback, className, allowedProtocols, ref, ...props
     <AvatarPrimitive.Root
       ref={ref}
       data-slot="avatar"
+      // The name lives on the avatar, so it is the same with the photo, with
+      // the initials and while the photo loads.
+      role="img"
+      aria-label={alt}
       className={cn("relative flex size-10 shrink-0 overflow-hidden rounded-full", className)}
       {...props}
     >
@@ -44,12 +53,13 @@ function Avatar({ src, alt, fallback, className, allowedProtocols, ref, ...props
         <AvatarPrimitive.Image
           data-slot="avatar-image"
           src={src}
-          alt={alt}
+          alt=""
           className="aspect-square h-full w-full"
         />
       ) : null}
       <AvatarPrimitive.Fallback
         data-slot="avatar-fallback"
+        aria-hidden="true"
         className="flex h-full w-full items-center justify-center rounded-full bg-muted text-sm"
       >
         {fallback}
