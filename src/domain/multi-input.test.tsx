@@ -473,4 +473,82 @@ describe("MultiInput", () => {
       expect(input).toHaveValue("")
     })
   })
+
+  // Regressão: o modo número usava parseInt, que lê o começo do texto e
+  // ignora o resto: "10.000" virava 10, "12x" virava 12, e "3,5" virava os
+  // itens 3 e 5.
+  describe("modo número: cada pedaço precisa ser um inteiro por inteiro", () => {
+    function setup(initial: number[] = []) {
+      const onValueChange = vi.fn()
+      const onReject = vi.fn()
+      render(
+        <MultiInput
+          type="number"
+          label="Prazos"
+          value={initial}
+          onValueChange={onValueChange}
+          onReject={onReject}
+        />,
+      )
+      return { input: screen.getByRole("textbox"), onValueChange, onReject }
+    }
+
+    it.each([
+      ["10.000", "ponto de milhar"],
+      ["3,5", "decimal com vírgula"],
+      ["3.5", "decimal com ponto"],
+      ["12x", "letra depois do número"],
+      ["x12", "letra antes do número"],
+      ["-5", "negativo"],
+      ["0", "zero"],
+      ["1e3", "notação científica"],
+      ["99999999999999999999", "grande demais"],
+    ])("%s (%s) é recusado e nada entra", async (text) => {
+      const user = userEvent.setup()
+      const { input, onValueChange, onReject } = setup()
+      await user.type(input, `${text}{Enter}`)
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(onReject).toHaveBeenCalledWith("invalid")
+      // O texto fica no campo para ser corrigido.
+      expect(input).toHaveValue(text)
+    })
+
+    it.each([
+      ["30,60,90", [30, 60, 90]],
+      ["10, 20", [10, 20]],
+      ["10 20", [10, 20]],
+      ["10;20", [10, 20]],
+      ["5/10/15", [5, 10, 15]],
+      ["007", [7]],
+    ])("%s é lido como lista", async (text, expected) => {
+      const user = userEvent.setup()
+      const { input, onValueChange, onReject } = setup()
+      await user.type(input, `${text}{Enter}`)
+      expect(onValueChange).toHaveBeenLastCalledWith(expected)
+      expect(onReject).not.toHaveBeenCalled()
+    })
+
+    it("os pedaços válidos entram e os inválidos são recusados, sem meio-termo", async () => {
+      const user = userEvent.setup()
+      const { input, onValueChange, onReject } = setup()
+      await user.type(input, "7 3,5 12x 9{Enter}")
+      expect(onValueChange).toHaveBeenLastCalledWith([7, 9])
+      expect(onReject).toHaveBeenCalledWith("invalid")
+    })
+
+    it("um decimal colado é recusado e fica no campo para ser corrigido", () => {
+      const { input, onValueChange, onReject } = setup()
+      fireEvent.paste(input, { clipboardData: { getData: () => "3,5" } })
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(onReject).toHaveBeenCalledWith("invalid")
+      expect(input).toHaveValue("3,5")
+    })
+
+    it("uma lista colada entra inteira", () => {
+      const { input, onValueChange } = setup()
+      fireEvent.paste(input, { clipboardData: { getData: () => "30,60,90" } })
+      expect(onValueChange).toHaveBeenLastCalledWith([30, 60, 90])
+      expect(input).toHaveValue("")
+    })
+  })
 })

@@ -55,7 +55,13 @@ interface MultiInputStringProps extends MultiInputBaseProps {
 }
 
 interface MultiInputNumberProps extends MultiInputBaseProps {
-  /** Positive-integer tokens (sorted ascending, deduped). */
+  /**
+   * Positive-integer tokens (sorted ascending, deduped). Each piece must be
+   * an integer from end to end: `10.000`, `3,5` and `12x` are refused with
+   * `onReject("invalid")`, never read as 10, 3 and 5, or 12. Pieces are
+   * separated by space, semicolon, slash, line break or comma; a single comma
+   * right between two numbers (`3,5`) is a decimal, not a separator.
+   */
   type: "number"
   value: number[]
   onValueChange: (values: number[]) => void
@@ -75,14 +81,28 @@ interface ParsedNumberResult {
   hadInvalid: boolean
 }
 
+const INTEGER = /^\d+$/
+
 function parseNumberInput(raw: string): ParsedNumberResult {
-  const pieces = raw.split(/[/,;\s]+/).filter((s) => s.length > 0)
   const tokens: number[] = []
   let hadInvalid = false
-  for (const piece of pieces) {
-    const n = Number.parseInt(piece.trim(), 10)
-    if (Number.isInteger(n) && n > 0) tokens.push(n)
-    else hadInvalid = true
+  for (const chunk of raw.split(/[/;\s]+/)) {
+    if (chunk === "") continue
+    const pieces = chunk.split(",")
+    // In Portuguese "3,5" is three and a half, not the items 3 and 5. A list
+    // has a space after the comma ("3, 5") or more than two items ("3,5,8").
+    if (pieces.length === 2 && pieces.every((piece) => INTEGER.test(piece))) {
+      hadInvalid = true
+      continue
+    }
+    for (const piece of pieces) {
+      if (piece === "") continue
+      // The whole piece must be digits: parseInt would read "10.000" as 10
+      // and "12x" as 12.
+      const n = Number(piece)
+      if (INTEGER.test(piece) && Number.isSafeInteger(n) && n > 0) tokens.push(n)
+      else hadInvalid = true
+    }
   }
   return { tokens, hadInvalid }
 }
@@ -199,7 +219,8 @@ function MultiInput(props: MultiInputProps) {
     const text = e.clipboardData?.getData("text") ?? ""
     if (!text.includes("\n") && !text.includes(",") && !text.includes(";")) return
     e.preventDefault()
-    if (commitFromRaw(text)) setInputValue("")
+    // What was not taken stays in the field, on one line, to be fixed.
+    setInputValue(commitFromRaw(text) ? "" : text.replace(/\s+/g, " ").trim())
   }
 
   const handleBlur = (e: FocusEvent<HTMLInputElement>) => {

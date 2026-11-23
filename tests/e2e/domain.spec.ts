@@ -805,6 +805,27 @@ test.describe("MultiInput: limite de itens", () => {
   })
 })
 
+test.describe("MultiInput: modo número", () => {
+  test("número malformado é recusado inteiro e fica no campo", async ({ page }) => {
+    await gotoStory(page, "domain-multiinput--number-list")
+    const group = page.getByRole("group", { name: "Páginas relevantes" })
+    const input = page.getByRole("textbox", { name: "Páginas relevantes" })
+    await expect(page.getByText("Array: [35, 10, 22]")).toBeVisible()
+
+    for (const text of ["10.000", "3,5", "12x"]) {
+      await input.fill(text)
+      await input.press("Enter")
+      await expect(input).toHaveValue(text)
+      await expect(group.getByRole("button", { name: /^Remover / })).toHaveCount(3)
+    }
+
+    await input.fill("7, 40")
+    await input.press("Enter")
+    await expect(input).toHaveValue("")
+    await expect(page.getByText("Array: [7, 10, 22, 35, 40]")).toBeVisible()
+  })
+})
+
 test.describe("InputOTP", () => {
   test("typing 6 digits fires onComplete", async ({ page }) => {
     await gotoStory(page, "domain-inputotp--default")

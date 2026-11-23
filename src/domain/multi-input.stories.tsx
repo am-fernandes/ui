@@ -24,7 +24,7 @@ const meta = {
           "",
           "**Variantes via prop `type`:**",
           "- `type='string'` (default) — preserva ordem de inserção, dedupe automático.",
-          "- `type='number'` — só aceita inteiros positivos, ordenados crescente.",
+          "- `type='number'` — só aceita inteiros positivos, ordenados crescente. Cada pedaço precisa ser um inteiro por inteiro: `10.000`, `3,5` e `12x` são recusados com `onReject('invalid')`, nunca lidos pela metade. Separe por espaço, ponto-e-vírgula, barra ou vírgula; uma vírgula sozinha entre dois números (`3,5`) é lida como decimal.",
           "",
           "**Props principais:**",
           "- `value` / `onValueChange` — par controlado (`string[]` ou `number[]` conforme `type`).",
@@ -117,7 +117,7 @@ export const NumberList: Story = {
   args: {
     type: "number",
     label: "Páginas relevantes",
-    description: "Apenas inteiros positivos. Lista é ordenada automaticamente.",
+    description: "Apenas inteiros positivos, separados por espaço ou vírgula. A lista é ordenada.",
     placeholder: "Ex.: 10, 22, 35",
   },
   render: (args) => {
