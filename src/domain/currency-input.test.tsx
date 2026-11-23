@@ -353,4 +353,109 @@ describe("CurrencyInput", () => {
       },
     )
   })
+
+  // Regressão: a cada tecla o valor era reescrito e o cursor ia para o fim;
+  // corrigir um dígito no meio de "1.234,56" espalhava os dígitos seguintes.
+  describe("edição no meio do valor", () => {
+    it("o dígito entra no ponto do cursor e o cursor fica depois dele", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCurrencyInput initial={1234.56} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "1.2|34,56" → digita 9 → "12.9|34,56"
+      await user.type(input, "9", { initialSelectionStart: 3, initialSelectionEnd: 3 })
+      expect(input).toHaveValue("12.934,56")
+      expect(input.selectionStart).toBe(4)
+      await user.keyboard("0")
+      expect(input).toHaveValue("129.034,56")
+      expect(input.selectionStart).toBe(5)
+    })
+
+    it("Backspace no meio apaga aquele dígito e o cursor fica no lugar", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCurrencyInput initial={1234.56} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "1.2|34,56" → Backspace → "1|34,56"
+      await user.type(input, "{Backspace}", { initialSelectionStart: 3, initialSelectionEnd: 3 })
+      expect(input).toHaveValue("134,56")
+      expect(input.selectionStart).toBe(1)
+      await user.keyboard("2")
+      expect(input).toHaveValue("1.234,56")
+      expect(input.selectionStart).toBe(3)
+    })
+
+    it("Backspace logo depois do ponto de milhar apaga o dígito antes dele", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCurrencyInput initial={1234.56} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "1.|234,56"
+      await user.type(input, "{Backspace}", { initialSelectionStart: 2, initialSelectionEnd: 2 })
+      expect(input).toHaveValue("234,56")
+      expect(input.selectionStart).toBe(0)
+    })
+
+    it("Delete logo antes da vírgula apaga o dígito depois dela", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCurrencyInput initial={1234.56} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "1.234|,56" → "123,4|6": o cursor continua depois do 4.
+      await user.type(input, "{Delete}", { initialSelectionStart: 5, initialSelectionEnd: 5 })
+      expect(input).toHaveValue("123,46")
+      expect(input.selectionStart).toBe(5)
+    })
+
+    it("com o campo em zero, os centavos entram primeiro mesmo com o cursor no início", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCurrencyInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // É onde um foco por script (autoFocus, setFocus do formulário) deixa o cursor.
+      await user.type(input, "1500", { initialSelectionStart: 0, initialSelectionEnd: 0 })
+      expect(input).toHaveValue("15,00")
+      expect(input.selectionStart).toBe(5)
+    })
+
+    it("uma letra digitada no meio não muda o valor nem move o cursor", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<CurrencyInput value={1234.56} onValueChange={onValueChange} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.type(input, "x", { initialSelectionStart: 3, initialSelectionEnd: 3 })
+      expect(input).toHaveValue("1.234,56")
+      expect(input.selectionStart).toBe(3)
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("o 16º dígito digitado é recusado", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<CurrencyInput value={9999999999999.99} onValueChange={onValueChange} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}1")
+      expect(input).toHaveValue("9.999.999.999.999,99")
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+  })
+
+  // Regressão: value undefined (o que o react-hook-form entrega sem
+  // defaultValues) renderizava "NaN,NaN".
+  describe("valor que não é número", () => {
+    it.each([
+      ["undefined", undefined],
+      ["NaN", Number.NaN],
+      ["null", null],
+    ])("%s mostra 0,00", (_name, value) => {
+      render(<CurrencyInput value={value as unknown as number} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("0,00")
+    })
+
+    it("o form recebe 0, não NaN", () => {
+      const { container } = render(
+        <form>
+          <CurrencyInput name="valor" value={Number.NaN} onValueChange={vi.fn()} />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("valor")).toBe("0")
+    })
+  })
 })

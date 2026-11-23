@@ -440,6 +440,52 @@ test.describe("CurrencyInput", () => {
   })
 })
 
+test.describe("CurrencyInput: editar no meio", () => {
+  test("com o campo em zero, o cursor no início não muda o que a digitação produz", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-currencyinput--playground")
+    const input = page.getByRole("textbox", { name: /Valor do contrato/ })
+    await expect(input).toHaveValue("0,00")
+    // Onde um foco por script (autoFocus, setFocus do formulário) pode deixar
+    // o cursor: antes dos zeros que só preenchem a exibição.
+    await caretAt(input, 0)
+    await page.keyboard.type("123456")
+    await expect(input).toHaveValue("1.234,56")
+    expect(await caretOf(input)).toBe(8)
+  })
+
+  test("o cursor fica no lugar ao inserir e apagar um dígito no meio", async ({ page }) => {
+    await gotoStory(page, "domain-currencyinput--playground")
+    const input = page.getByRole("textbox", { name: /Valor do contrato/ })
+    await input.pressSequentially("123456")
+    await expect(input).toHaveValue("1.234,56")
+
+    // "1.2|34,56" → digita 9 → "12.9|34,56"
+    await caretAt(input, 3)
+    await page.keyboard.type("9")
+    await expect(input).toHaveValue("12.934,56")
+    expect(await caretOf(input)).toBe(4)
+
+    // Backspace desfaz: "1.2|34,56"
+    await page.keyboard.press("Backspace")
+    await expect(input).toHaveValue("1.234,56")
+    expect(await caretOf(input)).toBe(3)
+    await expect(page.getByText("Valor interno: 1234.56", { exact: true })).toBeVisible()
+  })
+
+  test("Backspace logo depois do ponto de milhar apaga o dígito antes dele", async ({ page }) => {
+    await gotoStory(page, "domain-currencyinput--playground")
+    const input = page.getByRole("textbox", { name: /Valor do contrato/ })
+    await input.pressSequentially("123456")
+    // "1.|234,56"
+    await caretAt(input, 2)
+    await page.keyboard.press("Backspace")
+    await expect(input).toHaveValue("234,56")
+    expect(await caretOf(input)).toBe(0)
+  })
+})
+
 test.describe("CurrencyInput: colar", () => {
   test.beforeEach(async ({ context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"])
@@ -466,6 +512,23 @@ test.describe("CurrencyInput: colar", () => {
       await expect(page.getByText(`Valor interno: ${item.value}`, { exact: true })).toBeVisible()
     })
   }
+})
+
+test.describe("PercentageInput: editar no meio", () => {
+  test("o cursor fica no lugar ao apagar e redigitar um dígito no meio", async ({ page }) => {
+    await gotoStory(page, "domain-percentageinput--default")
+    const input = page.getByRole("textbox", { name: /Comissão/ })
+    await input.pressSequentially("1234")
+    await expect(input).toHaveValue("12,34")
+    // "1|2,34" → Backspace → "|2,34" → digita 3 → "3|2,34"
+    await caretAt(input, 1)
+    await page.keyboard.press("Backspace")
+    await expect(input).toHaveValue("2,34")
+    expect(await caretOf(input)).toBe(0)
+    await page.keyboard.type("3")
+    await expect(input).toHaveValue("32,34")
+    expect(await caretOf(input)).toBe(1)
+  })
 })
 
 test.describe("PercentageInput: colar", () => {

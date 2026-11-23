@@ -342,4 +342,38 @@ describe("PercentageInput", () => {
       expect(onValueChange).not.toHaveBeenCalled()
     })
   })
+
+  describe("edição no meio do valor", () => {
+    it("o dígito entra no ponto do cursor e o cursor fica depois dele", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPercentageInput initial={12.34} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "12,|34" → Backspace sobre a vírgula apaga o 2 → "1,|34".
+      await user.type(input, "{Backspace}", { initialSelectionStart: 3, initialSelectionEnd: 3 })
+      expect(input).toHaveValue("1,34")
+      expect(input.selectionStart).toBe(2)
+      // O dígito entra antes da vírgula, onde o 2 estava: "15|,34".
+      await user.keyboard("5")
+      expect(input).toHaveValue("15,34")
+      expect(input.selectionStart).toBe(2)
+    })
+
+    it("com o campo em zero, os centésimos entram primeiro mesmo com o cursor no início", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPercentageInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.type(input, "1250", { initialSelectionStart: 0, initialSelectionEnd: 0 })
+      expect(input).toHaveValue("12,50")
+    })
+  })
+
+  describe("valor que não é número", () => {
+    it.each([
+      ["undefined", undefined],
+      ["NaN", Number.NaN],
+    ])("%s mostra 0,00", (_name, value) => {
+      render(<PercentageInput value={value as unknown as number} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("0,00")
+    })
+  })
 })
