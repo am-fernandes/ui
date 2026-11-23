@@ -23,11 +23,73 @@ test.describe("Button", () => {
     await button.click()
   })
 
-  test("loading state has aria-busy and is not clickable", async ({ page }) => {
+  test("loading: every variant is busy, unavailable and still focusable", async ({ page }) => {
     await open(page, "primitives-button--loading-variants")
-    const button = page.getByRole("button", { name: "outline" })
-    await expect(button).toBeDisabled()
-    await expect(button).toHaveAttribute("aria-busy", "true")
+    for (const name of ["default", "destructive", "outline", "secondary", "ghost"]) {
+      const button = page.getByRole("button", { name, exact: true })
+      await expect(button).toHaveAttribute("aria-busy", "true")
+      await expect(button).toHaveAttribute("aria-disabled", "true")
+      // Not natively disabled: it can still take the keyboard focus.
+      expect(await button.evaluate((el: HTMLButtonElement) => el.disabled)).toBe(false)
+      // The spinner sits in the middle of the box; the label is laid out but unseen.
+      const centres = await button.evaluate((el) => {
+        const centre = (node: Element | null) => {
+          const rect = node?.getBoundingClientRect()
+          return rect ? Math.round(rect.left + rect.width / 2) : null
+        }
+        const content = el.querySelector('[data-slot="button-content"]')
+        return {
+          button: centre(el),
+          spinner: centre(el.querySelector('[data-slot="button-spinner"] svg')),
+          labelOpacity: content ? getComputedStyle(content).opacity : null,
+        }
+      })
+      expect(centres.spinner).toBe(centres.button)
+      expect(centres.labelOpacity).toBe("0")
+    }
+  })
+
+  test("loading keeps the focus and the width, and nothing submits twice", async ({ page }) => {
+    await open(page, "primitives-button--loading-on-submit")
+    const save = page.getByRole("button", { name: "Salvar proposta" })
+    const submits = page.getByTestId("submits")
+    const width = async () => (await save.boundingBox())?.width
+    const background = () => save.evaluate((el) => getComputedStyle(el).backgroundColor)
+
+    const idleWidth = await width()
+    const idleBackground = await background()
+    await save.focus()
+    await page.keyboard.press("Enter")
+    await expect(submits).toHaveText("Envios: 1")
+    await expect(save).toHaveAttribute("aria-busy", "true")
+
+    // The focus did not fall to the page body, and the label was not pushed.
+    await expect(save).toBeFocused()
+    expect(await width()).toBe(idleWidth)
+    await expect(page.locator('[data-slot="live-announcer"]')).toHaveText("Carregando…")
+
+    // Enter, Space, a click and Enter in a field of the form: all ignored.
+    // (A real mouse click: Playwright's own click() waits for an
+    // aria-disabled button to become enabled.)
+    await page.keyboard.press("Enter")
+    await page.keyboard.press("Space")
+    const box = await save.boundingBox()
+    await page.mouse.click((box?.x ?? 0) + (box?.width ?? 0) / 2, (box?.y ?? 0) + 10)
+    await page.getByLabel("Nome da proposta").press("Enter")
+    await expect(submits).toHaveText("Envios: 1")
+
+    // No hover reaction while it is unavailable (the mouse is still over it).
+    expect(await background()).toBe(idleBackground)
+    expect(await save.evaluate((el) => getComputedStyle(el).cursor)).toBe("default")
+
+    await page.getByRole("button", { name: "Concluir envio" }).click()
+    await expect(save).not.toHaveAttribute("aria-busy")
+    expect(await width()).toBe(idleWidth)
+    // Available again: the hover tone of the primary is back.
+    await save.hover()
+    await expect.poll(background).not.toBe(idleBackground)
+    await save.click()
+    await expect(submits).toHaveText("Envios: 2")
   })
 
   test("disabled state blocks clicks", async ({ page }) => {

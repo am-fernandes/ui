@@ -1,9 +1,9 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import type * as React from "react"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { Button, buttonVariants } from "./button"
+import { Button, buttonVariants, defaultButtonLabels } from "./button"
 
 describe("Button", () => {
   it("renders children as accessible name", () => {
@@ -16,11 +16,121 @@ describe("Button", () => {
     expect(screen.getByRole("button")).toHaveClass("bg-destructive")
   })
 
-  it("renders a spinner and disables when loading", () => {
-    render(<Button loading>Salvar</Button>)
-    const btn = screen.getByRole("button", { name: /Salvar/ })
-    expect(btn).toBeDisabled()
-    expect(btn.querySelector("svg.animate-spin")).toBeInTheDocument()
+  // Focus kept in a real browser, the width and the Enter key in a text field
+  // are asserted by tests/e2e/primitives.spec.ts.
+  describe("loading", () => {
+    const announcer = () => document.querySelector('[data-slot="live-announcer"]')
+    // The page keeps one announcer: start each test without the last message.
+    beforeEach(() => announcer()?.remove())
+
+    it("is busy and unavailable, but not natively disabled, so it keeps the focus", () => {
+      const { rerender } = render(<Button>Salvar</Button>)
+      const btn = screen.getByRole("button", { name: "Salvar" })
+      btn.focus()
+      rerender(<Button loading>Salvar</Button>)
+      expect(btn).not.toHaveAttribute("disabled")
+      expect(btn).toHaveAttribute("aria-disabled", "true")
+      expect(btn).toHaveAttribute("aria-busy", "true")
+      expect(btn).toHaveAttribute("data-loading")
+      expect(btn).toHaveFocus()
+    })
+
+    it("carries none of that when it is not loading", () => {
+      render(<Button loading={false}>Salvar</Button>)
+      const btn = screen.getByRole("button", { name: "Salvar" })
+      expect(btn).not.toHaveAttribute("aria-disabled")
+      expect(btn).not.toHaveAttribute("aria-busy")
+      expect(btn).not.toHaveAttribute("data-loading")
+      expect(btn.querySelector('[data-slot="button-spinner"]')).toBeNull()
+    })
+
+    it("shows the spinner over the label, which keeps its place and stays the name", () => {
+      render(<Button loading>Salvar proposta</Button>)
+      const btn = screen.getByRole("button", { name: "Salvar proposta" })
+      const spinner = btn.querySelector('[data-slot="button-spinner"]')
+      expect(spinner).toHaveAttribute("aria-hidden", "true")
+      expect(spinner?.querySelector("svg.animate-spin")).toBeInTheDocument()
+      // The label is still laid out (it gives the button its width), only unseen.
+      const content = btn.querySelector('[data-slot="button-content"]')
+      expect(content).toHaveTextContent("Salvar proposta")
+      expect(content).toHaveClass("opacity-0")
+    })
+
+    it("ignores clicks, Enter and Space", async () => {
+      const onClick = vi.fn()
+      render(
+        <Button loading onClick={onClick}>
+          Salvar
+        </Button>,
+      )
+      const btn = screen.getByRole("button", { name: "Salvar" })
+      await userEvent.click(btn)
+      btn.focus()
+      await userEvent.keyboard("{Enter}")
+      await userEvent.keyboard(" ")
+      expect(onClick).not.toHaveBeenCalled()
+    })
+
+    it("does not submit the form while loading", async () => {
+      const onSubmit = vi.fn((event: React.FormEvent<HTMLFormElement>) => event.preventDefault())
+      render(
+        <form onSubmit={onSubmit}>
+          <Button type="submit" loading>
+            Salvar
+          </Button>
+        </form>,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+      expect(onSubmit).not.toHaveBeenCalled()
+    })
+
+    it("does not let the click reach a row or a card around it", async () => {
+      const onRowClick = vi.fn()
+      render(
+        // biome-ignore lint/a11y/useKeyWithClickEvents: only the bubbling matters here.
+        <div onClick={onRowClick}>
+          <Button loading>Salvar</Button>
+        </div>,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+      expect(onRowClick).not.toHaveBeenCalled()
+    })
+
+    it("announces that it started loading, once, and not on mount", async () => {
+      const { rerender } = render(<Button loading>Já carregando</Button>)
+      await new Promise((resolve) => setTimeout(resolve, 150))
+      expect(announcer()?.textContent ?? "").toBe("")
+
+      rerender(<Button loading={false}>Salvar</Button>)
+      rerender(<Button loading>Salvar</Button>)
+      await waitFor(() => expect(announcer()).toHaveTextContent("Carregando…"))
+      // Polite, and no `role="status"`: it must not show up in a consumer's
+      // getByRole("status").
+      expect(announcer()).toHaveAttribute("aria-live", "polite")
+      expect(screen.queryByRole("status")).not.toBeInTheDocument()
+    })
+
+    it("announces with the label the product gives", async () => {
+      const { rerender } = render(<Button labels={{ loading: "Salvando proposta" }}>Salvar</Button>)
+      rerender(
+        <Button loading labels={{ loading: "Salvando proposta" }}>
+          Salvar
+        </Button>,
+      )
+      await waitFor(() => expect(announcer()).toHaveTextContent("Salvando proposta"))
+      expect(defaultButtonLabels.loading).toBe("Carregando…")
+    })
+
+    it("stays natively disabled when `disabled` is passed as well", () => {
+      render(
+        <Button loading disabled>
+          Salvar
+        </Button>,
+      )
+      const btn = screen.getByRole("button", { name: "Salvar" })
+      expect(btn).toBeDisabled()
+      expect(btn).toHaveAttribute("aria-busy", "true")
+    })
   })
 
   it("fires onClick when enabled", async () => {
@@ -144,8 +254,8 @@ describe("Button", () => {
     render(<Button>x</Button>)
     expect(screen.getByRole("button")).toHaveClass(
       "focus-visible:focus-outline",
-      "hover:bg-primary-hover",
-      "active:bg-primary-pressed",
+      "not-aria-disabled:hover:bg-primary-hover",
+      "not-aria-disabled:active:bg-primary-pressed",
     )
   })
 

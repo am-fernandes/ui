@@ -214,7 +214,13 @@ export {
 // Primitives
 export { Avatar, type AvatarProps } from "./primitives/avatar"
 export { Badge, badgeVariants, type BadgeProps } from "./primitives/badge"
-export { Button, buttonVariants, type ButtonProps } from "./primitives/button"
+export {
+  Button,
+  buttonVariants,
+  defaultButtonLabels,
+  type ButtonLabels,
+  type ButtonProps,
+} from "./primitives/button"
 export { Checkbox, type CheckboxProps } from "./primitives/checkbox"
 export {
   IconButton,

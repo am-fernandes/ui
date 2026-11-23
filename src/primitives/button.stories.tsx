@@ -5,6 +5,7 @@ import { useState } from "react"
 
 import { Button } from "./button"
 import { IconButton } from "./icon-button"
+import { Input } from "./input"
 
 const meta: Meta<typeof Button> = {
   title: "Primitives/Button",
@@ -20,7 +21,8 @@ const meta: Meta<typeof Button> = {
           "**API:**",
           "- `variant` — `default | destructive | outline | secondary | ghost | link`.",
           "- `size` — `sm` (32px), `md` (40px, padrão) ou `lg` (44px). É a altura da caixa inteira, igual à de um `Input`, `IconButton` ou `Toggle` do mesmo tamanho.",
-          "- `loading` — exibe um spinner antes do conteúdo e desabilita o botão.",
+          "- `loading` — spinner no lugar do rótulo, sem mudar a largura; o botão mantém o foco, ignora cliques e é anunciado como ocupado.",
+          '- `labels` — textos para o leitor de tela (`loading`: "Carregando…").',
           "- `disabled` — desabilita o botão.",
           "- `asChild` — renderiza o filho como elemento raiz (use com `<a>` ou `<Link>`).",
           '- `type` — `"button"` por padrão: dentro de um `<form>` o botão não envia nada. Use `type="submit"` no botão que envia.',
@@ -33,7 +35,7 @@ const meta: Meta<typeof Button> = {
           "",
           '<Button variant="default">Confirmar</Button>',
           '<Button variant="outline" onClick={handleCancel}>Cancelar</Button>',
-          "<Button loading>Salvando...</Button>",
+          '<Button type="submit" loading={isSaving}>Salvar</Button>',
           '<Button asChild><a href="/docs">Docs</a></Button>',
           "```",
         ].join("\n"),
@@ -63,7 +65,8 @@ const meta: Meta<typeof Button> = {
     },
     loading: {
       control: "boolean",
-      description: "Mostra spinner antes do conteúdo e desabilita o botão.",
+      description:
+        "Spinner no lugar do rótulo, com a mesma largura. O botão mantém o foco e ignora cliques (`aria-disabled`, `aria-busy`).",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     disabled: {
@@ -220,23 +223,64 @@ export const WithIcons: Story = {
 }
 
 export const Loading: Story = {
-  args: { loading: true, children: "Salvando...", onClick: fn() },
+  args: { loading: true, children: "Salvar proposta", onClick: fn() },
   parameters: {
     docs: {
       description: {
         story:
-          "Com `loading=true` o botão renderiza um spinner antes do conteúdo e fica `disabled` + `aria-busy=true`.",
+          'Com `loading` um spinner fica no lugar do rótulo, que continua ocupando o seu espaço (a largura não muda) e sendo o nome acessível. O botão não é desabilitado de verdade: fica `aria-disabled` e `aria-busy`, mantém o foco e ignora o clique. Não troque o texto para "Salvando...": ele não aparece. Para o leitor de tela, o início é anunciado com `labels.loading` ("Carregando…").',
       },
     },
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    const button = canvas.getByRole("button", { name: /Salvando/ })
-    await expect(button).toBeDisabled()
+    const button = canvas.getByRole("button", { name: "Salvar proposta" })
+    await expect(button).toHaveAttribute("aria-disabled", "true")
     await expect(button).toHaveAttribute("aria-busy", "true")
-    // Click on a loading/disabled button must not fire onClick
-    await userEvent.click(button, { pointerEventsCheck: 0 })
+    await expect(button).not.toHaveAttribute("disabled")
+    // A click on a loading button must not fire onClick
+    await userEvent.click(button)
     await expect(args.onClick).not.toHaveBeenCalled()
+  },
+}
+
+function PendingSubmitExample() {
+  const [saving, setSaving] = useState(false)
+  const [submits, setSubmits] = useState(0)
+  return (
+    <form
+      className="flex w-80 flex-col items-start gap-3"
+      onSubmit={(event) => {
+        event.preventDefault()
+        setSubmits((count) => count + 1)
+        setSaving(true)
+      }}
+    >
+      <Input label="Nome da proposta" defaultValue="Torre B · 1204" />
+      <div className="flex gap-2">
+        <Button type="submit" loading={saving}>
+          Salvar proposta
+        </Button>
+        <Button variant="outline" onClick={() => setSaving(false)}>
+          Concluir envio
+        </Button>
+      </div>
+      <output className="text-sm" data-testid="submits">
+        Envios: {submits}
+      </output>
+    </form>
+  )
+}
+
+export const LoadingOnSubmit: Story = {
+  render: () => <PendingSubmitExample />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Enquanto `loading`, o botão continua com o foco e com a mesma largura, é anunciado como ocupado e ignora clique, Enter e o Enter dado num campo do formulário: o envio não se repete. Aqui o envio fica pendente até "Concluir envio".',
+      },
+    },
   },
 }
 
