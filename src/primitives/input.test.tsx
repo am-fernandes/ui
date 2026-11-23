@@ -135,6 +135,29 @@ describe("Input", () => {
     })
   })
 
+  // `className` stays on the <input> (text alignment, tabular numbers). The
+  // box that draws the border, and the field around label and messages, had
+  // no way in: a DataTable search drew its own icon with `pl-9` instead.
+  describe("class names", () => {
+    it("puts wrapperClassName on the bordered box and fieldClassName on the field", () => {
+      render(
+        <Input
+          label="Busca"
+          className="text-right"
+          wrapperClassName="bg-muted"
+          fieldClassName="max-w-sm"
+        />,
+      )
+      const box = document.querySelector('[data-slot="input-wrapper"]')
+      expect(box).toHaveClass("bg-muted")
+      // The override replaces the default fill instead of fighting it.
+      expect(box).not.toHaveClass("bg-card")
+      expect(document.querySelector('[data-slot="field-shell"]')).toHaveClass("max-w-sm")
+      expect(screen.getByRole("textbox")).toHaveClass("text-right")
+      expect(box).not.toHaveClass("text-right")
+    })
+  })
+
   it("forwards ref to the input element", () => {
     let captured: HTMLInputElement | null = null
     render(

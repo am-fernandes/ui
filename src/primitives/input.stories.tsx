@@ -25,6 +25,7 @@ const meta: Meta<typeof Input> = {
           "**Posições do label:** `up` (default), `left`, `hidden` (sr-only para a11y sem visual).",
           "**Slots:** `leadingIcon` (esquerda) e `trailingIcon` (direita).",
           "**Tamanhos:** `size` — `sm` (32px), `md` (40px, padrão) ou `lg` (44px). É a altura da caixa com a borda, igual à de um `Button` do mesmo tamanho.",
+          "**Classes:** `className` vai no `<input>` (alinhamento, `tabular-nums`); `wrapperClassName` na caixa com a borda e o fundo; `fieldClassName` no campo inteiro, com rótulo e mensagens (largura, margens). Para um ícone dentro da caixa use `leadingIcon` ou `trailingIcon`, não `pl-*` no `className`.",
           "**Somente leitura:** `readOnly` mostra um valor que não se edita (calculado, travado, já enviado). O campo ganha fundo `muted` e perde o anel de hover, mas continua focável, copiável e vai no envio do formulário. Não use `disabled` para isso: o valor sai do `FormData` e fica apagado.",
         ].join("\n"),
       },

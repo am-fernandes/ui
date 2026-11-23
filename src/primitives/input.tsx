@@ -28,6 +28,16 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
    * @default "md"
    */
   size?: ControlSize
+  /**
+   * Classes for the `<input>` itself: text alignment, `tabular-nums`, the
+   * placeholder. The bordered box is `wrapperClassName`, and the field
+   * around label and messages (width, margins) is `fieldClassName`.
+   */
+  className?: string
+  /** Classes for the box that draws the border and the fill (`data-slot="input-wrapper"`). */
+  wrapperClassName?: string
+  /** Classes for the whole field: label, box and messages (`data-slot="field-shell"`). */
+  fieldClassName?: string
   ref?: React.Ref<HTMLInputElement>
 }
 
@@ -42,6 +52,8 @@ function Input({
   trailingIcon,
   size = "md",
   className,
+  wrapperClassName,
+  fieldClassName,
   disabled,
   readOnly,
   "aria-describedby": describedBy,
@@ -64,6 +76,7 @@ function Input({
         controlHeight[size],
         hasError && "border-destructive-text field-error",
         disabled && "cursor-default",
+        wrapperClassName,
       )}
     >
       {leadingIcon ? (
@@ -119,6 +132,7 @@ function Input({
       required={required}
       nativeRequired
       disabled={disabled}
+      className={fieldClassName}
     >
       {inputEl}
     </FieldShell>
