@@ -166,4 +166,32 @@ describe("RadioGroup", () => {
       expect(new FormData(form).get("plano")).toBeNull()
     })
   })
+
+  // `values` here, `options` in SegmentedControl: the same list under two names.
+  describe("options", () => {
+    it("takes the choices from options", () => {
+      render(<RadioGroup label="Plano" options={VALUES} />)
+      expect(screen.getAllByRole("radio")).toHaveLength(3)
+      expect(screen.getByRole("radio", { name: "Pro" })).toBeInTheDocument()
+    })
+
+    it("still takes them from the deprecated values", () => {
+      render(<RadioGroup label="Plano" values={VALUES} />)
+      expect(screen.getAllByRole("radio")).toHaveLength(3)
+    })
+
+    it("prefers options when both are given", () => {
+      render(<RadioGroup label="Plano" options={VALUES.slice(0, 1)} values={VALUES} />)
+      expect(screen.getAllByRole("radio")).toHaveLength(1)
+    })
+  })
+
+  // With an error only the text below was red; the radios looked fine. The
+  // colour is measured in tests/e2e/primitives.spec.ts.
+  it("marks every radio as part of the error", () => {
+    render(<RadioGroup label="Plano" options={VALUES} error="Escolha um plano." />)
+    for (const radio of screen.getAllByRole("radio")) {
+      expect(radio).toHaveAttribute("data-invalid")
+    }
+  })
 })

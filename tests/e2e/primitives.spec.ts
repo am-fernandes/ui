@@ -496,6 +496,14 @@ test.describe("RadioGroup", () => {
     await expect(group.getByRole("radio")).toHaveCount(4)
   })
 
+  test("an error draws the radios in the error colour, not only the text", async ({ page }) => {
+    await open(page, "primitives-radiogroup--with-error")
+    const errorColour = await page.getByRole("alert").evaluate((el) => getComputedStyle(el).color)
+    for (const radio of await page.getByRole("radio").all()) {
+      expect(await radio.evaluate((el) => getComputedStyle(el).borderTopColor)).toBe(errorColour)
+    }
+  })
+
   test("required blocks the submit until an option is chosen", async ({ page }) => {
     await open(page, "primitives-radiogroup--in-form")
     await expect(page.getByRole("radiogroup", { name: "Plano" })).toHaveAttribute(

@@ -24,7 +24,10 @@ export interface RadioGroupProps
   description?: React.ReactNode
   error?: string
   orientation?: "vertical" | "horizontal"
-  values: RadioGroupItemData[]
+  /** The choices, in order. */
+  options?: RadioGroupItemData[]
+  /** @deprecated Use `options`, the name every choice list in the library has. */
+  values?: RadioGroupItemData[]
   id?: string
   ref?: React.Ref<HTMLDivElement>
 }
@@ -37,6 +40,7 @@ function RadioGroup({
   required,
   disabled,
   orientation = "vertical",
+  options: optionsProp,
   values,
   className,
   value: valueProp,
@@ -47,6 +51,7 @@ function RadioGroup({
   ...props
 }: RadioGroupProps) {
   const ids = useFieldIds(id)
+  const options = optionsProp ?? values ?? []
   // `null`: no option chosen. Radix takes `undefined` as "uncontrolled".
   // Going back to "no choice" on a reset is not reported: `onValueChange`
   // only ever receives an option.
@@ -106,7 +111,7 @@ function RadioGroup({
         )}
         {...props}
       >
-        {values.map((item) => {
+        {options.map((item) => {
           const itemId = `${ids.controlId}-${item.value}`
           const Icon = item.icon
           return (
@@ -125,11 +130,14 @@ function RadioGroup({
                 value={item.value}
                 disabled={item.disabled}
                 data-slot="radio-group-item"
+                data-invalid={hasError ? "" : undefined}
                 className={cn(
                   // 2px down: centred on the first 20px line of its label.
                   "mt-0.5 aspect-square size-4 shrink-0 cursor-pointer rounded-full border border-input text-primary data-[state=checked]:border-primary",
                   "focus-visible:focus-outline",
                   "disabled:cursor-default",
+                  // The error marks the radios too, not only the text below.
+                  "data-invalid:border-destructive-text data-invalid:data-[state=checked]:border-destructive-text",
                 )}
               >
                 <RadioGroupPrimitive.Indicator
