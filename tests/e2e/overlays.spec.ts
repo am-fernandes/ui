@@ -692,6 +692,24 @@ test.describe("Tooltip", () => {
 })
 
 test.describe("Popover", () => {
+  // No max height: 1526px of content ran past the bottom of the screen,
+  // although Radix reported 472px available.
+  test("tall content stops at the room left on screen and scrolls", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 600 })
+    await gotoStory(page, "overlays-popover--tall-content", "Colunas visíveis")
+    await page.getByRole("button", { name: "Colunas visíveis" }).click()
+    const popover = page.getByRole("dialog", { name: "Colunas visíveis" })
+    const box = await settledBox(popover)
+    expect(box.y).toBeGreaterThanOrEqual(0)
+    // collisionPadding={8}
+    expect(box.y + box.height).toBeLessThanOrEqual(600 - 8 + 0.5)
+    await expect(popover.getByText("Coluna 40")).not.toBeInViewport()
+
+    await popover.hover()
+    await page.mouse.wheel(0, 2000)
+    await expect(popover.getByText("Coluna 40")).toBeInViewport()
+  })
+
   test("opens via trigger and closes on Escape, returning focus", async ({ page }) => {
     // Not the Default story: its `play` function clicks the trigger itself.
     await gotoStory(page, "overlays-popover--align-start", "align=start")

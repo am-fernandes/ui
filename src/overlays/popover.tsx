@@ -82,6 +82,10 @@ function Popover({
             onEscapeKeyDown={onEscapeKeyDown}
             className={cn(
               "z-(--z-popover) w-72 rounded-container border border-border-strong bg-popover p-4 text-popover-foreground outline-none",
+              // Never taller than the room Radix measures between the trigger
+              // and the edge of the screen (less `collisionPadding`): the rest
+              // scrolls.
+              "max-h-(--radix-popover-content-available-height) overflow-y-auto overscroll-contain",
               motionPopover,
               "data-[state=open]:animate-in data-[state=closed]:animate-out",
               "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",

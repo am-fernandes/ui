@@ -210,6 +210,32 @@ function CityPicker() {
   )
 }
 
+export const TallContent: Story = {
+  render: () => (
+    <Popover
+      trigger={<Button variant="outline">Colunas visíveis</Button>}
+      aria-label="Colunas visíveis"
+      align="start"
+      collisionPadding={8}
+    >
+      <ul className="flex flex-col gap-2 text-sm">
+        {Array.from({ length: 40 }, (_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static story content
+          <li key={i}>Coluna {i + 1}</li>
+        ))}
+      </ul>
+    </Popover>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Conteúdo mais alto que o espaço até a borda da tela: o popover para no espaço disponível (menos `collisionPadding`) e rola.",
+      },
+    },
+  },
+}
+
 export const InsideDialog: Story = {
   render: () => (
     <Dialog

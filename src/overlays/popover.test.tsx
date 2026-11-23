@@ -204,3 +204,19 @@ describe("Popover", () => {
     expect(content).toHaveClass("custom-popover")
   })
 })
+
+// Complement of the Chromium test (overlays.spec.ts, "tall content stops at
+// the room left on screen"): the content takes Radix's available height.
+describe("Popover height", () => {
+  it("is capped at the room Radix measures, and scrolls", () => {
+    render(
+      <Popover open trigger={<button type="button">Abrir</button>} aria-label="Colunas">
+        conteúdo
+      </Popover>,
+    )
+    expect(screen.getByRole("dialog", { name: "Colunas" })).toHaveClass(
+      "max-h-(--radix-popover-content-available-height)",
+      "overflow-y-auto",
+    )
+  })
+})
