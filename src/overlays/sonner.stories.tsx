@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react"
-import { useState } from "react"
+import { type CSSProperties, useState } from "react"
 
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
@@ -230,6 +230,34 @@ export const WithAction: Story = {
         </div>
       </>
     )
+  },
+}
+
+export const CustomOptions: Story = {
+  render: () => (
+    <>
+      <Toaster
+        richColors
+        position="top-center"
+        toastOptions={{ duration: 8000, classNames: { description: "text-xs" } }}
+        style={{ "--width": "420px" } as CSSProperties}
+      />
+      <Button
+        onClick={() =>
+          toast.success("Proposta aprovada", { description: "O comprador foi avisado." })
+        }
+      >
+        Disparar sucesso
+      </Button>
+    </>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "As props do `Toaster` somam com os padrões da lib em vez de substituí-los: `toastOptions` (e cada chave de `classNames`), `style`, `icons` e `className`. Aqui o toast dura 8s, aparece no topo, é mais largo e tem a descrição menor, sem perder as cores nem o ícone.",
+      },
+    },
   },
 }
 

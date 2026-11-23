@@ -985,6 +985,27 @@ test.describe("Toaster", () => {
     await expectReadable(toast.locator("[data-description]"))
   })
 
+  test("Toaster props add to the library's defaults instead of replacing them", async ({
+    page,
+  }) => {
+    // richColors + toastOptions + style + position: with `toastOptions` given,
+    // the toast used to lose the class that colours its icon, and the icon
+    // took the colour of the fill it sits on.
+    await gotoStory(page, "overlays-sonner--custom-options", "Disparar sucesso")
+    await page.getByRole("button", { name: "Disparar sucesso" }).click()
+    const toast = page.locator("[data-sonner-toast]")
+    await expect(toast).toContainText("Proposta aprovada")
+    await expect.poll(() => toast.evaluate((el) => getComputedStyle(el).opacity)).toBe("1")
+
+    // The icon is visible on the fill (3:1 for a graphic) and the text readable.
+    await expectReadable(toast.locator("[data-icon] svg"), 3)
+    await expectReadable(toast.locator("[data-title]"))
+    // The consumer's own settings arrived as well.
+    await expect(toast.locator("[data-description]")).toHaveCSS("font-size", "12px")
+    expect((await toast.boundingBox())?.width).toBe(420)
+    await expect(page.locator("[data-sonner-toaster]")).toHaveAttribute("data-y-position", "top")
+  })
+
   // A modal makes the page behind it inert, and the toasts were part of that
   // page: no click reached them, no key either, and a click on them counted
   // as a click outside, which closed the dialog and lost the form.

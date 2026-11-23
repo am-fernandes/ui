@@ -110,6 +110,63 @@ describe("Toaster", () => {
     expect(toaster.style.getPropertyValue("--info-bg")).toBe("var(--info)")
   })
 
+  // The consumer's props used to replace the library's: one `toastOptions`
+  // and the toast lost `group/toast`, which is what colours its icon.
+  describe("consumer props are merged with the library's", () => {
+    const toastOf = async (message: string) =>
+      (await screen.findByText(message)).closest("[data-sonner-toast]") as HTMLElement
+    const toasterOf = (toastElement: HTMLElement) =>
+      toastElement.closest("[data-sonner-toaster]") as HTMLElement
+
+    it("toastOptions without classNames keeps the library's toast class", async () => {
+      render(<Toaster richColors toastOptions={{ duration: 8000 }} />)
+      toast.success("merge-duration")
+      expect(await toastOf("merge-duration")).toHaveClass("group/toast")
+    })
+
+    it("toastOptions.classNames adds to the library's classes, part by part", async () => {
+      render(
+        <Toaster
+          toastOptions={{ classNames: { toast: "meu-toast", description: "minha-descricao" } }}
+        />,
+      )
+      toast("merge-classes", { description: "detalhe" })
+      const element = await toastOf("merge-classes")
+      expect(element).toHaveClass("group/toast", "meu-toast")
+      expect(screen.getByText("detalhe")).toHaveClass("minha-descricao")
+    })
+
+    it("style adds to the library's variables and wins where both set one", async () => {
+      render(
+        <Toaster style={{ "--width": "420px", "--normal-bg": "tomato" } as React.CSSProperties} />,
+      )
+      toast("merge-style")
+      const toaster = toasterOf(await toastOf("merge-style"))
+      expect(toaster.style.getPropertyValue("--width")).toBe("420px")
+      expect(toaster.style.getPropertyValue("--normal-bg")).toBe("tomato")
+      // Untouched ones are still the library's.
+      expect(toaster.style.getPropertyValue("--normal-text")).toBe("var(--popover-foreground)")
+      expect(toaster.style.getPropertyValue("--error-bg")).toBe("var(--destructive)")
+      expect(toaster.style.zIndex).toBe("var(--z-toast)")
+    })
+
+    it("icons replaces only the icons it names", async () => {
+      render(<Toaster icons={{ success: <span data-testid="meu-icone" /> }} />)
+      toast.success("merge-icon-success")
+      toast.error("merge-icon-error")
+      const success = await toastOf("merge-icon-success")
+      const error = await toastOf("merge-icon-error")
+      expect(success.querySelector('[data-testid="meu-icone"]')).not.toBeNull()
+      expect(error.querySelector("svg.lucide-octagon-x")).not.toBeNull()
+    })
+
+    it("className adds to the library's", async () => {
+      render(<Toaster className="meu-toaster" />)
+      toast("merge-class")
+      expect(toasterOf(await toastOf("merge-class"))).toHaveClass("toaster", "group", "meu-toaster")
+    })
+  })
+
   it("dismisses a toast by id via toast.dismiss(id)", async () => {
     render(<Toaster />)
     let id: string | number = ""
