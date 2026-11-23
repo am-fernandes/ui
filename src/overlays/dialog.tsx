@@ -7,6 +7,7 @@ import type * as React from "react"
 import { cn } from "@/lib/utils"
 import { dialogContentBase, overlayBase } from "./_internal/animations"
 import { modalBodyClass } from "./_internal/modal-body"
+import { useModalOpen, useReturnFocus } from "./_internal/modal-state"
 import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
 
 export interface DialogProps {
@@ -36,6 +37,13 @@ export interface DialogProps {
   closeLabel?: string
   /** Handler do auto-focus do Radix ao abrir (ex.: direcionar o foco inicial). */
   onOpenAutoFocus?: (event: Event) => void
+  /**
+   * Handler do foco ao fechar. Por padrão o foco volta para o `trigger`; sem
+   * `trigger` (aberto por `open`, a partir de um botão da página ou de um item
+   * de menu), volta para o elemento que tinha o foco quando o diálogo abriu.
+   * Chame `event.preventDefault()` para mandar o foco para outro lugar.
+   */
+  onCloseAutoFocus?: (event: Event) => void
   /** Visual size of the modal. */
   size?: "sm" | "md" | "lg" | "xl"
   /** Extra class on the content element. */
@@ -107,16 +115,24 @@ function Dialog({
   hideCloseButton = false,
   closeLabel = "Close",
   onOpenAutoFocus,
+  onCloseAutoFocus,
   size = "md",
   className,
 }: DialogProps) {
   const showCloseButton = dismissible && !hideCloseButton
+  const [isOpen, setOpen] = useModalOpen({ open, defaultOpen, onOpenChange })
+  // Without a `trigger`, focus goes back to where it was when the dialog opened.
+  const returnFocus = useReturnFocus({
+    open: isOpen,
+    hasTrigger: Boolean(trigger),
+    onCloseAutoFocus,
+  })
   // The popovers, menus and tooltips opened inside the dialog render into its
   // content element (see `OverlayContainerProvider`).
   const [overlayContainer, contentRef] = useOverlayContainerState()
 
   return (
-    <DialogPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root open={isOpen} onOpenChange={setOpen}>
       {trigger ? (
         <DialogPrimitive.Trigger asChild data-slot="dialog-trigger">
           {trigger}
@@ -129,6 +145,7 @@ function Dialog({
           data-slot="dialog-content"
           className={cn(dialogContentBase, SIZE_CLASSES[size], className)}
           onOpenAutoFocus={onOpenAutoFocus}
+          onCloseAutoFocus={returnFocus}
           onEscapeKeyDown={(e) => {
             if (!dismissible) e.preventDefault()
           }}

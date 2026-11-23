@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, userEvent, waitFor, within } from "@storybook/test"
+import { useState } from "react"
 
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
@@ -283,5 +284,36 @@ export const HideClose: Story = {
     description: "Escape e click fora seguem funcionando.",
     hideCloseButton: true,
     children: <p className="text-sm">Pressione Escape para fechar.</p>,
+  },
+}
+
+export const ControlledOpen: Story = {
+  render: () => {
+    const [open, setOpen] = useState(false)
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          Abrir programaticamente
+        </Button>
+        <p className="text-sm text-muted-foreground">open = {String(open)}</p>
+        <Sheet
+          open={open}
+          onOpenChange={setOpen}
+          title="Sheet controlado"
+          description="Estado gerenciado externamente."
+          footer={<Button onClick={() => setOpen(false)}>Fechar painel</Button>}
+        >
+          <p className="text-sm">Sem `trigger`: ao fechar, o foco volta para o botão que abriu.</p>
+        </Sheet>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Modo controlled via `open` + `onOpenChange`. Sem `trigger`, ao fechar o foco volta para o elemento que o tinha quando o painel abriu.",
+      },
+    },
   },
 }

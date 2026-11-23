@@ -531,6 +531,104 @@ test.describe("Floating layers inside a modal", () => {
   })
 })
 
+// Radix returns focus to the `trigger` element only. A modal opened by state
+// (a button of the page, a menu item) has none, and focus ended on <body>:
+// the keyboard user started again from the top of the page.
+test.describe("Focus when a modal without a trigger closes", () => {
+  test("Dialog: back to the button that opened it, however it closes", async ({ page }) => {
+    await gotoStory(page, "overlays-dialog--controlled-open", "Abrir programaticamente")
+    const opener = page.getByRole("button", { name: "Abrir programaticamente" })
+    const dialog = page.getByRole("dialog", { name: "Dialog controlado" })
+
+    await opener.click()
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(dialog).toHaveCount(0)
+    await expect(opener).toBeFocused()
+
+    // The footer button closes by state.
+    await page.keyboard.press("Enter")
+    await expect(dialog).toBeVisible()
+    await dialog.locator('[data-slot="dialog-footer"]').getByRole("button").click()
+    await expect(dialog).toHaveCount(0)
+    await expect(opener).toBeFocused()
+
+    // A click on the backdrop.
+    await opener.click()
+    await settledBox(dialog)
+    await page.mouse.click(5, 5)
+    await expect(dialog).toHaveCount(0)
+    await expect(opener).toBeFocused()
+  })
+
+  test("AlertDialog: back to the button that opened it, on cancel and on confirm", async ({
+    page,
+  }) => {
+    await gotoStory(page, "overlays-alertdialog--controlled-open", "Abrir programaticamente")
+    const opener = page.getByRole("button", { name: "Abrir programaticamente" })
+    const dialog = page.getByRole("alertdialog", { name: "Confirmar logout?" })
+
+    await opener.click()
+    await dialog.getByRole("button", { name: "Cancelar" }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect(opener).toBeFocused()
+
+    await opener.click()
+    await dialog.getByRole("button", { name: "Sair" }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect(opener).toBeFocused()
+
+    await opener.click()
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(dialog).toHaveCount(0)
+    await expect(opener).toBeFocused()
+  })
+
+  test("Sheet: back to the button that opened it", async ({ page }) => {
+    await gotoStory(page, "overlays-sheet--controlled-open", "Abrir programaticamente")
+    const opener = page.getByRole("button", { name: "Abrir programaticamente" })
+    const sheet = page.getByRole("dialog", { name: "Sheet controlado" })
+
+    await opener.click()
+    await expect(sheet).toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(sheet).toHaveCount(0)
+    await expect(opener).toBeFocused()
+
+    await opener.click()
+    await sheet.getByRole("button", { name: "Fechar painel" }).click()
+    await expect(sheet).toHaveCount(0)
+    await expect(opener).toBeFocused()
+  })
+
+  test("Dialog opened from a menu item: back to the menu's trigger", async ({ page }) => {
+    await gotoStory(page, "overlays-dialog--opened-from-menu", "Ações da proposta")
+    const menuTrigger = page.getByRole("button", { name: "Ações da proposta" })
+    const dialog = page.getByRole("dialog", { name: "Editar proposta #1042" })
+
+    // With the mouse.
+    await menuTrigger.click()
+    await page.getByRole("menuitem", { name: "Editar" }).click()
+    await expect(dialog).toBeVisible()
+    await expect(page.getByRole("menu")).toHaveCount(0)
+    await expect(dialog.getByLabel("Cliente")).toBeFocused()
+    await dialog.getByRole("button", { name: "Cancelar" }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect(menuTrigger).toBeFocused()
+
+    // With the keyboard, from the trigger that has focus now.
+    await page.keyboard.press("Enter")
+    await expect(page.getByRole("menuitem", { name: "Editar" })).toBeFocused()
+    await page.keyboard.press("Enter")
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByLabel("Cliente")).toBeFocused()
+    await page.keyboard.press("Escape")
+    await expect(dialog).toHaveCount(0)
+    await expect(menuTrigger).toBeFocused()
+  })
+})
+
 test.describe("DropdownMenu", () => {
   test("opens below the trigger, aligned to its start, and returns focus on Escape", async ({
     page,

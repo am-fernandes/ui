@@ -1,10 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, userEvent, waitFor, within } from "@storybook/test"
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { useState } from "react"
 
 import { Button } from "../primitives/button"
+import { IconButton } from "../primitives/icon-button"
 import { Input } from "../primitives/input"
 import { Dialog } from "./dialog"
+import { DropdownMenu } from "./dropdown-menu"
 
 const meta: Meta<typeof Dialog> = {
   title: "Overlays/Dialog",
@@ -224,7 +227,58 @@ export const ControlledOpen: Story = {
     )
   },
   parameters: {
-    docs: { description: { story: "Modo controlled via `open` + `onOpenChange`." } },
+    docs: {
+      description: {
+        story:
+          "Modo controlled via `open` + `onOpenChange`. Sem `trigger`, ao fechar o foco volta para o elemento que o tinha quando o diálogo abriu (aqui, o botão).",
+      },
+    },
+  },
+}
+
+export const OpenedFromMenu: Story = {
+  render: () => {
+    const [editing, setEditing] = useState(false)
+    return (
+      <div className="flex w-96 max-w-full items-center justify-between gap-3 rounded-md border px-3 py-2">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">Proposta #1042</p>
+          <p className="truncate text-xs text-muted-foreground">Ana Souza · R$ 412.000,00</p>
+        </div>
+        <DropdownMenu
+          trigger={<IconButton icon={<MoreHorizontal />} label="Ações da proposta" size="sm" />}
+          align="end"
+          items={[
+            { label: "Editar", icon: Pencil, onSelect: () => setEditing(true) },
+            { label: "Excluir", icon: Trash2, variant: "destructive" },
+          ]}
+        />
+        <Dialog
+          open={editing}
+          onOpenChange={setEditing}
+          title="Editar proposta #1042"
+          description="Altere os dados e salve."
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setEditing(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={() => setEditing(false)}>Salvar</Button>
+            </>
+          }
+        >
+          <Input label="Cliente" defaultValue="Ana Souza" />
+        </Dialog>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "O “…” de uma linha de tabela: o item do menu abre o diálogo por estado (`open`). O item some com o menu, então, ao fechar, o foco volta para o gatilho do menu.",
+      },
+    },
   },
 }
 

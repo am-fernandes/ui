@@ -8,6 +8,7 @@ import type * as React from "react"
 import { cn } from "@/lib/utils"
 import { motionSheet, overlayBase } from "./_internal/animations"
 import { modalBodyClass } from "./_internal/modal-body"
+import { useModalOpen, useReturnFocus } from "./_internal/modal-state"
 import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
 
 // The panel is a column: title, description and footer keep their size, the
@@ -57,6 +58,13 @@ export interface SheetProps extends VariantProps<typeof sheetVariants> {
   onOpenChange?: (open: boolean) => void
   closeLabel?: string
   hideCloseButton?: boolean
+  /**
+   * Handler do foco ao fechar. Por padrão o foco volta para o `trigger`; sem
+   * `trigger` (aberto por `open`, a partir de um botão da página ou de um item
+   * de menu), volta para o elemento que tinha o foco quando o painel abriu.
+   * Chame `event.preventDefault()` para mandar o foco para outro lugar.
+   */
+  onCloseAutoFocus?: (event: Event) => void
   className?: string
 }
 
@@ -72,14 +80,22 @@ function Sheet({
   side = "right",
   closeLabel = "Close",
   hideCloseButton = false,
+  onCloseAutoFocus,
   className,
 }: SheetProps) {
+  const [isOpen, setOpen] = useModalOpen({ open, defaultOpen, onOpenChange })
+  // Without a `trigger`, focus goes back to where it was when the panel opened.
+  const returnFocus = useReturnFocus({
+    open: isOpen,
+    hasTrigger: Boolean(trigger),
+    onCloseAutoFocus,
+  })
   // The popovers, menus and tooltips opened inside the panel render into its
   // content element (see `OverlayContainerProvider`).
   const [overlayContainer, contentRef] = useOverlayContainerState()
 
   return (
-    <DialogPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root open={isOpen} onOpenChange={setOpen}>
       {trigger ? <DialogPrimitive.Trigger asChild>{trigger}</DialogPrimitive.Trigger> : null}
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay data-slot="sheet-overlay" className={overlayBase} />
@@ -88,6 +104,7 @@ function Sheet({
           data-slot="sheet-content"
           data-side={side}
           className={cn(sheetVariants({ side }), className)}
+          onCloseAutoFocus={returnFocus}
         >
           <OverlayContainerProvider container={overlayContainer}>
             <DialogPrimitive.Title
