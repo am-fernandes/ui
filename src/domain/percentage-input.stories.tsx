@@ -22,6 +22,7 @@ const meta = {
           '- `emptyValue` — o que vale um campo vazio. `"zero"` (padrão): o campo sempre tem um número e limpar volta a `0,00`. `"null"`: o campo pode ficar vazio, `value` aceita `null`, `onValueChange` passa a receber `number | null`, o placeholder aparece e o `required` nativo funciona.',
           "- `max` — teto do percentual (padrão 100). A tecla (ou a colagem) que passaria dele é recusada: o campo fica com o que tinha.",
           "- `min` — piso do percentual, aplicado quando o campo perde o foco. Com `min` negativo o campo aceita percentual negativo.",
+          "- `decimals` — casas decimais: `2` (padrão, `12,50`), `1` (`12,5`) ou `0` (`12`).",
           "- `label` — rótulo renderizado pelo próprio componente via `FieldShell`. Prefira esta prop em vez de um `<Label>` externo.",
           "- `name` — nome no formulário nativo. O form recebe o número (`12.5`), por um input oculto.",
           "- `size` — altura do campo: `sm` (32px), `md` (40px, padrão) ou `lg` (44px).",
@@ -259,6 +260,45 @@ export const MinMax: Story = {
       description: {
         story:
           "`max` é um teto: a tecla que passaria dele é recusada e o campo fica com o que tinha, sem trocar o número digitado por outro. `min` vale quando o campo perde o foco, porque durante a digitação o valor passa por números menores no caminho.",
+      },
+    },
+  },
+}
+
+export const Decimals: Story = {
+  args: {},
+  render: () => {
+    const [two, setTwo] = React.useState<number>(12.5)
+    const [one, setOne] = React.useState<number>(12.5)
+    const [none, setNone] = React.useState<number>(12)
+    return (
+      <div className="flex w-80 flex-col gap-4">
+        <PercentageInput id="rate-2" label="Duas casas" value={two} onValueChange={setTwo} />
+        <PercentageInput
+          id="rate-1"
+          label="Uma casa"
+          decimals={1}
+          value={one}
+          onValueChange={setOne}
+        />
+        <PercentageInput
+          id="rate-0"
+          label="Sem casas"
+          decimals={0}
+          value={none}
+          onValueChange={setNone}
+        />
+        <p className="text-xs text-muted-foreground">
+          Valores internos: {two} / {one} / {none}
+        </p>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`decimals` define quantas casas o campo mostra e guarda. Os dígitos digitados preenchem a última casa primeiro: com uma casa, `1`, `2`, `5` mostra `0,1`, `1,2`, `12,5`.",
       },
     },
   },

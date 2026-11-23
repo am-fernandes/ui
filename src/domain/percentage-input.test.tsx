@@ -648,4 +648,89 @@ describe("PercentageInput", () => {
       expect(input).toHaveValue("5,00")
     })
   })
+
+  // O campo só tinha duas casas: uma taxa de juros de uma casa ou um
+  // percentual inteiro apareciam como "12,50" e "12,00".
+  describe("decimals", () => {
+    function Rate({ decimals, initial = 0 }: { decimals: 0 | 1 | 2; initial?: number }) {
+      const [value, setValue] = React.useState(initial)
+      return (
+        <>
+          <PercentageInput
+            label="Taxa"
+            decimals={decimals}
+            value={value}
+            onValueChange={setValue}
+          />
+          <output data-testid="value">{String(value)}</output>
+        </>
+      )
+    }
+
+    it("o padrão continua sendo duas casas", () => {
+      render(<PercentageInput value={12.5} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("12,50")
+    })
+
+    it.each([
+      [2, "12,50"],
+      [1, "12,5"],
+      [0, "13"],
+    ] as const)("com %d casas, 12.5 aparece como %s", (decimals, shown) => {
+      render(<PercentageInput decimals={decimals} value={12.5} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue(shown)
+    })
+
+    it("com uma casa, os dígitos entram pelos décimos", async () => {
+      const user = userEvent.setup()
+      render(<Rate decimals={1} />)
+      const input = screen.getByRole("textbox")
+      expect(input).toHaveValue("0,0")
+      await user.click(input)
+      await user.keyboard("{End}125")
+      expect(input).toHaveValue("12,5")
+      expect(screen.getByTestId("value")).toHaveTextContent("12.5")
+    })
+
+    it("sem casas, os dígitos são o percentual inteiro", async () => {
+      const user = userEvent.setup()
+      render(<Rate decimals={0} />)
+      const input = screen.getByRole("textbox")
+      expect(input).toHaveValue("0")
+      await user.click(input)
+      await user.keyboard("{End}75")
+      expect(input).toHaveValue("75")
+      expect(screen.getByTestId("value")).toHaveTextContent("75")
+      // 750 passaria de 100.
+      await user.keyboard("0")
+      expect(input).toHaveValue("75")
+    })
+
+    it("o valor colado é arredondado para as casas do campo", async () => {
+      const user = userEvent.setup()
+      render(<Rate decimals={1} />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.paste("12,56")
+      expect(input).toHaveValue("12,6")
+      expect(screen.getByTestId("value")).toHaveTextContent("12.6")
+    })
+
+    it("o form recebe o número com as casas do campo", () => {
+      const { container } = render(
+        <form>
+          <PercentageInput name="taxa" decimals={1} value={12.5} onValueChange={vi.fn()} />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("taxa")).toBe("12.5")
+    })
+
+    it('com emptyValue="null", o placeholder acompanha as casas', () => {
+      render(
+        <PercentageInput emptyValue="null" decimals={1} value={null} onValueChange={vi.fn()} />,
+      )
+      expect(screen.getByRole("textbox")).toHaveAttribute("placeholder", "0,0")
+    })
+  })
 })

@@ -1,5 +1,6 @@
 "use client"
 
+import { formatUnits } from "./_internal/decimal-engine"
 import { type DecimalFieldProps, DecimalInput } from "./_internal/decimal-input"
 
 interface PercentageInputBaseProps extends DecimalFieldProps {
@@ -17,6 +18,13 @@ interface PercentageInputBaseProps extends DecimalFieldProps {
    * percentages, with the minus key.
    */
   min?: number
+  /**
+   * Decimal places shown and kept: `2` (12,50), `1` (12,5) or `0` (12).
+   * Typed digits fill the last place first, and a value with more places is
+   * rounded.
+   * @default 2
+   */
+  decimals?: 0 | 1 | 2
 }
 
 interface PercentageInputZeroProps extends PercentageInputBaseProps {
@@ -57,6 +65,7 @@ function PercentageInput({
   onValueChange,
   max = 100,
   min,
+  decimals = 2,
   ...props
 }: PercentageInputProps) {
   const allowEmpty = emptyValue === "null"
@@ -66,11 +75,11 @@ function PercentageInput({
   return (
     <DecimalInput
       // An empty field shows the format it expects.
-      placeholder={allowEmpty ? "0,00" : undefined}
+      placeholder={allowEmpty ? formatUnits(0, decimals) : undefined}
       {...props}
       slot="percentage-input"
       trailing="%"
-      decimals={2}
+      decimals={decimals}
       value={value}
       defaultValue={defaultValue}
       onValueChange={(next) => report?.(allowEmpty ? next : (next ?? 0))}

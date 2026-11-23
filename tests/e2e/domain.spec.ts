@@ -642,6 +642,28 @@ test.describe("PercentageInput: editar no meio", () => {
   })
 })
 
+test.describe("PercentageInput: casas decimais", () => {
+  test("cada campo mostra e preenche as casas que tem", async ({ page }) => {
+    await gotoStory(page, "domain-percentageinput--decimals")
+    const two = page.getByRole("textbox", { name: "Duas casas" })
+    const one = page.getByRole("textbox", { name: "Uma casa" })
+    const none = page.getByRole("textbox", { name: "Sem casas" })
+    await expect(two).toHaveValue("12,50")
+    await expect(one).toHaveValue("12,5")
+    await expect(none).toHaveValue("12")
+
+    for (const input of [two, one, none]) {
+      await input.press("ControlOrMeta+A")
+      await page.keyboard.type("375")
+    }
+    await expect(two).toHaveValue("3,75")
+    await expect(one).toHaveValue("37,5")
+    // 375 passaria de 100: o terceiro dígito é recusado.
+    await expect(none).toHaveValue("37")
+    await expect(page.getByText("Valores internos: 3.75 / 37.5 / 37")).toBeVisible()
+  })
+})
+
 test.describe("PercentageInput: colar", () => {
   test.beforeEach(async ({ context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"])
