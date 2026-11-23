@@ -820,6 +820,30 @@ test.describe("MultiInput: alvo de remover", () => {
   })
 })
 
+test.describe("MultiInput: tamanho", () => {
+  test("sm, md e lg medem 32, 40 e 44px com uma linha, e crescem com mais itens", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-multiinput--sizes")
+    const heights: Record<string, number> = {}
+    for (const size of ["sm", "md", "lg"]) {
+      const box = await page.getByRole("group", { name: `Tags (${size})` }).boundingBox()
+      heights[size] = box?.height ?? 0
+    }
+    expect(heights).toEqual({ sm: 32, md: 40, lg: 44 })
+
+    // Vazia, a caixa tem a mesma altura.
+    await page.getByRole("button", { name: "Remover urgente" }).first().click()
+    expect((await page.getByRole("group", { name: "Tags (sm)" }).boundingBox())?.height).toBe(32)
+
+    const input = page.getByRole("textbox", { name: "Tags (md)" })
+    await input.fill("um, dois, tres, quatro, cinco, seis, sete, oito, nove, dez")
+    await input.press("Enter")
+    const grown = (await page.getByRole("group", { name: "Tags (md)" }).boundingBox())?.height
+    expect(grown).toBeGreaterThan(40)
+  })
+})
+
 test.describe("MultiInput: limite de itens", () => {
   test("com a lista cheia, o item novo é recusado e os antigos ficam", async ({ page }) => {
     await gotoStory(page, "domain-multiinput--max-items-3")

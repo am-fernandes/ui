@@ -31,6 +31,7 @@ const meta = {
           "- `prefix` / `suffix` — strings concatenadas ao redor do valor dentro do Badge (ex.: `R$`, ` dias`).",
           "- `maxItems` — teto de tokens. Os itens que já estão na lista ficam; os novos entram enquanto há espaço e os demais são recusados com `onReject('max-items')`.",
           "- `onReject` — chamado com `'max-items'` ou `'invalid'` (number-mode com token não numérico).",
+          "- `size` — `'sm'`, `'md'` (padrão) ou `'lg'`: altura mínima de 32, 40 ou 44px, a mesma dos outros controles.",
           "- `label`, `description`, `error`, `required`, `labelPosition`, `placeholder`, `disabled`, `id` — padrão do `FieldShell`.",
           "",
           "**Exemplo de uso:**",
@@ -314,6 +315,29 @@ export const DedupExample: Story = {
       description: {
         story:
           "Tokens duplicados são silenciosamente descartados — o componente usa um `Set` para garantir unicidade.",
+      },
+    },
+  },
+}
+
+export const Sizes: Story = {
+  render: () => {
+    const [sm, setSm] = useState<string[]>(["urgente"])
+    const [md, setMd] = useState<string[]>(["urgente"])
+    const [lg, setLg] = useState<string[]>(["urgente"])
+    return (
+      <div className="flex w-80 flex-col gap-4">
+        <MultiInput label="Tags (sm)" size="sm" value={sm} onValueChange={setSm} />
+        <MultiInput label="Tags (md)" size="md" value={md} onValueChange={setMd} />
+        <MultiInput label="Tags (lg)" size="lg" value={lg} onValueChange={setLg} />
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` dá a altura mínima da caixa, borda incluída: 32, 40 e 44px, a mesma de um `Button` ou campo do mesmo tamanho. Com mais itens do que cabem numa linha, a caixa cresce.",
       },
     },
   },

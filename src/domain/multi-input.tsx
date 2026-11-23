@@ -13,11 +13,22 @@ import {
 } from "react"
 
 import { cn } from "@/lib/utils"
+import {
+  type ControlSize,
+  controlMinHeight,
+  controlPaddingX,
+} from "../primitives/_internal/control-size"
 import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Badge } from "../primitives/badge"
 
 interface MultiInputBaseProps {
+  /**
+   * Minimum height of the box, border included: `sm` 32px, `md` 40px, `lg`
+   * 44px, the same as a button or field of that size. It grows with the items.
+   * @default "md"
+   */
+  size?: ControlSize
   disabled?: boolean
   placeholder?: string
   /** Validation message — when set, the wrapper turns red and the message renders below. */
@@ -109,6 +120,7 @@ function parseNumberInput(raw: string): ParsedNumberResult {
 
 function MultiInput(props: MultiInputProps) {
   const {
+    size = "md",
     disabled = false,
     placeholder = props.type === "number" ? "Adicione um número" : "Adicione um item",
     error,
@@ -253,7 +265,12 @@ function MultiInput(props: MultiInputProps) {
         data-type={props.type === "number" ? "number" : "string"}
         onClick={focusInput}
         className={cn(
-          "flex min-h-9 flex-wrap items-center gap-1.5 rounded-element border border-input bg-card px-3 py-2.5 text-sm field-states cursor-text",
+          // The height comes from the control size; the vertical padding only
+          // spaces the rows once the items wrap.
+          "flex flex-wrap items-center gap-1.5 rounded-element border border-input bg-card text-sm field-states cursor-text",
+          controlMinHeight[size],
+          controlPaddingX[size],
+          size === "sm" ? "py-1" : "py-1.5",
           disabled && "cursor-default",
           hasError && "border-destructive-text field-error",
         )}
