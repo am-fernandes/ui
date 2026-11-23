@@ -243,7 +243,12 @@ export {
 export { Separator, type SeparatorProps } from "./primitives/separator"
 export { Skeleton, type SkeletonProps } from "./primitives/skeleton"
 export { Switch, type SwitchProps } from "./primitives/switch"
-export { Textarea, type TextareaProps } from "./primitives/textarea"
+export {
+  Textarea,
+  defaultTextareaLabels,
+  type TextareaLabels,
+  type TextareaProps,
+} from "./primitives/textarea"
 export { Toggle, type ToggleProps, toggleVariants } from "./primitives/toggle"
 export {
   Token,

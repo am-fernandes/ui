@@ -3,6 +3,7 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useAnnounceWhen } from "./_internal/announce"
 import { type ControlSize, controlMinHeight, controlPaddingX } from "./_internal/control-size"
 import { FieldShell, type LabelPosition } from "./_internal/field-shell"
 import { observeValue } from "./_internal/observe-value"
@@ -17,6 +18,18 @@ const textareaSize: Record<ControlSize, string> = {
   lg: `${controlMinHeight.lg} ${controlPaddingX.lg} py-[11px]`,
 }
 
+export interface TextareaLabels {
+  /** How a screen reader reads the counter, shown on screen as "27/500". */
+  characterCount: (count: number, max: number) => string
+  /** Announced once, when what is typed reaches `maxLength`. */
+  limitReached: (max: number) => string
+}
+
+export const defaultTextareaLabels: TextareaLabels = {
+  characterCount: (count, max) => `${count} de ${max} caracteres`,
+  limitReached: (max) => `Limite de ${max} caracteres atingido`,
+}
+
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: React.ReactNode
   labelPosition?: LabelPosition
@@ -24,6 +37,15 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
   error?: string
   required?: boolean
   autoResize?: boolean
+  /**
+   * Besides limiting what can be typed, shows a counter ("27/500"). The
+   * counter is part of the field's description, read when the field gets
+   * focus; it is not announced at every key. Reaching the limit is announced
+   * once.
+   */
+  maxLength?: number
+  /** Text for screen readers. Defaults in `defaultTextareaLabels`. */
+  labels?: Partial<TextareaLabels>
   /**
    * Minimum height and padding: with `rows={1}` the box is 32px (`sm`), 40px
    * (`md`) or 44px (`lg`), the height of an `Input` of that size. More rows
@@ -44,6 +66,7 @@ function Textarea({
   autoResize,
   size = "md",
   maxLength,
+  labels,
   className,
   disabled,
   "aria-describedby": describedBy,
@@ -56,6 +79,7 @@ function Textarea({
   const ids = useFieldIds(id)
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
+  const l: TextareaLabels = { ...defaultTextareaLabels, ...labels }
 
   const isControlled = value !== undefined
   // The counter of an uncontrolled textarea follows the DOM, not `onChange`:
@@ -64,6 +88,11 @@ function Textarea({
     defaultValue == null ? 0 : String(defaultValue).length,
   )
   const length = isControlled ? String(value ?? "").length : domLength
+
+  const hasCounter = Boolean(maxLength)
+  const counterId = `${ids.controlId}-counter`
+  // The browser just stops accepting keys at the limit; say why, once.
+  useAnnounceWhen(hasCounter && length >= (maxLength ?? 0), l.limitReached(maxLength ?? 0))
 
   const localRef = React.useRef<HTMLTextAreaElement | null>(null)
   const mergedRef = React.useCallback(
@@ -175,6 +204,7 @@ function Textarea({
       aria-invalid={hasError ? true : undefined}
       aria-describedby={ids.describedBy(
         { description: hasDescription, error: hasError },
+        hasCounter && counterId,
         describedBy,
       )}
       disabled={disabled}
@@ -214,8 +244,17 @@ function Textarea({
     >
       {textareaEl}
       {maxLength ? (
-        <p className="text-right text-xs text-muted-foreground" aria-live="polite">
-          {length}/{maxLength}
+        // Not a live region: it would be read at every key. It describes the
+        // field instead, in words, and is read when the field gets focus.
+        <p
+          id={counterId}
+          data-slot="textarea-counter"
+          className="text-right text-xs tabular-nums text-muted-foreground"
+        >
+          <span aria-hidden="true">
+            {length}/{maxLength}
+          </span>
+          <span className="sr-only">{l.characterCount(length, maxLength)}</span>
         </p>
       ) : null}
     </FieldShell>

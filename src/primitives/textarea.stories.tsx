@@ -21,7 +21,8 @@ const meta: Meta<typeof Textarea> = {
           "- `description` — texto auxiliar.",
           "- `error` — mensagem de erro (`role=alert`, `aria-invalid` no campo).",
           "- `required` — marca como obrigatório.",
-          "- `maxLength` — limita caracteres E renderiza contador `atual/limite`.",
+          "- `maxLength` — limita caracteres e mostra o contador `atual/limite`. O contador entra na descrição do campo (lido quando o campo recebe foco, não a cada tecla) e o limite atingido é anunciado uma vez.",
+          "- `labels` — textos do contador para o leitor de tela (`characterCount`, `limitReached`).",
           "- `autoResize` — ajusta altura automaticamente ao conteúdo (`resize-none overflow-hidden`).",
           "- `size` — `sm`, `md` (padrão) ou `lg`: altura mínima e padding. Com `rows={1}` a caixa mede 32, 40 ou 44px, a altura de um `Input` do mesmo tamanho.",
           "- `disabled`, `readOnly` — estados de leitura.",
@@ -171,7 +172,7 @@ export const WithCounter: Story = {
     docs: {
       description: {
         story:
-          "Com `maxLength` o componente renderiza um contador `atual/limite` abaixo do campo, atualizado em tempo real.",
+          'Com `maxLength` o componente mostra um contador `atual/limite` abaixo do campo, atualizado em tempo real. Para o leitor de tela ele é parte da descrição do campo ("57 de 280 caracteres", lido quando o campo recebe foco), não uma região viva que fala a cada tecla. Ao chegar no limite, isso é anunciado uma vez.',
       },
     },
   },

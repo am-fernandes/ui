@@ -2,9 +2,9 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { useForm } from "react-hook-form"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { Textarea } from "./textarea"
+import { Textarea, defaultTextareaLabels } from "./textarea"
 
 describe("Textarea", () => {
   it("renders label associated with textarea", () => {
@@ -124,6 +124,83 @@ describe("Textarea", () => {
   it("applies custom className", () => {
     render(<Textarea label="X" className="my-ta" />)
     expect(screen.getByLabelText("X")).toHaveClass("my-ta")
+  })
+
+  // The counter used to be a polite live region: a screen reader read
+  // "27/500", "28/500"… after every key, and never when the field got focus.
+  describe("counter for assistive technology", () => {
+    const announcer = () => document.querySelector('[data-slot="live-announcer"]')
+    const counter = () => document.querySelector('[data-slot="textarea-counter"]') as HTMLElement
+    beforeEach(() => announcer()?.remove())
+
+    it("is not a live region: typing announces nothing", async () => {
+      render(<Textarea label="Obs" maxLength={100} defaultValue="abc" />)
+      expect(counter()).not.toHaveAttribute("aria-live")
+      expect(counter().closest("[aria-live], [role=status], [role=alert]")).toBeNull()
+      await userEvent.type(screen.getByLabelText("Obs"), "defg")
+      await new Promise((resolve) => setTimeout(resolve, 150))
+      expect(announcer()?.textContent ?? "").toBe("")
+    })
+
+    it("describes the field, in words, so it is read when the field gets focus", async () => {
+      render(<Textarea label="Obs" description="Ajuda" maxLength={100} defaultValue="abc" />)
+      const textarea = screen.getByLabelText("Obs")
+      expect(textarea.getAttribute("aria-describedby")?.split(" ")).toContain(counter().id)
+      expect(textarea).toHaveAccessibleDescription("Ajuda 3 de 100 caracteres")
+      // What is on screen stays "3/100", hidden from the reading.
+      expect(screen.getByText("3/100")).toHaveAttribute("aria-hidden", "true")
+      await userEvent.type(textarea, "d")
+      expect(textarea).toHaveAccessibleDescription("Ajuda 4 de 100 caracteres")
+    })
+
+    it("announces once when the limit is reached, and again only after leaving it", async () => {
+      render(<Textarea label="Obs" maxLength={5} defaultValue="abc" />)
+      const textarea = screen.getByLabelText("Obs")
+      await userEvent.type(textarea, "de")
+      await waitFor(() => expect(announcer()).toHaveTextContent("Limite de 5 caracteres atingido"))
+
+      announcer()?.remove()
+      // Still at the limit: more keys change nothing and say nothing.
+      await userEvent.type(textarea, "f")
+      await new Promise((resolve) => setTimeout(resolve, 150))
+      expect(announcer()?.textContent ?? "").toBe("")
+
+      await userEvent.type(textarea, "{Backspace}")
+      await userEvent.type(textarea, "z")
+      await waitFor(() => expect(announcer()).toHaveTextContent("Limite de 5 caracteres atingido"))
+    })
+
+    it("says nothing for a field that already mounts at the limit", async () => {
+      render(<Textarea label="Obs" maxLength={3} defaultValue="abc" />)
+      await new Promise((resolve) => setTimeout(resolve, 150))
+      expect(announcer()?.textContent ?? "").toBe("")
+    })
+
+    it("takes its words from `labels`", async () => {
+      render(
+        <Textarea
+          label="Notes"
+          maxLength={4}
+          defaultValue="abc"
+          labels={{
+            characterCount: (count, max) => `${count} of ${max} characters`,
+            limitReached: (max) => `Limit of ${max} characters reached`,
+          }}
+        />,
+      )
+      const textarea = screen.getByLabelText("Notes")
+      expect(textarea).toHaveAccessibleDescription("3 of 4 characters")
+      await userEvent.type(textarea, "d")
+      await waitFor(() => expect(announcer()).toHaveTextContent("Limit of 4 characters reached"))
+      expect(defaultTextareaLabels.characterCount(3, 4)).toBe("3 de 4 caracteres")
+      expect(defaultTextareaLabels.limitReached(4)).toBe("Limite de 4 caracteres atingido")
+    })
+
+    it("has no counter, and describes nothing, without maxLength", () => {
+      render(<Textarea label="Obs" />)
+      expect(counter()).toBeNull()
+      expect(screen.getByLabelText("Obs")).not.toHaveAttribute("aria-describedby")
+    })
   })
 
   // A textarea grows with its content, so `size` gives the minimum height: one
