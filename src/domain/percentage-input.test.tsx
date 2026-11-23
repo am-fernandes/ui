@@ -278,4 +278,68 @@ describe("PercentageInput", () => {
       },
     )
   })
+
+  // Regressão: a colagem seguia a regra da digitação (centésimos primeiro),
+  // então "12,5" colado virava 1,25.
+  describe("colagem", () => {
+    async function pasteInto(text: string, initial = 0, max?: number) {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      function Harness() {
+        const [value, setValue] = React.useState(initial)
+        return (
+          <PercentageInput
+            label="Taxa"
+            max={max}
+            value={value}
+            onValueChange={(next) => {
+              onValueChange(next)
+              setValue(next)
+            }}
+          />
+        )
+      }
+      render(<Harness />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.paste(text)
+      return { input, onValueChange }
+    }
+
+    it.each([
+      ["12,5", 12.5, "12,50"],
+      ["12.5", 12.5, "12,50"],
+      ["12,50%", 12.5, "12,50"],
+      ["7", 7, "7,00"],
+      ["0,75", 0.75, "0,75"],
+      ["33,333", 33.33, "33,33"],
+    ])("%s vira %d por cento", async (text, value, shown) => {
+      const { input, onValueChange } = await pasteInto(text)
+      expect(onValueChange).toHaveBeenLastCalledWith(value)
+      expect(input).toHaveValue(shown)
+    })
+
+    it("o valor colado substitui o que estava no campo", async () => {
+      const { input, onValueChange } = await pasteInto("12,5", 99)
+      expect(onValueChange).toHaveBeenLastCalledWith(12.5)
+      expect(input).toHaveValue("12,50")
+    })
+
+    it("texto sem número não muda o campo", async () => {
+      const { input, onValueChange } = await pasteInto("a definir", 10)
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(input).toHaveValue("10,00")
+    })
+
+    it("o onPaste de quem usa o campo é chamado e pode cancelar a colagem", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const onPaste = vi.fn((e: React.ClipboardEvent<HTMLInputElement>) => e.preventDefault())
+      render(<PercentageInput value={0} onValueChange={onValueChange} onPaste={onPaste} />)
+      await user.click(screen.getByRole("textbox"))
+      await user.paste("12,5")
+      expect(onPaste).toHaveBeenCalledTimes(1)
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+  })
 })

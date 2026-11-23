@@ -468,6 +468,29 @@ test.describe("CurrencyInput: colar", () => {
   }
 })
 
+test.describe("PercentageInput: colar", () => {
+  test.beforeEach(async ({ context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"])
+  })
+
+  const pastes = [
+    { text: "12,5", shown: "12,50" },
+    { text: "12.5", shown: "12,50" },
+    { text: "7", shown: "7,00" },
+    { text: "33,33%", shown: "33,33" },
+  ]
+
+  for (const item of pastes) {
+    test(`"${item.text}" colado vira ${item.shown}`, async ({ page }) => {
+      await gotoStory(page, "domain-percentageinput--default")
+      const input = page.getByRole("textbox", { name: /Comissão/ })
+      await input.click()
+      await paste(page, item.text)
+      await expect(input).toHaveValue(item.shown)
+    })
+  }
+})
+
 test.describe("PercentageInput", () => {
   test("never goes above max", async ({ page }) => {
     await gotoStory(page, "domain-percentageinput--default")
