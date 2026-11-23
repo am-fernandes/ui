@@ -7,7 +7,12 @@ import type * as React from "react"
 import { cn } from "@/lib/utils"
 import { dialogContentBase, overlayBase } from "./_internal/animations"
 import { modalBodyClass } from "./_internal/modal-body"
-import { useModalOpen, useReturnFocus } from "./_internal/modal-state"
+import {
+  type ModalFooter,
+  renderModalFooter,
+  useModalOpen,
+  useReturnFocus,
+} from "./_internal/modal-state"
 import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
 import { isToastFocused, isToastPress } from "./_internal/toasts"
 
@@ -23,8 +28,22 @@ export interface DialogProps {
    * and title, description and footer stay in place.
    */
   children?: React.ReactNode
-  /** Footer slot (renders flex-end justify with gap-2). Stays at the bottom. */
-  footer?: React.ReactNode
+  /**
+   * Footer slot (renders flex-end justify with gap-2). Stays at the bottom.
+   *
+   * Also takes a function, which receives `close`: the way an uncontrolled
+   * modal closes from "Cancelar".
+   *
+   * ```tsx
+   * footer={({ close }) => (
+   *   <>
+   *     <Button variant="outline" onClick={close}>Cancelar</Button>
+   *     <Button type="submit" form="proposta">Salvar</Button>
+   *   </>
+   * )}
+   * ```
+   */
+  footer?: ModalFooter
   open?: boolean
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
@@ -86,6 +105,7 @@ function Dialog({
   // The popovers, menus and tooltips opened inside the dialog render into its
   // content element (see `OverlayContainerProvider`).
   const [overlayContainer, contentRef] = useOverlayContainerState()
+  const footerContent = renderModalFooter(footer, () => setOpen(false))
 
   return (
     <DialogPrimitive.Root open={isOpen} onOpenChange={setOpen}>
@@ -139,9 +159,9 @@ function Dialog({
                 {children}
               </div>
             ) : null}
-            {footer ? (
+            {footerContent ? (
               <div data-slot="dialog-footer" className="flex shrink-0 justify-end gap-2">
-                {footer}
+                {footerContent}
               </div>
             ) : null}
             {showCloseButton ? (

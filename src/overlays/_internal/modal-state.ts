@@ -27,6 +27,22 @@ export function useModalOpen({
   return [isOpen, setOpen] as const
 }
 
+/** What the footer of a modal (Dialog, Sheet) can be. */
+export type ModalFooter = React.ReactNode | ((helpers: ModalFooterHelpers) => React.ReactNode)
+
+export interface ModalFooterHelpers {
+  /**
+   * Closes the modal, as the X does: `onOpenChange(false)` is called and
+   * focus goes back. For "Cancelar" in an uncontrolled modal.
+   */
+  close: () => void
+}
+
+/** Renders a `ModalFooter`. `null` when there is nothing to render. */
+export function renderModalFooter(footer: ModalFooter, close: () => void): React.ReactNode {
+  return typeof footer === "function" ? footer({ close }) : footer
+}
+
 /**
  * Gives focus back when a modal that has no `trigger` closes.
  *

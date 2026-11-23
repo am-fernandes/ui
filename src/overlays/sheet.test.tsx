@@ -210,3 +210,53 @@ describe("Sheet", () => {
     })
   })
 })
+
+// An uncontrolled Sheet had no way to close from its footer: no `close`, no
+// exported Close part. "Cancelar" was inert in the stories.
+describe("Sheet footer as a function", () => {
+  it("receives close(), which closes an uncontrolled sheet", async () => {
+    const onOpenChange = vi.fn()
+    render(
+      <Sheet
+        trigger={<button type="button">Abrir</button>}
+        title="Editar proposta"
+        onOpenChange={onOpenChange}
+        footer={({ close }) => (
+          <button type="button" onClick={close}>
+            Cancelar
+          </button>
+        )}
+      />,
+    )
+    await userEvent.click(screen.getByRole("button", { name: "Abrir" }))
+    expect(screen.getByRole("dialog", { name: "Editar proposta" })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
+    expect(screen.queryByRole("dialog", { name: "Editar proposta" })).not.toBeInTheDocument()
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+    // Focus goes back to the trigger, as with the X.
+    expect(screen.getByRole("button", { name: "Abrir" })).toHaveFocus()
+  })
+
+  it("closes a controlled one through onOpenChange", async () => {
+    const onOpenChange = vi.fn()
+    render(
+      <Sheet
+        open
+        onOpenChange={onOpenChange}
+        title="X"
+        footer={({ close }) => (
+          <button type="button" onClick={close}>
+            Cancelar
+          </button>
+        )}
+      />,
+    )
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it("still takes a plain node", () => {
+    render(<Sheet open title="X" footer={<span>rodapé</span>} />)
+    expect(screen.getByText("rodapé")).toBeInTheDocument()
+  })
+})

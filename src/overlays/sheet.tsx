@@ -8,7 +8,12 @@ import type * as React from "react"
 import { cn } from "@/lib/utils"
 import { motionSheet, overlayBase } from "./_internal/animations"
 import { modalBodyClass } from "./_internal/modal-body"
-import { useModalOpen, useReturnFocus } from "./_internal/modal-state"
+import {
+  type ModalFooter,
+  renderModalFooter,
+  useModalOpen,
+  useReturnFocus,
+} from "./_internal/modal-state"
 import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
 import { isToastFocused, isToastPress } from "./_internal/toasts"
 
@@ -52,8 +57,22 @@ export interface SheetProps extends VariantProps<typeof sheetVariants> {
    * and scrolls when its content is taller than that.
    */
   children?: React.ReactNode
-  /** Footer slot, at the bottom of the panel (flex-end, gap-2). */
-  footer?: React.ReactNode
+  /**
+   * Footer slot, at the bottom of the panel (flex-end, gap-2).
+   *
+   * Also takes a function, which receives `close`: the way an uncontrolled
+   * modal closes from "Cancelar".
+   *
+   * ```tsx
+   * footer={({ close }) => (
+   *   <>
+   *     <Button variant="outline" onClick={close}>Cancelar</Button>
+   *     <Button type="submit" form="proposta">Salvar</Button>
+   *   </>
+   * )}
+   * ```
+   */
+  footer?: ModalFooter
   open?: boolean
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
@@ -94,6 +113,7 @@ function Sheet({
   // The popovers, menus and tooltips opened inside the panel render into its
   // content element (see `OverlayContainerProvider`).
   const [overlayContainer, contentRef] = useOverlayContainerState()
+  const footerContent = renderModalFooter(footer, () => setOpen(false))
 
   return (
     <DialogPrimitive.Root open={isOpen} onOpenChange={setOpen}>
@@ -138,11 +158,11 @@ function Sheet({
                 {children}
               </div>
             ) : null}
-            {footer ? (
+            {footerContent ? (
               // `mt-auto`: with no body to fill the panel, the footer still
               // goes to the bottom.
               <div data-slot="sheet-footer" className="mt-auto flex shrink-0 justify-end gap-2">
-                {footer}
+                {footerContent}
               </div>
             ) : null}
             {!hideCloseButton ? (

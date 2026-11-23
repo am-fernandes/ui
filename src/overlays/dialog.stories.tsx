@@ -41,7 +41,9 @@ const meta: Meta<typeof Dialog> = {
           "  trigger={<Button>Editar perfil</Button>}",
           '  title="Editar perfil"',
           '  description="Atualize seu nome e e-mail."',
-          '  footer={<><Button variant="outline">Cancelar</Button><Button>Salvar</Button></>}',
+          "  footer={({ close }) => (",
+          '    <><Button variant="outline" onClick={close}>Cancelar</Button><Button>Salvar</Button></>',
+          "  )}",
           ">",
           '  <Input label="Nome" />',
           "</Dialog>",
@@ -99,9 +101,11 @@ export const WithFooter: Story = {
         <Input label="Nome" placeholder="João da Silva" />
       </div>
     ),
-    footer: (
+    footer: ({ close }) => (
       <>
-        <Button variant="outline">Cancelar</Button>
+        <Button variant="outline" onClick={close}>
+          Cancelar
+        </Button>
         <Button>Salvar</Button>
       </>
     ),
@@ -301,9 +305,11 @@ export const LongContent: Story = {
         ))}
       </div>
     ),
-    footer: (
+    footer: ({ close }) => (
       <>
-        <Button variant="outline">Cancelar</Button>
+        <Button variant="outline" onClick={close}>
+          Cancelar
+        </Button>
         <Button>Aceitar</Button>
       </>
     ),
@@ -360,9 +366,11 @@ export const LongForm: Story = {
         </Button>
       </form>
     ),
-    footer: (
+    footer: ({ close }) => (
       <>
-        <Button variant="outline">Cancelar</Button>
+        <Button variant="outline" onClick={close}>
+          Cancelar
+        </Button>
         <Button type="submit" form="proposta">
           Salvar
         </Button>

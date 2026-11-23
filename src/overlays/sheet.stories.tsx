@@ -142,9 +142,11 @@ export const WithFooter: Story = {
         <Textarea label="Descrição" autoResize />
       </div>
     ),
-    footer: (
+    footer: ({ close }) => (
       <>
-        <Button variant="outline">Cancelar</Button>
+        <Button variant="outline" onClick={close}>
+          Cancelar
+        </Button>
         <Button>Salvar</Button>
       </>
     ),
@@ -192,9 +194,11 @@ export const LongForm: Story = {
         ))}
       </form>
     ),
-    footer: (
+    footer: ({ close }) => (
       <>
-        <Button variant="outline">Cancelar</Button>
+        <Button variant="outline" onClick={close}>
+          Cancelar
+        </Button>
         <Button type="submit" form="lead">
           Salvar
         </Button>
@@ -243,14 +247,16 @@ export const WithForm: Story = {
       trigger={<Button>Cadastrar contato</Button>}
       title="Novo contato"
       description="Preencha os dados para criar um contato."
-      footer={
+      footer={({ close }) => (
         <>
-          <Button variant="outline">Cancelar</Button>
+          <Button variant="outline" onClick={close}>
+            Cancelar
+          </Button>
           <Button type="submit" form="contact-form">
             Salvar
           </Button>
         </>
-      }
+      )}
     >
       <form
         id="contact-form"

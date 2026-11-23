@@ -131,6 +131,24 @@ test.describe("Dialog", () => {
     await expect(trigger).toBeFocused()
   })
 
+  // The footer of an uncontrolled Dialog or Sheet had no way to close it: the
+  // stories' "Cancelar" did nothing. `footer` now takes ({ close }) => …
+  for (const [kind, id, opener, name] of [
+    ["Dialog", "overlays-dialog--with-footer", "Editar com footer", "Editar perfil"],
+    ["Sheet", "overlays-sheet--with-footer", "Abrir com footer", "Editar projeto"],
+  ] as const) {
+    test(`${kind}: Cancelar in the footer closes it and focus goes back`, async ({ page }) => {
+      await gotoStory(page, id, opener)
+      const trigger = page.getByRole("button", { name: opener })
+      await trigger.click()
+      const modal = page.getByRole("dialog", { name })
+      await expect(modal).toBeVisible()
+      await modal.getByRole("button", { name: "Cancelar" }).click()
+      await expect(modal).toHaveCount(0)
+      await expect(trigger).toBeFocused()
+    })
+  }
+
   test("dismissible=false blocks Escape and overlay click", async ({ page }) => {
     await gotoStory(page, "overlays-dialog--non-dismissible", "Abrir não-dismissível")
     await page.getByRole("button", { name: "Abrir não-dismissível" }).click()
