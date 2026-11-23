@@ -135,9 +135,16 @@ const contentClass = cn(
   "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
 )
 
+// The highlighted row: the hover layer for the pointer, plus the inset focus
+// ring when the keyboard took it there (5% alone is about 1.1:1). The menu
+// moves focus to the row under the pointer, and the browser counts that as
+// `:focus-visible`, so the panel says how it is being used (`data-modality`,
+// see `useMenuModality`). In forced colours, where layers and rings of colour
+// are flattened, the row takes the system highlight, as a native menu does.
 const rowClass = cn(
   "relative flex w-full cursor-pointer select-none items-center gap-2 rounded-element px-2 py-1.5 text-left text-sm outline-none transition-colors",
-  "focus:state-hover",
+  "focus:state-hover in-data-[modality=keyboard]:focus:focus-outline-inset",
+  "forced-colors:data-highlighted:bg-[Highlight] forced-colors:data-highlighted:text-[HighlightText]",
   "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
   "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
 )
@@ -146,6 +153,28 @@ const rowClass = cn(
 const indicatorRowClass = cn(rowClass, "pl-8")
 
 const labelClass = "px-2 py-1.5 text-xs font-medium text-muted-foreground"
+
+type Modality = "keyboard" | "pointer"
+
+/**
+ * How the menu is being used: by the keyboard or by a pointer. Kept in a ref
+ * (no render on every key or move) and written on the panels as
+ * `data-modality`. Shared with the submenus, which open from either one.
+ */
+const ModalityContext = React.createContext<React.RefObject<Modality> | null>(null)
+
+function useMenuModality() {
+  const ref = React.useContext(ModalityContext)
+  const mark = (modality: Modality) => (event: React.SyntheticEvent<HTMLElement>) => {
+    if (ref) ref.current = modality
+    event.currentTarget.setAttribute("data-modality", modality)
+  }
+  return {
+    "data-modality": ref?.current ?? "pointer",
+    onKeyDown: mark("keyboard"),
+    onPointerMove: mark("pointer"),
+  }
+}
 
 function Shortcut({ value }: { value?: string }) {
   if (!value) return null
@@ -311,6 +340,7 @@ function SubmenuRow({ item }: { item: DropdownMenuSubmenu }) {
   const Icon = item.icon
   // Same container as the menu itself (the modal it was opened from, if any).
   const container = useOverlayContainer()
+  const modality = useMenuModality()
   return (
     <DropdownMenuPrimitive.Sub>
       <DropdownMenuPrimitive.SubTrigger
@@ -327,6 +357,7 @@ function SubmenuRow({ item }: { item: DropdownMenuSubmenu }) {
       </DropdownMenuPrimitive.SubTrigger>
       <DropdownMenuPrimitive.Portal container={container}>
         <DropdownMenuPrimitive.SubContent
+          {...modality}
           data-slot="dropdown-menu-sub-content"
           sideOffset={4}
           collisionPadding={8}
@@ -395,6 +426,9 @@ function DropdownMenu({
   // into <body>): see `OverlayContainerProvider`. `null`: the modal is still
   // mounting and its element comes in the next pass.
   const container = useOverlayContainer()
+  // Opened from the keyboard (Enter, Space, ↓ on the trigger), the first row
+  // is focused before any key reaches the panel: the trigger tells it.
+  const modality = React.useRef<Modality>("pointer")
 
   return (
     <DropdownMenuPrimitive.Root
@@ -403,29 +437,60 @@ function DropdownMenu({
       onOpenChange={onOpenChange}
       modal={modal}
     >
-      <DropdownMenuPrimitive.Trigger asChild data-slot="dropdown-menu-trigger">
+      <DropdownMenuPrimitive.Trigger
+        asChild
+        data-slot="dropdown-menu-trigger"
+        onKeyDown={() => {
+          modality.current = "keyboard"
+        }}
+        onPointerDown={() => {
+          modality.current = "pointer"
+        }}
+      >
         {trigger}
       </DropdownMenuPrimitive.Trigger>
       {container === null ? null : (
         <DropdownMenuPrimitive.Portal container={container}>
-          <DropdownMenuPrimitive.Content
-            data-slot="dropdown-menu-content"
-            side={side}
-            align={align}
-            sideOffset={sideOffset}
-            collisionPadding={8}
-            loop
-            className={cn(
-              contentClass,
-              "origin-(--radix-dropdown-menu-content-transform-origin)",
-              className,
-            )}
-          >
-            <Entries items={items} />
-          </DropdownMenuPrimitive.Content>
+          <ModalityContext.Provider value={modality}>
+            <MenuContent
+              side={side}
+              align={align}
+              sideOffset={sideOffset}
+              className={className}
+              items={items}
+            />
+          </ModalityContext.Provider>
         </DropdownMenuPrimitive.Portal>
       )}
     </DropdownMenuPrimitive.Root>
+  )
+}
+
+function MenuContent({
+  side,
+  align,
+  sideOffset,
+  className,
+  items,
+}: Pick<DropdownMenuProps, "side" | "align" | "sideOffset" | "className" | "items">) {
+  const modality = useMenuModality()
+  return (
+    <DropdownMenuPrimitive.Content
+      {...modality}
+      data-slot="dropdown-menu-content"
+      side={side}
+      align={align}
+      sideOffset={sideOffset}
+      collisionPadding={8}
+      loop
+      className={cn(
+        contentClass,
+        "origin-(--radix-dropdown-menu-content-transform-origin)",
+        className,
+      )}
+    >
+      <Entries items={items} />
+    </DropdownMenuPrimitive.Content>
   )
 }
 

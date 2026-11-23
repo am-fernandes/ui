@@ -1069,6 +1069,49 @@ test.describe("DropdownMenu", () => {
     await expect(trigger).toBeFocused()
   })
 
+  // The item under the keyboard had only a 5% layer (about 1.1:1) and
+  // `outline-none`; in forced colours nothing at all told it apart.
+  for (const forced of [false, true]) {
+    test(`the item reached with the keyboard is clearly marked${forced ? ", in forced colours too" : ""}`, async ({
+      page,
+    }) => {
+      if (forced) await page.emulateMedia({ forcedColors: "active" })
+      await gotoStory(page, "overlays-dropdownmenu--default", "Ações")
+      await page.getByRole("button", { name: "Ações" }).focus()
+      await page.keyboard.press("Enter")
+      const menu = page.getByRole("menu")
+      await expect(menu).toBeVisible()
+      await page.keyboard.press("ArrowDown")
+      const item = menu.getByRole("menuitem", { name: /Duplicar/ })
+      await expect(item).toBeFocused()
+
+      const look = (name: string) =>
+        menu.getByRole("menuitem", { name: new RegExp(name) }).evaluate((el) => {
+          const s = getComputedStyle(el)
+          return {
+            outline: s.outlineStyle === "none" ? "none" : `${s.outlineWidth} ${s.outlineStyle}`,
+            background: s.backgroundColor,
+          }
+        })
+      const focused = await look("Duplicar")
+      const resting = await look("Compartilhar")
+      if (forced) {
+        // The system highlight, as native menus have it.
+        expect(focused.background).not.toBe(resting.background)
+      }
+      expect(focused.outline).toBe("2px solid")
+      expect(resting.outline).toBe("none")
+
+      if (forced) return
+      // With the mouse, the hover layer only: no ring following the pointer.
+      await page.keyboard.press("Escape")
+      await page.getByRole("button", { name: "Ações" }).click()
+      await menu.getByRole("menuitem", { name: /Compartilhar/ }).hover()
+      await expect(menu.getByRole("menuitem", { name: /Compartilhar/ })).toBeFocused()
+      expect((await look("Compartilhar")).outline).toBe("none")
+    })
+  }
+
   test("keyboard: arrows skip disabled items, typeahead jumps, Enter selects", async ({ page }) => {
     await gotoStory(page, "overlays-dropdownmenu--default", "Ações")
     await page.getByRole("button", { name: "Ações" }).focus()
