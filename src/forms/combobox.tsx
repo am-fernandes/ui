@@ -14,6 +14,7 @@ import {
 } from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Badge } from "../primitives/badge"
+import { assignRef } from "./_internal/assign-ref"
 
 const CREATE_ACTION_VALUE = "__create_action__"
 
@@ -104,6 +105,14 @@ export function Combobox(props: ComboboxProps) {
   const resolvedEmptyMessage = emptyMessage ?? "Nenhuma opção encontrada."
 
   const ids = useFieldIds(id)
+  const triggerRef = React.useRef<HTMLButtonElement | null>(null)
+  const setTriggerRef = React.useCallback(
+    (node: HTMLButtonElement | null) => {
+      triggerRef.current = node
+      assignRef(ref, node)
+    },
+    [ref],
+  )
   const listboxId = `${ids.controlId}-listbox`
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
@@ -154,13 +163,14 @@ export function Combobox(props: ComboboxProps) {
     }
   }
 
-  const handleClearAll = (e: React.SyntheticEvent) => {
-    e.stopPropagation()
+  const handleClearAll = () => {
     if (isMultiple && props.onValueChange) {
       props.onValueChange([])
     } else if (!isMultiple && props.onValueChange) {
       props.onValueChange("")
     }
+    // The clear button goes away with the value: keep the focus in the field.
+    triggerRef.current?.focus()
   }
 
   const renderTriggerContent = () => {
@@ -235,10 +245,15 @@ export function Combobox(props: ComboboxProps) {
     )
   })()
 
+  // Clearing is a separate button next to the trigger, never inside it: a
+  // control nested in a <button> is unreachable for some screen readers and
+  // stays focusable while the trigger is disabled.
+  const showClear = hasValue && !disabled
+
   const trigger = (
     <button
       type="button"
-      ref={ref}
+      ref={setTriggerRef}
       id={ids.controlId}
       // biome-ignore lint/a11y/useSemanticElements: combobox button pattern (WAI-ARIA listbox combobox)
       role="combobox"
@@ -258,29 +273,23 @@ export function Combobox(props: ComboboxProps) {
       )}
     >
       <div className="flex-1 text-left truncate min-w-0">{renderTriggerContent()}</div>
-      <div className="flex items-center gap-1 ml-2">
-        {hasValue ? (
-          <span
-            // biome-ignore lint/a11y/useSemanticElements: avoid a nested button inside the trigger button
-            role="button"
-            tabIndex={0}
-            aria-label="Limpar seleção"
-            className="inline-flex cursor-pointer rounded-inner state-layer focus-visible:focus-outline"
-            onClick={handleClearAll}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault()
-                handleClearAll(e)
-              }
-            }}
-          >
-            <X className="h-4 w-4 shrink-0 opacity-50" />
-          </span>
-        ) : null}
-        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-      </div>
+      {/* Room for the clear button, which sits over this spot. */}
+      {showClear ? <span aria-hidden="true" className="size-6 shrink-0" /> : null}
+      <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
     </button>
   )
+
+  const clearButton = showClear ? (
+    <button
+      type="button"
+      aria-label="Limpar seleção"
+      data-slot="combobox-clear"
+      className="absolute top-1/2 right-9 inline-flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-inner state-layer focus-visible:focus-outline"
+      onClick={handleClearAll}
+    >
+      <X aria-hidden="true" className="size-4 shrink-0 opacity-50" />
+    </button>
+  ) : null
 
   return (
     <FieldShell
@@ -297,83 +306,86 @@ export function Combobox(props: ComboboxProps) {
     >
       <div className="flex flex-col gap-2" data-slot="combobox">
         {multiBadges}
-        <Popover
-          open={open}
-          onOpenChange={(isOpen) => {
-            if (disabled) return
-            setOpen(isOpen)
-            if (!isOpen) setSearch("")
-          }}
-          align="start"
-          trigger={trigger}
-          aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
-          className={cn("p-0", popoverWidth || "w-[--radix-popover-trigger-width]")}
-        >
-          <CommandPrimitive filter={filterOption} className="flex h-full w-full flex-col">
-            <div className="flex items-center gap-2 border-b px-3" cmdk-input-wrapper="">
-              <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
-              <CommandPrimitive.Input
-                placeholder={resolvedSearchPlaceholder}
-                onValueChange={setSearch}
-                className="flex w-full rounded-element bg-transparent py-2.5 text-sm outline-none placeholder:text-placeholder"
-              />
-            </div>
-            <CommandPrimitive.List
-              id={listboxId}
-              onTouchMove={(e) => e.stopPropagation()}
-              className="max-h-75 overflow-y-auto overflow-x-hidden overscroll-y-contain p-1"
-            >
-              {!showCreateOption ? (
-                <CommandPrimitive.Empty className="py-6 text-center text-sm text-muted-foreground">
-                  {resolvedEmptyMessage}
-                </CommandPrimitive.Empty>
-              ) : null}
-              <CommandPrimitive.Group>
-                {showCreateOption ? (
-                  <CommandPrimitive.Item
-                    value={CREATE_ACTION_VALUE}
-                    keywords={[trimmedSearch]}
-                    onSelect={() => handleCreate(trimmedSearch)}
-                    className="relative flex cursor-default select-none items-center rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover"
-                  >
-                    Usar: &ldquo;{trimmedSearch}&rdquo;
-                  </CommandPrimitive.Item>
+        <div className="relative" data-slot="combobox-control">
+          <Popover
+            open={open}
+            onOpenChange={(isOpen) => {
+              if (disabled) return
+              setOpen(isOpen)
+              if (!isOpen) setSearch("")
+            }}
+            align="start"
+            trigger={trigger}
+            aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
+            className={cn("p-0", popoverWidth || "w-[--radix-popover-trigger-width]")}
+          >
+            <CommandPrimitive filter={filterOption} className="flex h-full w-full flex-col">
+              <div className="flex items-center gap-2 border-b px-3" cmdk-input-wrapper="">
+                <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
+                <CommandPrimitive.Input
+                  placeholder={resolvedSearchPlaceholder}
+                  onValueChange={setSearch}
+                  className="flex w-full rounded-element bg-transparent py-2.5 text-sm outline-none placeholder:text-placeholder"
+                />
+              </div>
+              <CommandPrimitive.List
+                id={listboxId}
+                onTouchMove={(e) => e.stopPropagation()}
+                className="max-h-75 overflow-y-auto overflow-x-hidden overscroll-y-contain p-1"
+              >
+                {!showCreateOption ? (
+                  <CommandPrimitive.Empty className="py-6 text-center text-sm text-muted-foreground">
+                    {resolvedEmptyMessage}
+                  </CommandPrimitive.Empty>
                 ) : null}
-                {options.map((option) => {
-                  const isSelected = isMultiple
-                    ? toArray(props.value).includes(option.value)
-                    : props.value === option.value
-
-                  return (
+                <CommandPrimitive.Group>
+                  {showCreateOption ? (
                     <CommandPrimitive.Item
-                      key={option.value}
-                      value={option.value}
-                      keywords={[option.label]}
-                      disabled={option.disabled}
-                      onSelect={() => {
-                        if (isMultiple) handleMultipleSelect(option.value)
-                        else handleSingleSelect(option.value)
-                      }}
-                      className="relative flex cursor-default select-none items-center gap-2 rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
+                      value={CREATE_ACTION_VALUE}
+                      keywords={[trimmedSearch]}
+                      onSelect={() => handleCreate(trimmedSearch)}
+                      className="relative flex cursor-default select-none items-center rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover"
                     >
-                      <div
-                        className={cn(
-                          "flex h-4 w-4 items-center justify-center rounded-inner border",
-                          isSelected
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-input [&_svg]:invisible",
-                        )}
-                      >
-                        <Check className="h-3 w-3" />
-                      </div>
-                      {option.label}
+                      Usar: &ldquo;{trimmedSearch}&rdquo;
                     </CommandPrimitive.Item>
-                  )
-                })}
-              </CommandPrimitive.Group>
-            </CommandPrimitive.List>
-          </CommandPrimitive>
-        </Popover>
+                  ) : null}
+                  {options.map((option) => {
+                    const isSelected = isMultiple
+                      ? toArray(props.value).includes(option.value)
+                      : props.value === option.value
+
+                    return (
+                      <CommandPrimitive.Item
+                        key={option.value}
+                        value={option.value}
+                        keywords={[option.label]}
+                        disabled={option.disabled}
+                        onSelect={() => {
+                          if (isMultiple) handleMultipleSelect(option.value)
+                          else handleSingleSelect(option.value)
+                        }}
+                        className="relative flex cursor-default select-none items-center gap-2 rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
+                      >
+                        <div
+                          className={cn(
+                            "flex h-4 w-4 items-center justify-center rounded-inner border",
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-input [&_svg]:invisible",
+                          )}
+                        >
+                          <Check className="h-3 w-3" />
+                        </div>
+                        {option.label}
+                      </CommandPrimitive.Item>
+                    )
+                  })}
+                </CommandPrimitive.Group>
+              </CommandPrimitive.List>
+            </CommandPrimitive>
+          </Popover>
+          {clearButton}
+        </div>
       </div>
     </FieldShell>
   )

@@ -1,6 +1,25 @@
-import { expect, test } from "@playwright/test"
+import { type Page, expect, test } from "@playwright/test"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
+
+/**
+ * Opens a story and waits until it is mounted (and, with `ready`, until that
+ * text is on screen). Storybook's dev server may still be compiling on the
+ * first hit, and on a busy machine that takes longer than the 5s an
+ * assertion waits.
+ */
+async function gotoStory(page: Page, id: string, ready?: string) {
+  await page.goto(story(id))
+  await page.waitForFunction(
+    () =>
+      document.body.classList.contains("sb-show-main") &&
+      !document.body.classList.contains("sb-show-preparing-story") &&
+      !!document.getElementById("storybook-root")?.firstChild,
+    null,
+    { timeout: 30_000 },
+  )
+  if (ready) await expect(page.getByText(ready).first()).toBeVisible({ timeout: 15_000 })
+}
 
 test.describe("Calendar", () => {
   test("renders weekday grid in ptBR locale", async ({ page }) => {
@@ -75,5 +94,28 @@ test.describe("Combobox dentro de Dialog", () => {
     await page.mouse.wheel(0, 200)
     await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
     await expect(page.getByRole("dialog")).toBeVisible()
+  })
+})
+
+test.describe("Combobox: limpar", () => {
+  test("o botão de limpar é um alvo de 24px ao lado do gatilho", async ({ page }) => {
+    await gotoStory(page, "forms-combobox--multi-select", "2 selecionados")
+    const trigger = page.getByRole("combobox", { name: "Áreas" })
+    const clear = page.getByRole("button", { name: "Limpar seleção" })
+    const box = await clear.boundingBox()
+    expect(box?.width).toBeGreaterThanOrEqual(24)
+    expect(box?.height).toBeGreaterThanOrEqual(24)
+    // It sits inside the field's box, but is not part of the trigger button.
+    const triggerBox = await trigger.boundingBox()
+    if (!box || !triggerBox) throw new Error("no box")
+    expect(box.y).toBeGreaterThanOrEqual(triggerBox.y)
+    expect(box.y + box.height).toBeLessThanOrEqual(triggerBox.y + triggerBox.height)
+    expect(await trigger.evaluate((el) => el.querySelector("[aria-label='Limpar seleção']"))).toBe(
+      null,
+    )
+
+    await clear.click()
+    await expect(trigger).toHaveText(/Selecione áreas/)
+    await expect(trigger).toBeFocused()
   })
 })

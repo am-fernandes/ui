@@ -316,6 +316,40 @@ describe("Combobox", () => {
     expect(screen.getByText("Selecione...")).toBeInTheDocument()
   })
 
+  it("disabled: offers no clear control, so the value cannot be cleared by keyboard", async () => {
+    const onValueChange = vi.fn()
+    render(
+      <Combobox
+        options={options}
+        value="c"
+        disabled
+        onValueChange={onValueChange}
+        placeholder="Selecione"
+      />,
+    )
+    expect(screen.queryByRole("button", { name: "Limpar seleção" })).toBeNull()
+    await userEvent.tab()
+    await userEvent.keyboard("{Enter}")
+    expect(onValueChange).not.toHaveBeenCalled()
+    expect(screen.getByRole("combobox")).toHaveTextContent("Charlie")
+  })
+
+  it("the clear control is a real button next to the trigger, not inside it", () => {
+    render(<Combobox options={options} value="a" placeholder="Selecione" />)
+    const trigger = screen.getByRole("combobox")
+    const clear = screen.getByRole("button", { name: "Limpar seleção" })
+    expect(clear.tagName).toBe("BUTTON")
+    expect(trigger.contains(clear)).toBe(false)
+  })
+
+  it("clearing puts the focus back on the trigger", async () => {
+    render(<SingleControlled initial="a" />)
+    await userEvent.click(screen.getByRole("button", { name: "Limpar seleção" }))
+    expect(screen.queryByRole("button", { name: "Limpar seleção" })).toBeNull()
+    expect(screen.getByRole("combobox")).toHaveFocus()
+    expect(screen.getByRole("combobox")).toHaveTextContent("Selecione")
+  })
+
   it("triggers Limpar seleção via keyboard (Enter)", async () => {
     const onValueChange = vi.fn()
     render(
