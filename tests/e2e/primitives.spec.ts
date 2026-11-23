@@ -16,6 +16,8 @@ async function open(page: Page, id: string) {
   await expect(page.locator("#storybook-root *:visible").first()).toBeVisible({
     timeout: 15_000,
   })
+  // Widths change when the web font arrives: measure after it.
+  await page.evaluate(() => document.fonts.ready)
 }
 
 /**
