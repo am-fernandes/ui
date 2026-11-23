@@ -551,4 +551,69 @@ describe("MultiInput", () => {
       expect(input).toHaveValue("")
     })
   })
+  // O campo não tinha ref, name, className nem aria-required: o React Hook
+  // Form não conseguia focar o campo num erro, um form nativo não recebia a
+  // lista e o leitor de tela não ouvia que o campo é obrigatório.
+  describe("ref, name, className e obrigatório", () => {
+    it("ref aponta para o campo de texto", () => {
+      const ref = React.createRef<HTMLInputElement>()
+      render(<MultiInput ref={ref} label="Tags" value={[]} onValueChange={vi.fn()} />)
+      expect(ref.current).toBe(screen.getByRole("textbox", { name: "Tags" }))
+    })
+
+    it("com name, o form nativo recebe a lista separada por vírgula", () => {
+      render(
+        <form data-testid="form">
+          <MultiInput name="tags" value={["urgente", "fiscal"]} onValueChange={vi.fn()} />
+          <MultiInput name="paginas" type="number" value={[35, 10]} onValueChange={vi.fn()} />
+        </form>,
+      )
+      const data = new FormData(screen.getByTestId("form") as HTMLFormElement)
+      expect(data.get("tags")).toBe("urgente,fiscal")
+      expect(data.get("paginas")).toBe("10,35")
+      // Só o input oculto leva o nome; o campo de digitação, não.
+      expect(screen.getAllByRole("textbox").every((el) => !el.hasAttribute("name"))).toBe(true)
+    })
+
+    it("sem name, nada vai para o form; desabilitado, a lista também não vai", () => {
+      const { rerender } = render(
+        <form data-testid="form">
+          <MultiInput value={["a"]} onValueChange={vi.fn()} />
+        </form>,
+      )
+      expect([...new FormData(screen.getByTestId("form") as HTMLFormElement).keys()]).toEqual([])
+      rerender(
+        <form data-testid="form">
+          <MultiInput name="tags" disabled value={["a"]} onValueChange={vi.fn()} />
+        </form>,
+      )
+      expect(new FormData(screen.getByTestId("form") as HTMLFormElement).get("tags")).toBeNull()
+    })
+
+    it("className vai para a caixa que desenha a borda", () => {
+      render(<MultiInput className="w-64" value={[]} onValueChange={vi.fn()} />)
+      expect(document.querySelector("[data-slot=multi-input]")).toHaveClass("w-64", "border")
+    })
+
+    it("required: o campo de texto é anunciado como obrigatório", () => {
+      render(<MultiInput label="Tags" required value={["a"]} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox", { name: /Tags/ })).toHaveAttribute("aria-required", "true")
+    })
+
+    it("required: um form nativo não passa com a lista vazia, e passa com um item", () => {
+      const { rerender } = render(
+        <form data-testid="form">
+          <MultiInput label="Tags" required value={[]} onValueChange={vi.fn()} />
+        </form>,
+      )
+      const form = screen.getByTestId("form") as HTMLFormElement
+      expect(form.checkValidity()).toBe(false)
+      rerender(
+        <form data-testid="form">
+          <MultiInput label="Tags" required value={["a"]} onValueChange={vi.fn()} />
+        </form>,
+      )
+      expect(form.checkValidity()).toBe(true)
+    })
+  })
 })

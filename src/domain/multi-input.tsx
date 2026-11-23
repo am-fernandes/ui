@@ -6,6 +6,7 @@ import {
   type ClipboardEvent,
   type FocusEvent,
   type KeyboardEvent,
+  useCallback,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -56,6 +57,15 @@ interface MultiInputBaseProps {
   maxItems?: number
   /** Called when input is rejected (e.g. invalid numeric token, exceeds maxItems). */
   onReject?: (reason: "max-items" | "invalid") => void
+  /**
+   * Name of the field in a native form: a hidden input carries the list
+   * joined by commas (`"urgente,fiscal"`, `"10,35"`).
+   */
+  name?: string
+  /** Class of the box that draws the border and holds the items. */
+  className?: string
+  /** The text input: it takes the focus, as React Hook Form does on an error. */
+  ref?: React.Ref<HTMLInputElement>
 }
 
 interface MultiInputStringProps extends MultiInputBaseProps {
@@ -134,12 +144,23 @@ function MultiInput(props: MultiInputProps) {
     maxItems,
     onReject,
     "aria-label": ariaLabel,
+    name,
+    className,
+    ref,
   } = props
   const ids = useFieldIds(id)
   const hasError = error != null && error !== ""
   const hasLabel = label != null && label !== ""
   const [inputValue, setInputValue] = useState("")
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const setInputRef = useCallback(
+    (node: HTMLInputElement | null) => {
+      inputRef.current = node
+      if (typeof ref === "function") ref(node)
+      else if (ref != null) (ref as React.RefObject<HTMLInputElement | null>).current = node
+    },
+    [ref],
+  )
   const wrapperRef = useRef<HTMLDivElement>(null)
   // Where the focus goes once a token removed with the keyboard is gone: the
   // remove button at this position, or the text input when there is none.
@@ -273,6 +294,7 @@ function MultiInput(props: MultiInputProps) {
           size === "sm" ? "py-1" : "py-1.5",
           disabled && "cursor-default",
           hasError && "border-destructive-text field-error",
+          className,
         )}
         // biome-ignore lint/a11y/useSemanticElements: <fieldset> conflicts with the flex chip layout.
         role="group"
@@ -329,9 +351,13 @@ function MultiInput(props: MultiInputProps) {
           </Badge>
         ))}
         <input
-          ref={inputRef}
+          ref={setInputRef}
           id={ids.controlId}
           type="text"
+          aria-required={required ? true : undefined}
+          // Native validation only sees this input: an empty list keeps a
+          // required form from being sent, a list with items lets it go.
+          required={required && tokens.length === 0}
           inputMode={props.type === "number" ? "numeric" : "text"}
           // The visible label names the field through `htmlFor`. Without one,
           // `aria-label` does, and the placeholder is the last resort.
@@ -350,6 +376,9 @@ function MultiInput(props: MultiInputProps) {
           onBlur={handleBlur}
           disabled={disabled}
         />
+        {name != null && name !== "" ? (
+          <input type="hidden" name={name} value={tokens.join(",")} disabled={disabled} />
+        ) : null}
       </div>
     </FieldShell>
   )
