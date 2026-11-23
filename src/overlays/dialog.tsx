@@ -1,12 +1,12 @@
 "use client"
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { XIcon } from "lucide-react"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { dialogContentBase, overlayBase } from "./_internal/animations"
 import { modalBodyClass } from "./_internal/modal-body"
+import { DEFAULT_CLOSE_LABEL, ModalCloseButton, titleBesideClose } from "./_internal/modal-close"
 import {
   type ModalFooter,
   renderModalFooter,
@@ -54,6 +54,7 @@ export interface DialogProps {
    */
   dismissible?: boolean
   hideCloseButton?: boolean
+  /** Name of the X. @default "Fechar" */
   closeLabel?: string
   /** Handler do auto-focus do Radix ao abrir (ex.: direcionar o foco inicial). */
   onOpenAutoFocus?: (event: Event) => void
@@ -88,7 +89,7 @@ function Dialog({
   onOpenChange,
   dismissible = true,
   hideCloseButton = false,
-  closeLabel = "Close",
+  closeLabel = DEFAULT_CLOSE_LABEL,
   onOpenAutoFocus,
   onCloseAutoFocus,
   size = "md",
@@ -142,7 +143,10 @@ function Dialog({
           <OverlayContainerProvider container={overlayContainer}>
             <DialogPrimitive.Title
               data-slot="dialog-title"
-              className="shrink-0 text-lg font-semibold leading-none"
+              className={cn(
+                "shrink-0 text-lg font-semibold leading-none",
+                showCloseButton && titleBesideClose,
+              )}
             >
               {title}
             </DialogPrimitive.Title>
@@ -164,16 +168,7 @@ function Dialog({
                 {footerContent}
               </div>
             ) : null}
-            {showCloseButton ? (
-              <DialogPrimitive.Close
-                data-slot="dialog-close"
-                aria-label={closeLabel}
-                className="absolute right-4 top-4 cursor-pointer rounded-inner opacity-70 transition-opacity hover:opacity-100 focus-visible:focus-outline disabled:pointer-events-none"
-              >
-                <XIcon className="size-4" />
-                <span className="sr-only">{closeLabel}</span>
-              </DialogPrimitive.Close>
-            ) : null}
+            {showCloseButton ? <ModalCloseButton label={closeLabel} slot="dialog-close" /> : null}
           </OverlayContainerProvider>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

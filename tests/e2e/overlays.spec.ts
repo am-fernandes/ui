@@ -149,6 +149,44 @@ test.describe("Dialog", () => {
     })
   }
 
+  // The X was a 16×16px target, hovered by opacity, named "Close".
+  for (const [kind, id, opener, name] of [
+    ["Dialog", "overlays-dialog--with-footer", "Editar com footer", "Editar perfil"],
+    ["Sheet", "overlays-sheet--with-footer", "Abrir com footer", "Editar projeto"],
+  ] as const) {
+    test(`${kind}: the X is a 32px target named “Fechar”, with the state layer on hover`, async ({
+      page,
+    }) => {
+      await gotoStory(page, id, opener)
+      await page.getByRole("button", { name: opener }).click()
+      const modal = page.getByRole("dialog", { name })
+      await settledBox(modal)
+      const close = modal.getByRole("button", { name: "Fechar" })
+      const box = await settledBox(close)
+      expect(box.width).toBe(32)
+      expect(box.height).toBe(32)
+      // Inside the modal, clear of the title.
+      const modalBox = (await modal.boundingBox())!
+      expect(box.x + box.width).toBeLessThanOrEqual(modalBox.x + modalBox.width)
+      expect(box.y).toBeGreaterThanOrEqual(modalBox.y)
+      // The title is a full-width block: where its text may go ends at its
+      // content edge, before the room it keeps for the X.
+      const titleEnd = await modal
+        .getByRole("heading", { name })
+        .evaluate(
+          (el) =>
+            el.getBoundingClientRect().right - Number.parseFloat(getComputedStyle(el).paddingRight),
+        )
+      expect(titleEnd).toBeLessThanOrEqual(box.x)
+
+      const layer = () => close.evaluate((el) => getComputedStyle(el).backgroundImage)
+      expect(await layer()).toBe("none")
+      await close.hover()
+      await expect.poll(layer).toContain("gradient")
+      expect(await close.evaluate((el) => getComputedStyle(el).opacity)).toBe("1")
+    })
+  }
+
   test("dismissible=false blocks Escape and overlay click", async ({ page }) => {
     await gotoStory(page, "overlays-dialog--non-dismissible", "Abrir não-dismissível")
     await page.getByRole("button", { name: "Abrir não-dismissível" }).click()

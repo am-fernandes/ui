@@ -332,3 +332,26 @@ describe("Sheet dismissible, onOpenAutoFocus and size", () => {
     expect(document.querySelector('[data-slot="sheet-content"]')).toHaveClass("sm:max-w-sm")
   })
 })
+
+// The X was 16×16px, hovered by opacity, and named "Close" in English.
+describe("Sheet close button", () => {
+  it("is named “Fechar” by default", () => {
+    render(<Sheet open title="X" />)
+    expect(screen.getByRole("button", { name: "Fechar" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Close" })).not.toBeInTheDocument()
+  })
+
+  it("is an icon button with the state layer and a 32px box", () => {
+    render(<Sheet open title="X" />)
+    const close = screen.getByRole("button", { name: "Fechar" })
+    expect(close).toHaveClass("size-8", "state-layer")
+    expect(close).not.toHaveClass("opacity-70")
+  })
+
+  it("closes on click", async () => {
+    const onOpenChange = vi.fn()
+    render(<Sheet open onOpenChange={onOpenChange} title="X" />)
+    await userEvent.click(screen.getByRole("button", { name: "Fechar" }))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+})

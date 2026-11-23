@@ -377,3 +377,26 @@ describe("Dialog footer as a function", () => {
     expect(screen.getByText("rodapé")).toBeInTheDocument()
   })
 })
+
+// The X was 16×16px, hovered by opacity, and named "Close" in English.
+describe("Dialog close button", () => {
+  it("is named “Fechar” by default", () => {
+    render(<Dialog open title="X" />)
+    expect(screen.getByRole("button", { name: "Fechar" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Close" })).not.toBeInTheDocument()
+  })
+
+  it("is an icon button with the state layer and a 32px box", () => {
+    render(<Dialog open title="X" />)
+    const close = screen.getByRole("button", { name: "Fechar" })
+    expect(close).toHaveClass("size-8", "state-layer")
+    expect(close).not.toHaveClass("opacity-70")
+  })
+
+  it("closes on click", async () => {
+    const onOpenChange = vi.fn()
+    render(<Dialog open onOpenChange={onOpenChange} title="X" />)
+    await userEvent.click(screen.getByRole("button", { name: "Fechar" }))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+})

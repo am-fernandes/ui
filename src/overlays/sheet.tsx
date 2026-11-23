@@ -2,12 +2,12 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { type VariantProps, cva } from "class-variance-authority"
-import { XIcon } from "lucide-react"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { motionSheet, overlayBase } from "./_internal/animations"
 import { modalBodyClass } from "./_internal/modal-body"
+import { DEFAULT_CLOSE_LABEL, ModalCloseButton, titleBesideClose } from "./_internal/modal-close"
 import {
   type ModalFooter,
   renderModalFooter,
@@ -97,6 +97,7 @@ export interface SheetProps extends Omit<VariantProps<typeof sheetVariants>, "si
    * @default true
    */
   dismissible?: boolean
+  /** Name of the X. @default "Fechar" */
   closeLabel?: string
   hideCloseButton?: boolean
   /** Radix's auto-focus on open (e.g. to choose the first focused field). */
@@ -123,7 +124,7 @@ function Sheet({
   side = "right",
   size = "md",
   dismissible = true,
-  closeLabel = "Close",
+  closeLabel = DEFAULT_CLOSE_LABEL,
   hideCloseButton = false,
   onOpenAutoFocus,
   onCloseAutoFocus,
@@ -169,7 +170,10 @@ function Sheet({
           <OverlayContainerProvider container={overlayContainer}>
             <DialogPrimitive.Title
               data-slot="sheet-title"
-              className="shrink-0 text-lg font-semibold"
+              className={cn(
+                "shrink-0 text-lg font-semibold",
+                dismissible && !hideCloseButton && titleBesideClose,
+              )}
             >
               {title}
             </DialogPrimitive.Title>
@@ -194,13 +198,7 @@ function Sheet({
               </div>
             ) : null}
             {dismissible && !hideCloseButton ? (
-              <DialogPrimitive.Close
-                aria-label={closeLabel}
-                className="absolute right-4 top-4 cursor-pointer rounded-inner opacity-70 transition-opacity hover:opacity-100 focus-visible:focus-outline"
-              >
-                <XIcon className="size-4" />
-                <span className="sr-only">{closeLabel}</span>
-              </DialogPrimitive.Close>
+              <ModalCloseButton label={closeLabel} slot="sheet-close" />
             ) : null}
           </OverlayContainerProvider>
         </DialogPrimitive.Content>

@@ -25,7 +25,7 @@ const meta: Meta<typeof Sheet> = {
           "- `children?: ReactNode` — body.",
           "- `footer?: ReactNode` — rodapé (`mt-auto`, justify-end).",
           "- `side?: 'top' | 'right' | 'bottom' | 'left'` — borda de origem. Default `'right'`.",
-          "- `closeLabel?: string` — `aria-label` do X. Default `'Close'`.",
+          "- `closeLabel?: string` — `aria-label` do X. Default `'Fechar'`.",
           "- `hideCloseButton?: boolean` — esconde o X.",
           "- `open` / `onOpenChange` — controlled mode.",
           "",

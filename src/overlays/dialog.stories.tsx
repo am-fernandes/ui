@@ -29,7 +29,7 @@ const meta: Meta<typeof Dialog> = {
           "- `size?: 'sm' | 'md' | 'lg' | 'xl'` — largura máxima. Default `'md'`.",
           "- `dismissible?: boolean` — quando `false`, Escape/click fora não fecham e o X some. Default `true`.",
           "- `hideCloseButton?: boolean` — esconde o X mas mantém Escape/click fora.",
-          "- `closeLabel?: string` — `aria-label` do X. Default `'Close'`.",
+          "- `closeLabel?: string` — `aria-label` do X. Default `'Fechar'`.",
           "- `open` / `onOpenChange` — controlled mode.",
           "",
           "**Exemplo:**",
@@ -203,10 +203,10 @@ export const NonDismissible: Story = {
 
 export const CustomCloseLabel: Story = {
   args: {
-    trigger: <Button>Abrir em PT-BR</Button>,
-    title: "Botão de fechar em português",
-    description: "O `aria-label` do X foi customizado para 'Fechar'.",
-    closeLabel: "Fechar",
+    trigger: <Button>Nome do X</Button>,
+    title: "Nome do botão de fechar",
+    description: "O `aria-label` do X (por padrão “Fechar”) foi trocado para “Fechar sem salvar”.",
+    closeLabel: "Fechar sem salvar",
     children: <p className="text-sm">Inspecione o botão de fechar.</p>,
   },
 }
