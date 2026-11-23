@@ -141,4 +141,15 @@ describe("InputOTP", () => {
     expect(slots[2]?.textContent ?? "").not.toContain("1")
     expect(slots[2]?.textContent ?? "").not.toContain("2")
   })
+  // Regressão: o contêiner tinha has-disabled:opacity-50 por cima do
+  // opacity-50 do FieldShell, e o campo desabilitado ficava a 0,25.
+  it("desabilitado, só o FieldShell esmaece", () => {
+    const { container } = render(
+      <InputOTP length={4} value="" onValueChange={() => {}} label="PIN" disabled />,
+    )
+    const faded = [...container.querySelectorAll("*")].filter((el) =>
+      /(^|\s)(has-disabled:)?opacity-50(\s|$)/.test(el.getAttribute("class") ?? ""),
+    )
+    expect(faded).toEqual([container.querySelector('[data-slot="field-shell"]')])
+  })
 })

@@ -90,7 +90,8 @@ function InputOTP({
         disabled={disabled}
         aria-invalid={hasError ? true : undefined}
         aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
-        containerClassName={cn("flex items-center has-disabled:opacity-50", className)}
+        // The field shell already fades the whole field when disabled.
+        containerClassName={cn("flex items-center", className)}
         render={({ slots }) => (
           <div className="flex items-center">
             {slots.map((slot, i) => (

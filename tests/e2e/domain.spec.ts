@@ -1032,6 +1032,27 @@ test.describe("InputOTP", () => {
   })
 })
 
+/** The opacity a pixel of `el` ends up with: the product of every ancestor's. */
+const effectiveOpacity = (el: Locator) =>
+  el.evaluate((node) => {
+    let opacity = 1
+    for (let n: Element | null = node; n; n = n.parentElement) {
+      opacity *= Number.parseFloat(getComputedStyle(n).opacity)
+    }
+    return opacity
+  })
+
+test.describe("InputOTP: desabilitado", () => {
+  test("desabilitado, o campo esmaece uma vez só (0,5), não duas", async ({ page }) => {
+    await gotoStory(page, "domain-inputotp--disabled")
+    const slot = page.locator('[data-slot="input-otp-slot"]').first()
+    await expect(slot).toBeVisible()
+    expect(await effectiveOpacity(slot)).toBeCloseTo(0.5, 2)
+    // O rótulo esmaece junto, do mesmo tanto.
+    expect(await effectiveOpacity(page.getByText("Código verificado"))).toBeCloseTo(0.5, 2)
+  })
+})
+
 test.describe("FileUpload: form nativo", () => {
   const id = "domain-fileupload--native-form"
   const picker = 'input[type="file"]:not([name])'
