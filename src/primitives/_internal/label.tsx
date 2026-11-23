@@ -37,7 +37,7 @@ function Label({
       data-slot="label"
       htmlFor={Element === "label" ? htmlFor : undefined}
       className={cn(
-        "text-sm font-medium leading-none",
+        "text-sm font-medium leading-5",
         // A click on a <label> acts on its control; the name of a group does nothing.
         Element === "label" && (disabled ? "cursor-default" : "cursor-pointer"),
         className,

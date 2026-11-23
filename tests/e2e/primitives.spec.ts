@@ -303,6 +303,62 @@ test.describe("Disabled look", () => {
   })
 })
 
+test.describe("Label", () => {
+  /** Geometry of a control and of the first line of the label beside it. */
+  const firstLine = (control: Locator, label: Locator) =>
+    Promise.all([
+      control.boundingBox(),
+      label.evaluate((el) => {
+        const style = getComputedStyle(el)
+        const range = document.createRange()
+        range.selectNodeContents(el)
+        const lines = Array.from(range.getClientRects())
+        const first = lines[0]
+        const lineCount = new Set(lines.map((rect) => Math.round(rect.top))).size
+        return {
+          fontSize: Number.parseFloat(style.fontSize),
+          lineHeight: Number.parseFloat(style.lineHeight),
+          lineCount,
+          firstLineCentre: first ? first.top + first.height / 2 : 0,
+        }
+      }),
+    ]).then(([box, text]) => ({
+      ...text,
+      controlCentre: (box?.y ?? 0) + (box?.height ?? 0) / 2,
+    }))
+
+  test("a wrapped checkbox label keeps real line spacing, with the box on its first line", async ({
+    page,
+  }) => {
+    await open(page, "primitives-checkbox--long-label")
+    const line = await firstLine(page.getByRole("checkbox"), page.locator('[data-slot="label"]'))
+    expect(line.lineCount).toBeGreaterThanOrEqual(3)
+    // 14px text on 14px lines had the lines touching.
+    expect(line.lineHeight / line.fontSize).toBeGreaterThanOrEqual(1.4)
+    expect(Math.abs(line.controlCentre - line.firstLineCentre)).toBeLessThanOrEqual(1)
+  })
+
+  test("a one-line label sits level with its checkbox, radio or switch", async ({ page }) => {
+    await open(page, "primitives-checkbox--checked")
+    const checkbox = await firstLine(
+      page.getByRole("checkbox"),
+      page.locator('[data-slot="label"]'),
+    )
+    expect(Math.abs(checkbox.controlCentre - checkbox.firstLineCentre)).toBeLessThanOrEqual(1)
+
+    await open(page, "primitives-switch--disabled-checked")
+    const toggle = await firstLine(page.getByRole("switch"), page.locator('[data-slot="label"]'))
+    expect(Math.abs(toggle.controlCentre - toggle.firstLineCentre)).toBeLessThanOrEqual(1)
+
+    await open(page, "primitives-radiogroup--default-value")
+    const radio = await firstLine(
+      page.getByRole("radio", { name: "Pro" }),
+      page.getByText("Pro", { exact: true }),
+    )
+    expect(Math.abs(radio.controlCentre - radio.firstLineCentre)).toBeLessThanOrEqual(1)
+  })
+})
+
 test.describe("Checkbox", () => {
   test("clicking the label toggles state (implicit Radix binding)", async ({ page }) => {
     await open(page, "primitives-checkbox--with-description")

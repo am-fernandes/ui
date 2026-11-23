@@ -117,6 +117,28 @@ export const Checked: Story = {
   args: { label: "Selecionado", defaultChecked: true },
 }
 
+export const LongLabel: Story = {
+  args: {
+    label:
+      "Declaro que li a proposta, conferi os dados do comprador e autorizo o envio para análise de crédito.",
+  },
+  decorators: [
+    (Story) => (
+      <div className="w-56">
+        <Story />
+      </div>
+    ),
+  ],
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Um rótulo que quebra em várias linhas mantém a altura de linha do texto, e a caixa fica na altura da primeira linha, não no meio do bloco.",
+      },
+    },
+  },
+}
+
 export const RichLabel: Story = {
   args: {
     label: (

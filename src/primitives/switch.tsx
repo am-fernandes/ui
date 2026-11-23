@@ -46,7 +46,6 @@ function Switch({
       )}
       className={cn(
         "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent",
-        hasDescription && "mt-0.5",
         "focus-visible:focus-outline",
         "disabled:cursor-default",
         "data-[state=checked]:bg-primary data-[state=unchecked]:bg-input",
@@ -62,7 +61,8 @@ function Switch({
   )
 
   const labelEl = hasLabel ? (
-    <div className="flex flex-col gap-0.5">
+    // 2px down: the first line of the label (20px) is centred on the 24px track.
+    <div className="flex flex-col gap-0.5 pt-0.5">
       <Label
         htmlFor={ids.controlId}
         required={required}
@@ -87,7 +87,7 @@ function Switch({
       // Disabled dims the whole field once, here: track, label and messages.
       className={cn("flex flex-col gap-1.5", disabled && "opacity-50")}
     >
-      <div className={cn("flex gap-2", hasDescription ? "items-start" : "items-center")}>
+      <div className="flex items-start gap-2">
         {switchEl}
         {labelEl}
       </div>

@@ -76,7 +76,9 @@ function RadioGroup({
         )}
         aria-invalid={hasError ? true : undefined}
         className={cn(
-          orientation === "horizontal" ? "flex flex-row flex-wrap gap-6" : "grid gap-3",
+          // 8px between rows of 20px: the same 28px from option to option as
+          // when the rows were the 16px of the radio.
+          orientation === "horizontal" ? "flex flex-row flex-wrap gap-x-6 gap-y-2" : "grid gap-2",
           className,
         )}
         {...props}
@@ -89,7 +91,7 @@ function RadioGroup({
               key={item.value}
               data-slot="radio-group-option"
               className={cn(
-                "flex items-center gap-2",
+                "flex items-start gap-2",
                 // One option disabled: its row dims, radio and label together.
                 // Not inside a disabled group, which is already dimmed.
                 item.disabled && !disabled && "opacity-50",
@@ -101,7 +103,8 @@ function RadioGroup({
                 disabled={item.disabled}
                 data-slot="radio-group-item"
                 className={cn(
-                  "aspect-square size-4 shrink-0 cursor-pointer rounded-full border border-input text-primary data-[state=checked]:border-primary",
+                  // 2px down: centred on the first 20px line of its label.
+                  "mt-0.5 aspect-square size-4 shrink-0 cursor-pointer rounded-full border border-input text-primary data-[state=checked]:border-primary",
                   "focus-visible:focus-outline",
                   "disabled:cursor-default",
                 )}

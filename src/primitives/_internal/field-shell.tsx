@@ -65,7 +65,7 @@ function FieldShell({
       data-disabled={disabled ? "true" : undefined}
       className={cn(
         "flex w-full",
-        labelPosition === "left" ? "flex-row items-center gap-3" : "flex-col gap-1.5",
+        labelPosition === "left" ? "flex-row items-center gap-3" : "flex-col gap-1",
         disabled && "opacity-50",
         className,
       )}

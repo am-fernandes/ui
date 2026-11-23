@@ -55,7 +55,7 @@ function Checkbox({
       // Disabled dims the whole field once, here: box, label and messages.
       className={cn("flex w-full flex-col gap-1.5", disabled && "opacity-50")}
     >
-      <div className={cn("flex gap-2", hasDescription ? "items-start" : "items-center")}>
+      <div className="flex items-start gap-2">
         <CheckboxPrimitive.Root
           ref={ref}
           id={ids.controlId}
@@ -70,8 +70,9 @@ function Checkbox({
             describedBy,
           )}
           className={cn(
-            "peer size-4 shrink-0 cursor-pointer rounded-inner border border-input",
-            hasDescription && "mt-0.5",
+            // 2px down: centred on the first 20px line of the label, however
+            // many lines the label takes.
+            "peer mt-0.5 size-4 shrink-0 cursor-pointer rounded-inner border border-input",
             "focus-visible:focus-outline",
             "disabled:cursor-default",
             "data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
