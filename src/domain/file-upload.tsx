@@ -11,8 +11,11 @@ import {
 } from "lucide-react"
 import * as React from "react"
 
+import { DEFAULT_ALLOWED_RESOURCE_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
+import * as ProgressPrimitive from "@radix-ui/react-progress"
 import { Dialog } from "../overlays/dialog"
+import { Progress } from "../overlays/progress"
 import { toast } from "../overlays/sonner"
 import { Button } from "../primitives/button"
 
@@ -21,6 +24,33 @@ export type FileUploadRejectionReason = "type" | "size" | "max-files"
 export interface FileUploadRejection {
   file: File
   reason: FileUploadRejectionReason
+}
+
+/**
+ * A file the component did not pick itself: an attachment that already exists
+ * on the server, or one that is on its way there.
+ */
+export interface FileUploadItem {
+  /** Stable identifier, usually the attachment's id on the server. */
+  id: string
+  name: string
+  /** Size in bytes, when known. */
+  size?: number
+  /**
+   * Where the file lives (`http:`, `https:` or a relative URL; anything else
+   * is ignored). An image gets a thumbnail and opens enlarged, a PDF opens in
+   * a new tab and any other file is downloaded.
+   */
+  url?: string
+  /**
+   * `"uploading"` shows the progress and `"error"` shows `error`.
+   * @default "done"
+   */
+  status?: "uploading" | "done" | "error"
+  /** 0 to 100, while `uploading`. Leave it out when the progress is unknown. */
+  progress?: number
+  /** Why the upload failed, when `status` is `"error"`. */
+  error?: string
 }
 
 export interface FileUploadLabels {
@@ -77,6 +107,12 @@ export interface FileUploadLabels {
   rejectedSize?: (fileName: string, limit: string) => string
   /** Message for a file beyond `maxFiles` (`limit` is 1 when not `multiple`). */
   rejectedMaxFiles?: (fileName: string, limit: number) => string
+  /** Second line of an item being sent; `progress` is 0 to 100, or undefined when unknown. */
+  uploading?: (progress?: number) => string
+  /** Second line of an item whose upload failed and that brings no `error` text. */
+  uploadFailed?: string
+  /** Accessible name of the progress bar of an item being sent. */
+  uploadProgress?: (fileName: string) => string
 }
 
 type ResolvedFileUploadLabels = Required<FileUploadLabels>
@@ -110,6 +146,9 @@ export const defaultFileUploadLabels: ResolvedFileUploadLabels = {
     limit === 1
       ? `${fileName}: só é possível enviar um arquivo`
       : `${fileName}: passa do limite de ${limit} arquivos`,
+  uploading: (progress) => (progress == null ? "Enviando…" : `Enviando… ${Math.round(progress)}%`),
+  uploadFailed: "Falha no envio",
+  uploadProgress: (fileName) => `Envio de ${fileName}`,
 }
 
 export interface FileUploadProps {
@@ -129,6 +168,20 @@ export interface FileUploadProps {
   value?: File[]
   /** Called whenever the accepted file list changes. */
   onValueChange?: (files: File[]) => void
+  /**
+   * Files the component did not pick itself, shown in the same list, before
+   * the chosen ones: attachments already saved on the server (give them a
+   * `url`) and uploads in progress (`status`, `progress`, `error`). They are
+   * yours to keep: the usual flow is to take a file from `onValueChange`,
+   * start the upload and move it from `value` to `items`. They count towards
+   * `maxFiles`.
+   */
+  items?: FileUploadItem[]
+  /**
+   * Called with the item's `id` when the user removes it. Without it, items
+   * have no remove button.
+   */
+  onRemoveItem?: (id: string) => void
   /** Called when one or more files were dropped/selected but did not pass `accept`, `maxSize`, or `maxFiles`. */
   onReject?: (rejections: FileUploadRejection[]) => void
   /**
@@ -208,6 +261,8 @@ function FileUpload({
   camera = false,
   value,
   onValueChange,
+  items = NO_ITEMS,
+  onRemoveItem,
   onReject,
   showRejections = true,
   disabled = false,
@@ -234,7 +289,7 @@ function FileUpload({
   const [rejected, setRejected] = React.useState<FileUploadRejection[]>([])
   const [isDragging, setDragging] = React.useState(false)
   const [cameraOpen, setCameraOpen] = React.useState(false)
-  const [lightboxFile, setLightboxFile] = React.useState<File | null>(null)
+  const [lightbox, setLightbox] = React.useState<LightboxImage | null>(null)
 
   const isControlled = value !== undefined
   const files = isControlled ? value : internal
@@ -269,10 +324,12 @@ function FileUpload({
       let next: File[]
       if (multiple) {
         next = [...files, ...accepted]
-        if (maxFiles != null && next.length > maxFiles) {
-          const overflow = next.slice(maxFiles)
+        // The items already take part of the room.
+        const room = maxFiles == null ? next.length : Math.max(0, maxFiles - items.length)
+        if (next.length > room) {
+          const overflow = next.slice(room)
           for (const file of overflow) rejections.push({ file, reason: "max-files" })
-          next = next.slice(0, maxFiles)
+          next = next.slice(0, room)
         }
       } else {
         next = accepted.length > 0 ? [accepted[0] as File] : files
@@ -285,7 +342,7 @@ function FileUpload({
       if (rejections.length > 0) onReject?.(rejections)
       if (next !== files) setFiles(next)
     },
-    [accept, files, maxFiles, maxSize, multiple, onReject, setFiles],
+    [accept, files, items.length, maxFiles, maxSize, multiple, onReject, setFiles],
   )
 
   const removeAt = (index: number) => {
@@ -412,8 +469,18 @@ function FileUpload({
           e.target.value = ""
         }}
       />
-      {preview === "thumbnail" && files.length > 0 ? (
+      {preview === "thumbnail" && items.length + files.length > 0 ? (
         <ul className="space-y-2" aria-label={mergedLabels.fileListAriaLabel}>
+          {items.map((item) => (
+            <ItemRow
+              key={item.id}
+              item={item}
+              disabled={disabled}
+              onRemove={removable && onRemoveItem ? () => onRemoveItem(item.id) : undefined}
+              onOpenImage={(url) => setLightbox({ name: item.name, url })}
+              labels={mergedLabels}
+            />
+          ))}
           {files.map((file, index) => (
             <FileRow
               key={`${file.name}-${file.lastModified}-${index}`}
@@ -421,7 +488,7 @@ function FileUpload({
               disabled={disabled}
               removable={removable}
               onRemove={() => removeAt(index)}
-              onOpenImage={() => setLightboxFile(file)}
+              onOpenImage={() => setLightbox({ name: file.name, file })}
               labels={mergedLabels}
             />
           ))}
@@ -436,8 +503,8 @@ function FileUpload({
         />
       ) : null}
       <ImageLightbox
-        file={lightboxFile}
-        onOpenChange={() => setLightboxFile(null)}
+        image={lightbox}
+        onOpenChange={() => setLightbox(null)}
         downloadable={downloadable}
         labels={mergedLabels}
       />
@@ -535,6 +602,154 @@ function FileRow({
   )
 }
 
+const IMAGE_EXTENSION = /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i
+
+/** A file the component did not pick: a saved attachment or an upload in progress. */
+function ItemRow({
+  item,
+  disabled,
+  onRemove,
+  onOpenImage,
+  labels,
+}: {
+  item: FileUploadItem
+  disabled: boolean
+  onRemove?: () => void
+  onOpenImage: (url: string) => void
+  labels: ResolvedFileUploadLabels
+}) {
+  const status = item.status ?? "done"
+  // A URL that is not http(s) or relative is dropped: `javascript:` here
+  // would run on a click.
+  const url =
+    item.url != null && isAllowedUrl(item.url, DEFAULT_ALLOWED_RESOURCE_PROTOCOLS)
+      ? item.url
+      : undefined
+  const isImage = url != null && IMAGE_EXTENSION.test(item.name)
+  const isPdf = /\.pdf$/i.test(item.name)
+  const tileClass =
+    "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-element bg-muted text-muted-foreground"
+
+  let tile: React.ReactNode
+  if (isImage && url != null) {
+    tile = (
+      <button
+        type="button"
+        onClick={() => onOpenImage(url)}
+        disabled={disabled}
+        aria-label={labels.zoomImage(item.name)}
+        title={labels.zoomImage(item.name)}
+        className={cn(
+          tileClass,
+          "cursor-pointer transition-opacity hover:opacity-80 focus-visible:focus-outline",
+          disabled && "cursor-default opacity-50",
+        )}
+      >
+        <img src={url} alt={item.name} loading="lazy" className="size-full object-cover" />
+      </button>
+    )
+  } else if (url != null && !disabled) {
+    // Like a chosen file: a PDF opens in a new tab and anything else is
+    // downloaded. A server on another origin may still decide to show it,
+    // but never inside the application's origin.
+    const linkLabel = isPdf ? labels.openFile(item.name) : labels.downloadFile(item.name)
+    tile = (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        download={isPdf ? undefined : item.name}
+        aria-label={linkLabel}
+        title={linkLabel}
+        className={cn(
+          tileClass,
+          "cursor-pointer transition-opacity hover:opacity-80 focus-visible:focus-outline",
+        )}
+      >
+        {isPdf ? (
+          <FileIcon className="size-4" aria-hidden />
+        ) : (
+          <Download className="size-4" aria-hidden />
+        )}
+      </a>
+    )
+  } else {
+    tile = (
+      <span className={cn(tileClass, disabled && "opacity-50")}>
+        {status === "uploading" ? (
+          <Loader2 className="size-4 animate-spin" aria-hidden />
+        ) : (
+          <FileIcon className="size-4" aria-hidden />
+        )}
+      </span>
+    )
+  }
+
+  return (
+    <li
+      data-slot="file-upload-item"
+      data-status={status}
+      className="flex items-center gap-3 rounded-element border bg-card px-2 py-1.5 text-sm"
+    >
+      {tile}
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate font-medium">{item.name}</span>
+        {status === "uploading" ? (
+          <>
+            <span className="text-xs text-muted-foreground">{labels.uploading(item.progress)}</span>
+            {item.progress != null ? (
+              <Progress
+                value={item.progress}
+                aria-label={labels.uploadProgress(item.name)}
+                className="h-1"
+              />
+            ) : (
+              // Progress unknown: a bar without a value, so a screen reader
+              // does not announce 0%.
+              <ProgressPrimitive.Root
+                value={null}
+                aria-label={labels.uploadProgress(item.name)}
+                data-slot="progress"
+                className="relative h-1 w-full overflow-hidden rounded-inner bg-primary/20"
+              >
+                <ProgressPrimitive.Indicator className="h-full w-full bg-primary/60 motion-safe:animate-pulse" />
+              </ProgressPrimitive.Root>
+            )}
+          </>
+        ) : status === "error" ? (
+          <span role="alert" className="text-xs text-destructive-text">
+            {item.error || labels.uploadFailed}
+          </span>
+        ) : item.size != null ? (
+          <span className="text-xs text-muted-foreground">{formatBytes(item.size)}</span>
+        ) : null}
+      </span>
+      {onRemove ? (
+        <Button
+          type="button"
+          variant="ghost"
+          className="size-9 p-0"
+          disabled={disabled}
+          onClick={onRemove}
+          aria-label={labels.removeFile(item.name)}
+        >
+          <X className="size-4" />
+        </Button>
+      ) : null}
+    </li>
+  )
+}
+
+/** What the lightbox shows: a chosen file, or the URL of a saved image. */
+interface LightboxImage {
+  name: string
+  file?: File
+  url?: string
+}
+
+/** One array for "no items", so the list of dependencies of `ingest` is stable. */
+const NO_ITEMS: FileUploadItem[] = []
+
 type SaveFilePicker = (options: { suggestedName?: string }) => Promise<{
   createWritable: () => Promise<{
     write: (data: Blob) => Promise<void>
@@ -554,6 +769,16 @@ function downloadWithAnchor(file: File, name: string) {
   a.click()
   a.remove()
   setTimeout(() => URL.revokeObjectURL(objectUrl), OBJECT_URL_REVOKE_MS)
+}
+
+function downloadUrlWithAnchor(url: string, name: string) {
+  const a = document.createElement("a")
+  a.href = url
+  a.download = name
+  a.rel = "noopener noreferrer"
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
 }
 
 /** Download name for nameless files: falls back to `<fallback>.<ext from MIME>` so the OS keeps an extension. */
@@ -576,31 +801,40 @@ async function writeWithPicker(picker: SaveFilePicker, file: File, name: string)
 }
 
 function ImageLightbox({
-  file,
+  image,
   onOpenChange,
   downloadable,
   labels,
 }: {
-  file: File | null
+  image: LightboxImage | null
   onOpenChange: (open: boolean) => void
   downloadable: boolean
   labels: ResolvedFileUploadLabels
 }) {
-  const [url, setUrl] = React.useState<string | null>(null)
+  const file = image?.file ?? null
+  const [objectUrl, setObjectUrl] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
     if (!file) {
-      setUrl(null)
+      setObjectUrl(null)
       return
     }
     const u = URL.createObjectURL(file)
-    setUrl(u)
+    setObjectUrl(u)
     return () => URL.revokeObjectURL(u)
   }, [file])
 
+  // A chosen file is shown through its object URL; a saved image, by its own.
+  const url = file ? objectUrl : (image?.url ?? null)
+
   async function handleDownload() {
-    if (!file || saving) return
+    if (!image || saving) return
+    if (!file) {
+      // A saved image: the browser fetches it from where it lives.
+      if (image.url) downloadUrlWithAnchor(image.url, image.name || labels.imageFallbackName)
+      return
+    }
     setSaving(true)
     const name = resolveDownloadName(file, labels.imageFallbackName)
     const picker = (window as unknown as { showSaveFilePicker?: SaveFilePicker }).showSaveFilePicker
@@ -630,9 +864,9 @@ function ImageLightbox({
 
   return (
     <Dialog
-      open={file != null}
+      open={image != null}
       onOpenChange={onOpenChange}
-      title={<span className="sr-only">{file?.name ?? labels.imageFallbackName}</span>}
+      title={<span className="sr-only">{image?.name || labels.imageFallbackName}</span>}
       size="xl"
       className="border-0 bg-transparent p-0"
       hideCloseButton
@@ -661,7 +895,7 @@ function ImageLightbox({
       {url ? (
         <img
           src={url}
-          alt={file?.name ?? ""}
+          alt={image?.name ?? ""}
           className="h-auto max-h-[85vh] w-full rounded-container object-contain"
         />
       ) : null}

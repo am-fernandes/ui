@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { mb } from "@/lib/size"
 import { Toaster, toast } from "../overlays/sonner"
 import { Button } from "../primitives/button"
-import { FileUpload, type FileUploadRejection } from "./file-upload"
+import { FileUpload, type FileUploadItem, type FileUploadRejection } from "./file-upload"
 
 const meta = {
   title: "Domain/FileUpload",
@@ -25,6 +25,7 @@ const meta = {
           "- `preview` — `'thumbnail'` (default) ou `'none'`. Na lista, uma imagem abre ampliada, um PDF abre em outra aba e qualquer outro arquivo é baixado: um `.html` aberto por blob URL rodaria script na origem da aplicação.",
           "- `camera` — adiciona botão de captura via `getUserMedia` (HTTPS/localhost).",
           "- `value` / `onValueChange` — modo controlado.",
+          "- `items` / `onRemoveItem` — anexos que já estão no servidor e envios em andamento (`status`, `progress`, `error`), na mesma lista.",
           "- `onReject` — chamado com `{ file, reason: 'type' | 'size' | 'max-files' }[]`.",
           "- `showRejections` — mostra, embaixo da dropzone, por que cada arquivo da última tentativa foi recusado (padrão `true`; os textos ficam em `labels`). Passe `false` quando `onReject` já avisa, com um toast por exemplo.",
           "- `label`, `description`, `error`, `className`, `dropzoneClassName` — customização visual.",
@@ -365,6 +366,67 @@ export const RejectionHandler: Story = {
       description: {
         story:
           "Por padrão o componente já explica, embaixo da dropzone, por que um arquivo foi recusado. Para avisar de outro jeito, combine `onReject` com `toast` (distinguindo `type`, `size` e `max-files`) e desligue a mensagem embutida com `showRejections={false}`.",
+      },
+    },
+  },
+}
+
+export const ExistingAttachments: Story = {
+  render: () => {
+    const [items, setItems] = useState<FileUploadItem[]>([
+      { id: "a1", name: "contrato-assinado.pdf", size: 245_760, url: "/anexos/contrato.pdf" },
+      { id: "a2", name: "planilha-de-custos.xlsx", size: 18_432, url: "/anexos/custos.xlsx" },
+      { id: "a3", name: "matricula.pdf", status: "error", error: "O servidor recusou o arquivo" },
+    ])
+
+    // Simula o envio: cada arquivo escolhido vira um item que avança até
+    // "done". Numa tela real, o progresso vem do upload.
+    useEffect(() => {
+      if (!items.some((item) => item.status === "uploading")) return
+      const timer = setTimeout(() => {
+        setItems((current) =>
+          current.map((item) => {
+            if (item.status !== "uploading") return item
+            const progress = (item.progress ?? 0) + 25
+            return progress >= 100
+              ? { ...item, status: "done", progress: undefined }
+              : { ...item, progress }
+          }),
+        )
+      }, 600)
+      return () => clearTimeout(timer)
+    }, [items])
+
+    return (
+      <div className="w-[460px]">
+        <FileUpload
+          multiple
+          maxFiles={6}
+          label="Documentos do processo"
+          items={items}
+          onRemoveItem={(id) => setItems((current) => current.filter((item) => item.id !== id))}
+          value={[]}
+          onValueChange={(files) =>
+            setItems((current) => [
+              ...current,
+              ...files.map((file) => ({
+                id: `${file.name}-${file.lastModified}`,
+                name: file.name,
+                size: file.size,
+                status: "uploading" as const,
+                progress: 0,
+              })),
+            ])
+          }
+        />
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`items` mostra, na mesma lista, o que o componente não escolheu: anexos que já estão no servidor (com `url`, um PDF abre em outra aba e o resto é baixado) e envios em andamento ou com falha. O fluxo usual: receber o arquivo em `onValueChange`, começar o envio e passar o arquivo para `items`. `onRemoveItem(id)` recebe a remoção; os itens contam para `maxFiles`.",
       },
     },
   },

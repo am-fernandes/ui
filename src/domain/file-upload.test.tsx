@@ -1,9 +1,9 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { toast } from "../overlays/sonner"
-import { FileUpload } from "./file-upload"
+import { FileUpload, type FileUploadItem } from "./file-upload"
 
 vi.mock("../overlays/sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
@@ -980,6 +980,209 @@ describe("FileUpload", () => {
       expect(alert).toHaveTextContent("a.txt: file type not allowed")
       expect(alert).toHaveTextContent("b.pdf: larger than 1.0 KB")
       expect(alert).toHaveTextContent("d.pdf: over the limit of 1")
+    })
+  })
+
+  // O componente só conhecia `File[]`: não dava para mostrar o anexo que já
+  // está salvo no servidor, nem o andamento ou a falha de um envio.
+  describe("items: anexos do servidor e estado de envio", () => {
+    const saved: FileUploadItem = {
+      id: "a1",
+      name: "contrato.pdf",
+      size: 2048,
+      url: "https://arquivos.example.com/contrato.pdf",
+    }
+
+    it("mostra os anexos existentes na mesma lista, antes dos arquivos escolhidos", () => {
+      render(<FileUpload multiple items={[saved]} value={[makeFile("novo.txt")]} />)
+      const rows = within(screen.getByRole("list", { name: "Arquivos selecionados" })).getAllByRole(
+        "listitem",
+      )
+      expect(rows).toHaveLength(2)
+      expect(rows[0]).toHaveTextContent("contrato.pdf")
+      expect(rows[0]).toHaveTextContent("2.0 KB")
+      expect(rows[1]).toHaveTextContent("novo.txt")
+    })
+
+    it("a lista aparece só com items, sem nenhum arquivo escolhido", () => {
+      render(<FileUpload items={[saved]} />)
+      expect(screen.getByRole("list", { name: "Arquivos selecionados" })).toBeInTheDocument()
+      expect(screen.getByText("contrato.pdf")).toBeInTheDocument()
+    })
+
+    it("um anexo com url abre em outra aba, por um link", () => {
+      render(<FileUpload items={[saved]} />)
+      const link = screen.getByRole("link", { name: "Abrir contrato.pdf em nova aba" })
+      expect(link).toHaveAttribute("href", "https://arquivos.example.com/contrato.pdf")
+      expect(link).toHaveAttribute("target", "_blank")
+      expect(link).toHaveAttribute("rel", "noopener noreferrer")
+    })
+
+    it("um anexo que não é imagem nem PDF é baixado, não aberto", () => {
+      render(
+        <FileUpload
+          items={[
+            { id: "h", name: "pagina.html", url: "https://arquivos.example.com/pagina.html" },
+          ]}
+        />,
+      )
+      const link = screen.getByRole("link", { name: "Baixar pagina.html" })
+      expect(link).toHaveAttribute("href", "https://arquivos.example.com/pagina.html")
+      expect(link).toHaveAttribute("download", "pagina.html")
+      expect(screen.queryByRole("link", { name: /Abrir/ })).not.toBeInTheDocument()
+    })
+
+    it("um anexo de imagem com url mostra a miniatura e abre ampliado", () => {
+      render(
+        <FileUpload
+          items={[
+            { id: "i1", name: "fachada.jpg", url: "https://arquivos.example.com/fachada.jpg" },
+          ]}
+        />,
+      )
+      const thumb = document.querySelector("img[alt='fachada.jpg']") as HTMLImageElement
+      expect(thumb).toHaveAttribute("src", "https://arquivos.example.com/fachada.jpg")
+      fireEvent.click(screen.getByRole("button", { name: "Ampliar fachada.jpg" }))
+      const dialog = screen.getByRole("dialog")
+      expect(within(dialog).getByRole("img")).toHaveAttribute(
+        "src",
+        "https://arquivos.example.com/fachada.jpg",
+      )
+    })
+
+    it("uma url com protocolo perigoso não vira link", () => {
+      render(
+        <FileUpload
+          items={[{ id: "x", name: "nota.pdf", url: "javascript:alert(document.cookie)" }]}
+        />,
+      )
+      expect(screen.getByText("nota.pdf")).toBeInTheDocument()
+      expect(screen.queryByRole("link")).not.toBeInTheDocument()
+    })
+
+    it("sem url, o anexo aparece sem ação de abrir", () => {
+      render(<FileUpload items={[{ id: "x", name: "nota.pdf", size: 10 }]} />)
+      expect(screen.getByText("nota.pdf")).toBeInTheDocument()
+      expect(screen.queryByRole("link")).not.toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: /nota\.pdf/ })).not.toBeInTheDocument()
+    })
+
+    it("em envio, mostra o andamento numa barra de progresso com nome", () => {
+      render(
+        <FileUpload
+          items={[{ id: "u1", name: "planta.pdf", status: "uploading", progress: 40 }]}
+        />,
+      )
+      const bar = screen.getByRole("progressbar", { name: "Envio de planta.pdf" })
+      expect(bar).toHaveAttribute("aria-valuenow", "40")
+      expect(screen.getByText("Enviando… 40%")).toBeInTheDocument()
+    })
+
+    it("em envio sem progresso conhecido, diz só que está enviando", () => {
+      render(<FileUpload items={[{ id: "u1", name: "planta.pdf", status: "uploading" }]} />)
+      expect(screen.getByText("Enviando…")).toBeInTheDocument()
+      expect(screen.getByRole("progressbar", { name: "Envio de planta.pdf" })).not.toHaveAttribute(
+        "aria-valuenow",
+      )
+    })
+
+    it("com erro, mostra o motivo no lugar do tamanho", () => {
+      render(
+        <FileUpload
+          items={[
+            {
+              id: "e1",
+              name: "planta.pdf",
+              size: 10,
+              status: "error",
+              error: "Arquivo corrompido",
+            },
+          ]}
+        />,
+      )
+      expect(screen.getByRole("alert")).toHaveTextContent("Arquivo corrompido")
+      expect(screen.queryByText("10 B")).not.toBeInTheDocument()
+    })
+
+    it("com erro e sem texto, usa a mensagem padrão", () => {
+      render(<FileUpload items={[{ id: "e1", name: "planta.pdf", status: "error" }]} />)
+      expect(screen.getByRole("alert")).toHaveTextContent("Falha no envio")
+    })
+
+    it("o botão de remover chama onRemoveItem com o id", () => {
+      const onRemoveItem = vi.fn()
+      const onValueChange = vi.fn()
+      render(
+        <FileUpload items={[saved]} onRemoveItem={onRemoveItem} onValueChange={onValueChange} />,
+      )
+      fireEvent.click(screen.getByRole("button", { name: "Remover contrato.pdf" }))
+      expect(onRemoveItem).toHaveBeenCalledWith("a1")
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("sem onRemoveItem, ou com removable={false}, o anexo não tem botão de remover", () => {
+      const { rerender } = render(<FileUpload items={[saved]} />)
+      expect(screen.queryByRole("button", { name: /Remover/ })).not.toBeInTheDocument()
+      rerender(<FileUpload items={[saved]} onRemoveItem={vi.fn()} removable={false} />)
+      expect(screen.queryByRole("button", { name: /Remover/ })).not.toBeInTheDocument()
+    })
+
+    it("os anexos existentes contam para maxFiles", () => {
+      const onValueChange = vi.fn()
+      const onReject = vi.fn()
+      render(
+        <FileUpload
+          multiple
+          maxFiles={2}
+          items={[saved]}
+          onValueChange={onValueChange}
+          onReject={onReject}
+        />,
+      )
+      const input = document.querySelector("input[type=file]") as HTMLInputElement
+      const a = makeFile("a.txt")
+      const b = makeFile("b.txt")
+      fireEvent.change(input, { target: { files: [a, b] } })
+      expect(onValueChange).toHaveBeenCalledWith([a])
+      expect(onReject).toHaveBeenCalledWith([{ file: b, reason: "max-files" }])
+    })
+
+    it("preview='none' esconde também os anexos existentes", () => {
+      render(<FileUpload preview="none" items={[saved]} />)
+      expect(screen.queryByText("contrato.pdf")).not.toBeInTheDocument()
+    })
+
+    it("desabilitado, o anexo não remove nem abre a imagem", () => {
+      render(
+        <FileUpload
+          disabled
+          onRemoveItem={vi.fn()}
+          items={[
+            { id: "i1", name: "fachada.jpg", url: "https://arquivos.example.com/fachada.jpg" },
+          ]}
+        />,
+      )
+      expect(screen.getByRole("button", { name: "Remover fachada.jpg" })).toBeDisabled()
+      expect(screen.getByRole("button", { name: "Ampliar fachada.jpg" })).toBeDisabled()
+    })
+
+    it("os textos de envio vêm de labels", () => {
+      render(
+        <FileUpload
+          items={[
+            { id: "u1", name: "a.pdf", status: "uploading", progress: 10 },
+            { id: "e1", name: "b.pdf", status: "error" },
+          ]}
+          labels={{
+            uploading: (progress) => `Uploading ${progress}%`,
+            uploadFailed: "Upload failed",
+            uploadProgress: (name) => `Upload of ${name}`,
+          }}
+        />,
+      )
+      expect(screen.getByText("Uploading 10%")).toBeInTheDocument()
+      expect(screen.getByRole("alert")).toHaveTextContent("Upload failed")
+      expect(screen.getByRole("progressbar", { name: "Upload of a.pdf" })).toBeInTheDocument()
     })
   })
 })
