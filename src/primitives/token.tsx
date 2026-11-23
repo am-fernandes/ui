@@ -61,12 +61,19 @@ const colorClasses: Record<TokenColor, { root: string; icon: string }> = {
   },
 }
 
+// The × is drawn at 16px (sm) and 20px (md); its hit area (`before:`) is
+// 24px either way, the minimum target of WCAG 2.2 (SC 2.5.8).
 const sizeClasses = {
-  sm: { root: "h-6 gap-1 px-2 text-xs", icon: "size-3.5", remove: "size-4 -mr-1", x: "size-3" },
+  sm: {
+    root: "h-6 gap-1 px-2 text-xs",
+    icon: "size-3.5",
+    remove: "size-4 -mr-1 before:-inset-1",
+    x: "size-3",
+  },
   md: {
     root: "h-7 gap-1.5 px-2.5 text-sm",
     icon: "size-4",
-    remove: "size-5 -mr-1.5",
+    remove: "size-5 -mr-1.5 before:-inset-0.5",
     x: "size-3.5",
   },
 } as const
@@ -227,6 +234,7 @@ function Token({
           onClick={onRemove}
           className={cn(
             "relative z-10 inline-flex shrink-0 items-center justify-center rounded-inner opacity-70 transition",
+            "before:absolute before:content-['']",
             "focus-visible:focus-outline",
             disabled ? "cursor-default" : "cursor-pointer state-layer hover:opacity-100",
             sizing.remove,

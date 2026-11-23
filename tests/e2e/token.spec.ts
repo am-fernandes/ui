@@ -59,6 +59,34 @@ test.describe("Token", () => {
     expect(page.url()).toBe(before)
   })
 
+  // WCAG 2.2 SC 2.5.8: a target of 24 by 24 CSS px, here on a chip that is
+  // itself clickable. The × was drawn and hit at 16px (sm) and 20px (md).
+  test("the × answers over 24 by 24px, at both sizes", async ({ page }) => {
+    await gotoToken(page, "primitives-token--sizes")
+    for (const size of ["sm", "md"]) {
+      const remove = page.locator(
+        `[data-slot="token"][data-size="${size}"] [data-slot="token-remove"]`,
+      )
+      const box = await remove.boundingBox()
+      if (!box) throw new Error(`no × at ${size}`)
+      const centre = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+      // 11.5px from the centre in each direction: the edge of a 24px square.
+      const hits = await page.evaluate(
+        ({ x, y }) =>
+          [
+            [x - 11.5, y],
+            [x + 11.5, y],
+            [x, y - 11.5],
+            [x, y + 11.5],
+          ].map(([px = 0, py = 0]) =>
+            Boolean(document.elementFromPoint(px, py)?.closest('[data-slot="token-remove"]')),
+          ),
+        centre,
+      )
+      expect({ size, hits }).toEqual({ size, hits: [true, true, true, true] })
+    }
+  })
+
   test("sizes: 24px (sm) and 28px (md) tall", async ({ page }) => {
     await gotoToken(page, "primitives-token--sizes")
     const small = await page.locator('[data-slot="token"][data-size="sm"]').boundingBox()
