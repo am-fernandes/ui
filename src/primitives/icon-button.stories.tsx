@@ -108,6 +108,26 @@ export const Toolbar: Story = {
   ),
 }
 
+export const TightRow: Story = {
+  render: () => (
+    <div className="flex w-56 items-center gap-2 rounded-element border border-border-strong bg-card p-2">
+      <span className="min-w-0 truncate text-sm">
+        Proposta comercial nº 1042 — Torre B, unidade 1204
+      </span>
+      <IconButton icon={<Pencil />} label="Editar proposta" variant="outline" />
+      <IconButton icon={<Trash2 />} label="Excluir proposta" />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Numa linha apertada quem cede é o texto, que trunca. O IconButton continua quadrado.",
+      },
+    },
+  },
+}
+
 export const NextToButton: Story = {
   render: () => (
     <div className="flex items-center gap-2">

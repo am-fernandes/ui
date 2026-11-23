@@ -100,7 +100,8 @@ function IconButton({
       disabled={loading || disabled}
       className={cn(
         buttonVariants({ variant, size }),
-        "p-0",
+        // A square never gives way in a tight row: the text beside it does.
+        "shrink-0 p-0",
         controlSquare[size],
         size === "lg" && "[&_svg]:size-5",
         className,

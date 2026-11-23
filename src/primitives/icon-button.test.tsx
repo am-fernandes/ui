@@ -55,7 +55,7 @@ describe("IconButton", () => {
   it("is a square of the shared control height, with no padding", () => {
     const { rerender } = render(<IconButton icon={<Bell />} label="A" />)
     const button = () => screen.getByRole("button")
-    expect(button()).toHaveClass("size-control-md", "p-0")
+    expect(button()).toHaveClass("size-control-md", "p-0", "shrink-0")
     // The square replaces the height and the padding of the Button it is built on.
     expect(button()).not.toHaveClass("h-control-md")
     expect(button()).not.toHaveClass("px-3")

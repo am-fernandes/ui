@@ -49,6 +49,17 @@ test.describe("Button", () => {
   })
 })
 
+test.describe("IconButton", () => {
+  test("stays square in a row too narrow for its content", async ({ page }) => {
+    await open(page, "primitives-iconbutton--tight-row")
+    for (const name of ["Editar proposta", "Excluir proposta"]) {
+      const box = await page.getByRole("button", { name }).boundingBox()
+      expect(box?.width, `width of ${name}`).toBe(40)
+      expect(box?.height, `height of ${name}`).toBe(40)
+    }
+  })
+})
+
 test.describe("Checkbox", () => {
   test("clicking the label toggles state (implicit Radix binding)", async ({ page }) => {
     await open(page, "primitives-checkbox--with-description")
