@@ -248,7 +248,14 @@ export {
   type SegmentedControlProps,
 } from "./primitives/segmented-control"
 export { Separator, type SeparatorProps } from "./primitives/separator"
-export { Skeleton, type SkeletonProps } from "./primitives/skeleton"
+export {
+  Skeleton,
+  SkeletonGroup,
+  defaultSkeletonLabels,
+  type SkeletonGroupProps,
+  type SkeletonLabels,
+  type SkeletonProps,
+} from "./primitives/skeleton"
 export { Switch, type SwitchProps } from "./primitives/switch"
 export {
   Textarea,
