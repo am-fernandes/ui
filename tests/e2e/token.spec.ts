@@ -95,6 +95,42 @@ test.describe("Token", () => {
     expect(medium?.height).toBe(28)
   })
 
+  // Removing the focused token used to drop the focus on <body>: the next
+  // Tab started again from the top of the page.
+  test("removing by keyboard moves the focus to the next token, never to the body", async ({
+    page,
+  }) => {
+    await gotoToken(page, "primitives-token--removable")
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("button", { name: "Remover São Paulo" })).toBeFocused()
+    await page.keyboard.press("Enter")
+    await expect(page.getByRole("button", { name: "Remover Pendentes" })).toBeFocused()
+    // The last one: the focus goes back to the one before it.
+    await page.getByRole("button", { name: "Remover Acima de R$ 400 mil" }).focus()
+    await page.keyboard.press("Enter")
+    await expect(page.getByRole("button", { name: "Remover Pendentes" })).toBeFocused()
+    // None left: the message that says so takes the focus.
+    await page.keyboard.press("Enter")
+    await expect(page.getByText("Nenhum filtro.")).toBeFocused()
+  })
+
+  test("a truncated label shows the whole text on hover; a short one does not", async ({
+    page,
+  }) => {
+    await gotoToken(page, "primitives-token--long-label")
+    // The text of the chip: a plain label, or the button or link it becomes.
+    const text = '[data-slot="token-label"], [data-slot="token-action"]'
+    const long = page.locator('[data-slot="token"]').first()
+    await long.hover()
+    await expect(long.locator(text)).toHaveAttribute(
+      "title",
+      "Residencial Jardim das Acácias — Torre B, bloco 2",
+    )
+    const short = page.locator('[data-slot="token"]').nth(1)
+    await short.hover()
+    await expect(short.locator(text)).not.toHaveAttribute("title")
+  })
+
   test("long labels truncate instead of overflowing", async ({ page }) => {
     await gotoToken(page, "primitives-token--default")
     await page.evaluate(() => {

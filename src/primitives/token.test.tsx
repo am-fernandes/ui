@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MapPin } from "lucide-react"
 import * as React from "react"
@@ -65,6 +65,29 @@ describe("Token", () => {
   it("hides the icon from assistive tech", () => {
     const { container } = render(<Token label="X" icon={MapPin} />)
     expect(container.querySelector("svg.lucide-map-pin")).toHaveAttribute("aria-hidden", "true")
+  })
+
+  it("passes other attributes to the chip: id, data-*, aria-*, handlers", () => {
+    const onPointerEnter = vi.fn()
+    const { container } = render(
+      <Token
+        label="X"
+        id="filtro-sp"
+        data-testid="filtro"
+        aria-describedby="dica"
+        onPointerEnter={onPointerEnter}
+      />,
+    )
+    const chip = root(container)
+    expect(chip).toHaveAttribute("id", "filtro-sp")
+    expect(chip).toHaveAttribute("data-testid", "filtro")
+    expect(chip).toHaveAttribute("aria-describedby", "dica")
+    // Its own attributes are not overridden.
+    expect(chip).toHaveAttribute("data-slot", "token")
+    fireEvent.pointerEnter(chip)
+    expect(onPointerEnter).toHaveBeenCalledTimes(1)
+    // A label that fits gets no title (truncation is measured in tests/e2e/token.spec.ts).
+    expect(screen.getByText("X")).not.toHaveAttribute("title")
   })
 
   it("merges className and forwards the ref", () => {

@@ -1,7 +1,7 @@
 "use client"
 
 import { X } from "lucide-react"
-import type * as React from "react"
+import * as React from "react"
 
 import { type RenderLink, type RenderLinkProps, renderLinkElement } from "@/lib/render-link"
 import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
@@ -87,7 +87,8 @@ export const defaultTokenLabels: TokenLabels = {
   remove: (label) => `Remover ${label}`,
 }
 
-export interface TokenProps {
+export interface TokenProps
+  extends Omit<React.HTMLAttributes<HTMLSpanElement>, "onClick" | "children" | "color"> {
   label: string
   /** Categorical colour. @default "gray" */
   color?: TokenColor
@@ -142,6 +143,8 @@ function Token({
   labels,
   className,
   ref,
+  onPointerEnter,
+  ...props
 }: TokenProps) {
   const l: TokenLabels = { ...defaultTokenLabels, ...labels }
   const palette = colorClasses[color]
@@ -153,6 +156,11 @@ function Token({
       `[Token] href "${href}" was blocked because its protocol is not on the allowlist. Rendering the token without a link.`,
     )
   }
+
+  // A label cut by the ellipsis shows the whole text on hover.
+  const [truncated, setTruncated] = React.useState(false)
+  const labelRef = React.useRef<HTMLElement | null>(null)
+  const labelProps = { title: truncated ? label : undefined }
 
   // Stretched hit area + focus ring drawn over the whole chip.
   const actionClass = cn(
@@ -170,6 +178,8 @@ function Token({
     // unavailable. Never through `renderLink`: a router link needs an href.
     content = (
       <a
+        {...labelProps}
+        ref={labelRef as React.Ref<HTMLAnchorElement>}
         data-slot="token-action"
         // biome-ignore lint/a11y/useSemanticElements: without an href an <a> has no role of its own.
         role="link"
@@ -183,6 +193,8 @@ function Token({
     )
   } else if (hrefIsSafe) {
     const linkProps: RenderLinkProps & { "data-slot": string } = {
+      ...labelProps,
+      ref: labelRef as React.Ref<HTMLAnchorElement>,
       "data-slot": "token-action",
       href,
       target,
@@ -195,6 +207,8 @@ function Token({
   } else if (onClick) {
     content = (
       <button
+        {...labelProps}
+        ref={labelRef as React.Ref<HTMLButtonElement>}
         type="button"
         data-slot="token-action"
         disabled={disabled}
@@ -205,16 +219,26 @@ function Token({
       </button>
     )
   } else {
-    content = <span className="min-w-0 truncate">{label}</span>
+    content = (
+      <span {...labelProps} ref={labelRef} data-slot="token-label" className="min-w-0 truncate">
+        {label}
+      </span>
+    )
   }
 
   return (
     <span
+      {...props}
       ref={ref}
       data-slot="token"
       data-color={color}
       data-size={size}
       data-disabled={disabled ? "" : undefined}
+      onPointerEnter={(event) => {
+        const el = labelRef.current
+        if (el) setTruncated(el.scrollWidth > el.clientWidth)
+        onPointerEnter?.(event)
+      }}
       className={cn(
         "relative inline-flex max-w-full shrink-0 items-center rounded-inner border font-medium leading-none whitespace-nowrap",
         palette.root,

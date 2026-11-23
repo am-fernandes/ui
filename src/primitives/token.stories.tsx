@@ -73,24 +73,54 @@ export const WithIcon: Story = {
   ),
 }
 
+/**
+ * The pattern for a list of removable tokens: when the focused token goes
+ * away, the focus moves to the × of the one that takes its place (or of the
+ * one before, after the last), and to `fallback` when none is left. Without
+ * it the focus lands on <body> and the next Tab starts from the top.
+ */
+function useFocusAfterRemove(fallback: React.RefObject<HTMLElement | null>) {
+  const container = React.useRef<HTMLDivElement>(null)
+  const pending = React.useRef<number | null>(null)
+  const willRemove = (index: number) => {
+    // Only when the focus is in the list: a removal by mouse leaves it alone.
+    if (container.current?.contains(document.activeElement)) pending.current = index
+  }
+  React.useLayoutEffect(() => {
+    if (pending.current == null) return
+    const buttons = container.current?.querySelectorAll<HTMLElement>('[data-slot="token-remove"]')
+    const next = buttons?.[Math.min(pending.current, buttons.length - 1)]
+    pending.current = null
+    ;(next ?? fallback.current)?.focus()
+  })
+  return { container, willRemove }
+}
+
 function RemovableDemo() {
   const [filters, setFilters] = React.useState([
     { label: "São Paulo", color: "blue" as TokenColor },
     { label: "Pendentes", color: "yellow" as TokenColor },
     { label: "Acima de R$ 400 mil", color: "green" as TokenColor },
   ])
+  const empty = React.useRef<HTMLSpanElement>(null)
+  const { container, willRemove } = useFocusAfterRemove(empty)
   return (
-    <div className="flex flex-wrap gap-2">
-      {filters.map((filter) => (
+    <div ref={container} className="flex flex-wrap gap-2">
+      {filters.map((filter, index) => (
         <Token
           key={filter.label}
           label={filter.label}
           color={filter.color}
-          onRemove={() => setFilters((current) => current.filter((f) => f !== filter))}
+          onRemove={() => {
+            willRemove(index)
+            setFilters((current) => current.filter((f) => f !== filter))
+          }}
         />
       ))}
       {filters.length === 0 ? (
-        <span className="text-sm text-muted-foreground">Nenhum filtro.</span>
+        <span ref={empty} tabIndex={-1} className="text-sm text-muted-foreground outline-none">
+          Nenhum filtro.
+        </span>
       ) : null}
     </div>
   )
@@ -99,7 +129,29 @@ function RemovableDemo() {
 export const Removable: Story = {
   render: () => <RemovableDemo />,
   parameters: {
-    docs: { description: { story: "Filtros aplicados, removidos pelo ×." } },
+    docs: {
+      description: {
+        story:
+          "Filtros aplicados, removidos pelo ×. Ao remover pelo teclado, o foco vai para o × do token que ocupa o lugar (ou do anterior, depois do último) e, sem nenhum, para a mensagem: nunca para o `<body>`. O padrão está em `useFocusAfterRemove`, no código desta story.",
+      },
+    },
+  },
+}
+
+export const LongLabel: Story = {
+  render: () => (
+    <div className="flex w-56 flex-col items-start gap-2">
+      <Token label="Residencial Jardim das Acácias — Torre B, bloco 2" color="teal" />
+      <Token label="Torre A" color="teal" />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Um rótulo que não cabe é cortado com reticências e mostra o texto inteiro no `title`, ao passar o mouse.",
+      },
+    },
   },
 }
 
