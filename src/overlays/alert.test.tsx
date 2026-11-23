@@ -61,9 +61,9 @@ describe("Alert", () => {
     expect(container.querySelector('[data-slot="alert"]')).toHaveClass(klass)
   })
 
-  it("has role=alert for screen readers", () => {
+  it("is announced to screen readers (role=status by default)", () => {
     render(<Alert title="X" />)
-    expect(screen.getByRole("alert")).toBeInTheDocument()
+    expect(screen.getByRole("status")).toBeInTheDocument()
   })
 
   it("renders custom icon when provided", () => {
@@ -110,5 +110,26 @@ describe("Alert", () => {
     )
     expect(captured).not.toBeNull()
     expect((captured as unknown as HTMLDivElement).getAttribute("data-slot")).toBe("alert")
+  })
+})
+
+// Every variant was role="alert": an info or success message inserted on the
+// page interrupted the screen reader as an error would.
+describe("Alert role", () => {
+  it.each(["destructive", "warning"] as const)("%s interrupts: role=alert", (variant) => {
+    render(<Alert variant={variant} title="Atenção" />)
+    expect(screen.getByRole("alert")).toHaveAttribute("data-variant", variant)
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+  })
+
+  it.each(["default", "info", "success"] as const)("%s waits its turn: role=status", (variant) => {
+    render(<Alert variant={variant} title="Pronto" />)
+    expect(screen.getByRole("status")).toHaveAttribute("data-variant", variant)
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+  })
+
+  it("the consumer can still choose", () => {
+    render(<Alert variant="info" role="alert" title="Sessão expira em 1 minuto" />)
+    expect(screen.getByRole("alert")).toBeInTheDocument()
   })
 })

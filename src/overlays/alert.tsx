@@ -76,7 +76,10 @@ function Alert({
   return (
     <div
       ref={ref}
-      role="alert"
+      // Only what needs the user now interrupts the screen reader (an error,
+      // a warning); the rest is read when it is free. `role` in the props
+      // still wins.
+      role={variant === "destructive" || variant === "warning" ? "alert" : "status"}
       data-slot="alert"
       data-variant={variant}
       className={cn(
