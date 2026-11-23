@@ -3,6 +3,11 @@
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
+import {
+  type ControlSize,
+  controlHeight,
+  controlPaddingX,
+} from "../../primitives/_internal/control-size"
 import { FieldShell, type LabelPosition } from "../../primitives/_internal/field-shell"
 import { useFieldIds } from "../../primitives/_internal/use-field-ids"
 
@@ -12,7 +17,16 @@ import { useFieldIds } from "../../primitives/_internal/use-field-ids"
  * attributes of the visible `<input>`.
  */
 export interface FieldInputProps
-  extends Omit<React.ComponentProps<"input">, "value" | "defaultValue" | "onChange" | "type"> {
+  extends Omit<
+    React.ComponentProps<"input">,
+    "value" | "defaultValue" | "onChange" | "type" | "size"
+  > {
+  /**
+   * Height of the field: `sm` 32px, `md` 40px, `lg` 44px, the same as a
+   * button or select of that size.
+   * @default "md"
+   */
+  size?: ControlSize
   label?: React.ReactNode
   description?: React.ReactNode
   error?: string
@@ -47,6 +61,19 @@ interface FieldInputInternalProps extends FieldInputProps {
   trailing?: React.ReactNode
 }
 
+// The fixed text sits where the padding of that size starts, and the value
+// begins after it.
+const leadingClasses: Record<ControlSize, { slot: string; input: string }> = {
+  sm: { slot: "left-2.5", input: "pl-8" },
+  md: { slot: "left-3", input: "pl-9" },
+  lg: { slot: "left-4", input: "pl-10" },
+}
+const trailingClasses: Record<ControlSize, { slot: string; input: string }> = {
+  sm: { slot: "right-2.5", input: "pr-7" },
+  md: { slot: "right-3", input: "pr-8" },
+  lg: { slot: "right-4", input: "pr-9" },
+}
+
 /**
  * The shell shared by the masked inputs (CPF, CNPJ, CEP, phone) and the
  * numeric ones (currency, percentage): `FieldShell`, the visible input and,
@@ -59,6 +86,7 @@ function FieldInput({
   onChange,
   leading,
   trailing,
+  size = "md",
   className,
   disabled,
   label,
@@ -92,7 +120,12 @@ function FieldInput({
     >
       <div className="relative" data-slot={slot}>
         {leading ? (
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+          <span
+            className={cn(
+              "pointer-events-none absolute top-1/2 -translate-y-1/2 text-sm text-muted-foreground",
+              leadingClasses[size].slot,
+            )}
+          >
             {leading}
           </span>
         ) : null}
@@ -105,9 +138,11 @@ function FieldInput({
           required={required}
           aria-required={required ? true : undefined}
           className={cn(
-            "flex w-full rounded-element border border-input bg-card px-3 py-2.5 text-sm tabular-nums field-states disabled:cursor-default",
-            leading != null && "pl-9",
-            trailing != null && "pr-8",
+            "flex w-full rounded-element border border-input bg-card text-sm tabular-nums field-states disabled:cursor-default",
+            controlHeight[size],
+            controlPaddingX[size],
+            leading != null && leadingClasses[size].input,
+            trailing != null && trailingClasses[size].input,
             hasError && "border-destructive-text field-error",
             // Read-only: a muted box that does not answer to hover (important,
             // so it also wins over the hover tint of `field-error`). The focus
@@ -123,7 +158,12 @@ function FieldInput({
           onChange={onChange}
         />
         {trailing ? (
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+          <span
+            className={cn(
+              "pointer-events-none absolute top-1/2 -translate-y-1/2 text-sm text-muted-foreground",
+              trailingClasses[size].slot,
+            )}
+          >
             {trailing}
           </span>
         ) : null}

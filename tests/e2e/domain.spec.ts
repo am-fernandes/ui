@@ -237,6 +237,60 @@ test.describe("Campos com máscara: colar", () => {
   })
 })
 
+test.describe("Tamanho dos campos", () => {
+  const stories = [
+    { name: "CPFInput", id: "domain-cpfinput--sizes", label: "CPF" },
+    { name: "CNPJInput", id: "domain-cnpjinput--sizes", label: "CNPJ" },
+    { name: "CEPInput", id: "domain-cepinput--sizes", label: "CEP" },
+    { name: "PhoneInput", id: "domain-phoneinput--sizes", label: "Telefone" },
+    { name: "CurrencyInput", id: "domain-currencyinput--sizes", label: "Valor" },
+    { name: "PercentageInput", id: "domain-percentageinput--sizes", label: "Taxa" },
+  ]
+
+  for (const item of stories) {
+    test(`${item.name}: sm, md e lg medem 32, 40 e 44px`, async ({ page }) => {
+      await gotoStory(page, item.id)
+      const heights: Record<string, number> = {}
+      for (const size of ["sm", "md", "lg"]) {
+        const box = await page
+          .getByRole("textbox", { name: `${item.label} (${size})` })
+          .boundingBox()
+        heights[size] = box?.height ?? 0
+      }
+      expect(heights).toEqual({ sm: 32, md: 40, lg: 44 })
+    })
+  }
+
+  test("o texto fixo (R$ e %) não fica por cima do valor em nenhum tamanho", async ({ page }) => {
+    for (const [id, text] of [
+      ["domain-currencyinput--sizes", "R$"],
+      ["domain-percentageinput--sizes", "%"],
+    ] as const) {
+      await gotoStory(page, id)
+      const wrappers = page.locator(
+        `[data-slot="${id.includes("currency") ? "currency" : "percentage"}-input"]`,
+      )
+      await expect(wrappers).toHaveCount(3)
+      for (let i = 0; i < 3; i++) {
+        const wrapper = wrappers.nth(i)
+        const adornment = await wrapper.getByText(text, { exact: true }).boundingBox()
+        // Where the value text starts and ends inside the input.
+        const value = await wrapper.locator("input[type=text]").evaluate((el: HTMLInputElement) => {
+          const style = getComputedStyle(el)
+          const rect = el.getBoundingClientRect()
+          return {
+            start: rect.left + Number.parseFloat(style.paddingLeft),
+            end: rect.right - Number.parseFloat(style.paddingRight),
+          }
+        })
+        if (!adornment) throw new Error("sem caixa para medir")
+        if (text === "R$") expect(adornment.x + adornment.width).toBeLessThanOrEqual(value.start)
+        else expect(adornment.x).toBeGreaterThanOrEqual(value.end)
+      }
+    }
+  })
+})
+
 // Looks are measured here: jsdom has no stylesheet.
 test.describe("Somente leitura", () => {
   const stories = [

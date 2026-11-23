@@ -445,4 +445,25 @@ describe("CEPInput", () => {
       )
     })
   })
+
+  // A altura vem do token de controle (32, 40 e 44px), não do padding: o
+  // campo alinha com botões e selects do mesmo tamanho. A medida em px está
+  // em tests/e2e/domain.spec.ts.
+  describe("size", () => {
+    it("usa a altura md por padrão", () => {
+      render(<CEPInput value="01310100" onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox").className).toMatch(/\bh-control-md\b/)
+    })
+
+    it.each(["sm", "md", "lg"] as const)(
+      "size=%s usa a altura de controle correspondente",
+      (size) => {
+        render(<CEPInput value="01310100" onValueChange={vi.fn()} size={size} />)
+        const input = screen.getByRole("textbox")
+        expect(input.className).toMatch(new RegExp(`\\bh-control-${size}\\b`))
+        // `size` é o tamanho do controle, não o atributo nativo de largura.
+        expect(input).not.toHaveAttribute("size")
+      },
+    )
+  })
 })

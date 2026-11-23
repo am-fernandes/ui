@@ -156,3 +156,43 @@ export const ReadOnly: Story = {
     },
   },
 }
+
+export const Sizes: Story = {
+  args: { value: 12.5, onValueChange: () => {} },
+  render: () => {
+    const [value, setValue] = React.useState<number>(12.5)
+    return (
+      <div className="flex w-80 flex-col gap-4">
+        <PercentageInput
+          id="taxa-sm"
+          label="Taxa (sm)"
+          size="sm"
+          value={value}
+          onValueChange={setValue}
+        />
+        <PercentageInput
+          id="taxa-md"
+          label="Taxa (md)"
+          size="md"
+          value={value}
+          onValueChange={setValue}
+        />
+        <PercentageInput
+          id="taxa-lg"
+          label="Taxa (lg)"
+          size="lg"
+          value={value}
+          onValueChange={setValue}
+        />
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` define a altura da caixa inteira, borda incluída: 32, 40 e 44px. É o mesmo token de `Button` e dos demais controles, então campo e botão do mesmo tamanho ficam alinhados numa linha.",
+      },
+    },
+  },
+}
