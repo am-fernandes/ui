@@ -152,4 +152,61 @@ describe("Sheet", () => {
     )
     expect(screen.getByText("Descrição visível")).toBeInTheDocument()
   })
+
+  describe("layout", () => {
+    it.each(["top", "right", "bottom", "left"] as const)(
+      "side=%s is a column: the body scrolls, title, description and footer keep their size",
+      (side) => {
+        render(
+          <Sheet
+            open
+            side={side}
+            title="Novo lead"
+            description="Dados de contato"
+            footer={<button type="button">Salvar</button>}
+          >
+            <p>campos</p>
+          </Sheet>,
+        )
+        const content = document.querySelector('[data-slot="sheet-content"]') as HTMLElement
+        const body = document.querySelector('[data-slot="sheet-body"]') as HTMLElement
+        // `gap-4` and the footer's `mt-auto` only work in a flex column.
+        expect(content).toHaveClass("flex", "flex-col", "gap-4")
+        expect(body).toHaveClass("min-h-0", "flex-1", "overflow-y-auto")
+        expect(body).toHaveTextContent("campos")
+        expect(body).not.toContainElement(screen.getByText("Novo lead"))
+        expect(body).not.toContainElement(screen.getByText("Dados de contato"))
+        expect(body).not.toContainElement(screen.getByRole("button", { name: "Salvar" }))
+        for (const slot of ["sheet-title", "sheet-description", "sheet-footer"]) {
+          expect(document.querySelector(`[data-slot="${slot}"]`)).toHaveClass("shrink-0")
+        }
+        expect(document.querySelector('[data-slot="sheet-footer"]')).toHaveClass("mt-auto")
+      },
+    )
+
+    it.each(["top", "bottom"] as const)(
+      "side=%s grows with its content only up to the height of the screen",
+      (side) => {
+        render(
+          <Sheet open side={side} title="X">
+            body
+          </Sheet>,
+        )
+        expect(document.querySelector('[data-slot="sheet-content"]')).toHaveClass(
+          "max-h-[calc(100dvh-2rem)]",
+        )
+      },
+    )
+
+    it("keeps the body inside a sheet with its own padding", () => {
+      render(
+        <Sheet open title="X" className="p-0">
+          body
+        </Sheet>,
+      )
+      const body = document.querySelector('[data-slot="sheet-body"]')
+      expect(body).not.toHaveClass("-mx-6")
+      expect(body).toHaveClass("-mx-1.5", "px-1.5")
+    })
+  })
 })

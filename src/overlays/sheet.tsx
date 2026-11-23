@@ -7,19 +7,24 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { motionSheet, overlayBase } from "./_internal/animations"
+import { modalBodyClass } from "./_internal/modal-body"
 
+// The panel is a column: title, description and footer keep their size, the
+// body (`modalBodyClass`) takes what is left and scrolls. Side panels are as
+// tall as the screen; top and bottom ones grow with their content up to the
+// height of the screen, less 2rem of page left in view.
 const sheetVariants = cva(
   cn(
-    "fixed z-[var(--z-modal)] gap-4 border-border-strong bg-popover p-6 text-popover-foreground transition",
+    "fixed z-[var(--z-modal)] flex flex-col gap-4 border-border-strong bg-popover p-6 text-popover-foreground transition",
     "data-[state=open]:animate-in data-[state=closed]:animate-out",
     motionSheet,
   ),
   {
     variants: {
       side: {
-        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
+        top: "inset-x-0 top-0 max-h-[calc(100dvh-2rem)] border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
         bottom:
-          "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+          "inset-x-0 bottom-0 max-h-[calc(100dvh-2rem)] border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
         left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
         right:
           "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
@@ -33,7 +38,12 @@ export interface SheetProps extends VariantProps<typeof sheetVariants> {
   trigger?: React.ReactNode
   title: React.ReactNode
   description?: React.ReactNode
+  /**
+   * Body of the panel. It takes the room between the header and the footer
+   * and scrolls when its content is taller than that.
+   */
   children?: React.ReactNode
+  /** Footer slot, at the bottom of the panel (flex-end, gap-2). */
   footer?: React.ReactNode
   open?: boolean
   defaultOpen?: boolean
@@ -67,15 +77,26 @@ function Sheet({
           data-side={side}
           className={cn(sheetVariants({ side }), className)}
         >
-          <DialogPrimitive.Title className="text-lg font-semibold">{title}</DialogPrimitive.Title>
+          <DialogPrimitive.Title data-slot="sheet-title" className="shrink-0 text-lg font-semibold">
+            {title}
+          </DialogPrimitive.Title>
           {description ? (
-            <DialogPrimitive.Description className="text-sm text-muted-foreground">
+            <DialogPrimitive.Description
+              data-slot="sheet-description"
+              className="shrink-0 text-sm text-muted-foreground"
+            >
               {description}
             </DialogPrimitive.Description>
           ) : null}
-          {children ? <div data-slot="sheet-body">{children}</div> : null}
+          {children ? (
+            <div data-slot="sheet-body" className={cn(modalBodyClass(className), "flex-1")}>
+              {children}
+            </div>
+          ) : null}
           {footer ? (
-            <div data-slot="sheet-footer" className="mt-auto flex justify-end gap-2">
+            // `mt-auto`: with no body to fill the panel, the footer still goes
+            // to the bottom.
+            <div data-slot="sheet-footer" className="mt-auto flex shrink-0 justify-end gap-2">
               {footer}
             </div>
           ) : null}

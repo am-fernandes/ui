@@ -63,11 +63,7 @@ export const Right: Story = {
     title: "Detalhes do item",
     description: "Painel padrão deslizando da direita.",
     side: "right",
-    children: (
-      <div className="py-4 text-sm">
-        <p>Conteúdo do painel lateral.</p>
-      </div>
-    ),
+    children: <p className="text-sm">Conteúdo do painel lateral.</p>,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
@@ -88,7 +84,7 @@ export const Left: Story = {
     description: "Navegação principal.",
     side: "left",
     children: (
-      <nav className="flex flex-col gap-2 py-4 text-sm">
+      <nav className="flex flex-col gap-2 text-sm">
         <a href="/" className="rounded-md px-2 py-1 hover:bg-muted">
           Home
         </a>
@@ -110,7 +106,7 @@ export const Top: Story = {
     description: "Painel deslizando do topo.",
     side: "top",
     children: (
-      <ul className="flex flex-col gap-2 py-4 text-sm">
+      <ul className="flex flex-col gap-2 text-sm">
         <li>Nova mensagem de @joao</li>
         <li>Deploy concluído</li>
       </ul>
@@ -125,7 +121,7 @@ export const Bottom: Story = {
     description: "Estilo bottom sheet mobile.",
     side: "bottom",
     children: (
-      <div className="grid grid-cols-3 gap-2 py-4">
+      <div className="grid grid-cols-3 gap-2">
         <Button variant="outline">Compartilhar</Button>
         <Button variant="outline">Duplicar</Button>
         <Button variant="outline">Arquivar</Button>
@@ -140,7 +136,7 @@ export const WithFooter: Story = {
     title: "Editar projeto",
     description: "Clique em Salvar para confirmar.",
     children: (
-      <div className="flex flex-col gap-3 py-4">
+      <div className="flex flex-col gap-3">
         <Input label="Nome do projeto" placeholder="Meu app" />
         <Textarea label="Descrição" autoResize />
       </div>
@@ -151,6 +147,92 @@ export const WithFooter: Story = {
         <Button>Salvar</Button>
       </>
     ),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "O rodapé fica no fim do painel, qualquer que seja a altura do conteúdo.",
+      },
+    },
+  },
+}
+
+const leadFields = [
+  "Nome completo",
+  "CPF",
+  "E-mail",
+  "Telefone",
+  "Origem",
+  "Corretor",
+  "Empreendimento",
+  "Unidade",
+  "Renda mensal",
+  "Entrada",
+  "Banco",
+  "CEP",
+  "Logradouro",
+  "Número",
+  "Complemento",
+  "Bairro",
+  "Cidade",
+  "UF",
+  "Observações",
+]
+
+export const LongForm: Story = {
+  args: {
+    trigger: <Button>Formulário longo</Button>,
+    title: "Novo lead",
+    description: "Dados de contato e de interesse.",
+    children: (
+      <form id="lead" className="flex flex-col gap-3" onSubmit={(e) => e.preventDefault()}>
+        {leadFields.map((label) => (
+          <Input key={label} label={label} />
+        ))}
+      </form>
+    ),
+    footer: (
+      <>
+        <Button variant="outline">Cancelar</Button>
+        <Button type="submit" form="lead">
+          Salvar
+        </Button>
+      </>
+    ),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Conteúdo mais alto que a tela: título e descrição ficam no topo, o rodapé fica embaixo e só o corpo rola.",
+      },
+    },
+  },
+}
+
+export const BottomLong: Story = {
+  args: {
+    trigger: <Button>Abrir (bottom, longo)</Button>,
+    title: "Histórico do lead",
+    description: "Do mais recente para o mais antigo.",
+    side: "bottom",
+    children: (
+      <ul className="flex flex-col gap-2 text-sm">
+        {Array.from({ length: 40 }).map((_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static story content
+          <li key={i}>Contato {40 - i}: ligação registrada pelo corretor.</li>
+        ))}
+      </ul>
+    ),
+    footer: <Button variant="outline">Fechar</Button>,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Painéis de cima e de baixo crescem com o conteúdo até a altura da tela (menos 2rem); daí em diante o corpo rola.",
+      },
+    },
   },
 }
 
@@ -171,7 +253,7 @@ export const WithForm: Story = {
     >
       <form
         id="contact-form"
-        className="flex flex-col gap-3 py-4"
+        className="flex flex-col gap-3"
         onSubmit={(e) => {
           e.preventDefault()
           console.log("submitted")
@@ -200,6 +282,6 @@ export const HideClose: Story = {
     title: "Sem botão X",
     description: "Escape e click fora seguem funcionando.",
     hideCloseButton: true,
-    children: <p className="text-sm py-4">Pressione Escape para fechar.</p>,
+    children: <p className="text-sm">Pressione Escape para fechar.</p>,
   },
 }

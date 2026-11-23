@@ -223,6 +223,85 @@ test.describe("AlertDialog", () => {
   })
 })
 
+test.describe("Sheet", () => {
+  test("spaces title, description and body apart and puts the footer at the bottom", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await gotoStory(page, "overlays-sheet--with-footer", "Abrir com footer")
+    await page.getByRole("button", { name: "Abrir com footer" }).click()
+    const sheet = page.getByRole("dialog", { name: "Editar projeto" })
+    await expect(sheet).toBeVisible()
+    const panel = await settledBox(sheet)
+    expect(panel.height).toBe(800)
+
+    const title = (await sheet.getByRole("heading", { name: "Editar projeto" }).boundingBox())!
+    const description = (await sheet.getByText("Clique em Salvar para confirmar.").boundingBox())!
+    const field = (await sheet.getByText("Nome do projeto").boundingBox())!
+    // 16px between the parts: they used to touch.
+    expect(description.y - (title.y + title.height)).toBe(16)
+    expect(field.y - (description.y + description.height)).toBe(16)
+
+    // The footer sits at the bottom of the panel, 24px (the padding) from the edge.
+    const save = (await sheet.getByRole("button", { name: "Salvar" }).boundingBox())!
+    expect(panel.y + panel.height - (save.y + save.height)).toBe(24)
+  })
+
+  test("tall content: only the body scrolls, title and footer stay in view", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 600 })
+    await gotoStory(page, "overlays-sheet--long-form", "Formulário longo")
+    await page.getByRole("button", { name: "Formulário longo" }).click()
+    const sheet = page.getByRole("dialog", { name: "Novo lead" })
+    await expect(sheet).toBeVisible()
+    const panel = await settledBox(sheet)
+    expect(panel.y).toBe(0)
+    expect(panel.height).toBe(600)
+
+    const title = sheet.getByRole("heading", { name: "Novo lead" })
+    const save = sheet.getByRole("button", { name: "Salvar" })
+    const titleBox = (await title.boundingBox())!
+    const saveBox = (await save.boundingBox())!
+    expect(titleBox.y).toBeGreaterThanOrEqual(0)
+    expect(saveBox.y + saveBox.height).toBeLessThanOrEqual(600)
+
+    const body = sheet.locator('[data-slot="sheet-body"]')
+    await body.hover()
+    await page.mouse.wheel(0, 300)
+    await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+    expect(await title.boundingBox()).toEqual(titleBox)
+    expect(await save.boundingBox()).toEqual(saveBox)
+
+    // The last field is reachable with the keyboard, above the footer.
+    const last = sheet.getByLabel("Observações")
+    await last.focus()
+    await expect
+      .poll(async () => {
+        const box = (await last.boundingBox())!
+        return box.y >= titleBox.y + titleBox.height && box.y + box.height <= saveBox.y
+      })
+      .toBe(true)
+  })
+
+  test("a bottom sheet stops growing at the height of the screen and scrolls", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 500 })
+    await gotoStory(page, "overlays-sheet--bottom-long", "Abrir (bottom, longo)")
+    await page.getByRole("button", { name: "Abrir (bottom, longo)" }).click()
+    const sheet = page.getByRole("dialog", { name: "Histórico do lead" })
+    await expect(sheet).toBeVisible()
+    const panel = await settledBox(sheet)
+    // Anchored to the bottom, with the title on screen.
+    expect(panel.y + panel.height).toBe(500)
+    expect(panel.y).toBeGreaterThanOrEqual(0)
+    const title = (await sheet.getByRole("heading", { name: "Histórico do lead" }).boundingBox())!
+    expect(title.y).toBeGreaterThanOrEqual(0)
+
+    const body = sheet.locator('[data-slot="sheet-body"]')
+    await body.hover()
+    await page.mouse.wheel(0, 300)
+    await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+  })
+})
+
 test.describe("Tooltip", () => {
   // The Sides story, not Default: Default has a `play` function that focuses
   // the trigger, so its tooltip is already open (and held open) by focus.
