@@ -381,6 +381,46 @@ test.describe("Dialog", () => {
 })
 
 test.describe("AlertDialog", () => {
+  // Every backdrop sat at z 40 and every modal at z 50: the backdrop of an
+  // AlertDialog opened over a Dialog went under that Dialog, which stayed
+  // white and bright next to the question.
+  test("an AlertDialog over a Dialog dims the Dialog below it", async ({ page }) => {
+    await gotoStory(page, "overlays-alertdialog--over-dialog", "Editar proposta")
+    await page.getByRole("button", { name: "Editar proposta" }).click()
+    const dialog = page.getByRole("dialog", { name: "Editar proposta" })
+    const dialogBox = await settledBox(dialog)
+    await dialog.getByRole("button", { name: "Descartar" }).click()
+    const alert = page.getByRole("alertdialog", { name: "Descartar alterações?" })
+    const alertBox = await settledBox(alert)
+
+    // A corner of the Dialog the AlertDialog does not cover.
+    const point = { x: dialogBox.x + 8, y: dialogBox.y + 8 }
+    expect(
+      point.x < alertBox.x || point.y < alertBox.y,
+      "the probe point is outside the AlertDialog",
+    ).toBe(true)
+    // What is painted on top there. The modal below has pointer events off
+    // while the AlertDialog is open, and elementFromPoint skips such
+    // elements whatever their order: they are turned on for the probe only.
+    const topmost = () =>
+      page.evaluate(({ x, y }) => {
+        const layers = [...document.querySelectorAll<HTMLElement>("[data-slot]")]
+        const saved = layers.map((el) => el.style.pointerEvents)
+        for (const el of layers) el.style.pointerEvents = "auto"
+        const hit = document.elementFromPoint(x, y)
+        layers.forEach((el, i) => {
+          el.style.pointerEvents = saved[i]
+        })
+        return hit?.closest("[data-slot]")?.getAttribute("data-slot") ?? null
+      }, point)
+    await expect.poll(topmost).toBe("alert-dialog-overlay")
+
+    // Answering gives the Dialog back, no longer dimmed.
+    await alert.getByRole("button", { name: "Cancelar" }).click()
+    await expect(alert).toHaveCount(0)
+    await expect.poll(topmost).toBe("dialog-content")
+  })
+
   test("a double click on the confirm button confirms once", async ({ page }) => {
     await gotoStory(page, "overlays-alertdialog--confirm-once", "Aprovar proposta")
     const count = page.getByTestId("confirm-count")

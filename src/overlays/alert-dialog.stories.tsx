@@ -3,8 +3,10 @@ import { expect, fn, userEvent, waitFor, within } from "@storybook/test"
 import { useRef, useState } from "react"
 
 import { Button } from "../primitives/button"
+import { Input } from "../primitives/input"
 import { Textarea } from "../primitives/textarea"
 import { AlertDialog } from "./alert-dialog"
+import { Dialog } from "./dialog"
 
 const meta: Meta<typeof AlertDialog> = {
   title: "Overlays/AlertDialog",
@@ -278,6 +280,51 @@ export const LongBody: Story = {
       description: {
         story:
           "Conteúdo mais alto que a tela: o corpo rola e os botões “Cancelar” e a ação continuam à vista.",
+      },
+    },
+  },
+}
+
+export const OverDialog: Story = {
+  render: () => {
+    const [editing, setEditing] = useState(false)
+    const [confirming, setConfirming] = useState(false)
+    return (
+      <>
+        <Button onClick={() => setEditing(true)}>Editar proposta</Button>
+        <Dialog
+          open={editing}
+          onOpenChange={setEditing}
+          title="Editar proposta"
+          description="Há alterações que ainda não foram salvas."
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setConfirming(true)}>
+                Descartar
+              </Button>
+              <Button onClick={() => setEditing(false)}>Salvar</Button>
+            </>
+          }
+        >
+          <Input label="Cliente" defaultValue="Ana Souza" />
+        </Dialog>
+        <AlertDialog
+          open={confirming}
+          onOpenChange={setConfirming}
+          title="Descartar alterações?"
+          description="O que foi digitado na proposta se perde."
+          confirmLabel="Descartar"
+          confirmVariant="destructive"
+          onConfirm={() => setEditing(false)}
+        />
+      </>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Um `AlertDialog` aberto sobre um `Dialog`: o fundo dele escurece também o diálogo de baixo, para ficar claro qual dos dois espera a resposta.",
       },
     },
   },

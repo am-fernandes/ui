@@ -27,9 +27,17 @@ export const motionDialog =
 export const motionSheet =
   "duration-(--duration-medium) ease-(--ease-standard) data-[state=closed]:ease-(--ease-exit)"
 
-/** Animação base do overlay (escurecimento). */
+/**
+ * Animação base do overlay (escurecimento).
+ *
+ * The backdrop is on the modal's own layer (`--z-modal`), not under it: each
+ * modal renders its backdrop right before its content, so the DOM order
+ * stacks them. A modal opened over another (an AlertDialog over a Dialog)
+ * then puts its backdrop over the one below, which is dimmed too. With the
+ * backdrop on a lower layer it went under every modal already open.
+ */
 export const overlayBase =
-  "fixed inset-0 z-[var(--z-overlay)] bg-black/80 duration-(--duration-medium-max) ease-(--ease-standard) data-[state=closed]:duration-(--duration-exit) data-[state=closed]:ease-(--ease-exit) data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+  "fixed inset-0 z-[var(--z-modal)] bg-black/80 duration-(--duration-medium-max) ease-(--ease-standard) data-[state=closed]:duration-(--duration-exit) data-[state=closed]:ease-(--ease-exit) data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
 
 /**
  * Animação base do content centrado (Dialog/AlertDialog).
