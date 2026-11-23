@@ -7,6 +7,7 @@ import {
   type FocusEvent,
   type KeyboardEvent,
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -47,6 +48,12 @@ export const defaultMultiInputLabels: MultiInputLabels = {
 interface MultiInputBaseProps {
   /** Override individual UI strings. Defaults are pt-BR. */
   labels?: Partial<MultiInputLabels>
+  /**
+   * Initial items of an uncontrolled field (also what a form reset brings
+   * back): strings, or numbers with `type="number"`. One type for both modes,
+   * so props spread from one mode into the other still type-check.
+   */
+  defaultValue?: string[] | number[]
   /**
    * Minimum height of the box, border included: `sm` 32px, `md` 40px, `lg`
    * 44px, the same as a button or field of that size. It grows with the items.
@@ -99,8 +106,9 @@ interface MultiInputBaseProps {
 interface MultiInputStringProps extends MultiInputBaseProps {
   /** Free-text tokens (preserves insertion order, deduped). */
   type?: "string"
-  value: string[]
-  onValueChange: (values: string[]) => void
+  /** The items. Without it, the field keeps its own list from `defaultValue`. */
+  value?: string[]
+  onValueChange?: (values: string[]) => void
 }
 
 interface MultiInputNumberProps extends MultiInputBaseProps {
@@ -112,8 +120,9 @@ interface MultiInputNumberProps extends MultiInputBaseProps {
    * right between two numbers (`3,5`) is a decimal, not a separator.
    */
   type: "number"
-  value: number[]
-  onValueChange: (values: number[]) => void
+  /** The items. Without it, the field keeps its own list from `defaultValue`. */
+  value?: number[]
+  onValueChange?: (values: number[]) => void
 }
 
 type MultiInputProps = MultiInputStringProps | MultiInputNumberProps
@@ -196,10 +205,42 @@ function MultiInput(props: MultiInputProps) {
   // remove button at this position, or the text input when there is none.
   const focusAfterRemoval = useRef<number | null>(null)
 
+  const isControlled = props.value !== undefined
+  const initial = (): (string | number)[] => {
+    const items: (string | number)[] = props.defaultValue ?? []
+    return props.type === "number"
+      ? items.map(Number).filter((n) => Number.isSafeInteger(n) && n > 0)
+      : items.map(String)
+  }
+  const [internal, setInternal] = useState(initial)
+  const current: (string | number)[] = props.value ?? internal
+
+  /** Reports a new list, and keeps it when the field is uncontrolled. */
+  const emit = (next: (string | number)[]) => {
+    if (!isControlled) setInternal(next)
+    if (props.type === "number") props.onValueChange?.(next as number[])
+    else props.onValueChange?.(next as string[])
+  }
+
+  // An uncontrolled field goes back to its default when the form is reset.
+  const onReset = useRef(() => {})
+  onReset.current = () => {
+    if (isControlled) return
+    setInputValue("")
+    setInternal(initial())
+  }
+  useEffect(() => {
+    const form = inputRef.current?.form
+    if (form == null) return
+    const reset = () => onReset.current()
+    form.addEventListener("reset", reset)
+    return () => form.removeEventListener("reset", reset)
+  }, [])
+
   const tokens: (string | number)[] = useMemo(() => {
-    if (props.type === "number") return [...props.value].sort((a, b) => a - b)
-    return props.value
-  }, [props.value, props.type])
+    if (props.type === "number") return [...(current as number[])].sort((a, b) => a - b)
+    return current
+  }, [current, props.type])
 
   /**
    * The new tokens among `parsed` that fit: not in the list yet, in the order
@@ -220,16 +261,16 @@ function MultiInput(props: MultiInputProps) {
     if (props.type === "number") {
       const { tokens: parsed, hadInvalid } = parseNumberInput(raw)
       if (hadInvalid) onReject?.("invalid")
-      const accepted = accept(parsed, props.value)
+      const numbers = current as number[]
+      const accepted = accept(parsed, numbers)
       if (accepted === null) return false
-      if (accepted.length > 0) {
-        props.onValueChange([...props.value, ...accepted].sort((a, b) => a - b))
-      }
+      if (accepted.length > 0) emit([...numbers, ...accepted].sort((a, b) => a - b))
       return true
     }
-    const accepted = accept(parseStringInput(raw), props.value)
+    const strings = current as string[]
+    const accepted = accept(parseStringInput(raw), strings)
     if (accepted === null) return false
-    if (accepted.length > 0) props.onValueChange([...props.value, ...accepted])
+    if (accepted.length > 0) emit([...strings, ...accepted])
     return true
   }
 
@@ -238,11 +279,7 @@ function MultiInput(props: MultiInputProps) {
   }
 
   const removeToken = (token: string | number) => {
-    if (props.type === "number") {
-      props.onValueChange(props.value.filter((v) => v !== token))
-    } else {
-      props.onValueChange(props.value.filter((v) => v !== token))
-    }
+    emit(current.filter((v) => v !== token))
   }
 
   // The focused remove button disappears with its token. Hand the focus to a

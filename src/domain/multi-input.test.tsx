@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
@@ -702,6 +702,44 @@ describe("MultiInput", () => {
       await user.tab({ shift: true })
       expect(screen.getByRole("button", { name: "Remover a" })).toHaveFocus()
       expect(onBlur).not.toHaveBeenCalled()
+    })
+  })
+  // O campo só funcionava controlado: sem value ele quebrava, e num form
+  // nativo era preciso guardar o estado só para ele existir.
+  describe("modo não controlado", () => {
+    it("sem value, guarda os itens a partir de defaultValue", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<MultiInput label="Tags" defaultValue={["a"]} onValueChange={onValueChange} />)
+      await user.type(screen.getByRole("textbox", { name: "Tags" }), "b{Enter}")
+      expect(onValueChange).toHaveBeenLastCalledWith(["a", "b"])
+      expect(screen.getByRole("button", { name: "Remover b" })).toBeInTheDocument()
+      await user.click(screen.getByRole("button", { name: "Remover a" }))
+      expect(screen.queryByRole("button", { name: "Remover a" })).not.toBeInTheDocument()
+      expect(onValueChange).toHaveBeenLastCalledWith(["b"])
+    })
+
+    it("sem value nem defaultValue, começa vazio e não precisa de onValueChange", async () => {
+      const user = userEvent.setup()
+      render(<MultiInput label="Páginas" type="number" />)
+      await user.type(screen.getByRole("textbox", { name: "Páginas" }), "20 3{Enter}")
+      const items = screen.getAllByRole("button", { name: /^Remover / })
+      expect(items.map((b) => b.getAttribute("aria-label"))).toEqual(["Remover 3", "Remover 20"])
+    })
+
+    it("num form nativo, envia a lista e volta ao defaultValue no reset", async () => {
+      const user = userEvent.setup()
+      render(
+        <form data-testid="form">
+          <MultiInput label="Tags" name="tags" defaultValue={["a"]} />
+        </form>,
+      )
+      const form = screen.getByTestId("form") as HTMLFormElement
+      await user.type(screen.getByRole("textbox", { name: "Tags" }), "b{Enter}")
+      expect(new FormData(form).get("tags")).toBe("a,b")
+      act(() => form.reset())
+      expect(new FormData(form).get("tags")).toBe("a")
+      expect(screen.queryByRole("button", { name: "Remover b" })).not.toBeInTheDocument()
     })
   })
 })
