@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react"
+import { act, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { CalendarDays, LayoutGrid, List } from "lucide-react"
 import * as React from "react"
@@ -380,5 +380,23 @@ describe("SegmentedControl", () => {
     render(<SegmentedControl ref={ref} label="P" options={options} className="mt-4" />)
     expect(ref.current).toBe(screen.getByRole("radiogroup"))
     expect(ref.current).toHaveClass("mt-4", "bg-muted")
+  })
+
+  describe("form reset", () => {
+    it("goes back to defaultValue, on screen and in the FormData", async () => {
+      const user = userEvent.setup()
+      render(
+        <form data-testid="form">
+          <SegmentedControl label="Período" name="periodo" options={options} defaultValue="dia" />
+        </form>,
+      )
+      const form = screen.getByTestId("form") as HTMLFormElement
+      await user.click(screen.getByRole("radio", { name: "Semana" }))
+      expect(new FormData(form).get("periodo")).toBe("semana")
+
+      act(() => form.reset())
+      await waitFor(() => expect(screen.getByRole("radio", { name: "Dia" })).toBeChecked())
+      expect(new FormData(form).get("periodo")).toBe("dia")
+    })
   })
 })

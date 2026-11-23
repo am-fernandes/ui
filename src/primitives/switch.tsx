@@ -1,11 +1,14 @@
 "use client"
 
 import * as SwitchPrimitive from "@radix-ui/react-switch"
-import type * as React from "react"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useComposedRefs } from "./_internal/compose-refs"
 import { Label } from "./_internal/label"
+import { useControllableState } from "./_internal/use-controllable-state"
 import { useFieldIds } from "./_internal/use-field-ids"
+import { useFormReset } from "./_internal/use-form-reset"
 
 export interface SwitchProps extends Omit<React.ComponentProps<typeof SwitchPrimitive.Root>, "id"> {
   label?: React.ReactNode
@@ -23,20 +26,35 @@ function Switch({
   required,
   disabled,
   className,
+  checked: checkedProp,
+  defaultChecked,
+  onCheckedChange,
   "aria-describedby": describedBy,
   ref,
   ...props
 }: SwitchProps) {
   const ids = useFieldIds(id)
+  const [checked, setChecked] = useControllableState(
+    checkedProp,
+    defaultChecked ?? false,
+    onCheckedChange,
+  )
+  // A form reset brings back the state the switch was created with.
+  const initialChecked = React.useRef(checked)
+  const [node, setNode] = React.useState<HTMLButtonElement | null>(null)
+  const composedRef = useComposedRefs(ref, setNode)
+  useFormReset(node, () => setChecked(initialChecked.current))
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
   const hasLabel = label != null && label !== ""
 
   const switchEl = (
     <SwitchPrimitive.Root
-      ref={ref}
+      ref={composedRef}
       id={ids.controlId}
       data-slot="switch"
+      checked={checked}
+      onCheckedChange={setChecked}
       disabled={disabled}
       required={required}
       aria-invalid={hasError ? true : undefined}

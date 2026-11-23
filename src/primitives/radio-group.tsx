@@ -2,11 +2,14 @@
 
 import * as RadioGroupPrimitive from "@radix-ui/react-radio-group"
 import { CircleIcon } from "lucide-react"
-import type * as React from "react"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useComposedRefs } from "./_internal/compose-refs"
 import { Label } from "./_internal/label"
+import { useControllableState } from "./_internal/use-controllable-state"
 import { useFieldIds } from "./_internal/use-field-ids"
+import { useFormReset } from "./_internal/use-form-reset"
 
 export interface RadioGroupItemData {
   value: string
@@ -36,11 +39,29 @@ function RadioGroup({
   orientation = "vertical",
   values,
   className,
+  value: valueProp,
+  defaultValue,
+  onValueChange,
   "aria-describedby": describedBy,
   ref,
   ...props
 }: RadioGroupProps) {
   const ids = useFieldIds(id)
+  // `null`: no option chosen. Radix takes `undefined` as "uncontrolled".
+  // Going back to "no choice" on a reset is not reported: `onValueChange`
+  // only ever receives an option.
+  const [value, setValue] = useControllableState<string | null>(
+    valueProp,
+    defaultValue ?? null,
+    (next) => {
+      if (next != null) onValueChange?.(next)
+    },
+  )
+  // A form reset brings back the choice the group was created with.
+  const initialValue = React.useRef(value)
+  const [node, setNode] = React.useState<HTMLDivElement | null>(null)
+  const composedRef = useComposedRefs(ref, setNode)
+  useFormReset(node, () => setValue(initialValue.current))
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
   const hasLabel = label != null && label !== ""
@@ -63,9 +84,11 @@ function RadioGroup({
         </p>
       ) : null}
       <RadioGroupPrimitive.Root
-        ref={ref}
+        ref={composedRef}
         id={ids.controlId}
         data-slot="radio-group"
+        value={value}
+        onValueChange={setValue}
         data-orientation={orientation}
         disabled={disabled}
         required={required}

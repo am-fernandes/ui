@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { ZapIcon } from "lucide-react"
 import type * as React from "react"
@@ -130,5 +130,40 @@ describe("RadioGroup", () => {
       "data-orientation",
       "horizontal",
     )
+  })
+
+  // Radix RadioGroup does not listen to a form reset: the chosen option
+  // stayed chosen, on screen and in the FormData.
+  describe("form reset", () => {
+    it("goes back to defaultValue, on screen and in the FormData", async () => {
+      const user = userEvent.setup()
+      render(
+        <form data-testid="form">
+          <RadioGroup label="Plano" name="plano" values={VALUES} defaultValue="free" />
+        </form>,
+      )
+      const form = screen.getByTestId("form") as HTMLFormElement
+      await user.click(screen.getByRole("radio", { name: "Pro" }))
+      expect(new FormData(form).get("plano")).toBe("pro")
+
+      act(() => form.reset())
+      await waitFor(() => expect(screen.getByRole("radio", { name: "Free" })).toBeChecked())
+      expect(screen.getByRole("radio", { name: "Pro" })).not.toBeChecked()
+      expect(new FormData(form).get("plano")).toBe("free")
+    })
+
+    it("goes back to no choice when there was none", async () => {
+      const user = userEvent.setup()
+      render(
+        <form data-testid="form">
+          <RadioGroup label="Plano" name="plano" values={VALUES} />
+        </form>,
+      )
+      const form = screen.getByTestId("form") as HTMLFormElement
+      await user.click(screen.getByRole("radio", { name: "Pro" }))
+      act(() => form.reset())
+      await waitFor(() => expect(screen.getByRole("radio", { name: "Pro" })).not.toBeChecked())
+      expect(new FormData(form).get("plano")).toBeNull()
+    })
   })
 })

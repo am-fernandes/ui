@@ -5,7 +5,10 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Tooltip } from "../overlays/tooltip"
+import { useComposedRefs } from "./_internal/compose-refs"
 import { type ControlSize, controlHeight } from "./_internal/control-size"
+import { useControllableState } from "./_internal/use-controllable-state"
+import { useFormReset } from "./_internal/use-form-reset"
 
 // Horizontal padding and text of a segment. The height comes from the track
 // (the control height minus its 4px of padding on each side).
@@ -67,7 +70,7 @@ export interface SegmentedControlProps {
  */
 function SegmentedControl({
   options,
-  value,
+  value: valueProp,
   defaultValue,
   onValueChange,
   label,
@@ -80,6 +83,22 @@ function SegmentedControl({
   className,
   ref,
 }: SegmentedControlProps) {
+  // `null`: no segment chosen (Radix takes `undefined` as "uncontrolled").
+  // Going back to it on a reset is not reported: `onValueChange` only ever
+  // receives an option.
+  const [value, setValue] = useControllableState<string | null>(
+    valueProp,
+    defaultValue ?? null,
+    (next) => {
+      if (next != null) onValueChange?.(next)
+    },
+  )
+  // A form reset brings back the choice the control was created with.
+  const initialValue = React.useRef(value)
+  const [node, setNode] = React.useState<HTMLDivElement | null>(null)
+  const composedRef = useComposedRefs(ref, setNode)
+  useFormReset(node, () => setValue(initialValue.current))
+
   // Radix selects the focused radio only if the arrow key is *still down*
   // when its deferred focus lands. A short tap on a busy page can release the
   // key first, leaving focus on an unselected segment. Remember when an arrow
@@ -111,12 +130,11 @@ function SegmentedControl({
       onKeyDownCapture={(event) => {
         if (ARROW_KEYS.has(event.key)) lastArrowAt.current = performance.now()
       }}
-      ref={ref}
+      ref={composedRef}
       data-slot="segmented-control"
       aria-label={label}
       value={value}
-      defaultValue={defaultValue}
-      onValueChange={onValueChange}
+      onValueChange={setValue}
       disabled={disabled}
       name={name}
       required={required}
