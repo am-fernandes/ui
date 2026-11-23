@@ -268,14 +268,21 @@ function MultiInput(props: MultiInputProps) {
         }
       >
         {tokens.map((token, index) => (
-          <Badge key={`${token}`} variant="secondary" className="gap-1 pr-1">
+          <Badge
+            key={`${token}`}
+            data-slot="multi-input-item"
+            variant="secondary"
+            className="gap-1 pr-1"
+          >
             {renderToken(token)}
             {!disabled && (
               <button
                 type="button"
                 data-slot="multi-input-remove"
                 aria-label={`Remover ${renderToken(token)}`}
-                className="ml-0.5 rounded-inner cursor-pointer state-layer focus-visible:focus-outline"
+                // The × stays small inside the chip; the hit area around it
+                // is 24 by 24 px (WCAG 2.5.8).
+                className="relative ml-0.5 inline-flex size-4 items-center justify-center rounded-inner cursor-pointer state-layer focus-visible:focus-outline before:absolute before:-inset-1"
                 onMouseDown={(e) => {
                   // Keep the focus where it is: a click on the × must not blur
                   // the text input, which would commit what is being typed.

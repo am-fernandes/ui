@@ -785,6 +785,41 @@ test.describe("MultiInput: nome acessível e teclado", () => {
   })
 })
 
+test.describe("MultiInput: alvo de remover", () => {
+  test("o × tem área de toque de pelo menos 24 por 24 px, sem crescer o item", async ({ page }) => {
+    await gotoStory(page, "domain-multiinput--string-tags")
+    const remove = page.getByRole("button", { name: "Remover urgente" })
+    const chip = page.locator('[data-slot="multi-input-item"]').first()
+    const chipHeightBefore = (await chip.boundingBox())?.height ?? 0
+    const box = await remove.boundingBox()
+    if (box == null) throw new Error("botão de remover sem caixa")
+    const cx = box.x + box.width / 2
+    const cy = box.y + box.height / 2
+    // Os quatro cantos de um quadrado de 24px em volta do centro caem no botão.
+    const hits = await page.evaluate(
+      ({ cx, cy }) =>
+        [
+          [cx - 11.5, cy - 11.5],
+          [cx + 11.5, cy - 11.5],
+          [cx - 11.5, cy + 11.5],
+          [cx + 11.5, cy + 11.5],
+        ].map(([x, y]) => {
+          const el = document.elementFromPoint(x as number, y as number)
+          return el?.closest("button")?.getAttribute("aria-label") ?? null
+        }),
+      { cx, cy },
+    )
+    expect(hits).toEqual(Array(4).fill("Remover urgente"))
+    // O ícone continua pequeno e o item tem a altura de antes.
+    expect(box.width).toBeLessThanOrEqual(16)
+    expect(chipHeightBefore).toBeLessThanOrEqual(24)
+
+    // Um clique no canto da área remove o item.
+    await page.mouse.click(cx + 11, cy - 11)
+    await expect(remove).toHaveCount(0)
+  })
+})
+
 test.describe("MultiInput: limite de itens", () => {
   test("com a lista cheia, o item novo é recusado e os antigos ficam", async ({ page }) => {
     await gotoStory(page, "domain-multiinput--max-items-3")
