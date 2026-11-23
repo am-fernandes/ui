@@ -5,6 +5,7 @@ import type { ControlSize } from "./_internal/control-size"
 import { Button } from "./button"
 import { IconButton } from "./icon-button"
 import { Input } from "./input"
+import { SegmentedControl } from "./segmented-control"
 import { Textarea } from "./textarea"
 import { Toggle } from "./toggle"
 
@@ -33,6 +34,10 @@ export default meta
 type Story = StoryObj
 
 const SIZES: ControlSize[] = ["sm", "md", "lg"]
+const VIEWS = [
+  { value: "lista", label: "Lista" },
+  { value: "grade", label: "Grade" },
+]
 const BUTTON_VARIANTS = ["default", "destructive", "outline", "secondary", "ghost", "link"] as const
 
 function Row({ size }: { size: ControlSize }) {
@@ -69,6 +74,13 @@ function Row({ size }: { size: ControlSize }) {
         <div className="w-32 shrink-0">
           <Textarea size={size} rows={1} aria-label="Observação" placeholder="Uma linha" />
         </div>
+        <SegmentedControl
+          size={size}
+          label="Visualização"
+          options={VIEWS}
+          defaultValue="lista"
+          className="shrink-0"
+        />
       </div>
     </div>
   )

@@ -5,6 +5,15 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Tooltip } from "../overlays/tooltip"
+import { type ControlSize, controlHeight } from "./_internal/control-size"
+
+// Horizontal padding and text of a segment. The height comes from the track
+// (the control height minus its 4px of padding on each side).
+const segmentSize: Record<ControlSize, { text: string; iconOnly: string }> = {
+  sm: { text: "px-2.5 text-xs", iconOnly: "px-1.5" },
+  md: { text: "px-3 text-sm", iconOnly: "px-2" },
+  lg: { text: "px-4 text-sm", iconOnly: "px-2.5" },
+}
 
 const ARROW_KEYS = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"])
 /** How long after an arrow keydown a focus change still counts as arrow navigation. */
@@ -29,8 +38,11 @@ export interface SegmentedControlProps {
    * they control.
    */
   label: string
-  /** @default "md" */
-  size?: "sm" | "md"
+  /**
+   * `sm` 32px, `md` 40px, `lg` 44px: the height of the whole track, the same
+   * as a `Button` or an `Input` of that size. @default "md"
+   */
+  size?: ControlSize
   /** Stretch the segments equally to fill the container. */
   fill?: boolean
   /** Show only the icons; each label becomes the accessible name and a tooltip. */
@@ -91,7 +103,9 @@ function SegmentedControl({
       orientation="horizontal"
       loop
       className={cn(
-        "items-center gap-1 rounded-element bg-muted p-1 text-muted-foreground",
+        // The track has the control height; the segments stretch to fill it.
+        "items-stretch gap-1 rounded-element bg-muted p-1 text-muted-foreground",
+        controlHeight[size],
         fill ? "flex w-full" : "inline-flex max-w-full",
         disabled && "opacity-50",
         className,
@@ -118,8 +132,8 @@ function SegmentedControl({
               "disabled:cursor-default disabled:opacity-50",
               "data-[state=checked]:bg-card data-[state=checked]:text-foreground",
               "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-              size === "sm" ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm",
-              iconOnly && (size === "sm" ? "px-1.5" : "px-2"),
+              segmentSize[size].text,
+              iconOnly && segmentSize[size].iconOnly,
               fill && "flex-1",
             )}
           >

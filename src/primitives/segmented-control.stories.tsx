@@ -67,6 +67,24 @@ export const Small: Story = {
   args: { size: "sm" },
 }
 
+export const Sizes: Story = {
+  render: (args) => (
+    <div className="flex flex-col items-start gap-3">
+      <SegmentedControl {...args} size="sm" />
+      <SegmentedControl {...args} size="md" />
+      <SegmentedControl {...args} size="lg" />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` é a altura da trilha inteira: `sm` 32px, `md` 40px (padrão) e `lg` 44px, as mesmas de um `Button` ou `Input` do mesmo tamanho.",
+      },
+    },
+  },
+}
+
 export const Fill: Story = {
   args: { fill: true },
   decorators: [

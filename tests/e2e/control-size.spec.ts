@@ -13,6 +13,7 @@ const CONTROLS = [
   { slot: "input-wrapper", count: 2 },
   // One row of a textarea: it grows with more, so its size is a minimum.
   { slot: "textarea", count: 1 },
+  { slot: "segmented-control", count: 1 },
 ]
 
 const HEIGHTS = { sm: 32, md: 40, lg: 44 } as const

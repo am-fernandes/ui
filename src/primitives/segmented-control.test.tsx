@@ -205,11 +205,24 @@ describe("SegmentedControl", () => {
     for (const radio of screen.getAllByRole("radio")) expect(radio).toHaveClass("flex-1")
   })
 
-  it("has two sizes", () => {
+  // The measured heights (32, 40 and 44px for the whole track) are asserted in
+  // a real browser by tests/e2e/control-size.spec.ts.
+  it("has the three shared control sizes, md by default", () => {
     const { rerender } = render(<SegmentedControl label="P" options={options} />)
-    expect(screen.getByRole("radio", { name: "Dia" })).toHaveClass("px-3", "py-1.5", "text-sm")
+    const group = () => screen.getByRole("radiogroup")
+    const segment = () => screen.getByRole("radio", { name: "Dia" })
+    expect(group()).toHaveClass("h-control-md")
+    expect(segment()).toHaveClass("px-3", "text-sm")
+    // The track gives the height; a segment has no vertical padding of its own.
+    expect(segment().className).not.toMatch(/(^|\s)py-/)
+
     rerender(<SegmentedControl label="P" options={options} size="sm" />)
-    expect(screen.getByRole("radio", { name: "Dia" })).toHaveClass("px-2.5", "py-1", "text-xs")
+    expect(group()).toHaveClass("h-control-sm")
+    expect(segment()).toHaveClass("px-2.5", "text-xs")
+
+    rerender(<SegmentedControl label="P" options={options} size="lg" />)
+    expect(group()).toHaveClass("h-control-lg")
+    expect(segment()).toHaveClass("px-4", "text-sm")
   })
 
   it("renders icons next to labels", () => {
