@@ -37,11 +37,11 @@ describe("CNPJInput", () => {
     expect(onValueChange).toHaveBeenLastCalledWith("11222333000181")
   })
 
-  it("strips non-digit characters from pasted input", () => {
+  it("strips punctuation and symbols from a value set at once", () => {
     const onValueChange = vi.fn()
     render(<CNPJInput value="" onValueChange={onValueChange} />)
     const input = screen.getByRole("textbox") as HTMLInputElement
-    fireEvent.change(input, { target: { value: "ABC11.222.333/0001-81!" } })
+    fireEvent.change(input, { target: { value: "#11.222.333/0001-81!" } })
     expect(onValueChange).toHaveBeenLastCalledWith("11222333000181")
   })
 
@@ -158,6 +158,117 @@ describe("CNPJInput", () => {
       expect(input).not.toHaveAttribute("maxLength")
       await user.type(input, "112223330001819")
       expect(input).toHaveValue("11.222.333/0001-81")
+    })
+  })
+
+  // CNPJ alfanumérico (IN RFB 2.229/2024): o campo descartava as letras e o
+  // exemplo oficial "12.ABC.345/01DE-35" virava "12.345.013/5".
+  describe("CNPJ alfanumérico", () => {
+    it("aceita letras nas doze primeiras posições", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      function Harness() {
+        const [value, setValue] = React.useState("")
+        return (
+          <CNPJInput
+            value={value}
+            onValueChange={(next) => {
+              onValueChange(next)
+              setValue(next)
+            }}
+          />
+        )
+      }
+      render(<Harness />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.type(input, "12ABC34501DE35")
+      expect(input).toHaveValue("12.ABC.345/01DE-35")
+      expect(onValueChange).toHaveBeenLastCalledWith("12ABC34501DE35")
+    })
+
+    it("passa para maiúsculas o que é digitado", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCNPJInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.type(input, "12abc34501de35")
+      expect(input).toHaveValue("12.ABC.345/01DE-35")
+    })
+
+    it("ignora letra nos dois dígitos verificadores", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCNPJInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.type(input, "12ABC34501DEXY35")
+      expect(input).toHaveValue("12.ABC.345/01DE-35")
+    })
+
+    it("ignora letra com acento e símbolo", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCNPJInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.type(input, "1ç2é_A")
+      expect(input).toHaveValue("12.A")
+    })
+
+    it("mostra com máscara um valor alfanumérico que vem de fora", () => {
+      render(<CNPJInput value="12ABC34501DE35" onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("12.ABC.345/01DE-35")
+    })
+
+    it("aceita o CNPJ alfanumérico colado com rótulo, em minúsculas", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      function Harness() {
+        const [value, setValue] = React.useState("")
+        return (
+          <CNPJInput
+            value={value}
+            onValueChange={(next) => {
+              onValueChange(next)
+              setValue(next)
+            }}
+          />
+        )
+      }
+      render(<Harness />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.paste("CNPJ: 12.abc.345/01de-35")
+      expect(input).toHaveValue("12.ABC.345/01DE-35")
+      expect(onValueChange).toHaveBeenLastCalledWith("12ABC34501DE35")
+    })
+
+    it("o cursor fica no lugar ao trocar uma letra no meio", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCNPJInput initial="12ABC34501DE35" />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "12.A|BC.345/01DE-35"
+      await user.type(input, "{Backspace}", { initialSelectionStart: 4, initialSelectionEnd: 4 })
+      expect(input).toHaveValue("12.BC3.450/1DE3-5")
+      expect(input.selectionStart).toBe(3)
+      await user.keyboard("z")
+      expect(input).toHaveValue("12.ZBC.345/01DE-35")
+      expect(input.selectionStart).toBe(4)
+    })
+
+    it("digitar no início não empurra uma letra para os dígitos verificadores", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      // Treze caracteres, com a letra E na 12ª posição.
+      render(<CNPJInput value="12ABC34501DE3" onValueChange={onValueChange} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("12.ABC.345/01DE-3")
+      await user.type(input, "9", { initialSelectionStart: 0, initialSelectionEnd: 0 })
+      expect(input).toHaveValue("12.ABC.345/01DE-3")
+      expect(input.selectionStart).toBe(0)
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("abre o teclado de texto e pede maiúsculas", () => {
+      render(<CNPJInput value="" onValueChange={vi.fn()} />)
+      const input = screen.getByRole("textbox")
+      expect(input).toHaveAttribute("inputmode", "text")
+      expect(input).toHaveAttribute("autocapitalize", "characters")
     })
   })
 })

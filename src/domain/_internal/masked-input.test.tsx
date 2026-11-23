@@ -87,6 +87,37 @@ describe("applyEdit", () => {
     expect(applyEdit(spec, "1234", "192-34", 2, "insertText")).toEqual({ raw: "1234", caret: 1 })
   })
 
+  describe("com filtro que depende da posição", () => {
+    // Letras só nas duas primeiras posições; as outras duas são dígitos.
+    const positional: MaskSpec = {
+      ...spec,
+      filter: (text) => {
+        let kept = ""
+        for (const char of text) {
+          if (/\d/.test(char)) kept += char
+          else if (/[A-Z]/.test(char) && kept.length < 2) kept += char
+        }
+        return kept
+      },
+    }
+
+    it("recusa a tecla que empurraria uma letra para uma posição só de dígitos", () => {
+      // "1A-3" e um 9 digitado no início: o A iria para a terceira posição.
+      expect(applyEdit(positional, "1A3", "91A-3", 1, "insertText")).toEqual({
+        raw: "1A3",
+        caret: 0,
+      })
+    })
+
+    it("aceita a mesma tecla quando nenhuma letra sai do lugar permitido", () => {
+      // "A1-3" e um 9 digitado no fim.
+      expect(applyEdit(positional, "A13", "A1-39", 5, "insertText")).toEqual({
+        raw: "A139",
+        caret: 5,
+      })
+    })
+  })
+
   describe("com normalização", () => {
     // Um "9" na frente sai quando sobra caractere, como o 55 do telefone.
     const prefixed: MaskSpec = {

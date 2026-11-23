@@ -14,11 +14,13 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Input controlado para **CNPJ** com máscara `00.000.000/0000-00`. O valor interno são apenas os **dígitos limpos** (string de até 14 dígitos), enquanto o display é mascarado em tempo real.",
+          "Input controlado para **CNPJ** com máscara `XX.XXX.XXX/XXXX-DD`. O valor interno é o CNPJ **sem máscara** (string de até 14 caracteres), enquanto o display é mascarado em tempo real.",
+          "",
+          "**CNPJ alfanumérico.** A Receita emite CNPJ com letras desde julho de 2026 (IN RFB 2.229/2024): as doze primeiras posições aceitam dígitos ou letras maiúsculas e os dois dígitos verificadores continuam numéricos. O campo aceita os dois formatos, passa para maiúsculas o que é digitado e abre o teclado de texto no celular.",
           "",
           "**Props principais:**",
-          '- `value` — CNPJ atual como string de dígitos limpos (ex.: `"11222333000181"`).',
-          "- `onValueChange` — callback `(value: string) => void` que recebe os dígitos limpos a cada edição.",
+          '- `value` — CNPJ atual sem máscara (ex.: `"11222333000181"` ou `"12ABC34501DE35"`).',
+          "- `onValueChange` — callback `(value: string) => void` que recebe o CNPJ sem máscara a cada edição.",
           "- `label` — rótulo renderizado pelo próprio componente via `FieldShell`.",
           "- `disabled` — desabilita a edição.",
           "- Demais props do `<input>` (exceto `value`, `onChange`, `type`) são repassadas.",
@@ -48,12 +50,13 @@ const meta = {
   argTypes: {
     value: {
       control: "text",
-      description: "Dígitos limpos do CNPJ (0–14 chars).",
+      description:
+        "CNPJ sem máscara (0–14 caracteres: dígitos e, nas doze primeiras posições, letras).",
       table: { type: { summary: "string" } },
     },
     onValueChange: {
       control: false,
-      description: "Callback disparado a cada edição com os dígitos limpos.",
+      description: "Callback disparado a cada edição com o CNPJ sem máscara.",
       table: { type: { summary: "(value: string) => void" }, category: "Eventos" },
     },
     disabled: {
@@ -99,6 +102,29 @@ export const Filled: Story = {
         <CNPJInput id="cnpj" label="CNPJ" value={value} onValueChange={setValue} />
       </div>
     )
+  },
+}
+
+export const Alphanumeric: Story = {
+  args: { value: "12ABC34501DE35", onValueChange: () => {} },
+  render: () => {
+    const [value, setValue] = React.useState("12ABC34501DE35")
+    return (
+      <div className="w-80">
+        <CNPJInput id="cnpj" label="CNPJ" value={value} onValueChange={setValue} />
+        <p className="text-xs text-muted-foreground mt-1">
+          Valor: {value || "(vazio)"} — válido: {String(isValidCNPJ(value))}
+        </p>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "O exemplo oficial da Receita, `12.ABC.345/01DE-35`. O pai recebe os 14 caracteres sem máscara (`12ABC34501DE35`) e `isValidCNPJ` confere os dígitos verificadores dos dois formatos.",
+      },
+    },
   },
 }
 

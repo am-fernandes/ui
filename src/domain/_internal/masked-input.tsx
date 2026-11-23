@@ -106,6 +106,16 @@ export function applyEdit(
   if (typed && normalized.value.length > spec.maxLength) {
     return { raw: previous, caret: caretBefore }
   }
+  // A typed key can also cost a character that was already there, when the
+  // filter depends on position: a letter of a CNPJ pushed into the check
+  // digits, where only digits fit. Refuse the key instead of losing it.
+  const pushedOneOut =
+    edited.length > previousMasked.length &&
+    significant !== previous &&
+    significant.length <= previous.length
+  if (typed && pushedOneOut) {
+    return { raw: previous, caret: caretBefore }
+  }
 
   const raw = normalized.value.slice(0, spec.maxLength)
   const masked = spec.mask(raw)

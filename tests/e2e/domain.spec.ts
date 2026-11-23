@@ -237,6 +237,34 @@ test.describe("Campos com máscara: colar", () => {
   })
 })
 
+test.describe("CNPJInput: CNPJ alfanumérico", () => {
+  test("aceita o exemplo oficial digitado, em maiúsculas, e ele valida", async ({ page }) => {
+    await gotoStory(page, "domain-cnpjinput--with-validation-feedback")
+    const input = page.getByRole("textbox", { name: "CNPJ" })
+    await input.pressSequentially("12abc34501de35")
+    await expect(input).toHaveValue("12.ABC.345/01DE-35")
+    await expect(page.getByText("Dígitos: 12ABC34501DE35 — válido: true")).toBeVisible()
+  })
+
+  test("aceita o exemplo oficial colado com rótulo", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"])
+    await gotoStory(page, "domain-cnpjinput--with-validation-feedback")
+    const input = page.getByRole("textbox", { name: "CNPJ" })
+    await input.click()
+    await paste(page, "CNPJ: 12.ABC.345/01DE-35")
+    await expect(input).toHaveValue("12.ABC.345/01DE-35")
+    await expect(page.getByText("Dígitos: 12ABC34501DE35 — válido: true")).toBeVisible()
+  })
+
+  test("pede teclado de texto com maiúsculas", async ({ page }) => {
+    await gotoStory(page, "domain-cnpjinput--alphanumeric")
+    const input = page.getByRole("textbox", { name: "CNPJ" })
+    await expect(input).toHaveValue("12.ABC.345/01DE-35")
+    await expect(input).toHaveAttribute("inputmode", "text")
+    await expect(input).toHaveAttribute("autocapitalize", "characters")
+  })
+})
+
 test.describe("CurrencyInput", () => {
   test("typing digits formats to BRL display", async ({ page }) => {
     // `Playground` has no play function; `Default` types by itself and would race.
