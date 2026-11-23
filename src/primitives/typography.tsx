@@ -3,7 +3,10 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const typographyVariants = cva("text-foreground", {
+// No colour of its own: the text takes the colour around it, so it reads on a
+// filled surface (primary, status, a selected row) as on the page, where the
+// body is `foreground`. Only the caption is muted.
+const typographyVariants = cva("", {
   variants: {
     variant: {
       heading: "text-3xl font-semibold tracking-tight",
@@ -55,7 +58,14 @@ export interface TypographyProps
 function Typography({ className, variant, as, ref, ...props }: TypographyProps) {
   const resolvedVariant: TypographyVariant = variant ?? "body"
   const Element = (as ?? defaultElementByVariant[resolvedVariant]) as React.ElementType
-  return <Element ref={ref} className={cn(typographyVariants({ variant }), className)} {...props} />
+  return (
+    <Element
+      ref={ref}
+      data-slot="typography"
+      className={cn(typographyVariants({ variant }), className)}
+      {...props}
+    />
+  )
 }
 
 Typography.displayName = "Typography"

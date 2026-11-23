@@ -799,3 +799,13 @@ test.describe("State without colour", () => {
     }
   })
 })
+
+test.describe("Typography", () => {
+  test("on a filled surface the text takes the surface's colour", async ({ page }) => {
+    await open(page, "primitives-typography--on-filled-surface")
+    const surface = await page.getByTestId("surface").evaluate((el) => getComputedStyle(el).color)
+    for (const text of ["Proposta aprovada", "O texto acompanha a cor da superfície em volta."]) {
+      expect(await page.getByText(text).evaluate((el) => getComputedStyle(el).color)).toBe(surface)
+    }
+  })
+})

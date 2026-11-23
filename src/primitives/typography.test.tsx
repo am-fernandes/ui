@@ -116,4 +116,23 @@ describe("Typography", () => {
     const el = screen.getByTestId("t1")
     expect(el).toHaveAttribute("id", "my-id")
   })
+
+  it("marks its element with data-slot", () => {
+    render(<Typography variant="title">Propostas</Typography>)
+    expect(screen.getByText("Propostas")).toHaveAttribute("data-slot", "typography")
+  })
+
+  // On a filled surface (a status fill, the primary colour, a selected row)
+  // text-foreground forced dark text instead of the surface's -foreground.
+  // The colour itself is measured in tests/e2e/primitives.spec.ts.
+  it("inherits the text colour around it, except the caption", () => {
+    render(
+      <>
+        <Typography variant="body">Corpo</Typography>
+        <Typography variant="caption">Legenda</Typography>
+      </>,
+    )
+    expect(screen.getByText("Corpo").className).not.toMatch(/(^|\s)text-foreground(\s|$)/)
+    expect(screen.getByText("Legenda")).toHaveClass("text-muted-foreground")
+  })
 })

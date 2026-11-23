@@ -241,6 +241,26 @@ export const PolymorphicAs: Story = {
   },
 }
 
+export const OnFilledSurface: Story = {
+  render: () => (
+    <div
+      data-testid="surface"
+      className="flex flex-col gap-1 rounded-container bg-primary p-4 text-primary-foreground"
+    >
+      <Typography variant="subtitle">Proposta aprovada</Typography>
+      <Typography variant="body">O texto acompanha a cor da superfície em volta.</Typography>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Sem cor própria, a `Typography` herda a cor do texto em volta: sobre um fundo cheio (primário, status, linha selecionada) fica com o `-foreground` dele. Só a `caption` tem cor (`muted-foreground`).",
+      },
+    },
+  },
+}
+
 export const WithClassName: Story = {
   render: () => (
     <div className="flex w-120 flex-col gap-3">
