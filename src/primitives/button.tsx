@@ -26,6 +26,10 @@ const buttonVariants = cva(
     "motion-safe:pointer-fine:not-aria-disabled:active:scale-[0.98]",
     "disabled:pointer-events-none disabled:opacity-50 data-disabled:opacity-50 aria-disabled:cursor-default",
     "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+    // Forced colours paint the 1px border of every variant (transparent
+    // included) in the text colour, so a filled button keeps an outline. On
+    // paper the fill is kept, or white text would print on nothing.
+    "[print-color-adjust:exact]",
   ),
   {
     variants: {
@@ -36,7 +40,8 @@ const buttonVariants = cva(
         outline: "border-input bg-card state-layer",
         secondary: "border-transparent bg-secondary text-secondary-foreground state-layer",
         ghost: "border-transparent state-layer",
-        link: "border-transparent text-link underline-offset-4 not-aria-disabled:hover:underline",
+        // A link has no box, in forced colours too: no border, the link colour.
+        link: "border-transparent text-link underline-offset-4 not-aria-disabled:hover:underline forced-colors:border-[Canvas] forced-colors:text-[LinkText]",
       },
       // The height of the whole box, border included: 32, 40 and 44px.
       size: {

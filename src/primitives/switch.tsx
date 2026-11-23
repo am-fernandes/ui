@@ -67,13 +67,16 @@ function Switch({
         "focus-visible:focus-outline",
         "disabled:cursor-default",
         "data-[state=checked]:bg-primary data-[state=unchecked]:bg-input",
+        // Forced colours: on is the system's selection colour, off an outline
+        // with a solid thumb. On paper the fills are kept.
+        "forced-colors:border-[ButtonText] forced-colors:data-[state=checked]:border-[Highlight] forced-colors:data-[state=checked]:bg-[Highlight] [print-color-adjust:exact]",
         className,
       )}
       {...props}
     >
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
-        className="pointer-events-none block size-5 rounded-full bg-card ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
+        className="pointer-events-none block size-5 rounded-full bg-card ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0 forced-colors:bg-[ButtonText] forced-colors:data-[state=checked]:bg-[HighlightText]"
       />
     </SwitchPrimitive.Root>
   )

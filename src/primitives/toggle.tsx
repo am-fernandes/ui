@@ -30,7 +30,15 @@ import { type ControlSize, controlHeight, controlPaddingX } from "./_internal/co
  * "Remover da lista, pressionado" — the opposite of what the screen shows.
  */
 const toggleVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-element text-sm font-medium cursor-pointer transition focus-visible:focus-outline state-layer motion-safe:pointer-fine:active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border",
+  cn(
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-element text-sm font-medium cursor-pointer transition focus-visible:focus-outline state-layer motion-safe:pointer-fine:active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border",
+    // Forced colours replace every fill with the page colour, and on looked
+    // the same as off: on takes the system's selection colours, as they are
+    // (`forced-color-adjust: none`, or the browser paints a page-coloured
+    // plate behind the text). On paper the fill is kept, or white text on a
+    // fill would print on nothing.
+    "forced-colors:data-[state=on]:border-[Highlight] forced-colors:data-[state=on]:bg-[Highlight] forced-colors:data-[state=on]:text-[HighlightText] forced-colors:data-[state=on]:forced-color-adjust-none [print-color-adjust:exact]",
+  ),
   {
     variants: {
       variant: {

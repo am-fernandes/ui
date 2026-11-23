@@ -24,7 +24,8 @@ function Separator({
       orientation={orientation}
       decorative={decorative}
       className={cn(
-        "shrink-0 bg-border",
+        // Forced colours drop the fill: the line takes the text colour.
+        "shrink-0 bg-border forced-colors:bg-[CanvasText]",
         orientation === "horizontal" ? "h-px w-full" : "h-full w-px",
         className,
       )}

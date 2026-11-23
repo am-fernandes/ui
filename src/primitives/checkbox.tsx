@@ -77,6 +77,12 @@ function Checkbox({
             "disabled:cursor-default",
             "data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
             "data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground",
+            // Forced colours: checked and mixed take the system's selection
+            // colours. On paper the fill is kept, or the white mark would
+            // print on nothing.
+            "forced-colors:data-[state=checked]:border-[Highlight] forced-colors:data-[state=checked]:bg-[Highlight] forced-colors:data-[state=checked]:text-[HighlightText]",
+            "forced-colors:data-[state=indeterminate]:border-[Highlight] forced-colors:data-[state=indeterminate]:bg-[Highlight] forced-colors:data-[state=indeterminate]:text-[HighlightText]",
+            "[print-color-adjust:exact]",
             hasError && "border-destructive-text",
             className,
           )}

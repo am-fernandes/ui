@@ -193,6 +193,8 @@ function SegmentedControl({
       className={cn(
         // The track has the control height; the segments stretch to fill it.
         "items-stretch gap-1 rounded-element bg-muted p-1 text-muted-foreground",
+        // On paper the track and the chosen segment keep their fills.
+        "[print-color-adjust:exact] forced-colors:border forced-colors:border-[ButtonText]",
         controlHeight[size],
         fill ? "flex w-full" : "inline-flex max-w-full",
         // Disabled dims once: here when the control is alone, on the field
@@ -225,6 +227,10 @@ function SegmentedControl({
               // again inside it (50% of 50%).
               option.disabled && !disabled && "opacity-50",
               "data-[state=checked]:bg-card data-[state=checked]:text-foreground",
+              // Forced colours drop the fills: the chosen segment takes the
+              // system's selection colours, as they are (no page-coloured
+              // plate behind its text).
+              "forced-colors:data-[state=checked]:bg-[Highlight] forced-colors:data-[state=checked]:text-[HighlightText] forced-colors:data-[state=checked]:forced-color-adjust-none",
               "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
               segmentSize[size].text,
               iconOnly && segmentSize[size].iconOnly,

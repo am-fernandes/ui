@@ -744,3 +744,50 @@ test.describe("Avatar fallback", () => {
     for (const size of sizes) expect(size.fontSize / size.width).toBeCloseTo(0.35, 2)
   })
 })
+
+// Flat states are fills, and forced colours (Windows High Contrast) replace
+// every fill with the page colour: Toggle on looked like off, the chosen
+// segment had no mark, Switch on looked like off, Separator and Skeleton
+// vanished. Each state now has a signal in system colours.
+test.describe("State without colour", () => {
+  const STORY = "primitives-state-without-colour--on-and-off"
+
+  test("forced colours: on and off still look different", async ({ page }) => {
+    await page.emulateMedia({ forcedColors: "active" })
+    await open(page, STORY)
+    await page.addStyleTag({ content: "*,*::before,*::after{transition:none!important}" })
+
+    // Same content in both states: identical pictures mean no state at all.
+    for (const control of ["toggle", "switch", "checkbox"]) {
+      const off = await page.getByTestId(`${control}-off`).screenshot({ animations: "disabled" })
+      const on = await page.getByTestId(`${control}-on`).screenshot({ animations: "disabled" })
+      expect(off.equals(on), `${control}: on and off are the same picture`).toBe(false)
+    }
+
+    // Segments: the padding beside the text, chosen and not.
+    const segment = (name: string) => page.getByRole("radio", { name })
+    const chosen = await pixelAt(page, segment("Semana"), 0.08, 0.5)
+    const other = await pixelAt(page, segment("Dia"), 0.08, 0.5)
+    expect(chosen).not.toEqual(other)
+
+    // Separator and Skeleton are drawn, not the page colour around them.
+    const page_ = await pixelAt(page, page.locator("#storybook-root"), 0.99, 0.99)
+    expect(await pixelAt(page, page.getByTestId("separator"), 0.5, 0.5)).not.toEqual(page_)
+    expect(await pixelAt(page, page.getByTestId("skeleton"), 0.5, 0.5)).not.toEqual(page_)
+  })
+
+  test("print keeps the fills that carry a state", async ({ page }) => {
+    await page.emulateMedia({ media: "print" })
+    await open(page, STORY)
+    // Printing without backgrounds would leave a white mark on nothing.
+    for (const target of [
+      page.getByTestId("toggle-on"),
+      page.getByTestId("switch-on"),
+      page.getByTestId("checkbox-on"),
+      page.getByTestId("button-primary"),
+      page.getByRole("radio", { name: "Semana" }),
+    ]) {
+      expect(await target.evaluate((el) => getComputedStyle(el).printColorAdjust)).toBe("exact")
+    }
+  })
+})

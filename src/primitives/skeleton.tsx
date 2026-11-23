@@ -21,7 +21,12 @@ function Skeleton({ className, ref, ...props }: SkeletonProps) {
       aria-hidden="true"
       data-slot="skeleton"
       {...props}
-      className={cn("animate-pulse rounded-inner bg-primary/10", className)}
+      className={cn(
+        "animate-pulse rounded-inner bg-primary/10",
+        // Forced colours drop the fill: the block keeps its shape in grey.
+        "forced-colors:bg-[GrayText]",
+        className,
+      )}
     />
   )
 }
