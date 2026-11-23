@@ -28,7 +28,10 @@ export interface FileUploadLabels {
   dropzoneSingle: string
   /** Default label inside the dropzone when `multiple={true}`. */
   dropzoneMultiple: string
-  /** Fallback aria-label of the dropzone when `label` is not a string. */
+  /**
+   * @deprecated No longer used: the dropzone is named by its visible label,
+   * whatever it holds (`aria-labelledby`).
+   */
   dropzoneAriaLabel: string
   /** Camera trigger button label. */
   cameraButton: string
@@ -202,6 +205,10 @@ function FileUpload({
   const resolvedLabel: React.ReactNode =
     label ?? (multiple ? mergedLabels.dropzoneMultiple : mergedLabels.dropzoneSingle)
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const baseId = React.useId()
+  const labelId = `${baseId}-label`
+  const hintId = `${baseId}-hint`
+  const errorId = `${baseId}-error`
   const [internal, setInternal] = React.useState<File[]>([])
   const [isDragging, setDragging] = React.useState(false)
   const [cameraOpen, setCameraOpen] = React.useState(false)
@@ -272,6 +279,12 @@ function FileUpload({
     description !== undefined ? description : defaultDescription(accept, maxSize)
 
   const hasError = error != null && error !== ""
+  const hasHint = renderedDescription != null && renderedDescription !== ""
+  // The label names the dropzone; the type and size hint and the error
+  // describe it, so a screen reader announces all three.
+  const describedBy = [hasHint ? hintId : null, hasError ? errorId : null]
+    .filter((id) => id !== null)
+    .join(" ")
 
   return (
     <div className={cn("flex flex-col gap-3", className)} data-slot="file-upload">
@@ -291,9 +304,8 @@ function FileUpload({
             ingest(e.dataTransfer.files)
           }}
           disabled={disabled}
-          aria-label={
-            typeof resolvedLabel === "string" ? resolvedLabel : mergedLabels.dropzoneAriaLabel
-          }
+          aria-labelledby={labelId}
+          aria-describedby={describedBy === "" ? undefined : describedBy}
           className={cn(
             "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-element border border-dashed border-input bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
             "state-layer",
@@ -305,9 +317,13 @@ function FileUpload({
           )}
         >
           <UploadCloud className="size-6 text-muted-foreground" aria-hidden />
-          <span className="font-medium">{resolvedLabel}</span>
-          {renderedDescription ? (
-            <span className="text-xs text-muted-foreground">{renderedDescription}</span>
+          <span id={labelId} className="font-medium">
+            {resolvedLabel}
+          </span>
+          {hasHint ? (
+            <span id={hintId} className="text-xs text-muted-foreground">
+              {renderedDescription}
+            </span>
           ) : null}
         </button>
         {camera ? (
@@ -324,13 +340,18 @@ function FileUpload({
         ) : null}
       </div>
       {hasError ? (
-        <p role="alert" className="text-xs text-destructive-text">
+        <p id={errorId} role="alert" className="text-xs text-destructive-text">
           {error}
         </p>
       ) : null}
+      {/* Only the dropzone is operated: the native input is a hidden helper
+          that opens the picker, so it is out of the tab order and of the
+          accessibility tree. */}
       <input
         ref={inputRef}
         type="file"
+        tabIndex={-1}
+        aria-hidden="true"
         accept={normalizeAccept(accept)}
         multiple={multiple}
         disabled={disabled}

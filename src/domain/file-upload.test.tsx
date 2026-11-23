@@ -816,4 +816,64 @@ describe("FileUpload", () => {
       expect(screen.getByRole("button", { name: "Download notes.txt" })).toBeInTheDocument()
     })
   })
+
+  // Regressão: o <input type="file"> oculto era uma parada de Tab de 1×1 px
+  // sem nome, e o aria-label da dropzone escondia a dica de tipo e tamanho.
+  describe("teclado e leitor de tela", () => {
+    it("o input de arquivo oculto fica fora da ordem de Tab e da árvore de acessibilidade", () => {
+      render(<FileUpload />)
+      const input = document.querySelector("input[type=file]") as HTMLInputElement
+      expect(input).toHaveAttribute("tabindex", "-1")
+      expect(input).toHaveAttribute("aria-hidden", "true")
+    })
+
+    it("Tab para na dropzone e segue adiante, sem uma segunda parada", async () => {
+      const user = userEvent.setup()
+      render(
+        <>
+          <FileUpload />
+          <button type="button">Depois</button>
+        </>,
+      )
+      await user.tab()
+      expect(screen.getByRole("button", { name: /Arraste um arquivo/ })).toHaveFocus()
+      await user.tab()
+      expect(screen.getByRole("button", { name: "Depois" })).toHaveFocus()
+    })
+
+    it("a dropzone é nomeada pelo rótulo e descrita pela dica de tipo e tamanho", () => {
+      render(<FileUpload label="Anexar contrato" accept="application/pdf" maxSize={1024} />)
+      const dropzone = screen.getByRole("button", { name: "Anexar contrato" })
+      expect(dropzone).not.toHaveAttribute("aria-label")
+      expect(dropzone).toHaveAccessibleDescription(/application\/pdf/)
+      expect(dropzone).toHaveAccessibleDescription(/até 1/)
+    })
+
+    it("a mensagem de erro entra na descrição da dropzone", () => {
+      render(
+        <FileUpload label="Anexar contrato" accept="application/pdf" error="Anexe o contrato." />,
+      )
+      const dropzone = screen.getByRole("button", { name: "Anexar contrato" })
+      expect(dropzone).toHaveAccessibleDescription(/application\/pdf/)
+      expect(dropzone).toHaveAccessibleDescription(/Anexe o contrato\./)
+    })
+
+    it("sem dica nem erro, a dropzone não aponta para descrição nenhuma", () => {
+      render(<FileUpload label="Anexar" />)
+      expect(screen.getByRole("button", { name: "Anexar" })).not.toHaveAttribute("aria-describedby")
+    })
+
+    it("um rótulo que não é texto também nomeia a dropzone", () => {
+      render(
+        <FileUpload
+          label={
+            <>
+              Anexar <strong>laudo</strong>
+            </>
+          }
+        />,
+      )
+      expect(screen.getByRole("button", { name: "Anexar laudo" })).toBeInTheDocument()
+    })
+  })
 })

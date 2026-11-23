@@ -12,17 +12,6 @@ const meta = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
-    a11y: {
-      // Hidden `<input type="file">` is intentionally visually-hidden and triggered via the dropzone label;
-      // it lacks an associated `<label for>` because the dropzone itself acts as the label region.
-      // Real component bug to track: wire aria-labelledby to the dropzone heading.
-      config: {
-        rules: [
-          { id: "label", enabled: false },
-          { id: "color-contrast", enabled: false },
-        ],
-      },
-    },
     docs: {
       description: {
         component: [
@@ -308,7 +297,6 @@ export const English: Story = {
     labels: {
       dropzoneMultiple: "Drag files or click to select",
       dropzoneSingle: "Drag a file or click to select",
-      dropzoneAriaLabel: "Select files",
       cameraButton: "Take photo",
       cameraDialogTitle: "Take photo",
       cameraDialogDescription:

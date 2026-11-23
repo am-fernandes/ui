@@ -1,4 +1,5 @@
 import { type Locator, type Page, expect, test } from "@playwright/test"
+import { expectNoA11yViolations } from "./a11y"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
@@ -824,6 +825,50 @@ test.describe("MultiInput: modo número", () => {
     await expect(input).toHaveValue("")
     await expect(page.getByText("Array: [7, 10, 22, 35, 40]")).toBeVisible()
   })
+})
+
+test.describe("FileUpload: teclado e leitor de tela", () => {
+  test("Tab para na dropzone uma vez só; o input de arquivo oculto não recebe foco", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-fileupload--with-camera")
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("button", { name: "Fotografar documento" })).toBeFocused()
+    // A próxima parada é o botão da câmera, não o <input type="file"> de 1×1 px.
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("button", { name: "Capturar foto" })).toBeFocused()
+    const fileInputIsTabbable = await page
+      .locator('[data-slot="file-upload"] input[type=file]')
+      .evaluate((el: HTMLInputElement) => el.tabIndex >= 0)
+    expect(fileInputIsTabbable).toBe(false)
+  })
+
+  test("a dropzone é nomeada pelo rótulo e descrita pela dica e pelo erro", async ({ page }) => {
+    await gotoStory(page, "domain-fileupload--multiple-with-limit")
+    await expect(page.locator('[data-slot="file-upload"]')).toMatchAriaSnapshot(`
+      - button "Comprovantes"
+    `)
+    const dropzone = page.getByRole("button", { name: "Comprovantes" })
+    await expect(dropzone).toHaveAccessibleDescription(
+      "Até 3 arquivos · imagem ou PDF · 5 MB cada.",
+    )
+
+    await gotoStory(page, "domain-fileupload--with-error")
+    await expect(
+      page.getByRole("button", { name: "Documentos obrigatórios" }),
+    ).toHaveAccessibleDescription("Pelo menos um documento é obrigatório.")
+  })
+
+  for (const id of [
+    "domain-fileupload--default",
+    "domain-fileupload--with-error",
+    "domain-fileupload--read-only",
+  ]) {
+    test(`${id}: sem violação de acessibilidade, com todas as regras ligadas`, async ({ page }) => {
+      await gotoStory(page, id)
+      await expectNoA11yViolations(page, "#storybook-root")
+    })
+  }
 })
 
 test.describe("FileUpload: abrir um arquivo da lista", () => {
