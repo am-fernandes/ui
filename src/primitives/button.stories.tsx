@@ -4,6 +4,7 @@ import { ArrowRightIcon, DownloadIcon, PlusIcon, SearchIcon, Trash2Icon } from "
 import { useState } from "react"
 
 import { Button } from "./button"
+import { IconButton } from "./icon-button"
 
 const meta: Meta<typeof Button> = {
   title: "Primitives/Button",
@@ -14,10 +15,11 @@ const meta: Meta<typeof Button> = {
     docs: {
       description: {
         component: [
-          'Botão base do design system. 6 variantes + estados (`loading`, `disabled`) + composição via `asChild`. Tamanho único e canônico — para um botão quadrado só de ícone use `className="size-9 p-0"`.',
+          "Botão base do design system. 6 variantes, 3 tamanhos, estados (`loading`, `disabled`) e composição via `asChild`. Para um botão quadrado só de ícone use o `IconButton`.",
           "",
           "**API:**",
           "- `variant` — `default | destructive | outline | secondary | ghost | link`.",
+          "- `size` — `sm` (32px), `md` (40px, padrão) ou `lg` (44px). É a altura da caixa inteira, igual à de um `Input`, `IconButton` ou `Toggle` do mesmo tamanho.",
           "- `loading` — exibe um spinner antes do conteúdo e desabilita o botão.",
           "- `disabled` — desabilita o botão.",
           "- `asChild` — renderiza o filho como elemento raiz (use com `<a>` ou `<Link>`).",
@@ -48,6 +50,15 @@ const meta: Meta<typeof Button> = {
           summary: "'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'",
         },
         defaultValue: { summary: "'default'" },
+      },
+    },
+    size: {
+      control: "inline-radio",
+      options: ["sm", "md", "lg"],
+      description: "Altura da caixa, borda incluída: 32, 40 ou 44px.",
+      table: {
+        type: { summary: "'sm' | 'md' | 'lg'" },
+        defaultValue: { summary: "'md'" },
       },
     },
     loading: {
@@ -148,6 +159,33 @@ export const AllVariants: Story = {
   },
 }
 
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex flex-wrap items-center gap-3">
+      <Button size="sm">sm · 32px</Button>
+      <Button size="md">md · 40px</Button>
+      <Button size="lg">lg · 44px</Button>
+      <Button size="sm" variant="outline">
+        sm · 32px
+      </Button>
+      <Button size="md" variant="outline">
+        md · 40px
+      </Button>
+      <Button size="lg" variant="outline">
+        lg · 44px
+      </Button>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` define a altura da caixa inteira. Com ou sem borda, o botão de um tamanho mede o mesmo e fica alinhado com os campos desse tamanho (veja Primitives/Control Size).",
+      },
+    },
+  },
+}
+
 export const WithIcons: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-3">
@@ -167,9 +205,7 @@ export const WithIcons: Story = {
         <Trash2Icon />
         Excluir
       </Button>
-      <Button className="size-9 p-0" aria-label="Buscar">
-        <SearchIcon />
-      </Button>
+      <IconButton icon={<SearchIcon />} label="Buscar" variant="default" />
     </div>
   ),
   parameters: {
@@ -177,7 +213,7 @@ export const WithIcons: Story = {
     docs: {
       description: {
         story:
-          "Ícones (leading ou trailing) recebem `size-4` automaticamente via CSS do componente. Use `lucide-react`.",
+          "Ícones (leading ou trailing) recebem `size-4` automaticamente via CSS do componente. Use `lucide-react`. Só o ícone, sem texto: `IconButton`, que exige o nome acessível.",
       },
     },
   },

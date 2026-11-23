@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event"
 import type * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
-import { Button } from "./button"
+import { Button, buttonVariants } from "./button"
 
 describe("Button", () => {
   it("renders children as accessible name", () => {
@@ -76,6 +76,55 @@ describe("Button", () => {
         </Button>,
       )
       expect(screen.getByRole("link", { name: "link" })).not.toHaveAttribute("type")
+    })
+  })
+
+  // The measured heights (32, 40 and 44px, border included, in every variant)
+  // are asserted in a real browser by tests/e2e/control-size.spec.ts.
+  describe("size", () => {
+    const VARIANTS = ["default", "destructive", "outline", "secondary", "ghost", "link"] as const
+
+    it("takes the height of the shared control sizes, md by default", () => {
+      const { rerender } = render(<Button>x</Button>)
+      const button = () => screen.getByRole("button")
+      expect(button()).toHaveClass("h-control-md", "px-3")
+      expect(button().className).not.toMatch(/(^|\s)py-/)
+
+      rerender(<Button size="sm">x</Button>)
+      expect(button()).toHaveClass("h-control-sm", "px-2.5")
+      expect(button()).not.toHaveClass("h-control-md")
+
+      rerender(<Button size="lg">x</Button>)
+      expect(button()).toHaveClass("h-control-lg", "px-4")
+    })
+
+    it.each(VARIANTS)("gives the %s variant the same box, border included", (variant) => {
+      render(<Button variant={variant}>x</Button>)
+      expect(screen.getByRole("button")).toHaveClass("h-control-md", "border")
+    })
+
+    it("draws the border only on outline", () => {
+      const { rerender } = render(<Button variant="outline">x</Button>)
+      expect(screen.getByRole("button")).toHaveClass("border-input")
+      expect(screen.getByRole("button")).not.toHaveClass("border-transparent")
+      rerender(<Button>x</Button>)
+      expect(screen.getByRole("button")).toHaveClass("border-transparent")
+    })
+
+    it("lets a className height replace the control height", () => {
+      render(<Button className="h-8">x</Button>)
+      expect(screen.getByRole("button")).toHaveClass("h-8")
+      expect(screen.getByRole("button")).not.toHaveClass("h-control-md")
+    })
+
+    it("buttonVariants() alone is the md button, with one border colour per variant", () => {
+      expect(buttonVariants().split(" ")).toEqual(
+        expect.arrayContaining(["h-control-md", "px-3", "border", "border-transparent"]),
+      )
+      const outline = buttonVariants({ variant: "outline", size: "sm" }).split(" ")
+      expect(outline).toEqual(expect.arrayContaining(["h-control-sm", "border-input"]))
+      // No tailwind-merge needed to tell which border colour wins.
+      expect(outline).not.toContain("border-transparent")
     })
   })
 

@@ -187,8 +187,9 @@ function Calendar({
     const variantClass = buttonVariants({ variant: buttonVariant })
     return {
       ...STATIC_CLASS_NAMES,
-      button_previous: `${variantClass} ${buttonNavClass} ${RDP_DEFAULTS.button_previous}`,
-      button_next: `${variantClass} ${buttonNavClass} ${RDP_DEFAULTS.button_next}`,
+      // cn(): the cell size has to replace the Button's own height and padding.
+      button_previous: cn(variantClass, buttonNavClass, RDP_DEFAULTS.button_previous),
+      button_next: cn(variantClass, buttonNavClass, RDP_DEFAULTS.button_next),
       ...classNames,
     }
   }, [buttonVariant, classNames])
