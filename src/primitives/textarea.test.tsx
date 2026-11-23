@@ -77,6 +77,24 @@ describe("Textarea", () => {
     expect(captured).toBeInstanceOf(HTMLTextAreaElement)
   })
 
+  it("runs the cleanup a callback ref returns, instead of calling it with null", () => {
+    const calls: Array<HTMLTextAreaElement | null> = []
+    const cleanup = vi.fn()
+    const { unmount } = render(
+      <Textarea
+        label="X"
+        ref={(el) => {
+          calls.push(el)
+          return cleanup
+        }}
+      />,
+    )
+    expect(calls).toEqual([screen.getByRole("textbox")])
+    unmount()
+    expect(cleanup).toHaveBeenCalledTimes(1)
+    expect(calls).not.toContain(null)
+  })
+
   it("respects disabled and readOnly", () => {
     const { rerender } = render(<Textarea label="X" disabled />)
     expect(screen.getByLabelText("X")).toBeDisabled()

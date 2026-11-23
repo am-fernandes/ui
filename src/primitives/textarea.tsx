@@ -4,6 +4,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { useAnnounceWhen } from "./_internal/announce"
+import { useComposedRefs } from "./_internal/compose-refs"
 import { type ControlSize, controlMinHeight, controlPaddingX } from "./_internal/control-size"
 import { FieldShell, type LabelPosition, fieldReadOnlyClass } from "./_internal/field-shell"
 import { observeValue } from "./_internal/observe-value"
@@ -96,14 +97,7 @@ function Textarea({
   useAnnounceWhen(hasCounter && length >= (maxLength ?? 0), l.limitReached(maxLength ?? 0))
 
   const localRef = React.useRef<HTMLTextAreaElement | null>(null)
-  const mergedRef = React.useCallback(
-    (node: HTMLTextAreaElement | null) => {
-      localRef.current = node
-      if (typeof ref === "function") ref(node)
-      else if (ref) (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = node
-    },
-    [ref],
-  )
+  const mergedRef = useComposedRefs(localRef, ref)
 
   // What the last measurement saw: the height is only measured again when the
   // text or the width of the box changed.

@@ -285,6 +285,31 @@ describe("IconButton", () => {
     expect(node).toBe(screen.getByRole("button"))
   })
 
+  // React 19: a callback ref may return a cleanup. React then calls the
+  // cleanup on unmount instead of calling the ref with null. The hand-made
+  // merge dropped the cleanup and called the ref with null.
+  it("runs the cleanup a callback ref returns, instead of calling it with null", () => {
+    // With and without the tooltip around it (its trigger composes refs too).
+    for (const tooltip of [false, true]) {
+      const calls: Array<HTMLButtonElement | null> = []
+      let attached = 0
+      const ref = (el: HTMLButtonElement | null) => {
+        calls.push(el)
+        attached++
+        return () => {
+          attached--
+        }
+      }
+      const { unmount } = render(
+        <IconButton icon={<Bell />} label="A" tooltip={tooltip} ref={ref} />,
+      )
+      expect(calls.at(-1)).toBe(screen.getByRole("button"))
+      unmount()
+      expect(attached).toBe(0)
+      expect(calls).not.toContain(null)
+    }
+  })
+
   it("forwards the ref to the <button>", () => {
     const ref = React.createRef<HTMLButtonElement>()
     render(<IconButton icon={<Bell />} label="A" ref={ref} />)

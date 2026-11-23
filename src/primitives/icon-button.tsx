@@ -6,6 +6,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Tooltip, type TooltipProps } from "../overlays/tooltip"
 import { useAnnounceWhen } from "./_internal/announce"
+import { useComposedRefs } from "./_internal/compose-refs"
 import { type ControlSize, controlSquare } from "./_internal/control-size"
 import { ignoreActivation } from "./_internal/soft-disabled"
 import { type ButtonLabels, buttonVariants, defaultButtonLabels } from "./button"
@@ -81,13 +82,7 @@ function IconButton({
   const [tooltipOpen, setTooltipOpen] = React.useState(false)
   const unavailable = disabled || loading
   useAnnounceWhen(loading, labels?.loading ?? defaultButtonLabels.loading)
-  const mergedRef = React.useCallback(
-    (node: HTMLButtonElement | null) => {
-      buttonRef.current = node
-      assignRef(ref, node)
-    },
-    [ref],
-  )
+  const mergedRef = useComposedRefs(buttonRef, ref)
 
   // Radix opens a tooltip on *any* focus — including focus placed by code: a
   // Dialog auto-focusing its first control, a DropdownMenu handing focus back
@@ -146,11 +141,6 @@ function IconButton({
       {button}
     </Tooltip>
   )
-}
-
-function assignRef<T>(ref: React.Ref<T> | undefined, value: T | null) {
-  if (typeof ref === "function") ref(value)
-  else if (ref) (ref as React.RefObject<T | null>).current = value
 }
 
 /** `Element.matches` that treats unsupported selectors as a match (old engines). */
