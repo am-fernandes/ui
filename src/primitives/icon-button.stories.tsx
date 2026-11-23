@@ -13,6 +13,8 @@ import {
   Underline,
 } from "lucide-react"
 
+import * as React from "react"
+
 import { Button } from "./button"
 import { IconButton } from "./icon-button"
 
@@ -30,6 +32,7 @@ const meta = {
           "- Mesmas cores do `Button` (`variant`), mas o padrão é `ghost`.",
           "- `size`: `sm` (32px), `md` (40px, a altura do `Button`) e `lg` (44px, alvo de toque).",
           '- Nasce com `type="button"`, para não enviar o formulário em que estiver.',
+          "- `disabled` e `loading` usam `aria-disabled`, nunca o `disabled` nativo: o botão continua na ordem do Tab e com o tooltip, e ignora o clique e o teclado.",
         ].join("\n"),
       },
     },
@@ -79,11 +82,66 @@ export const Sizes: Story = {
 }
 
 export const Loading: Story = {
-  args: { icon: <Download />, label: "Baixando", loading: true, variant: "outline" },
+  args: { icon: <Download />, label: "Baixar relatório", loading: true, variant: "outline" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com `loading` um spinner entra no lugar do ícone. O botão mantém o foco e ignora cliques (`aria-busy`, `aria-disabled`), e o início é anunciado ao leitor de tela.",
+      },
+    },
+  },
 }
 
 export const Disabled: Story = {
   args: { icon: <Trash2 />, label: "Excluir", disabled: true, variant: "destructive" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Um IconButton desabilitado nunca recebe o `disabled` nativo: fica `aria-disabled`. Assim o Tab continua chegando nele e o tooltip continua dizendo o que ele é, e o clique e o teclado são ignorados.",
+      },
+    },
+  },
+}
+
+function RowActionsExample() {
+  const [last, setLast] = React.useState("nenhuma")
+  return (
+    <div className="flex w-96 flex-col gap-2">
+      <div className="flex items-center gap-1 rounded-element border border-border-strong bg-card py-1.5 pr-1.5 pl-3">
+        <span className="min-w-0 flex-1 truncate text-sm">Proposta nº 1042 · aprovada</span>
+        <IconButton
+          icon={<Pencil />}
+          label="Editar proposta"
+          size="sm"
+          onClick={() => setLast("editar")}
+        />
+        <IconButton
+          icon={<Trash2 />}
+          label="Excluir proposta"
+          size="sm"
+          disabled
+          onClick={() => setLast("excluir")}
+        />
+      </div>
+      <output className="text-sm" data-testid="last-action">
+        Última ação: {last}
+      </output>
+    </div>
+  )
+}
+
+export const RowActions: Story = {
+  render: () => <RowActionsExample />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Ações de uma linha de tabela. A proposta aprovada não pode ser excluída: o botão fica esmaecido e não faz nada, mas quem passa o mouse ou chega pelo Tab ainda lê “Excluir proposta” e sabe que a ação existe e está indisponível.",
+      },
+    },
+  },
 }
 
 export const WithoutTooltip: Story = {

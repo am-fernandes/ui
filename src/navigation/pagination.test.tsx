@@ -130,11 +130,21 @@ describe("Pagination", () => {
 
     it("disables previous on the first page and next on the last", () => {
       const { rerender, onPageChange } = renderPagination({ page: 1 })
-      expect(screen.getByRole("button", { name: "Página anterior" })).toBeDisabled()
-      expect(screen.getByRole("button", { name: "Próxima página" })).toBeEnabled()
+      expect(screen.getByRole("button", { name: "Página anterior" })).toHaveAttribute(
+        "aria-disabled",
+        "true",
+      )
+      expect(screen.getByRole("button", { name: "Próxima página" })).not.toHaveAttribute(
+        "aria-disabled",
+      )
       rerender(<Pagination page={10} totalPages={10} onPageChange={onPageChange} />)
-      expect(screen.getByRole("button", { name: "Página anterior" })).toBeEnabled()
-      expect(screen.getByRole("button", { name: "Próxima página" })).toBeDisabled()
+      expect(screen.getByRole("button", { name: "Página anterior" })).not.toHaveAttribute(
+        "aria-disabled",
+      )
+      expect(screen.getByRole("button", { name: "Próxima página" })).toHaveAttribute(
+        "aria-disabled",
+        "true",
+      )
     })
 
     it("shows first/last buttons on request", async () => {
@@ -157,7 +167,10 @@ describe("Pagination", () => {
         "aria-current",
         "page",
       )
-      expect(screen.getByRole("button", { name: "Próxima página" })).toBeDisabled()
+      expect(screen.getByRole("button", { name: "Próxima página" })).toHaveAttribute(
+        "aria-disabled",
+        "true",
+      )
       await userEvent.click(screen.getByRole("button", { name: "Página anterior" }))
       expect(onPageChange).toHaveBeenLastCalledWith(4)
       rerender(<Pagination page={-2} totalPages={5} onPageChange={onPageChange} />)
@@ -183,7 +196,11 @@ describe("Pagination", () => {
 
     it("disables every control with disabled", () => {
       renderPagination({ page: 3, disabled: true, pageSizeOptions: [10, 20] })
-      for (const button of screen.getAllByRole("button")) expect(button).toBeDisabled()
+      // Page numbers are natively disabled; the arrows (IconButton) are
+      // aria-disabled, so they keep their tooltip and their place in the tab order.
+      for (const button of screen.getAllByRole("button")) {
+        expect(button.matches(':disabled, [aria-disabled="true"]')).toBe(true)
+      }
       expect(screen.getByRole("combobox", { name: "Itens por página" })).toBeDisabled()
     })
   })
@@ -209,7 +226,10 @@ describe("Pagination", () => {
       renderPagination({ totalItems: 0 })
       expect(screen.getByText("0–0 de 0")).toBeInTheDocument()
       expect(pageButtons()).toEqual(["1"])
-      expect(screen.getByRole("button", { name: "Próxima página" })).toBeDisabled()
+      expect(screen.getByRole("button", { name: "Próxima página" })).toHaveAttribute(
+        "aria-disabled",
+        "true",
+      )
     })
 
     it("falls back to 10 per page when pageSize is not positive", () => {
@@ -254,15 +274,23 @@ describe("Pagination", () => {
       expect(onPageChange).toHaveBeenLastCalledWith(3)
 
       rerender(<Pagination page={2} hasMore={false} onPageChange={onPageChange} />)
-      expect(screen.getByRole("button", { name: "Próxima página" })).toBeDisabled()
-      expect(screen.getByRole("button", { name: "Página anterior" })).toBeEnabled()
+      expect(screen.getByRole("button", { name: "Próxima página" })).toHaveAttribute(
+        "aria-disabled",
+        "true",
+      )
+      expect(screen.getByRole("button", { name: "Página anterior" })).not.toHaveAttribute(
+        "aria-disabled",
+      )
     })
 
     it("ignores showFirstLast (the last page is unknown) and clamps below 1", () => {
       render(<Pagination page={0} hasMore showFirstLast onPageChange={() => {}} />)
       expect(screen.queryByRole("button", { name: "Última página" })).not.toBeInTheDocument()
       expect(screen.getByText("Página 1")).toBeInTheDocument()
-      expect(screen.getByRole("button", { name: "Página anterior" })).toBeDisabled()
+      expect(screen.getByRole("button", { name: "Página anterior" })).toHaveAttribute(
+        "aria-disabled",
+        "true",
+      )
     })
   })
 

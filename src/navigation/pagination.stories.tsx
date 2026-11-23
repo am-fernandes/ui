@@ -140,6 +140,9 @@ export const Interaction: Story = {
       "aria-current",
       "page",
     )
-    await expect(canvas.getByRole("button", { name: "Próxima página" })).toBeDisabled()
+    await expect(canvas.getByRole("button", { name: "Próxima página" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    )
   },
 }

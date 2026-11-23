@@ -250,9 +250,15 @@ describe("Stepper", () => {
     it("disables the compact controls at the ends", () => {
       const { rerender } = render(<Stepper steps={steps} activeStep={0} onStepClick={() => {}} />)
       const compact = () => screen.getByRole("group", { name: "Progresso" })
-      expect(within(compact()).getByRole("button", { name: "Etapa anterior" })).toBeDisabled()
+      expect(within(compact()).getByRole("button", { name: "Etapa anterior" })).toHaveAttribute(
+        "aria-disabled",
+        "true",
+      )
       rerender(<Stepper steps={steps} activeStep={3} onStepClick={() => {}} />)
-      expect(within(compact()).getByRole("button", { name: "Próxima etapa" })).toBeDisabled()
+      expect(within(compact()).getByRole("button", { name: "Próxima etapa" })).toHaveAttribute(
+        "aria-disabled",
+        "true",
+      )
     })
 
     it("has no compact controls without onStepClick", () => {

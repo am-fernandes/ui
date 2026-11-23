@@ -2,7 +2,7 @@ import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { Bell, Trash2 } from "lucide-react"
 import * as React from "react"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { IconButton } from "./icon-button"
 
@@ -87,22 +87,97 @@ describe("IconButton", () => {
     expect(onClick).toHaveBeenCalledTimes(1)
   })
 
-  it("disables the button", async () => {
-    const onClick = vi.fn()
-    render(<IconButton icon={<Bell />} label="A" disabled onClick={onClick} />)
-    const button = screen.getByRole("button")
-    expect(button).toBeDisabled()
-    await userEvent.click(button)
-    expect(onClick).not.toHaveBeenCalled()
+  // An icon with no text is only explained by its tooltip. A natively disabled
+  // button shows none and is skipped by Tab: in a table row nobody could tell
+  // what the action was, nor that it exists and is unavailable.
+  describe("disabled", () => {
+    it("is unavailable through aria-disabled, never the native attribute", () => {
+      render(<IconButton icon={<Trash2 />} label="Excluir" disabled />)
+      const button = screen.getByRole("button", { name: "Excluir" })
+      expect(button).not.toHaveAttribute("disabled")
+      expect(button).toHaveAttribute("aria-disabled", "true")
+      expect(button).toHaveAttribute("data-disabled")
+    })
+
+    it("ignores clicks, Enter and Space", async () => {
+      const onClick = vi.fn()
+      render(<IconButton icon={<Trash2 />} label="Excluir" disabled onClick={onClick} />)
+      const button = screen.getByRole("button", { name: "Excluir" })
+      await userEvent.click(button)
+      button.focus()
+      await userEvent.keyboard("{Enter}")
+      await userEvent.keyboard(" ")
+      expect(onClick).not.toHaveBeenCalled()
+    })
+
+    it("does not submit the form it is in, even as type=submit", async () => {
+      const onSubmit = vi.fn((e: React.FormEvent) => e.preventDefault())
+      render(
+        <form onSubmit={onSubmit}>
+          <IconButton icon={<Bell />} label="Enviar" type="submit" disabled />
+        </form>,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Enviar" }))
+      expect(onSubmit).not.toHaveBeenCalled()
+    })
+
+    it("is reached by Tab and still shows what it is in the tooltip", async () => {
+      render(
+        <>
+          <button type="button">antes</button>
+          <IconButton icon={<Trash2 />} label="Excluir proposta" disabled />
+        </>,
+      )
+      await userEvent.tab()
+      await userEvent.tab()
+      expect(screen.getByRole("button", { name: "Excluir proposta" })).toHaveFocus()
+      expect(await screen.findByRole("tooltip")).toHaveTextContent("Excluir proposta")
+    })
+
+    it("is not marked in any way when enabled", () => {
+      render(<IconButton icon={<Trash2 />} label="Excluir" />)
+      const button = screen.getByRole("button", { name: "Excluir" })
+      expect(button).not.toHaveAttribute("aria-disabled")
+      expect(button).not.toHaveAttribute("data-disabled")
+    })
   })
 
-  it("swaps the icon for a spinner while loading", () => {
-    const { container } = render(<IconButton icon={<Bell />} label="Salvar" loading />)
-    const button = screen.getByRole("button", { name: "Salvar" })
-    expect(button).toBeDisabled()
-    expect(button).toHaveAttribute("aria-busy", "true")
-    expect(container.querySelector("svg.lucide-bell")).toBeNull()
-    expect(container.querySelector("svg.animate-spin")).not.toBeNull()
+  describe("loading", () => {
+    const announcer = () => document.querySelector('[data-slot="live-announcer"]')
+    beforeEach(() => announcer()?.remove())
+
+    it("swaps the icon for a spinner and stays focused", () => {
+      const { container, rerender } = render(<IconButton icon={<Bell />} label="Salvar" />)
+      const button = screen.getByRole("button", { name: "Salvar" })
+      button.focus()
+      rerender(<IconButton icon={<Bell />} label="Salvar" loading />)
+      expect(button).not.toHaveAttribute("disabled")
+      expect(button).toHaveAttribute("aria-disabled", "true")
+      expect(button).toHaveAttribute("aria-busy", "true")
+      expect(button).toHaveFocus()
+      expect(container.querySelector("svg.lucide-bell")).toBeNull()
+      expect(container.querySelector("svg.animate-spin")).not.toBeNull()
+      // Busy, not disabled: the spinner is shown at full strength.
+      expect(button).not.toHaveAttribute("data-disabled")
+    })
+
+    it("ignores clicks while loading", async () => {
+      const onClick = vi.fn()
+      render(<IconButton icon={<Bell />} label="Salvar" loading onClick={onClick} />)
+      await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+      expect(onClick).not.toHaveBeenCalled()
+    })
+
+    it("announces that it started loading", async () => {
+      const { rerender } = render(<IconButton icon={<Bell />} label="Salvar" />)
+      rerender(<IconButton icon={<Bell />} label="Salvar" loading />)
+      await waitFor(() => expect(announcer()).toHaveTextContent("Carregando…"))
+      rerender(<IconButton icon={<Bell />} label="Salvar" />)
+      rerender(
+        <IconButton icon={<Bell />} label="Salvar" loading labels={{ loading: "Salvando" }} />,
+      )
+      await waitFor(() => expect(announcer()).toHaveTextContent("Salvando"))
+    })
   })
 
   it("is not busy when idle", () => {

@@ -8,6 +8,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { useAnnounceWhen } from "./_internal/announce"
 import { controlHeight, controlPaddingX } from "./_internal/control-size"
+import { ignoreActivation } from "./_internal/soft-disabled"
 
 // Every variant has a 1px border (transparent unless it is `outline`), so the
 // box of a size is the same in all of them: same height, same width for the
@@ -83,12 +84,6 @@ export interface ButtonProps
   /** Text for screen readers. Defaults in `defaultButtonLabels`. */
   labels?: Partial<ButtonLabels>
   ref?: React.Ref<HTMLButtonElement>
-}
-
-/** A click that goes nowhere: not to the handlers, not to the form around. */
-function ignoreActivation(event: React.MouseEvent) {
-  event.preventDefault()
-  event.stopPropagation()
 }
 
 function Button({

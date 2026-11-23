@@ -141,6 +141,39 @@ test.describe("IconButton", () => {
       expect(box?.height, `height of ${name}`).toBe(40)
     }
   })
+
+  test("disabled: the tooltip still says what it is, Tab reaches it, nothing fires", async ({
+    page,
+  }) => {
+    await open(page, "primitives-iconbutton--row-actions")
+    const remove = page.getByRole("button", { name: "Excluir proposta" })
+    const last = page.getByTestId("last-action")
+    await expect(remove).toHaveAttribute("aria-disabled", "true")
+    expect(await remove.evaluate((el) => getComputedStyle(el).opacity)).toBe("0.5")
+
+    // The mouse: the tooltip shows up, the click does nothing.
+    const box = await remove.boundingBox()
+    const x = (box?.x ?? 0) + (box?.width ?? 0) / 2
+    const y = (box?.y ?? 0) + (box?.height ?? 0) / 2
+    await page.mouse.move(x, y)
+    await expect(page.getByRole("tooltip", { name: "Excluir proposta" })).toBeVisible()
+    await page.mouse.click(x, y)
+    await expect(last).toHaveText("Última ação: nenhuma")
+
+    // The keyboard: Tab goes from "Editar" to it, with the tooltip; Enter does nothing.
+    await page.mouse.move(0, 0)
+    await page.getByRole("button", { name: "Editar proposta" }).focus()
+    await page.keyboard.press("Tab")
+    await expect(remove).toBeFocused()
+    await expect(page.getByRole("tooltip", { name: "Excluir proposta" })).toBeVisible()
+    await page.keyboard.press("Enter")
+    await page.keyboard.press("Space")
+    await expect(last).toHaveText("Última ação: nenhuma")
+
+    // The enabled one beside it still works.
+    await page.getByRole("button", { name: "Editar proposta" }).click()
+    await expect(last).toHaveText("Última ação: editar")
+  })
 })
 
 test.describe("Checkbox", () => {
