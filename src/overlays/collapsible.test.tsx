@@ -165,3 +165,50 @@ describe("Collapsible keepMounted", () => {
     expect(screen.queryByLabelText("Campo")).not.toBeInTheDocument()
   })
 })
+
+// There was no way to lock a section, and `title` with `trigger` was only
+// forbidden by a comment.
+describe("Collapsible disabled and the trigger props", () => {
+  it("disabled: the trigger does not toggle and looks unavailable", async () => {
+    const onOpenChange = vi.fn()
+    render(
+      <Collapsible title="Comissão" disabled onOpenChange={onOpenChange}>
+        <p>detalhes</p>
+      </Collapsible>,
+    )
+    const trigger = screen.getByRole("button", { name: "Comissão" })
+    expect(trigger).toBeDisabled()
+    expect(trigger).toHaveClass("disabled:opacity-50", "disabled:cursor-default")
+    await userEvent.click(trigger)
+    expect(onOpenChange).not.toHaveBeenCalled()
+    expect(screen.queryByText("detalhes")).not.toBeInTheDocument()
+  })
+
+  it("disabled reaches a custom trigger", () => {
+    render(
+      <Collapsible trigger={<button type="button">Abrir</button>} disabled>
+        <p>detalhes</p>
+      </Collapsible>,
+    )
+    expect(screen.getByRole("button", { name: "Abrir" })).toBeDisabled()
+  })
+
+  it("an open section stays readable when disabled", () => {
+    render(
+      <Collapsible title="Comissão" disabled defaultOpen>
+        <p>detalhes</p>
+      </Collapsible>,
+    )
+    expect(screen.getByText("detalhes")).toBeVisible()
+  })
+
+  it("title and trigger cannot be passed together", () => {
+    render(
+      // @ts-expect-error `title` belongs to the default trigger only.
+      <Collapsible title="X" trigger={<button type="button">Y</button>}>
+        <p>z</p>
+      </Collapsible>,
+    )
+    expect(screen.getByRole("button", { name: "Y" })).toBeInTheDocument()
+  })
+})

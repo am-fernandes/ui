@@ -23,6 +23,8 @@ const meta: Meta<typeof Collapsible> = {
           "- `triggerLabel?: string` — `aria-label` do botão quando sem `title`. Default `'Alternar seção'`.",
           "- `defaultOpen?: boolean` — uncontrolled inicial.",
           "- `open` / `onOpenChange` — controlled mode.",
+          "- `disabled?: boolean` — trava a seção: o trigger fica desabilitado e uma seção aberta continua legível.",
+          "- `keepMounted?: boolean` — mantém o conteúdo no DOM quando fechada, para os campos não perderem o que foi digitado.",
           "",
           "**Exemplo:**",
           "",

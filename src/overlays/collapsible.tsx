@@ -6,16 +6,17 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-export interface CollapsibleProps {
-  /** Default trigger text (only used when `trigger` is not provided). */
-  title?: React.ReactNode
-  /** Replaces the default chevron button. Mutually exclusive with `title`. */
-  trigger?: React.ReactNode
+interface CollapsibleBaseProps {
   triggerSide?: "left" | "right"
   triggerLabel?: string
   defaultOpen?: boolean
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  /**
+   * The section cannot be opened or closed: the trigger is disabled (and the
+   * default one looks it). An open section stays readable.
+   */
+  disabled?: boolean
   /**
    * Keep the content in the DOM while closed (hidden, out of the tab order),
    * so the uncontrolled fields of a collapsed section keep what was typed.
@@ -27,6 +28,26 @@ export interface CollapsibleProps {
   children: React.ReactNode
 }
 
+/** The default trigger: a full-width row with `title` and a chevron. */
+interface CollapsibleTitleProps {
+  /** Text of the default trigger. */
+  title?: React.ReactNode
+  trigger?: never
+}
+
+/** A trigger of your own, in place of the default row. */
+interface CollapsibleTriggerProps {
+  /**
+   * Replaces the default chevron button: one element that takes a ref and
+   * spreads props (a `Button`). It gets `aria-expanded` and `disabled`.
+   */
+  trigger: React.ReactNode
+  title?: never
+}
+
+export type CollapsibleProps = CollapsibleBaseProps &
+  (CollapsibleTitleProps | CollapsibleTriggerProps)
+
 function Collapsible({
   title,
   trigger,
@@ -35,6 +56,7 @@ function Collapsible({
   defaultOpen,
   open,
   onOpenChange,
+  disabled,
   keepMounted = false,
   className,
   children,
@@ -53,6 +75,7 @@ function Collapsible({
       data-trigger-side={triggerSide}
       open={isOpen}
       onOpenChange={handleOpenChange}
+      disabled={disabled}
       className={cn("w-full", className)}
     >
       {trigger ? (
@@ -65,6 +88,7 @@ function Collapsible({
           className={cn(
             "flex w-full items-center justify-between rounded-element py-2 text-sm font-medium",
             "cursor-pointer state-layer focus-visible:focus-outline",
+            "disabled:cursor-default disabled:opacity-50",
             triggerSide === "left" && "flex-row-reverse",
           )}
           aria-label={title ? undefined : triggerLabel}
