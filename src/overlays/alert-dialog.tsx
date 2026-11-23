@@ -1,7 +1,7 @@
 "use client"
 
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
-import type * as React from "react"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Button, type ButtonProps } from "../primitives/button"
@@ -39,8 +39,27 @@ function AlertDialog({
   children,
   className,
 }: AlertDialogProps) {
+  // The open state lives here, controlled or not, because the buttons need it.
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen ?? false)
+  const isOpen = open ?? uncontrolledOpen
+  const handleOpenChange = (next: boolean) => {
+    if (open === undefined) setUncontrolledOpen(next)
+    onOpenChange?.(next)
+  }
+
+  // A closing dialog stays mounted, with its buttons under the pointer, while
+  // the exit animation runs. A second click there (a double click, a held
+  // Enter) must not confirm or cancel again.
+  const whileOpen = (action?: () => void) => (event: React.MouseEvent) => {
+    if (!isOpen) {
+      event.preventDefault()
+      return
+    }
+    action?.()
+  }
+
   return (
-    <AlertDialogPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
+    <AlertDialogPrimitive.Root open={isOpen} onOpenChange={handleOpenChange}>
       {trigger ? (
         <AlertDialogPrimitive.Trigger asChild>{trigger}</AlertDialogPrimitive.Trigger>
       ) : null}
@@ -77,12 +96,12 @@ function AlertDialog({
           ) : null}
           <div data-slot="alert-dialog-footer" className="flex shrink-0 justify-end gap-2">
             <AlertDialogPrimitive.Cancel asChild>
-              <Button variant="outline" className="min-w-24" onClick={onCancel}>
+              <Button variant="outline" className="min-w-24" onClick={whileOpen(onCancel)}>
                 {cancelLabel}
               </Button>
             </AlertDialogPrimitive.Cancel>
             <AlertDialogPrimitive.Action asChild>
-              <Button variant={confirmVariant} className="min-w-24" onClick={onConfirm}>
+              <Button variant={confirmVariant} className="min-w-24" onClick={whileOpen(onConfirm)}>
                 {confirmLabel}
               </Button>
             </AlertDialogPrimitive.Action>

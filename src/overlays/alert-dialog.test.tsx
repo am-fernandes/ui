@@ -1,10 +1,104 @@
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
+import * as React from "react"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
+import { mockExitAnimation } from "./_internal/testing"
 import { AlertDialog } from "./alert-dialog"
 
+const CONTENT = '[data-slot="alert-dialog-content"]'
+
 describe("AlertDialog", () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  describe("double activation", () => {
+    // In a browser the dialog stays mounted, with its buttons under the pointer,
+    // for the 175ms of the exit animation.
+    it("confirms once when the button is clicked again while the dialog closes", async () => {
+      const exit = mockExitAnimation(CONTENT)
+      const onConfirm = vi.fn()
+      render(<AlertDialog defaultOpen title="Aprovar a proposta?" onConfirm={onConfirm} />)
+      const confirm = screen.getByRole("button", { name: "Confirmar" })
+
+      await userEvent.click(confirm)
+      expect(document.querySelector(CONTENT)).toHaveAttribute("data-state", "closed")
+      await userEvent.click(confirm)
+      fireEvent.click(confirm)
+      fireEvent.keyDown(confirm, { key: "Enter" })
+      expect(onConfirm).toHaveBeenCalledTimes(1)
+
+      exit.finish()
+      expect(document.querySelector(CONTENT)).toBeNull()
+      exit.restore()
+    })
+
+    it("cancels once too", async () => {
+      const exit = mockExitAnimation(CONTENT)
+      const onCancel = vi.fn()
+      const onOpenChange = vi.fn()
+      render(
+        <AlertDialog
+          defaultOpen
+          title="X"
+          onConfirm={() => {}}
+          onCancel={onCancel}
+          onOpenChange={onOpenChange}
+        />,
+      )
+      const cancel = screen.getByRole("button", { name: "Cancelar" })
+      await userEvent.click(cancel)
+      await userEvent.click(cancel)
+      expect(onCancel).toHaveBeenCalledTimes(1)
+      expect(onOpenChange).toHaveBeenCalledTimes(1)
+      exit.restore()
+    })
+
+    it("a click on Cancelar while it closes after a confirm does not cancel", async () => {
+      const exit = mockExitAnimation(CONTENT)
+      const onCancel = vi.fn()
+      render(<AlertDialog defaultOpen title="X" onConfirm={() => {}} onCancel={onCancel} />)
+      await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+      await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
+      expect(onCancel).not.toHaveBeenCalled()
+      exit.restore()
+    })
+
+    it("confirms again when it is opened again", async () => {
+      const exit = mockExitAnimation(CONTENT)
+      const onConfirm = vi.fn()
+      render(
+        <AlertDialog
+          trigger={<button type="button">Abrir</button>}
+          title="X"
+          onConfirm={onConfirm}
+        />,
+      )
+      const trigger = screen.getByRole("button", { name: "Abrir" })
+      await userEvent.click(trigger)
+      await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+      // Opened again before the exit animation ended: same mounted content.
+      fireEvent.click(trigger)
+      await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+      expect(onConfirm).toHaveBeenCalledTimes(2)
+      exit.restore()
+    })
+
+    it("a controlled dialog the consumer keeps open still takes every click", async () => {
+      // The consumer validates in onConfirm and decides not to close.
+      const onConfirm = vi.fn()
+      function Kept() {
+        const [open] = React.useState(true)
+        return <AlertDialog open={open} title="X" onConfirm={onConfirm} />
+      }
+      render(<Kept />)
+      await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+      await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+      expect(onConfirm).toHaveBeenCalledTimes(2)
+    })
+  })
+
   it("renders title and description and confirm/cancel buttons", () => {
     render(
       <AlertDialog

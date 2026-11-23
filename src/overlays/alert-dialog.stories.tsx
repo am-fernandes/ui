@@ -107,6 +107,39 @@ export const NonDestructive: Story = {
   },
 }
 
+export const ConfirmOnce: Story = {
+  render: () => {
+    const [sent, setSent] = useState(0)
+    const [cancelled, setCancelled] = useState(0)
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <AlertDialog
+          trigger={<Button>Aprovar proposta</Button>}
+          title="Aprovar a proposta #1042?"
+          description="O comprador é avisado por e-mail."
+          confirmLabel="Aprovar"
+          onConfirm={() => setSent((n) => n + 1)}
+          onCancel={() => setCancelled((n) => n + 1)}
+        />
+        <p className="text-sm text-muted-foreground" data-testid="confirm-count">
+          Aprovações enviadas: {sent}
+        </p>
+        <p className="text-sm text-muted-foreground" data-testid="cancel-count">
+          Cancelamentos: {cancelled}
+        </p>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Um clique duplo em “Aprovar” confirma uma vez só: enquanto o diálogo fecha, os botões não respondem mais.",
+      },
+    },
+  },
+}
+
 export const ControlledOpen: Story = {
   render: () => {
     const [open, setOpen] = useState(false)

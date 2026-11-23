@@ -160,6 +160,45 @@ test.describe("Dialog", () => {
 })
 
 test.describe("AlertDialog", () => {
+  test("a double click on the confirm button confirms once", async ({ page }) => {
+    await gotoStory(page, "overlays-alertdialog--confirm-once", "Aprovar proposta")
+    const count = page.getByTestId("confirm-count")
+    const open = async () => {
+      await page.getByRole("button", { name: "Aprovar proposta" }).click()
+      const confirm = page.getByRole("alertdialog").getByRole("button", { name: "Aprovar" })
+      await expect(confirm).toBeVisible()
+      const box = await settledBox(confirm)
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    }
+
+    // A real double click: two clicks, a few milliseconds apart.
+    let point = await open()
+    await page.mouse.dblclick(point.x, point.y)
+    await expect(page.getByRole("alertdialog")).toHaveCount(0)
+    await expect(count).toHaveText("Aprovações enviadas: 1")
+
+    // An impatient user: more clicks while the dialog fades out (175ms).
+    point = await open()
+    await page.mouse.click(point.x, point.y)
+    for (const wait of [60, 60]) {
+      await page.waitForTimeout(wait)
+      await page.mouse.click(point.x, point.y)
+    }
+    await expect(page.getByRole("alertdialog")).toHaveCount(0)
+    await expect(count).toHaveText("Aprovações enviadas: 2")
+
+    // Enter held down on the focused button repeats the key.
+    await page.getByRole("button", { name: "Aprovar proposta" }).click()
+    const confirm = page.getByRole("alertdialog").getByRole("button", { name: "Aprovar" })
+    await confirm.focus()
+    await page.keyboard.down("Enter")
+    for (let i = 0; i < 5; i++) await page.keyboard.down("Enter")
+    await page.keyboard.up("Enter")
+    await expect(page.getByRole("alertdialog")).toHaveCount(0)
+    await expect(count).toHaveText("Aprovações enviadas: 3")
+    await expect(page.getByTestId("cancel-count")).toHaveText("Cancelamentos: 0")
+  })
+
   test("tall content: fits the screen, the body scrolls and the buttons stay in view", async ({
     page,
   }) => {
