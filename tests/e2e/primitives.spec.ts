@@ -1,5 +1,5 @@
 import { type Locator, type Page, expect, test } from "@playwright/test"
-import { expectFocusRing } from "./a11y"
+import { expectFocusRing, expectNoA11yViolations } from "./a11y"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
@@ -852,4 +852,37 @@ test.describe("Badge", () => {
       expect(counter.height, `height of "${counter.text}"`).toBe(20)
     }
   })
+})
+
+// These stories used to switch axe's colour-contrast (and heading-order) off,
+// citing tokens that have changed since. They pass now, in both themes.
+test.describe("Stories pass WCAG 2.1 AA in both themes", () => {
+  for (const id of [
+    "primitives-badge--all-variants",
+    "primitives-badge--with-icon",
+    "primitives-badge--as-counter",
+    "primitives-button--destructive",
+    "primitives-button--all-variants",
+    "primitives-button--with-icons",
+    "primitives-button--all-states",
+    "primitives-checkbox--with-error",
+    "primitives-input--with-description",
+    "primitives-input--with-error",
+    "primitives-input--label-left-with-messages",
+    "primitives-input--read-only-comparison",
+    "primitives-input--disabled",
+    "primitives-radiogroup--with-error",
+    "primitives-skeleton--card",
+    "primitives-switch--with-error",
+    "primitives-textarea--with-error",
+    "primitives-toggle--all-variants",
+    "primitives-typography--polymorphic-as",
+  ]) {
+    test(id, async ({ page }) => {
+      await open(page, id)
+      await expectNoA11yViolations(page, "#storybook-root")
+      await setDarkTheme(page)
+      await expectNoA11yViolations(page, "#storybook-root")
+    })
+  }
 })

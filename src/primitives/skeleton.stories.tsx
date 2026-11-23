@@ -119,8 +119,6 @@ export const Card: Story = {
     </SkeletonGroup>
   ),
   parameters: {
-    // skeleton bg vs card bg intentionally muted (subtle pulse); fails 4.5:1. Tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story: "Card com imagem, título, texto e autor — replicando layout real enquanto carrega.",

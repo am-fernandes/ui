@@ -75,10 +75,6 @@ export const Horizontal: Story = {
 
 export const WithError: Story = {
   args: { label: "Plano", error: "Selecione uma opção", options: PLANS, required: true },
-  parameters: {
-    // error-foreground fails 4.5:1 against background; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
-  },
 }
 
 export const DefaultValue: Story = {

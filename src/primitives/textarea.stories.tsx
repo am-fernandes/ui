@@ -129,10 +129,6 @@ export const WithError: Story = {
     placeholder: "Diga o que achou",
     error: "Comentário não pode ficar vazio.",
   },
-  parameters: {
-    // error-foreground + placeholder muted fail 4.5:1 against background; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
-  },
 }
 
 export const Required: Story = {

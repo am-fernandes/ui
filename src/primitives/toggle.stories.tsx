@@ -220,7 +220,6 @@ export const AllVariants: Story = {
     </div>
   ),
   parameters: {
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story: "Galeria com todas as variantes (pressed) + os 3 tamanhos.",

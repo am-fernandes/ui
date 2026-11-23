@@ -227,11 +227,6 @@ export const PolymorphicAs: Story = {
     </div>
   ),
   parameters: {
-    a11y: {
-      config: {
-        rules: [{ id: "heading-order", enabled: false }],
-      },
-    },
     docs: {
       description: {
         story:

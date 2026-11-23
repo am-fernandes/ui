@@ -12,11 +12,6 @@ const meta: Meta<typeof Input> = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
-    a11y: {
-      // Placeholder + label-left + helper text use muted-foreground that falls just under 4.5:1.
-      // Tracked in design-tokens roadmap.
-      config: { rules: [{ id: "color-contrast", enabled: false }] },
-    },
     docs: {
       description: {
         component: [

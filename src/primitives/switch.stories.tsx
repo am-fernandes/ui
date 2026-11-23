@@ -96,10 +96,6 @@ export const WithError: Story = {
     error: "Você precisa aceitar para continuar.",
     required: true,
   },
-  parameters: {
-    // error-foreground fails 4.5:1 against background; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
-  },
 }
 
 export const Disabled: Story = {

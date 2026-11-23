@@ -123,10 +123,6 @@ export const Default: Story = {
 
 export const Destructive: Story = {
   args: { variant: "destructive", children: "Excluir" },
-  parameters: {
-    // destructive token (red 500-ish) on white background fails 4.5:1; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
-  },
 }
 
 export const Outline: Story = {
@@ -157,7 +153,6 @@ export const AllVariants: Story = {
     </div>
   ),
   parameters: {
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: { description: { story: "Galeria com as 6 variantes lado a lado." } },
   },
 }
@@ -247,7 +242,6 @@ export const WithIcons: Story = {
     </div>
   ),
   parameters: {
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story:
@@ -379,7 +373,6 @@ export const AllStates: Story = {
   },
   parameters: {
     layout: "padded",
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story: "Matriz `variant × estado` — útil para auditoria visual de todos os cenários.",

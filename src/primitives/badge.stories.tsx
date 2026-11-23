@@ -115,7 +115,6 @@ export const AllVariants: Story = {
     </div>
   ),
   parameters: {
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story: "Galeria com todas as 7 variantes lado a lado para comparação visual.",
@@ -187,7 +186,6 @@ export const WithIcon: Story = {
     </div>
   ),
   parameters: {
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story: "Badges com ícone do `lucide-react` para reforçar a semântica visual de status.",
@@ -215,7 +213,6 @@ export const AsCounter: Story = {
     </div>
   ),
   parameters: {
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story: [
