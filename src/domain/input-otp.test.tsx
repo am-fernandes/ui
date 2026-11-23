@@ -1,12 +1,18 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import * as React from "react"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest"
 
 import { InputOTP, REGEXP_ONLY_DIGITS } from "./input-otp"
 
 afterEach(() => {
   cleanup()
 })
+
+// input-otp syncs the selection after every change with timers of 0, 10 and
+// 50 ms that unmounting does not clear. When this file is the last one in a
+// busy worker, they fired after jsdom was torn down and the run reported an
+// unhandled error. Let them run first.
+afterAll(() => new Promise((resolve) => setTimeout(resolve, 100)))
 
 describe("InputOTP", () => {
   it("renders the requested number of slots", () => {
