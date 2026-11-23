@@ -5,6 +5,7 @@ import type { ControlSize } from "./_internal/control-size"
 import { Button } from "./button"
 import { IconButton } from "./icon-button"
 import { Input } from "./input"
+import { Textarea } from "./textarea"
 import { Toggle } from "./toggle"
 
 const meta: Meta = {
@@ -64,6 +65,9 @@ function Row({ size }: { size: ControlSize }) {
             placeholder="Buscar"
             leadingIcon={<SearchIcon className="size-4" />}
           />
+        </div>
+        <div className="w-32 shrink-0">
+          <Textarea size={size} rows={1} aria-label="Observação" placeholder="Uma linha" />
         </div>
       </div>
     </div>

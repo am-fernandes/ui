@@ -3,9 +3,19 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { type ControlSize, controlMinHeight, controlPaddingX } from "./_internal/control-size"
 import { FieldShell, type LabelPosition } from "./_internal/field-shell"
 import { observeValue } from "./_internal/observe-value"
 import { useFieldIds } from "./_internal/use-field-ids"
+
+// A textarea grows with its content, so the size is a minimum height. The
+// vertical padding makes one row (a 20px line) exactly the control height,
+// border included: its text sits on the same line as an Input beside it.
+const textareaSize: Record<ControlSize, string> = {
+  sm: `${controlMinHeight.sm} ${controlPaddingX.sm} py-[5px]`,
+  md: `${controlMinHeight.md} ${controlPaddingX.md} py-[9px]`,
+  lg: `${controlMinHeight.lg} ${controlPaddingX.lg} py-[11px]`,
+}
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: React.ReactNode
@@ -14,6 +24,13 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
   error?: string
   required?: boolean
   autoResize?: boolean
+  /**
+   * Minimum height and padding: with `rows={1}` the box is 32px (`sm`), 40px
+   * (`md`) or 44px (`lg`), the height of an `Input` of that size. More rows
+   * and `autoResize` grow from there.
+   * @default "md"
+   */
+  size?: ControlSize
   ref?: React.Ref<HTMLTextAreaElement>
 }
 
@@ -25,6 +42,7 @@ function Textarea({
   error,
   required,
   autoResize,
+  size = "md",
   maxLength,
   className,
   disabled,
@@ -165,7 +183,8 @@ function Textarea({
         onChange?.(e)
       }}
       className={cn(
-        "min-h-[60px] w-full rounded-element border border-input bg-card px-3 py-2.5 text-sm field-states",
+        "w-full rounded-element border border-input bg-card text-sm field-states",
+        textareaSize[size],
         "placeholder:text-placeholder",
         "disabled:cursor-default",
         hasError && "border-destructive-text field-error",

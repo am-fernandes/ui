@@ -23,6 +23,7 @@ const meta: Meta<typeof Textarea> = {
           "- `required` — marca como obrigatório.",
           "- `maxLength` — limita caracteres E renderiza contador `atual/limite`.",
           "- `autoResize` — ajusta altura automaticamente ao conteúdo (`resize-none overflow-hidden`).",
+          "- `size` — `sm`, `md` (padrão) ou `lg`: altura mínima e padding. Com `rows={1}` a caixa mede 32, 40 ou 44px, a altura de um `Input` do mesmo tamanho.",
           "- `disabled`, `readOnly` — estados de leitura.",
           "- `value`, `defaultValue`, `onChange` — controlled/uncontrolled.",
           "- Repassa todos os atributos HTML de `<textarea>` (`rows`, `placeholder`, etc).",
@@ -61,6 +62,13 @@ const meta: Meta<typeof Textarea> = {
       control: { type: "number", min: 1, step: 1 },
       description: "Limite de caracteres. Quando definido, mostra contador `atual/limite`.",
       table: { type: { summary: "number" } },
+    },
+    size: {
+      control: "inline-radio",
+      options: ["sm", "md", "lg"],
+      description:
+        "Altura mínima e padding. Uma linha (`rows={1}`) mede 32, 40 ou 44px, como um `Input`.",
+      table: { type: { summary: "'sm' | 'md' | 'lg'" }, defaultValue: { summary: "'md'" } },
     },
     autoResize: {
       control: "boolean",
@@ -188,6 +196,34 @@ export const AutoResize: Story = {
       description: {
         story:
           "`autoResize` desabilita `resize`/`overflow` e ajusta `style.height` ao `scrollHeight` toda vez que o valor muda.",
+      },
+    },
+  },
+}
+
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex w-96 flex-col gap-4">
+      <Textarea label="sm" size="sm" placeholder="Duas linhas, padding menor" />
+      <Textarea label="md" size="md" placeholder="Duas linhas (padrão)" />
+      <Textarea label="lg" size="lg" placeholder="Duas linhas, padding maior" />
+      <div className="flex items-end gap-2">
+        <Textarea
+          label="Mensagem"
+          labelPosition="hidden"
+          rows={1}
+          autoResize
+          placeholder="Escreva uma mensagem"
+        />
+        <Button>Enviar</Button>
+      </div>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` dá a altura mínima e o padding. Com `rows={1}` a caixa tem a altura de um `Input` do mesmo tamanho, então fecha com um `Button` ao lado; com `autoResize` ela cresce a partir daí.",
       },
     },
   },

@@ -126,6 +126,25 @@ describe("Textarea", () => {
     expect(screen.getByLabelText("X")).toHaveClass("my-ta")
   })
 
+  // A textarea grows with its content, so `size` gives the minimum height: one
+  // row is exactly as tall as an Input of that size (measured in a real
+  // browser by tests/e2e/control-size.spec.ts).
+  describe("size", () => {
+    it("uses the minimum height of the shared control sizes, md by default", () => {
+      const { rerender } = render(<Textarea label="X" />)
+      const el = () => screen.getByLabelText("X")
+      expect(el()).toHaveClass("min-h-control-md", "px-3")
+      expect(el().className).not.toMatch(/(^|\s)h-control-/)
+
+      rerender(<Textarea label="X" size="sm" />)
+      expect(el()).toHaveClass("min-h-control-sm", "px-2.5")
+      expect(el()).not.toHaveClass("min-h-control-md")
+
+      rerender(<Textarea label="X" size="lg" />)
+      expect(el()).toHaveClass("min-h-control-lg", "px-4")
+    })
+  })
+
   // The counter and the height used to follow React's onChange only, so a
   // value that reaches the DOM any other way (react-hook-form's `register`,
   // a form reset, an assignment through the ref) left them stale.
