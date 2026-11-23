@@ -983,6 +983,52 @@ describe("FileUpload", () => {
     })
   })
 
+  // Regressão: escolher de novo um arquivo que já está na lista o colocava
+  // duas vezes, e ele seria enviado duas vezes.
+  describe("mesmo arquivo duas vezes", () => {
+    function choose(...files: File[]) {
+      const input = document.querySelector("input[type=file]") as HTMLInputElement
+      fireEvent.change(input, { target: { files } })
+    }
+    const sameFile = (name: string, size: number) =>
+      new File(["x".repeat(size)], name, { type: "application/pdf", lastModified: 1_700_000_000 })
+
+    it("escolher de novo o mesmo arquivo não o repete na lista", () => {
+      const onValueChange = vi.fn()
+      render(<FileUpload multiple onValueChange={onValueChange} />)
+      choose(sameFile("contrato.pdf", 20))
+      // O seletor devolve outro objeto File para o mesmo arquivo do disco.
+      choose(sameFile("contrato.pdf", 20))
+      expect(screen.getAllByText("contrato.pdf")).toHaveLength(1)
+      expect(onValueChange).toHaveBeenCalledTimes(1)
+    })
+
+    it("o mesmo arquivo duas vezes na mesma escolha entra uma vez", () => {
+      const onValueChange = vi.fn()
+      render(<FileUpload multiple onValueChange={onValueChange} />)
+      choose(sameFile("contrato.pdf", 20), sameFile("contrato.pdf", 20))
+      expect(onValueChange).toHaveBeenCalledTimes(1)
+      expect(onValueChange.mock.calls[0]?.[0]).toHaveLength(1)
+    })
+
+    it("arquivos diferentes com o mesmo nome entram os dois", () => {
+      render(<FileUpload multiple />)
+      choose(sameFile("foto.pdf", 20))
+      choose(sameFile("foto.pdf", 30))
+      expect(screen.getAllByText("foto.pdf")).toHaveLength(2)
+    })
+
+    it("o repetido não ocupa lugar de maxFiles nem é recusado", () => {
+      const onReject = vi.fn()
+      render(<FileUpload multiple maxFiles={2} onReject={onReject} />)
+      choose(sameFile("a.pdf", 10))
+      choose(sameFile("a.pdf", 10), sameFile("b.pdf", 10))
+      expect(screen.getByText("a.pdf")).toBeInTheDocument()
+      expect(screen.getByText("b.pdf")).toBeInTheDocument()
+      expect(onReject).not.toHaveBeenCalled()
+    })
+  })
+
   // Regressão: os tamanhos saíam com ponto decimal ("até 1.0 KB") e o "até"
   // e as unidades não podiam ser trocados.
   describe("tamanhos em português", () => {

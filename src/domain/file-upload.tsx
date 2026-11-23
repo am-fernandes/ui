@@ -271,6 +271,11 @@ function formatBytes(bytes: number, units: FileSizeUnits): string {
   return `${sizeNumber.format(value)} ${scale[unit]}`
 }
 
+/** What tells two picks of the same file on disk apart from two different files. */
+function fileKey(file: File) {
+  return `${file.name}\u0000${file.size}\u0000${file.lastModified}\u0000${file.type}`
+}
+
 function defaultDescription(
   labels: ResolvedFileUploadLabels,
   accept?: string | string[],
@@ -356,7 +361,16 @@ function FileUpload({
 
       let next: File[]
       if (multiple) {
-        next = [...files, ...accepted]
+        // A file already in the list (picked again, or twice in one drop) is
+        // left out quietly: it is there to see, and would be sent twice.
+        const seen = new Set(files.map(fileKey))
+        const fresh = accepted.filter((file) => {
+          const key = fileKey(file)
+          if (seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+        next = fresh.length === 0 ? files : [...files, ...fresh]
         // The items already take part of the room.
         const room = maxFiles == null ? next.length : Math.max(0, maxFiles - items.length)
         if (next.length > room) {
