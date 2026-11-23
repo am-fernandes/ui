@@ -369,6 +369,25 @@ test.describe("SegmentedControl", () => {
     await expect(changes).toHaveText("onValueChange: semana, mes")
   })
 
+  test("disabled is dimmed once: 50%, never 50% of 50%", async ({ page }) => {
+    // Opacity multiplies down the tree: what the eye gets is the product.
+    const effectiveOpacity = (name: string) =>
+      page.getByRole("radio", { name }).evaluate((el) => {
+        let opacity = 1
+        for (let node: Element | null = el; node; node = node.parentElement) {
+          opacity *= Number(getComputedStyle(node).opacity)
+        }
+        return opacity
+      })
+
+    await open(page, "primitives-segmentedcontrol--disabled")
+    for (const name of ["Dia", "Semana", "Mês"]) expect(await effectiveOpacity(name)).toBe(0.5)
+
+    await open(page, "primitives-segmentedcontrol--disabled-option")
+    expect(await effectiveOpacity("Mês")).toBe(0.5)
+    expect(await effectiveOpacity("Dia")).toBe(1)
+  })
+
   test("arrows move and select in a real browser; one Tab stop", async ({ page }) => {
     await open(page, "primitives-segmentedcontrol--default")
     await page.keyboard.press("Tab")

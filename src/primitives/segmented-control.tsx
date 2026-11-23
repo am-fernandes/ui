@@ -149,7 +149,11 @@ function SegmentedControl({
             className={cn(
               "inline-flex min-w-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-inner font-medium transition-colors",
               "focus-visible:focus-outline data-[state=unchecked]:state-layer",
-              "disabled:cursor-default disabled:opacity-50",
+              "disabled:cursor-default",
+              // One option disabled: it dims itself. The whole control
+              // disabled: the track dims once, and its segments must not dim
+              // again inside it (50% of 50%).
+              option.disabled && !disabled && "opacity-50",
               "data-[state=checked]:bg-card data-[state=checked]:text-foreground",
               "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
               segmentSize[size].text,

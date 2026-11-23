@@ -236,10 +236,27 @@ describe("SegmentedControl", () => {
       />,
     )
     const group = screen.getByRole("radiogroup")
+    // Dimmed once, on the track (the effective 50% is measured in the browser
+    // by tests/e2e/primitives.spec.ts).
     expect(group).toHaveClass("opacity-50")
-    for (const radio of screen.getAllByRole("radio")) expect(radio).toBeDisabled()
+    for (const radio of screen.getAllByRole("radio")) {
+      expect(radio).toBeDisabled()
+      expect(radio.className).not.toMatch(/opacity-50/)
+    }
     await userEvent.click(screen.getByRole("radio", { name: "Mês" }))
     expect(onValueChange).not.toHaveBeenCalled()
+  })
+
+  it("dims only the option that is disabled", () => {
+    render(
+      <SegmentedControl
+        label="Período"
+        options={[options[0]!, { ...options[1]!, disabled: true }, options[2]!]}
+      />,
+    )
+    expect(screen.getByRole("radiogroup")).not.toHaveClass("opacity-50")
+    expect(screen.getByRole("radio", { name: "Semana" })).toHaveClass("opacity-50")
+    expect(screen.getByRole("radio", { name: "Dia" })).not.toHaveClass("opacity-50")
   })
 
   it("hugs its content by default and stretches with fill", () => {
