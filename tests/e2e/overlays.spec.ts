@@ -1482,6 +1482,25 @@ test.describe("Progress", () => {
     expect(look.fill).not.toBe("rgba(0, 0, 0, 0)")
   })
 
+  // The class animated `width`, but the bar moves by `transform`: it jumped.
+  test("slides to the new value", async ({ page }) => {
+    await gotoStory(page, "overlays-progress--steps", "Avançar")
+    const button = page.getByRole("button", { name: "Avançar" })
+    // Clicked and read in one go: on a busy machine a transition read later
+    // could already be over.
+    const transitions = await button.evaluate(async (el) => {
+      el.click()
+      await new Promise(requestAnimationFrame)
+      const indicator = document.querySelector('[data-slot="progress-indicator"]') as HTMLElement
+      return indicator
+        .getAnimations()
+        .map((a) => (a as CSSTransition).transitionProperty)
+        .filter(Boolean)
+    })
+    expect(transitions).toContain("transform")
+    await expect(page.getByRole("progressbar", { name: "Etapa 2 de 5" })).toBeVisible()
+  })
+
   // value={null} drew an empty bar: there was no indeterminate state.
   test("without a value it is indeterminate: a segment moves across the track", async ({
     page,

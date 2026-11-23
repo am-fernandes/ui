@@ -41,7 +41,7 @@ function Progress({ className, value, max = 100, ref, ...props }: ProgressProps)
       <ProgressPrimitive.Indicator
         data-slot="progress-indicator"
         className={cn(
-          "h-full w-full flex-1 bg-primary transition-[width] forced-colors:bg-[Highlight]",
+          "h-full w-full flex-1 bg-primary transition-transform duration-(--duration-medium-min) ease-(--ease-standard) forced-colors:bg-[Highlight]",
           // Reduced motion: a still third in the middle of the track.
           indeterminate &&
             "w-1/3 animate-progress-indeterminate motion-reduce:translate-x-full motion-reduce:animate-none",

@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { expect, within } from "@storybook/test"
+import { useState } from "react"
 
+import { Button } from "../primitives/button"
 import { Progress } from "./progress"
 
 const meta: Meta<typeof Progress> = {
@@ -94,6 +96,25 @@ export const Indeterminate: Story = {
         story:
           "Sem `value` (ou com `null`): indeterminado, para quando não se sabe quanto falta. Uma faixa corre a barra; com movimento reduzido ela fica parada no meio.",
       },
+    },
+  },
+}
+
+export const Steps: Story = {
+  render: () => {
+    const [step, setStep] = useState(1)
+    return (
+      <div className="flex flex-col gap-3">
+        <Progress value={step} max={5} aria-label={`Etapa ${step} de 5`} />
+        <Button variant="outline" onClick={() => setStep((n) => (n % 5) + 1)}>
+          Avançar
+        </Button>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: { story: "A barra desliza até o valor novo a cada mudança." },
     },
   },
 }
