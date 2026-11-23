@@ -75,6 +75,7 @@ function FieldShell({
           id={labelId}
           htmlFor={controlId}
           required={required}
+          disabled={disabled}
           className={cn(
             labelPosition === "hidden" && "sr-only",
             labelPosition === "left" && "shrink-0",

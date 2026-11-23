@@ -49,7 +49,12 @@ function Checkbox({
   const hasLabel = label != null && label !== ""
 
   return (
-    <div data-slot="checkbox-field" className="flex w-full flex-col gap-1.5">
+    <div
+      data-slot="checkbox-field"
+      data-disabled={disabled ? "" : undefined}
+      // Disabled dims the whole field once, here: box, label and messages.
+      className={cn("flex w-full flex-col gap-1.5", disabled && "opacity-50")}
+    >
       <div className={cn("flex gap-2", hasDescription ? "items-start" : "items-center")}>
         <CheckboxPrimitive.Root
           ref={ref}
@@ -68,7 +73,7 @@ function Checkbox({
             "peer size-4 shrink-0 cursor-pointer rounded-inner border border-input",
             hasDescription && "mt-0.5",
             "focus-visible:focus-outline",
-            "disabled:cursor-default disabled:opacity-50",
+            "disabled:cursor-default",
             "data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
             "data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground",
             hasError && "border-destructive-text",
@@ -87,7 +92,7 @@ function Checkbox({
 
         {hasLabel ? (
           <div className="flex flex-col gap-0.5">
-            <Label htmlFor={ids.controlId} required={required} id={ids.labelId}>
+            <Label htmlFor={ids.controlId} required={required} disabled={disabled} id={ids.labelId}>
               {label}
             </Label>
             {hasDescription ? (

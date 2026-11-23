@@ -46,7 +46,12 @@ function RadioGroup({
   const hasLabel = label != null && label !== ""
 
   return (
-    <div data-slot="radio-group-field" className="flex w-full flex-col gap-1.5">
+    <div
+      data-slot="radio-group-field"
+      data-disabled={disabled ? "" : undefined}
+      // A disabled group dims once, here: name, options and messages.
+      className={cn("flex w-full flex-col gap-1.5", disabled && "opacity-50")}
+    >
       {hasLabel ? (
         <Label as="span" required={required} id={ids.labelId}>
           {label}
@@ -80,7 +85,16 @@ function RadioGroup({
           const itemId = `${ids.controlId}-${item.value}`
           const Icon = item.icon
           return (
-            <div key={item.value} className="flex items-center gap-2">
+            <div
+              key={item.value}
+              data-slot="radio-group-option"
+              className={cn(
+                "flex items-center gap-2",
+                // One option disabled: its row dims, radio and label together.
+                // Not inside a disabled group, which is already dimmed.
+                item.disabled && !disabled && "opacity-50",
+              )}
+            >
               <RadioGroupPrimitive.Item
                 id={itemId}
                 value={item.value}
@@ -89,7 +103,7 @@ function RadioGroup({
                 className={cn(
                   "aspect-square size-4 shrink-0 cursor-pointer rounded-full border border-input text-primary data-[state=checked]:border-primary",
                   "focus-visible:focus-outline",
-                  "disabled:cursor-default disabled:opacity-50",
+                  "disabled:cursor-default",
                 )}
               >
                 <RadioGroupPrimitive.Indicator
@@ -99,7 +113,11 @@ function RadioGroup({
                   <CircleIcon className="size-2 fill-current text-current" />
                 </RadioGroupPrimitive.Indicator>
               </RadioGroupPrimitive.Item>
-              <Label htmlFor={itemId} className="font-normal">
+              <Label
+                htmlFor={itemId}
+                disabled={Boolean(disabled || item.disabled)}
+                className="font-normal"
+              >
                 <span className="inline-flex items-center gap-1.5">
                   {Icon ? <Icon className="size-4" /> : null}
                   {item.label}

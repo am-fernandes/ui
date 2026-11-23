@@ -1,4 +1,4 @@
-import { type Page, expect, test } from "@playwright/test"
+import { type Locator, type Page, expect, test } from "@playwright/test"
 import { expectFocusRing } from "./a11y"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
@@ -13,6 +13,20 @@ const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 async function open(page: Page, id: string) {
   await page.goto(story(id))
   await expect(page.locator("#storybook-root > *").first()).toBeVisible({ timeout: 15_000 })
+}
+
+/**
+ * The opacity the eye gets: `opacity` multiplies down the tree, so a control
+ * at 50% inside a wrapper at 50% is drawn at 25%.
+ */
+function effectiveOpacity(locator: Locator) {
+  return locator.evaluate((el) => {
+    let opacity = 1
+    for (let node: Element | null = el; node; node = node.parentElement) {
+      opacity *= Number(getComputedStyle(node).opacity)
+    }
+    return opacity
+  })
 }
 
 /** Turns the dark theme on the way an app does, with no fade in between. */
@@ -238,6 +252,57 @@ test.describe("Toggle", () => {
   }
 })
 
+// Disabled is one look: the whole field at 50%, once, and no pointer cursor.
+// The label of a Checkbox, Switch or RadioGroup used to stay at 100%.
+test.describe("Disabled look", () => {
+  const look = async (locator: Locator) => ({
+    opacity: await effectiveOpacity(locator),
+    cursor: await locator.evaluate((el) => getComputedStyle(el).cursor),
+  })
+  const disabled = { opacity: 0.5, cursor: "default" }
+
+  test("Checkbox: box and label are dimmed together", async ({ page }) => {
+    await open(page, "primitives-checkbox--disabled")
+    expect(await look(page.getByText("Opção indisponível"))).toEqual(disabled)
+    expect(await look(page.getByRole("checkbox"))).toEqual(disabled)
+  })
+
+  test("Switch: track and label are dimmed together", async ({ page }) => {
+    await open(page, "primitives-switch--disabled")
+    expect(await look(page.getByText("Indisponível"))).toEqual(disabled)
+    expect(await look(page.getByRole("switch"))).toEqual(disabled)
+  })
+
+  test("RadioGroup: the whole group, or only the option that is disabled", async ({ page }) => {
+    await open(page, "primitives-radiogroup--disabled")
+    expect(await effectiveOpacity(page.getByText("Plano", { exact: true }))).toBe(0.5)
+    for (const name of ["Free", "Pro", "Team"]) {
+      expect(await look(page.getByText(name, { exact: true }))).toEqual(disabled)
+      expect(await look(page.getByRole("radio", { name }))).toEqual(disabled)
+    }
+
+    await open(page, "primitives-radiogroup--controlled")
+    expect(await look(page.getByText("Team", { exact: true }))).toEqual(disabled)
+    expect(await look(page.getByRole("radio", { name: "Team" }))).toEqual(disabled)
+    expect(await look(page.getByText("Pro", { exact: true }))).toEqual({
+      opacity: 1,
+      cursor: "pointer",
+    })
+  })
+
+  test("Input: the label follows the field", async ({ page }) => {
+    await open(page, "primitives-input--disabled")
+    expect(await look(page.getByText("Nome", { exact: true }))).toEqual(disabled)
+
+    // Enabled: the label invites the click that focuses the field.
+    await open(page, "primitives-input--with-description")
+    expect(await look(page.getByText("E-mail", { exact: true }))).toEqual({
+      opacity: 1,
+      cursor: "pointer",
+    })
+  })
+})
+
 test.describe("Checkbox", () => {
   test("clicking the label toggles state (implicit Radix binding)", async ({ page }) => {
     await open(page, "primitives-checkbox--with-description")
@@ -370,22 +435,16 @@ test.describe("SegmentedControl", () => {
   })
 
   test("disabled is dimmed once: 50%, never 50% of 50%", async ({ page }) => {
-    // Opacity multiplies down the tree: what the eye gets is the product.
-    const effectiveOpacity = (name: string) =>
-      page.getByRole("radio", { name }).evaluate((el) => {
-        let opacity = 1
-        for (let node: Element | null = el; node; node = node.parentElement) {
-          opacity *= Number(getComputedStyle(node).opacity)
-        }
-        return opacity
-      })
+    const radio = (name: string) => page.getByRole("radio", { name })
 
     await open(page, "primitives-segmentedcontrol--disabled")
-    for (const name of ["Dia", "Semana", "Mês"]) expect(await effectiveOpacity(name)).toBe(0.5)
+    for (const name of ["Dia", "Semana", "Mês"]) {
+      expect(await effectiveOpacity(radio(name))).toBe(0.5)
+    }
 
     await open(page, "primitives-segmentedcontrol--disabled-option")
-    expect(await effectiveOpacity("Mês")).toBe(0.5)
-    expect(await effectiveOpacity("Dia")).toBe(1)
+    expect(await effectiveOpacity(radio("Mês"))).toBe(0.5)
+    expect(await effectiveOpacity(radio("Dia"))).toBe(1)
   })
 
   test("arrows move and select in a real browser; one Tab stop", async ({ page }) => {

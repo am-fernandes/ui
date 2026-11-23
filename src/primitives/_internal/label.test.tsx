@@ -33,6 +33,27 @@ describe("Label (internal)", () => {
     expect(label).toHaveAttribute("data-slot", "label")
   })
 
+  // The cursor and the 50% of the field are measured in a real browser by
+  // tests/e2e/primitives.spec.ts ("Disabled look").
+  it("invites the click only while its control is enabled", () => {
+    const { rerender } = render(<Label htmlFor="x">Nome</Label>)
+    expect(screen.getByText("Nome")).toHaveClass("cursor-pointer")
+    rerender(
+      <Label htmlFor="x" disabled>
+        Nome
+      </Label>,
+    )
+    expect(screen.getByText("Nome")).toHaveClass("cursor-default")
+    expect(screen.getByText("Nome")).not.toHaveClass("cursor-pointer")
+    // The dimming belongs to the field around it, once.
+    expect(screen.getByText("Nome").className).not.toMatch(/opacity/)
+  })
+
+  it("does not look clickable when it only names a group", () => {
+    render(<Label as="span">Plano</Label>)
+    expect(screen.getByText("Plano").className).not.toMatch(/cursor-/)
+  })
+
   it("forwards ref to the underlying label element", () => {
     let captured: HTMLLabelElement | null = null
     render(
