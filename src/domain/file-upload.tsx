@@ -71,6 +71,12 @@ export interface FileUploadLabels {
   fileFallbackName?: string
   /** Aria-label of the remove-row button. */
   removeFile: (fileName: string) => string
+  /** Message for a file refused because its type is not in `accept`. */
+  rejectedType?: (fileName: string) => string
+  /** Message for a file larger than `maxSize`; `limit` is that size, formatted. */
+  rejectedSize?: (fileName: string, limit: string) => string
+  /** Message for a file beyond `maxFiles` (`limit` is 1 when not `multiple`). */
+  rejectedMaxFiles?: (fileName: string, limit: number) => string
 }
 
 type ResolvedFileUploadLabels = Required<FileUploadLabels>
@@ -98,6 +104,12 @@ export const defaultFileUploadLabels: ResolvedFileUploadLabels = {
   downloadFile: (fileName) => `Baixar ${fileName}`,
   fileFallbackName: "Arquivo",
   removeFile: (fileName) => `Remover ${fileName}`,
+  rejectedType: (fileName) => `${fileName}: tipo de arquivo não aceito`,
+  rejectedSize: (fileName, limit) => `${fileName}: maior que ${limit}`,
+  rejectedMaxFiles: (fileName, limit) =>
+    limit === 1
+      ? `${fileName}: só é possível enviar um arquivo`
+      : `${fileName}: passa do limite de ${limit} arquivos`,
 }
 
 export interface FileUploadProps {
@@ -119,6 +131,12 @@ export interface FileUploadProps {
   onValueChange?: (files: File[]) => void
   /** Called when one or more files were dropped/selected but did not pass `accept`, `maxSize`, or `maxFiles`. */
   onReject?: (rejections: FileUploadRejection[]) => void
+  /**
+   * Show, under the dropzone, why each file of the last attempt was refused
+   * (texts in `labels`). Set `false` when `onReject` already tells the user,
+   * with a toast for instance. Default `true`.
+   */
+  showRejections?: boolean
   /** Disable user interaction. */
   disabled?: boolean
   /** Validation message — when set, the dropzone border turns red and the message renders below. */
@@ -191,6 +209,7 @@ function FileUpload({
   value,
   onValueChange,
   onReject,
+  showRejections = true,
   disabled = false,
   error,
   label,
@@ -209,7 +228,10 @@ function FileUpload({
   const labelId = `${baseId}-label`
   const hintId = `${baseId}-hint`
   const errorId = `${baseId}-error`
+  const rejectionsId = `${baseId}-rejections`
   const [internal, setInternal] = React.useState<File[]>([])
+  // What the last attempt refused: shown until the next one.
+  const [rejected, setRejected] = React.useState<FileUploadRejection[]>([])
   const [isDragging, setDragging] = React.useState(false)
   const [cameraOpen, setCameraOpen] = React.useState(false)
   const [lightboxFile, setLightboxFile] = React.useState<File | null>(null)
@@ -259,6 +281,7 @@ function FileUpload({
         }
       }
 
+      setRejected(rejections)
       if (rejections.length > 0) onReject?.(rejections)
       if (next !== files) setFiles(next)
     },
@@ -280,11 +303,22 @@ function FileUpload({
 
   const hasError = error != null && error !== ""
   const hasHint = renderedDescription != null && renderedDescription !== ""
-  // The label names the dropzone; the type and size hint and the error
-  // describe it, so a screen reader announces all three.
-  const describedBy = [hasHint ? hintId : null, hasError ? errorId : null]
+  const hasRejections = showRejections && rejected.length > 0
+  // The label names the dropzone; the type and size hint, the error and the
+  // reasons of the last refusal describe it, so a screen reader hears them.
+  const describedBy = [
+    hasHint ? hintId : null,
+    hasError ? errorId : null,
+    hasRejections ? rejectionsId : null,
+  ]
     .filter((id) => id !== null)
     .join(" ")
+
+  const rejectionMessage = ({ file, reason }: FileUploadRejection) => {
+    if (reason === "type") return mergedLabels.rejectedType(file.name)
+    if (reason === "size") return mergedLabels.rejectedSize(file.name, formatBytes(maxSize ?? 0))
+    return mergedLabels.rejectedMaxFiles(file.name, multiple ? (maxFiles ?? 1) : 1)
+  }
 
   return (
     <div className={cn("flex flex-col gap-3", className)} data-slot="file-upload">
@@ -343,6 +377,23 @@ function FileUpload({
         <p id={errorId} role="alert" className="text-xs text-destructive-text">
           {error}
         </p>
+      ) : null}
+      {hasRejections ? (
+        // The alert wraps the list: on the <ul> itself the role would replace
+        // "list" and leave the items without one.
+        <div
+          id={rejectionsId}
+          role="alert"
+          data-slot="file-upload-rejections"
+          className="text-xs text-destructive-text"
+        >
+          <ul className="flex flex-col gap-1">
+            {rejected.map((rejection, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: the list is replaced as a whole on every attempt, and two refused files can share a name.
+              <li key={index}>{rejectionMessage(rejection)}</li>
+            ))}
+          </ul>
+        </div>
       ) : null}
       {/* Only the dropzone is operated: the native input is a hidden helper
           that opens the picker, so it is out of the tab order and of the

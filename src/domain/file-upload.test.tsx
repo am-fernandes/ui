@@ -876,4 +876,110 @@ describe("FileUpload", () => {
       expect(screen.getByRole("button", { name: "Anexar laudo" })).toBeInTheDocument()
     })
   })
+
+  // Regressão: sem onReject, um arquivo recusado sumia sem explicação. A
+  // pessoa escolhia um arquivo grande demais e nada acontecia na tela.
+  describe("mensagem de arquivo recusado", () => {
+    function choose(...files: File[]) {
+      const input = document.querySelector("input[type=file]") as HTMLInputElement
+      fireEvent.change(input, { target: { files } })
+    }
+
+    it("arquivo acima do tamanho: aparece a mensagem, mesmo sem onReject", () => {
+      render(<FileUpload maxSize={1024} />)
+      choose(makeFile("planta.pdf", "application/pdf", 5000))
+      expect(screen.getByRole("alert")).toHaveTextContent("planta.pdf: maior que 1.0 KB")
+      expect(screen.queryByText("planta.pdf")).not.toBeInTheDocument()
+    })
+
+    it("tipo não aceito: aparece a mensagem", () => {
+      render(<FileUpload accept="image/*" />)
+      choose(makeFile("contrato.docx", "application/msword"))
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "contrato.docx: tipo de arquivo não aceito",
+      )
+    })
+
+    it("arquivos além do limite: uma mensagem para cada um", () => {
+      render(<FileUpload multiple maxFiles={2} />)
+      choose(makeFile("a.txt"), makeFile("b.txt"), makeFile("c.txt"), makeFile("d.txt"))
+      const alert = screen.getByRole("alert")
+      expect(alert).toHaveTextContent("c.txt: passa do limite de 2 arquivos")
+      expect(alert).toHaveTextContent("d.txt: passa do limite de 2 arquivos")
+      expect(alert).not.toHaveTextContent("a.txt")
+    })
+
+    it("campo de um arquivo só: o segundo é recusado com o motivo", () => {
+      render(<FileUpload />)
+      choose(makeFile("a.txt"), makeFile("b.txt"))
+      expect(screen.getByRole("alert")).toHaveTextContent("b.txt: só é possível enviar um arquivo")
+    })
+
+    it("a mensagem entra na descrição da dropzone", () => {
+      render(<FileUpload label="Anexar" maxSize={1024} />)
+      choose(makeFile("planta.pdf", "application/pdf", 5000))
+      expect(screen.getByRole("button", { name: "Anexar" })).toHaveAccessibleDescription(
+        /planta\.pdf: maior que 1\.0 KB/,
+      )
+    })
+
+    it("a mensagem some quando a próxima escolha é aceita", () => {
+      render(<FileUpload maxSize={1024} />)
+      choose(makeFile("grande.pdf", "application/pdf", 5000))
+      expect(screen.getByRole("alert")).toBeInTheDocument()
+      choose(makeFile("pequeno.pdf", "application/pdf", 10))
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+      expect(screen.getByText("pequeno.pdf")).toBeInTheDocument()
+    })
+
+    it("a foto da câmera recusada pelo filtro também é explicada", async () => {
+      render(<FileUpload camera accept="application/pdf" />)
+      // O mesmo caminho da câmera: o arquivo capturado passa por ingest.
+      choose(makeFile("foto-1.jpg", "image/jpeg"))
+      expect(screen.getByRole("alert")).toHaveTextContent("foto-1.jpg: tipo de arquivo não aceito")
+    })
+
+    it("onReject continua sendo chamado, junto com a mensagem", () => {
+      const onReject = vi.fn()
+      render(<FileUpload maxSize={1024} onReject={onReject} />)
+      const file = makeFile("planta.pdf", "application/pdf", 5000)
+      choose(file)
+      expect(onReject).toHaveBeenCalledWith([{ file, reason: "size" }])
+      expect(screen.getByRole("alert")).toBeInTheDocument()
+    })
+
+    it("showRejections={false} deixa o aviso só por conta de onReject", () => {
+      const onReject = vi.fn()
+      render(<FileUpload maxSize={1024} onReject={onReject} showRejections={false} />)
+      choose(makeFile("planta.pdf", "application/pdf", 5000))
+      expect(onReject).toHaveBeenCalledTimes(1)
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+    })
+
+    it("os textos vêm de labels", () => {
+      render(
+        <FileUpload
+          maxSize={1024}
+          accept=".pdf"
+          multiple
+          maxFiles={1}
+          labels={{
+            rejectedType: (name) => `${name}: file type not allowed`,
+            rejectedSize: (name, limit) => `${name}: larger than ${limit}`,
+            rejectedMaxFiles: (name, limit) => `${name}: over the limit of ${limit}`,
+          }}
+        />,
+      )
+      choose(
+        makeFile("a.txt", "text/plain"),
+        makeFile("b.pdf", "application/pdf", 5000),
+        makeFile("c.pdf", "application/pdf"),
+        makeFile("d.pdf", "application/pdf"),
+      )
+      const alert = screen.getByRole("alert")
+      expect(alert).toHaveTextContent("a.txt: file type not allowed")
+      expect(alert).toHaveTextContent("b.pdf: larger than 1.0 KB")
+      expect(alert).toHaveTextContent("d.pdf: over the limit of 1")
+    })
+  })
 })

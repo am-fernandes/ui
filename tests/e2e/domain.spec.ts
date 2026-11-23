@@ -871,6 +871,40 @@ test.describe("FileUpload: teclado e leitor de tela", () => {
   }
 })
 
+test.describe("FileUpload: arquivo recusado", () => {
+  test("sem onReject, o motivo da recusa aparece embaixo da dropzone", async ({ page }) => {
+    await gotoStory(page, "domain-fileupload--image-only")
+    const input = page.locator('[data-slot="file-upload"] input[type=file]')
+    await input.setInputFiles([
+      { name: "contrato.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4") },
+      { name: "planta.png", mimeType: "image/png", buffer: Buffer.alloc(3 * 1024 * 1024) },
+    ])
+    const reasons = page.locator('[data-slot="file-upload-rejections"]')
+    await expect(reasons.getByRole("listitem")).toHaveText([
+      "contrato.pdf: tipo de arquivo não aceito",
+      /^planta\.png: maior que 2[.,]0 MB$/,
+    ])
+    // Fica logo abaixo da dropzone, e a descreve para o leitor de tela.
+    const dropzone = page.getByRole("button", { name: "Imagens do imóvel" })
+    await expect(dropzone).toHaveAccessibleDescription(/contrato\.pdf: tipo de arquivo não aceito/)
+    const dropzoneBox = await dropzone.boundingBox()
+    const reasonsBox = await reasons.boundingBox()
+    expect(reasonsBox?.y ?? 0).toBeGreaterThanOrEqual(
+      (dropzoneBox?.y ?? 0) + (dropzoneBox?.height ?? 0),
+    )
+    await expectNoA11yViolations(page, "#storybook-root")
+
+    // A próxima escolha aceita limpa o aviso.
+    await input.setInputFiles({
+      name: "fachada.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("png"),
+    })
+    await expect(reasons).toHaveCount(0)
+    await expect(page.getByText("fachada.png")).toBeVisible()
+  })
+})
+
 test.describe("FileUpload: abrir um arquivo da lista", () => {
   const fileInput = (page: Page) => page.locator('[data-slot="file-upload"] input[type=file]')
 

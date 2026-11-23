@@ -26,6 +26,7 @@ const meta = {
           "- `camera` — adiciona botão de captura via `getUserMedia` (HTTPS/localhost).",
           "- `value` / `onValueChange` — modo controlado.",
           "- `onReject` — chamado com `{ file, reason: 'type' | 'size' | 'max-files' }[]`.",
+          "- `showRejections` — mostra, embaixo da dropzone, por que cada arquivo da última tentativa foi recusado (padrão `true`; os textos ficam em `labels`). Passe `false` quando `onReject` já avisa, com um toast por exemplo.",
           "- `label`, `description`, `error`, `className`, `dropzoneClassName` — customização visual.",
           "",
           "**Exemplo de uso:**",
@@ -349,6 +350,7 @@ export const RejectionHandler: Story = {
           maxSize={mb(1)}
           accept="image/*"
           label="Anexar imagens (≤ 1 MB cada, máx. 3)"
+          showRejections={false}
           onReject={(rejections) => {
             for (const r of rejections) {
               toast.error(describe(r))
@@ -362,7 +364,7 @@ export const RejectionHandler: Story = {
     docs: {
       description: {
         story:
-          "Combine `onReject` com `toast` para feedback imediato sobre arquivos recusados — distinguindo `type`, `size` e `max-files`.",
+          "Por padrão o componente já explica, embaixo da dropzone, por que um arquivo foi recusado. Para avisar de outro jeito, combine `onReject` com `toast` (distinguindo `type`, `size` e `max-files`) e desligue a mensagem embutida com `showRejections={false}`.",
       },
     },
   },
