@@ -29,13 +29,19 @@ function Progress({ className, value, max = 100, ref, ...props }: ProgressProps)
       data-slot="progress"
       value={safeValue}
       max={safeMax}
-      className={cn("relative h-2 w-full overflow-hidden rounded-inner bg-primary/20", className)}
+      className={cn(
+        "relative h-2 w-full overflow-hidden rounded-inner bg-primary/20",
+        // Forced colours flatten both backgrounds to the window colour: the
+        // track gets an outline and the filled part the system highlight.
+        "forced-colors:border forced-colors:border-[CanvasText]",
+        className,
+      )}
       {...props}
     >
       <ProgressPrimitive.Indicator
         data-slot="progress-indicator"
         className={cn(
-          "h-full w-full flex-1 bg-primary transition-[width]",
+          "h-full w-full flex-1 bg-primary transition-[width] forced-colors:bg-[Highlight]",
           // Reduced motion: a still third in the middle of the track.
           indeterminate &&
             "w-1/3 animate-progress-indeterminate motion-reduce:translate-x-full motion-reduce:animate-none",

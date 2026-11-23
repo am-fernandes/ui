@@ -1445,10 +1445,17 @@ test.describe("Collapsible", () => {
 })
 
 test.describe("Progress", () => {
+  /** Opens a Progress story (no button to wait for) and returns its bar. */
+  async function progressStory(page: Page, id: string, name: string) {
+    await page.goto(story(id))
+    const bar = page.getByRole("progressbar", { name })
+    await expect(bar).toBeVisible({ timeout: 15_000 })
+    return bar
+  }
+
   // `max` was ignored: value={3} max={7} drew 3%.
   test("value={3} max={7} fills 3/7 of the track", async ({ page }) => {
-    await page.goto(story("overlays-progress--with-max"))
-    const bar = page.getByRole("progressbar", { name: "Etapa 3 de 7" })
+    const bar = await progressStory(page, "overlays-progress--with-max", "Etapa 3 de 7")
     await expect(bar).toHaveAttribute("aria-valuemax", "7")
     const track = (await bar.boundingBox())!
     const indicator = await settledBox(bar.locator('[data-slot="progress-indicator"]'))
@@ -1456,12 +1463,30 @@ test.describe("Progress", () => {
     expect(filled / track.width).toBeCloseTo(3 / 7, 2)
   })
 
+  // Track and fill were only backgrounds: forced colours flattened both to
+  // the window colour and the bar disappeared.
+  test("stays visible in forced colours: an outlined track and a filled part", async ({ page }) => {
+    await page.emulateMedia({ forcedColors: "active" })
+    const bar = await progressStory(page, "overlays-progress--with-max", "Etapa 3 de 7")
+    const look = await bar.evaluate((track) => {
+      const fill = track.querySelector('[data-slot="progress-indicator"]') as HTMLElement
+      const t = getComputedStyle(track)
+      return {
+        border: `${t.borderTopWidth} ${t.borderTopStyle}`,
+        track: t.backgroundColor,
+        fill: getComputedStyle(fill).backgroundColor,
+      }
+    })
+    expect(look.border).toBe("1px solid")
+    expect(look.fill).not.toBe(look.track)
+    expect(look.fill).not.toBe("rgba(0, 0, 0, 0)")
+  })
+
   // value={null} drew an empty bar: there was no indeterminate state.
   test("without a value it is indeterminate: a segment moves across the track", async ({
     page,
   }) => {
-    await page.goto(story("overlays-progress--indeterminate"))
-    const bar = page.getByRole("progressbar", { name: "Importando planilha" })
+    const bar = await progressStory(page, "overlays-progress--indeterminate", "Importando planilha")
     await expect(bar).toHaveAttribute("data-state", "indeterminate")
     await expect(bar).not.toHaveAttribute("aria-valuenow")
     const indicator = bar.locator('[data-slot="progress-indicator"]')
