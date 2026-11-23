@@ -6,6 +6,7 @@ import {
   type ClipboardEvent,
   type FocusEvent,
   type KeyboardEvent,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -26,6 +27,11 @@ interface MultiInputBaseProps {
   labelPosition?: LabelPosition
   required?: boolean
   id?: string
+  /**
+   * Accessible name when there is no visible `label`. With a `label`, the
+   * field and the group are named by it and this is ignored.
+   */
+  "aria-label"?: string
   /** Optional prefix rendered before each token in its Badge (e.g. "R$ ", "#"). */
   prefix?: string
   /** Optional suffix rendered after each token in its Badge (e.g. " dias", " %"). */
@@ -90,12 +96,17 @@ function MultiInput(props: MultiInputProps) {
     suffix,
     maxItems,
     onReject,
+    "aria-label": ariaLabel,
   } = props
   const ids = useFieldIds(id)
   const hasError = error != null && error !== ""
+  const hasLabel = label != null && label !== ""
   const [inputValue, setInputValue] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
+  // Where the focus goes once a token removed with the keyboard is gone: the
+  // remove button at this position, or the text input when there is none.
+  const focusAfterRemoval = useRef<number | null>(null)
 
   const tokens: (string | number)[] = useMemo(() => {
     if (props.type === "number") return [...props.value].sort((a, b) => a - b)
@@ -141,6 +152,29 @@ function MultiInput(props: MultiInputProps) {
       props.onValueChange(props.value.filter((v) => v !== token))
     }
   }
+
+  // The focused remove button disappears with its token. Hand the focus to a
+  // neighbour instead of dropping it on the page body: Backspace goes to the
+  // token before, the other keys to the one that takes the removed one's place.
+  const removeTokenWithKeyboard = (index: number, towards: "previous" | "next") => {
+    const token = tokens[index]
+    if (token === undefined) return
+    focusAfterRemoval.current = towards === "previous" ? Math.max(0, index - 1) : index
+    removeToken(token)
+  }
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the token list changes, which is when a removal has gone through.
+  useLayoutEffect(() => {
+    const index = focusAfterRemoval.current
+    if (index === null) return
+    focusAfterRemoval.current = null
+    const buttons = wrapperRef.current?.querySelectorAll<HTMLButtonElement>(
+      '[data-slot="multi-input-remove"]',
+    )
+    const target = buttons?.[Math.min(index, (buttons?.length ?? 0) - 1)]
+    if (target) target.focus()
+    else inputRef.current?.focus()
+  }, [tokens])
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -195,25 +229,47 @@ function MultiInput(props: MultiInputProps) {
         )}
         // biome-ignore lint/a11y/useSemanticElements: <fieldset> conflicts with the flex chip layout.
         role="group"
-        aria-label={props.type === "number" ? "Lista de números" : "Lista de itens"}
+        // Named by the visible label, like the text input inside it.
+        aria-labelledby={hasLabel ? ids.labelId : undefined}
+        aria-label={
+          hasLabel
+            ? undefined
+            : (ariaLabel ?? (props.type === "number" ? "Lista de números" : "Lista de itens"))
+        }
       >
-        {tokens.map((token) => (
+        {tokens.map((token, index) => (
           <Badge key={`${token}`} variant="secondary" className="gap-1 pr-1">
             {renderToken(token)}
             {!disabled && (
               <button
                 type="button"
+                data-slot="multi-input-remove"
                 aria-label={`Remover ${renderToken(token)}`}
                 className="ml-0.5 rounded-inner cursor-pointer state-layer focus-visible:focus-outline"
                 onMouseDown={(e) => {
-                  // Run on mousedown so we fire BEFORE the input's blur — avoids the race
-                  // where blur commits the pending input and then we remove a different token.
+                  // Keep the focus where it is: a click on the × must not blur
+                  // the text input, which would commit what is being typed.
                   e.preventDefault()
+                }}
+                onClick={(e) => {
+                  // Not the wrapper's click, which sends the focus to the input.
                   e.stopPropagation()
-                  removeToken(token)
+                  // Enter and Space arrive here as a click on the focused
+                  // button; a mouse click leaves the focus alone.
+                  if (e.currentTarget === e.currentTarget.ownerDocument.activeElement) {
+                    removeTokenWithKeyboard(index, "next")
+                  } else {
+                    removeToken(token)
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Backspace" || e.key === "Delete") {
+                    e.preventDefault()
+                    removeTokenWithKeyboard(index, e.key === "Backspace" ? "previous" : "next")
+                  }
                 }}
               >
-                <X className="h-3 w-3" />
+                <X className="h-3 w-3" aria-hidden />
               </button>
             )}
           </Badge>
@@ -223,7 +279,9 @@ function MultiInput(props: MultiInputProps) {
           id={ids.controlId}
           type="text"
           inputMode={props.type === "number" ? "numeric" : "text"}
-          aria-label={placeholder}
+          // The visible label names the field through `htmlFor`. Without one,
+          // `aria-label` does, and the placeholder is the last resort.
+          aria-label={hasLabel ? undefined : (ariaLabel ?? placeholder)}
           aria-invalid={hasError ? true : undefined}
           aria-describedby={ids.describedBy({
             description: description != null && description !== "",

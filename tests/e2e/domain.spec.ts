@@ -344,6 +344,66 @@ test.describe("MultiInput", () => {
   })
 })
 
+test.describe("MultiInput: nome acessível e teclado", () => {
+  test("o rótulo visível nomeia o campo de texto e o grupo", async ({ page }) => {
+    await gotoStory(page, "domain-multiinput--string-tags")
+    await expect(page.locator('[data-slot="multi-input"]')).toMatchAriaSnapshot(`
+      - group "Tags do processo":
+        - text: urgente
+        - button "Remover urgente"
+        - text: fiscal
+        - button "Remover fiscal"
+        - textbox "Tags do processo"
+    `)
+  })
+
+  test("Enter e Espaço no botão de remover tiram o item e o foco segue para o vizinho", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-multiinput--string-tags")
+    const group = page.getByRole("group", { name: "Tags do processo" })
+    await page.keyboard.press("Tab")
+    await expect(group.getByRole("button", { name: "Remover urgente" })).toBeFocused()
+
+    await page.keyboard.press("Enter")
+    await expect(group.getByText("urgente")).toHaveCount(0)
+    await expect(group.getByRole("button", { name: "Remover fiscal" })).toBeFocused()
+
+    await page.keyboard.press("Space")
+    await expect(group.getByRole("button")).toHaveCount(0)
+    await expect(page.getByRole("textbox", { name: "Tags do processo" })).toBeFocused()
+  })
+
+  test("Backspace e Delete no botão de remover também tiram o item", async ({ page }) => {
+    await gotoStory(page, "domain-multiinput--string-tags")
+    const group = page.getByRole("group", { name: "Tags do processo" })
+    await page.keyboard.press("Tab")
+    await page.keyboard.press("Tab")
+    await expect(group.getByRole("button", { name: "Remover fiscal" })).toBeFocused()
+
+    await page.keyboard.press("Backspace")
+    await expect(group.getByText("fiscal")).toHaveCount(0)
+    await expect(group.getByRole("button", { name: "Remover urgente" })).toBeFocused()
+
+    await page.keyboard.press("Delete")
+    await expect(group.getByRole("button")).toHaveCount(0)
+    await expect(page.getByRole("textbox", { name: "Tags do processo" })).toBeFocused()
+  })
+
+  test("o clique no × remove o item sem tirar o foco do campo de texto", async ({ page }) => {
+    await gotoStory(page, "domain-multiinput--string-tags")
+    const input = page.getByRole("textbox", { name: "Tags do processo" })
+    await input.click()
+    await input.pressSequentially("pendente")
+    await page.getByRole("button", { name: "Remover urgente" }).click()
+    await expect(page.getByRole("button", { name: "Remover urgente" })).toHaveCount(0)
+    // O texto em digitação continua no campo, sem virar item.
+    await expect(input).toBeFocused()
+    await expect(input).toHaveValue("pendente")
+    await expect(page.getByRole("button", { name: "Remover pendente" })).toHaveCount(0)
+  })
+})
+
 test.describe("InputOTP", () => {
   test("typing 6 digits fires onComplete", async ({ page }) => {
     await gotoStory(page, "domain-inputotp--default")

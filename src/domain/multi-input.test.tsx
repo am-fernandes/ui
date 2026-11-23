@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
 import { MultiInput } from "./multi-input"
@@ -179,12 +180,15 @@ describe("MultiInput", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("erro")
   })
 
-  it("removing a token via mousedown does not bubble to the wrapper / blur the input", () => {
+  it("clicking the remove button removes that token and keeps the focus in the input", async () => {
+    const user = userEvent.setup()
     const onValueChange = vi.fn()
     render(<MultiInput value={["alpha", "beta"]} onValueChange={onValueChange} />)
-    const removeBtn = screen.getByRole("button", { name: /Remover beta/ })
-    fireEvent.mouseDown(removeBtn)
+    const input = screen.getByRole("textbox")
+    await user.click(input)
+    await user.click(screen.getByRole("button", { name: /Remover beta/ }))
     expect(onValueChange).toHaveBeenLastCalledWith(["alpha"])
+    expect(input).toHaveFocus()
   })
 
   it("paste without separators leaves the input untouched (default text insertion)", () => {
@@ -225,7 +229,7 @@ describe("MultiInput", () => {
     const onValueChange = vi.fn()
     render(<MultiInput type="number" value={[1, 2, 3]} onValueChange={onValueChange} />)
     const removeBtn = screen.getByRole("button", { name: /Remover 2/ })
-    fireEvent.mouseDown(removeBtn)
+    fireEvent.click(removeBtn)
     expect(onValueChange).toHaveBeenLastCalledWith([1, 3])
   })
 
@@ -235,5 +239,150 @@ describe("MultiInput", () => {
     const input = screen.getByRole("textbox") as HTMLInputElement
     fireEvent.keyDown(input, { key: "Enter" })
     expect(onValueChange).not.toHaveBeenCalled()
+  })
+
+  // Regressão: aria-label={placeholder} passava por cima do <label>, e o
+  // grupo se chamava "Lista de itens": o rótulo visível não nomeava nada.
+  describe("nome acessível", () => {
+    it("o campo de texto recebe o nome do rótulo visível", () => {
+      render(
+        <MultiInput
+          label="E-mails de contato"
+          placeholder="Adicione um e-mail"
+          value={[]}
+          onValueChange={vi.fn()}
+        />,
+      )
+      const input = screen.getByRole("textbox", { name: "E-mails de contato" })
+      expect(input).not.toHaveAttribute("aria-label")
+      // O clique no rótulo leva ao campo: é ele o alvo do `for`.
+      expect(screen.getByText("E-mails de contato")).toHaveAttribute("for", input.id)
+    })
+
+    it("o grupo também é nomeado pelo rótulo visível", () => {
+      render(<MultiInput label="E-mails de contato" value={["a@b.co"]} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("group", { name: "E-mails de contato" })).toBeInTheDocument()
+    })
+
+    it("o rótulo obrigatório entra no nome", () => {
+      render(<MultiInput label="Responsáveis" required value={[]} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox", { name: /Responsáveis/ })).toBeInTheDocument()
+    })
+
+    it("sem rótulo, aria-label nomeia o campo e o grupo", () => {
+      render(<MultiInput aria-label="Tags" value={[]} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox", { name: "Tags" })).toBeInTheDocument()
+      expect(screen.getByRole("group", { name: "Tags" })).toBeInTheDocument()
+    })
+
+    it("sem rótulo nem aria-label, o placeholder continua nomeando o campo", () => {
+      render(<MultiInput placeholder="Adicionar tag" value={[]} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox", { name: "Adicionar tag" })).toBeInTheDocument()
+      expect(screen.getByRole("group", { name: "Lista de itens" })).toBeInTheDocument()
+    })
+  })
+
+  // Regressão: o botão de remover só reagia a mousedown. Recebia foco pelo
+  // teclado e Enter ou Espaço não faziam nada.
+  describe("remover pelo teclado", () => {
+    function Controlled({ initial }: { initial: string[] }) {
+      const [value, setValue] = React.useState(initial)
+      return <MultiInput label="Tags" value={value} onValueChange={setValue} />
+    }
+
+    it.each([
+      ["Enter", "{Enter}"],
+      ["Espaço", " "],
+      ["Delete", "{Delete}"],
+      ["Backspace", "{Backspace}"],
+    ])("%s no botão de remover tira o item", async (_name, key) => {
+      const user = userEvent.setup()
+      render(<Controlled initial={["a", "b", "c"]} />)
+      screen.getByRole("button", { name: "Remover b" }).focus()
+      await user.keyboard(key)
+      expect(screen.queryByText("b")).not.toBeInTheDocument()
+      expect(screen.getByText("a")).toBeInTheDocument()
+      expect(screen.getByText("c")).toBeInTheDocument()
+    })
+
+    it("Tab chega a cada botão de remover e depois ao campo", async () => {
+      const user = userEvent.setup()
+      render(<Controlled initial={["a", "b"]} />)
+      await user.tab()
+      expect(screen.getByRole("button", { name: "Remover a" })).toHaveFocus()
+      await user.tab()
+      expect(screen.getByRole("button", { name: "Remover b" })).toHaveFocus()
+      await user.tab()
+      expect(screen.getByRole("textbox")).toHaveFocus()
+    })
+
+    it("depois de Enter o foco vai para o item seguinte", async () => {
+      const user = userEvent.setup()
+      render(<Controlled initial={["a", "b", "c"]} />)
+      screen.getByRole("button", { name: "Remover b" }).focus()
+      await user.keyboard("{Enter}")
+      expect(screen.getByRole("button", { name: "Remover c" })).toHaveFocus()
+    })
+
+    it("ao remover o último item o foco vai para o anterior", async () => {
+      const user = userEvent.setup()
+      render(<Controlled initial={["a", "b", "c"]} />)
+      screen.getByRole("button", { name: "Remover c" }).focus()
+      await user.keyboard("{Enter}")
+      expect(screen.getByRole("button", { name: "Remover b" })).toHaveFocus()
+    })
+
+    it("depois de Backspace o foco vai para o item anterior", async () => {
+      const user = userEvent.setup()
+      render(<Controlled initial={["a", "b", "c"]} />)
+      screen.getByRole("button", { name: "Remover b" }).focus()
+      await user.keyboard("{Backspace}")
+      expect(screen.getByRole("button", { name: "Remover a" })).toHaveFocus()
+    })
+
+    it("Backspace no primeiro item deixa o foco no que sobrou na frente", async () => {
+      const user = userEvent.setup()
+      render(<Controlled initial={["a", "b"]} />)
+      screen.getByRole("button", { name: "Remover a" }).focus()
+      await user.keyboard("{Backspace}")
+      expect(screen.getByRole("button", { name: "Remover b" })).toHaveFocus()
+    })
+
+    it("ao remover o único item o foco volta para o campo de texto", async () => {
+      const user = userEvent.setup()
+      render(<Controlled initial={["a"]} />)
+      screen.getByRole("button", { name: "Remover a" }).focus()
+      await user.keyboard(" ")
+      expect(screen.getByRole("textbox")).toHaveFocus()
+    })
+
+    it("dá para esvaziar a lista só com o teclado", async () => {
+      const user = userEvent.setup()
+      render(<Controlled initial={["a", "b", "c"]} />)
+      await user.tab()
+      await user.keyboard("{Enter}{Enter}{Enter}")
+      expect(screen.queryByRole("button", { name: /Remover/ })).not.toBeInTheDocument()
+      expect(screen.getByRole("textbox")).toHaveFocus()
+    })
+
+    it("se o pai não aceita a remoção, o foco fica onde estava", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<MultiInput label="Tags" value={["a", "b"]} onValueChange={onValueChange} />)
+      const button = screen.getByRole("button", { name: "Remover a" })
+      button.focus()
+      await user.keyboard("{Enter}")
+      expect(onValueChange).toHaveBeenCalledWith(["b"])
+      expect(button).toHaveFocus()
+    })
+
+    it("outras teclas no botão de remover não removem nada", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<MultiInput label="Tags" value={["a", "b"]} onValueChange={onValueChange} />)
+      screen.getByRole("button", { name: "Remover a" }).focus()
+      await user.keyboard("x{ArrowRight}")
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
   })
 })
