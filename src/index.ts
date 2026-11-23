@@ -157,7 +157,12 @@ export {
   type FileUploadRejectionReason,
 } from "./domain/file-upload"
 export { InputOTP, REGEXP_ONLY_DIGITS, type InputOTPProps } from "./domain/input-otp"
-export { MultiInput, type MultiInputProps } from "./domain/multi-input"
+export {
+  MultiInput,
+  defaultMultiInputLabels,
+  type MultiInputLabels,
+  type MultiInputProps,
+} from "./domain/multi-input"
 export { PercentageInput, type PercentageInputProps } from "./domain/percentage-input"
 export { PhoneInput, type PhoneInputProps } from "./domain/phone-input"
 

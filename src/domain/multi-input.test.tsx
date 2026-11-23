@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
-import { MultiInput } from "./multi-input"
+import { MultiInput, defaultMultiInputLabels } from "./multi-input"
 
 describe("MultiInput", () => {
   it("renders one badge per string value", () => {
@@ -626,5 +626,49 @@ describe("MultiInput", () => {
     expect(screen.getByRole("group", { name: "Áreas" })).toHaveAttribute("aria-disabled", "true")
     rerender(<MultiInput label="Áreas" value={["civil"]} onValueChange={vi.fn()} />)
     expect(screen.getByRole("group", { name: "Áreas" })).not.toHaveAttribute("aria-disabled")
+  })
+  // "Adicione um item", "Lista de itens" e "Remover …" eram texto fixo: um
+  // produto não conseguia ajustar a cópia.
+  describe("labels", () => {
+    it("os textos padrão são os de defaultMultiInputLabels", () => {
+      render(<MultiInput value={["a"]} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("group", { name: defaultMultiInputLabels.list })).toBeInTheDocument()
+      expect(
+        screen.getByRole("button", { name: defaultMultiInputLabels.remove("a") }),
+      ).toBeInTheDocument()
+      expect(defaultMultiInputLabels.placeholder).toBe("Adicione um item")
+    })
+
+    it("cada texto pode ser trocado, nos dois modos", () => {
+      const labels = {
+        placeholder: "Add a tag",
+        numberPlaceholder: "Add a number",
+        list: "Tag list",
+        numberList: "Number list",
+        remove: (item: string) => `Remove ${item}`,
+      }
+      const { rerender } = render(<MultiInput value={[]} onValueChange={vi.fn()} labels={labels} />)
+      expect(screen.getByPlaceholderText("Add a tag")).toBeInTheDocument()
+      expect(screen.getByRole("group", { name: "Tag list" })).toBeInTheDocument()
+      rerender(<MultiInput type="number" value={[7]} onValueChange={vi.fn()} labels={labels} />)
+      expect(screen.getByRole("group", { name: "Number list" })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Remove 7" })).toBeInTheDocument()
+      rerender(<MultiInput type="number" value={[]} onValueChange={vi.fn()} labels={labels} />)
+      expect(screen.getByPlaceholderText("Add a number")).toBeInTheDocument()
+    })
+
+    it("placeholder e aria-label explícitos ganham de labels", () => {
+      render(
+        <MultiInput
+          value={[]}
+          onValueChange={vi.fn()}
+          placeholder="E-mail"
+          aria-label="Contatos"
+          labels={{ placeholder: "Add", list: "List" }}
+        />,
+      )
+      expect(screen.getByPlaceholderText("E-mail")).toBeInTheDocument()
+      expect(screen.getByRole("group", { name: "Contatos" })).toBeInTheDocument()
+    })
   })
 })

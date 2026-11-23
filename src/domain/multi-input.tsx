@@ -23,7 +23,30 @@ import { FieldShell, type LabelPosition } from "../primitives/_internal/field-sh
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Badge } from "../primitives/badge"
 
+export interface MultiInputLabels {
+  /** Placeholder of an empty string list (the `placeholder` prop wins). */
+  placeholder: string
+  /** Placeholder of an empty number list (the `placeholder` prop wins). */
+  numberPlaceholder: string
+  /** Name of the group when there is no `label` nor `aria-label`. */
+  list: string
+  /** Same, for `type="number"`. */
+  numberList: string
+  /** Accessible name of an item's remove button; `item` has `prefix` and `suffix`. */
+  remove: (item: string) => string
+}
+
+export const defaultMultiInputLabels: MultiInputLabels = {
+  placeholder: "Adicione um item",
+  numberPlaceholder: "Adicione um número",
+  list: "Lista de itens",
+  numberList: "Lista de números",
+  remove: (item) => `Remover ${item}`,
+}
+
 interface MultiInputBaseProps {
+  /** Override individual UI strings. Defaults are pt-BR. */
+  labels?: Partial<MultiInputLabels>
   /**
    * Minimum height of the box, border included: `sm` 32px, `md` 40px, `lg`
    * 44px, the same as a button or field of that size. It grows with the items.
@@ -129,10 +152,11 @@ function parseNumberInput(raw: string): ParsedNumberResult {
 }
 
 function MultiInput(props: MultiInputProps) {
+  const l: MultiInputLabels = { ...defaultMultiInputLabels, ...props.labels }
   const {
     size = "md",
     disabled = false,
-    placeholder = props.type === "number" ? "Adicione um número" : "Adicione um item",
+    placeholder = props.type === "number" ? l.numberPlaceholder : l.placeholder,
     error,
     label,
     description,
@@ -304,9 +328,7 @@ function MultiInput(props: MultiInputProps) {
         // Named by the visible label, like the text input inside it.
         aria-labelledby={hasLabel ? ids.labelId : undefined}
         aria-label={
-          hasLabel
-            ? undefined
-            : (ariaLabel ?? (props.type === "number" ? "Lista de números" : "Lista de itens"))
+          hasLabel ? undefined : (ariaLabel ?? (props.type === "number" ? l.numberList : l.list))
         }
       >
         {tokens.map((token, index) => (
@@ -321,7 +343,7 @@ function MultiInput(props: MultiInputProps) {
               <button
                 type="button"
                 data-slot="multi-input-remove"
-                aria-label={`Remover ${renderToken(token)}`}
+                aria-label={l.remove(renderToken(token))}
                 // The × stays small inside the chip; the hit area around it
                 // is 24 by 24 px (WCAG 2.5.8).
                 className="relative ml-0.5 inline-flex size-4 items-center justify-center rounded-inner cursor-pointer state-layer focus-visible:focus-outline before:absolute before:-inset-1"
