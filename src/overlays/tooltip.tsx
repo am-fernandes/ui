@@ -5,6 +5,7 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { motionTooltip } from "./_internal/animations"
+import { useOverlayContainer } from "./_internal/overlay-container"
 
 export interface TooltipProps {
   content: React.ReactNode
@@ -31,31 +32,37 @@ function Tooltip({
   sideOffset = 4,
   className,
 }: TooltipProps) {
+  // Inside a Dialog, AlertDialog or Sheet the tooltip renders into the modal
+  // (see `OverlayContainerProvider`). `null`: the modal is still mounting.
+  const container = useOverlayContainer()
+
   return (
     <TooltipPrimitive.Provider delayDuration={delayDuration}>
       <TooltipPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
         <TooltipPrimitive.Trigger asChild data-slot="tooltip-trigger">
           {children}
         </TooltipPrimitive.Trigger>
-        <TooltipPrimitive.Portal>
-          <TooltipPrimitive.Content
-            data-slot="tooltip-content"
-            side={side}
-            align={align}
-            sideOffset={sideOffset}
-            className={cn(
-              "z-[var(--z-tooltip)] overflow-hidden rounded-element bg-primary px-3 py-1.5 text-xs text-primary-foreground",
-              motionTooltip,
-              "data-[state=open]:animate-in data-[state=closed]:animate-out",
-              "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-              "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-              "origin-[var(--radix-tooltip-content-transform-origin)]",
-              className,
-            )}
-          >
-            {content}
-          </TooltipPrimitive.Content>
-        </TooltipPrimitive.Portal>
+        {container === null ? null : (
+          <TooltipPrimitive.Portal container={container}>
+            <TooltipPrimitive.Content
+              data-slot="tooltip-content"
+              side={side}
+              align={align}
+              sideOffset={sideOffset}
+              className={cn(
+                "z-[var(--z-tooltip)] overflow-hidden rounded-element bg-primary px-3 py-1.5 text-xs text-primary-foreground",
+                motionTooltip,
+                "data-[state=open]:animate-in data-[state=closed]:animate-out",
+                "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+                "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+                "origin-[var(--radix-tooltip-content-transform-origin)]",
+                className,
+              )}
+            >
+              {content}
+            </TooltipPrimitive.Content>
+          </TooltipPrimitive.Portal>
+        )}
       </TooltipPrimitive.Root>
     </TooltipPrimitive.Provider>
   )

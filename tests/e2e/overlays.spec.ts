@@ -340,6 +340,197 @@ test.describe("Popover", () => {
   })
 })
 
+// A modal locks the page behind it: the wheel and touch scrolling only work
+// inside the modal's content. A popover portaled to <body> was outside it, so
+// a long list opened from a Dialog or a Sheet did not scroll.
+test.describe("Floating layers inside a modal", () => {
+  /**
+   * Drags a finger up by `distance` px, starting on the centre of `target`.
+   * Real touch events, sent through the DevTools protocol: the browser turns
+   * them into a scroll, as it does on a phone.
+   */
+  async function touchScroll(page: Page, target: Locator, distance: number) {
+    const box = (await target.boundingBox())!
+    const session = await page.context().newCDPSession(page)
+    const x = Math.round(box.x + box.width / 2)
+    const y = Math.round(box.y + box.height / 2)
+    await session.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] })
+    const steps = 10
+    for (let step = 1; step <= steps; step++) {
+      await session.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x, y: Math.round(y - (distance * step) / steps) }],
+      })
+      await page.waitForTimeout(16)
+    }
+    await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] })
+  }
+
+  test("a Combobox list inside a Dialog scrolls with the wheel and the Dialog stays open", async ({
+    page,
+  }) => {
+    await gotoStory(page, "forms-combobox--inside-dialog", "Abrir dialog")
+    await page.getByRole("button", { name: "Abrir dialog" }).click()
+    const dialog = page.getByRole("dialog", { name: "Escolher opção" })
+    await expect(dialog).toBeVisible()
+    await page.getByRole("combobox").click()
+    const list = page.getByRole("listbox")
+    await expect(list).toBeVisible()
+    expect(
+      await list.evaluate((el) => el.scrollHeight > el.clientHeight),
+      "the list is longer than its box",
+    ).toBe(true)
+
+    await list.hover()
+    await page.mouse.wheel(0, 200)
+    await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+    await expect(dialog).toBeVisible()
+
+    // Choosing an option closes the list and nothing else.
+    await page.getByRole("option").nth(8).click()
+    await expect(list).toHaveCount(0)
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole("combobox")).toBeFocused()
+  })
+
+  test("a Popover inside a Dialog opens next to its trigger and its list scrolls", async ({
+    page,
+  }) => {
+    await gotoStory(page, "overlays-popover--inside-dialog", "Abrir dialog")
+    await page.getByRole("button", { name: "Abrir dialog" }).click()
+    const dialog = page.getByRole("dialog", { name: "Filtrar leads" })
+    await settledBox(dialog)
+    const trigger = dialog.getByRole("button", { name: "Escolher cidade" })
+    const triggerBox = (await trigger.boundingBox())!
+    await trigger.click()
+    const popover = page.getByRole("dialog", { name: "Cidades" })
+    await expect(popover).toBeVisible()
+
+    // Below the trigger (4px away), aligned to its start: the dialog is
+    // centred with a transform, which must not throw the position off.
+    const box = await settledBox(popover)
+    expect(Math.abs(box.x - triggerBox.x)).toBeLessThanOrEqual(1)
+    expect(Math.abs(box.y - (triggerBox.y + triggerBox.height + 4))).toBeLessThanOrEqual(1)
+
+    const list = page.getByTestId("city-list")
+    await list.hover()
+    await page.mouse.wheel(0, 200)
+    await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+
+    // A click in the list is a click inside the dialog.
+    await page.getByRole("button", { name: "Cidade 12", exact: true }).click()
+    await expect(popover).toHaveCount(0)
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole("button", { name: "Cidade 12" })).toBeFocused()
+  })
+
+  test("a Popover inside a Sheet opens next to its trigger, even while the panel slides in", async ({
+    page,
+  }) => {
+    await gotoStory(page, "overlays-popover--inside-sheet", "Abrir sheet")
+    await page.getByRole("button", { name: "Abrir sheet" }).click()
+    const sheet = page.getByRole("dialog", { name: "Filtrar leads" })
+    const trigger = sheet.getByRole("button", { name: "Escolher cidade" })
+    await expect(sheet).toBeAttached()
+
+    // Opened at once, by code, while the panel is still sliding in (410ms):
+    // Playwright's own click would wait for the panel to stop. From then on,
+    // frame by frame, how far the popover is from its trigger once the panel
+    // has arrived. It used to jump 900px to the left for one frame, when the
+    // slide ended and its position stopped being relative to the panel.
+    const worst = await page.evaluate(
+      () =>
+        new Promise<number>((resolve) => {
+          const panel = document.querySelector('[data-slot="sheet-content"]') as HTMLElement
+          const button = [...panel.querySelectorAll("button")].find(
+            (b) => b.textContent === "Escolher cidade",
+          ) as HTMLElement
+          button.click()
+          let worst = 0
+          const start = performance.now()
+          const frame = () => {
+            const layer = document.querySelector("[data-radix-popper-content-wrapper]")
+            const arrived = Math.abs(panel.getBoundingClientRect().right - window.innerWidth) < 0.5
+            if (layer && arrived) {
+              const offset = layer.getBoundingClientRect().x - button.getBoundingClientRect().x
+              worst = Math.max(worst, Math.abs(offset))
+            }
+            if (performance.now() - start < 1200) requestAnimationFrame(frame)
+            else resolve(worst)
+          }
+          requestAnimationFrame(frame)
+        }),
+    )
+    expect(worst, "largest distance from the trigger, in px").toBeLessThanOrEqual(1)
+
+    const popover = page.getByRole("dialog", { name: "Cidades" })
+    await expect(popover).toBeVisible()
+    const triggerBox = (await trigger.boundingBox())!
+    const box = await settledBox(popover)
+    expect(Math.abs(box.x - triggerBox.x)).toBeLessThanOrEqual(1)
+    expect(Math.abs(box.y - (triggerBox.y + triggerBox.height + 4))).toBeLessThanOrEqual(1)
+
+    const list = page.getByTestId("city-list")
+    await list.hover()
+    await page.mouse.wheel(0, 200)
+    await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+    await expect(sheet).toBeVisible()
+  })
+
+  test("a tooltip inside a Dialog sits next to its trigger", async ({ page }) => {
+    await gotoStory(page, "overlays-dropdownmenu--inside-dialog", "Abrir proposta")
+    // Opened from the keyboard, so the auto-focused IconButton shows its tooltip
+    // while the dialog is still zooming in.
+    await page.getByRole("button", { name: "Abrir proposta" }).focus()
+    await page.keyboard.press("Enter")
+    const dialog = page.getByRole("dialog", { name: "Proposta #1042" })
+    const trigger = dialog.getByRole("button", { name: "Ações da proposta" })
+    await expect(trigger).toBeFocused()
+    const tooltip = page.locator('[data-slot="tooltip-content"]')
+    await expect(tooltip).toBeVisible()
+    await settledBox(dialog)
+    const triggerBox = (await trigger.boundingBox())!
+    const box = await settledBox(tooltip)
+    // Above the trigger, 4px away, centred on it.
+    expect(Math.abs(box.y + box.height + 4 - triggerBox.y)).toBeLessThanOrEqual(1)
+    expect(
+      Math.abs(box.x + box.width / 2 - (triggerBox.x + triggerBox.width / 2)),
+    ).toBeLessThanOrEqual(1)
+  })
+
+  test.describe("touch", () => {
+    test.use({ hasTouch: true, viewport: { width: 390, height: 740 } })
+
+    test("a Combobox list inside a Dialog scrolls with the finger", async ({ page }) => {
+      await gotoStory(page, "forms-combobox--inside-dialog", "Abrir dialog")
+      await page.getByRole("button", { name: "Abrir dialog" }).tap()
+      const dialog = page.getByRole("dialog", { name: "Escolher opção" })
+      await settledBox(dialog)
+      await page.getByRole("combobox").tap()
+      const list = page.getByRole("listbox")
+      await expect(list).toBeVisible()
+      await settledBox(list)
+      await touchScroll(page, list, 150)
+      await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+      await expect(dialog).toBeVisible()
+    })
+
+    test("a Popover list inside a Sheet scrolls with the finger", async ({ page }) => {
+      await gotoStory(page, "overlays-popover--inside-sheet", "Abrir sheet")
+      await page.getByRole("button", { name: "Abrir sheet" }).tap()
+      const sheet = page.getByRole("dialog", { name: "Filtrar leads" })
+      await settledBox(sheet)
+      await sheet.getByRole("button", { name: "Escolher cidade" }).tap()
+      const list = page.getByTestId("city-list")
+      await expect(list).toBeVisible()
+      await settledBox(list)
+      await touchScroll(page, list, 150)
+      await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+      await expect(sheet).toBeVisible()
+    })
+  })
+})
+
 test.describe("DropdownMenu", () => {
   test("opens below the trigger, aligned to its start, and returns focus on Escape", async ({
     page,

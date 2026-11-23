@@ -8,14 +8,21 @@ import type * as React from "react"
 import { cn } from "@/lib/utils"
 import { motionSheet, overlayBase } from "./_internal/animations"
 import { modalBodyClass } from "./_internal/modal-body"
+import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
 
 // The panel is a column: title, description and footer keep their size, the
 // body (`modalBodyClass`) takes what is left and scrolls. Side panels are as
 // tall as the screen; top and bottom ones grow with their content up to the
 // height of the screen, less 2rem of page left in view.
+//
+// `translate-0` moves nothing. It makes the panel the containing block of the
+// `position: fixed` layers rendered inside it (popover, menu, tooltip) at rest
+// too, as the slide animation's transform already does while it runs.
+// Otherwise a layer opened during the slide is placed against the panel and,
+// when the panel stops, against the screen: it jumps for a frame.
 const sheetVariants = cva(
   cn(
-    "fixed z-[var(--z-modal)] flex flex-col gap-4 border-border-strong bg-popover p-6 text-popover-foreground transition",
+    "fixed z-[var(--z-modal)] flex translate-0 flex-col gap-4 border-border-strong bg-popover p-6 text-popover-foreground transition",
     "data-[state=open]:animate-in data-[state=closed]:animate-out",
     motionSheet,
   ),
@@ -67,48 +74,58 @@ function Sheet({
   hideCloseButton = false,
   className,
 }: SheetProps) {
+  // The popovers, menus and tooltips opened inside the panel render into its
+  // content element (see `OverlayContainerProvider`).
+  const [overlayContainer, contentRef] = useOverlayContainerState()
+
   return (
     <DialogPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
       {trigger ? <DialogPrimitive.Trigger asChild>{trigger}</DialogPrimitive.Trigger> : null}
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay data-slot="sheet-overlay" className={overlayBase} />
         <DialogPrimitive.Content
+          ref={contentRef}
           data-slot="sheet-content"
           data-side={side}
           className={cn(sheetVariants({ side }), className)}
         >
-          <DialogPrimitive.Title data-slot="sheet-title" className="shrink-0 text-lg font-semibold">
-            {title}
-          </DialogPrimitive.Title>
-          {description ? (
-            <DialogPrimitive.Description
-              data-slot="sheet-description"
-              className="shrink-0 text-sm text-muted-foreground"
+          <OverlayContainerProvider container={overlayContainer}>
+            <DialogPrimitive.Title
+              data-slot="sheet-title"
+              className="shrink-0 text-lg font-semibold"
             >
-              {description}
-            </DialogPrimitive.Description>
-          ) : null}
-          {children ? (
-            <div data-slot="sheet-body" className={cn(modalBodyClass(className), "flex-1")}>
-              {children}
-            </div>
-          ) : null}
-          {footer ? (
-            // `mt-auto`: with no body to fill the panel, the footer still goes
-            // to the bottom.
-            <div data-slot="sheet-footer" className="mt-auto flex shrink-0 justify-end gap-2">
-              {footer}
-            </div>
-          ) : null}
-          {!hideCloseButton ? (
-            <DialogPrimitive.Close
-              aria-label={closeLabel}
-              className="absolute right-4 top-4 cursor-pointer rounded-inner opacity-70 transition-opacity hover:opacity-100 focus-visible:focus-outline"
-            >
-              <XIcon className="size-4" />
-              <span className="sr-only">{closeLabel}</span>
-            </DialogPrimitive.Close>
-          ) : null}
+              {title}
+            </DialogPrimitive.Title>
+            {description ? (
+              <DialogPrimitive.Description
+                data-slot="sheet-description"
+                className="shrink-0 text-sm text-muted-foreground"
+              >
+                {description}
+              </DialogPrimitive.Description>
+            ) : null}
+            {children ? (
+              <div data-slot="sheet-body" className={cn(modalBodyClass(className), "flex-1")}>
+                {children}
+              </div>
+            ) : null}
+            {footer ? (
+              // `mt-auto`: with no body to fill the panel, the footer still
+              // goes to the bottom.
+              <div data-slot="sheet-footer" className="mt-auto flex shrink-0 justify-end gap-2">
+                {footer}
+              </div>
+            ) : null}
+            {!hideCloseButton ? (
+              <DialogPrimitive.Close
+                aria-label={closeLabel}
+                className="absolute right-4 top-4 cursor-pointer rounded-inner opacity-70 transition-opacity hover:opacity-100 focus-visible:focus-outline"
+              >
+                <XIcon className="size-4" />
+                <span className="sr-only">{closeLabel}</span>
+              </DialogPrimitive.Close>
+            ) : null}
+          </OverlayContainerProvider>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

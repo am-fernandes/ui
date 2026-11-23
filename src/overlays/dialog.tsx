@@ -7,6 +7,7 @@ import type * as React from "react"
 import { cn } from "@/lib/utils"
 import { dialogContentBase, overlayBase } from "./_internal/animations"
 import { modalBodyClass } from "./_internal/modal-body"
+import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
 
 export interface DialogProps {
   /** Element that opens the dialog. Omit for fully controlled use. */
@@ -110,6 +111,9 @@ function Dialog({
   className,
 }: DialogProps) {
   const showCloseButton = dismissible && !hideCloseButton
+  // The popovers, menus and tooltips opened inside the dialog render into its
+  // content element (see `OverlayContainerProvider`).
+  const [overlayContainer, contentRef] = useOverlayContainerState()
 
   return (
     <DialogPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
@@ -121,6 +125,7 @@ function Dialog({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay data-slot="dialog-overlay" className={overlayBase} />
         <DialogPrimitive.Content
+          ref={contentRef}
           data-slot="dialog-content"
           className={cn(dialogContentBase, SIZE_CLASSES[size], className)}
           onOpenAutoFocus={onOpenAutoFocus}
@@ -142,40 +147,42 @@ function Dialog({
             if (isFromNestedPopper(e)) e.preventDefault()
           }}
         >
-          <DialogPrimitive.Title
-            data-slot="dialog-title"
-            className="shrink-0 text-lg font-semibold leading-none"
-          >
-            {title}
-          </DialogPrimitive.Title>
-          {description ? (
-            <DialogPrimitive.Description
-              data-slot="dialog-description"
-              className="shrink-0 text-sm text-muted-foreground"
+          <OverlayContainerProvider container={overlayContainer}>
+            <DialogPrimitive.Title
+              data-slot="dialog-title"
+              className="shrink-0 text-lg font-semibold leading-none"
             >
-              {description}
-            </DialogPrimitive.Description>
-          ) : null}
-          {children ? (
-            <div data-slot="dialog-body" className={modalBodyClass(className)}>
-              {children}
-            </div>
-          ) : null}
-          {footer ? (
-            <div data-slot="dialog-footer" className="flex shrink-0 justify-end gap-2">
-              {footer}
-            </div>
-          ) : null}
-          {showCloseButton ? (
-            <DialogPrimitive.Close
-              data-slot="dialog-close"
-              aria-label={closeLabel}
-              className="absolute right-4 top-4 cursor-pointer rounded-inner opacity-70 transition-opacity hover:opacity-100 focus-visible:focus-outline disabled:pointer-events-none"
-            >
-              <XIcon className="size-4" />
-              <span className="sr-only">{closeLabel}</span>
-            </DialogPrimitive.Close>
-          ) : null}
+              {title}
+            </DialogPrimitive.Title>
+            {description ? (
+              <DialogPrimitive.Description
+                data-slot="dialog-description"
+                className="shrink-0 text-sm text-muted-foreground"
+              >
+                {description}
+              </DialogPrimitive.Description>
+            ) : null}
+            {children ? (
+              <div data-slot="dialog-body" className={modalBodyClass(className)}>
+                {children}
+              </div>
+            ) : null}
+            {footer ? (
+              <div data-slot="dialog-footer" className="flex shrink-0 justify-end gap-2">
+                {footer}
+              </div>
+            ) : null}
+            {showCloseButton ? (
+              <DialogPrimitive.Close
+                data-slot="dialog-close"
+                aria-label={closeLabel}
+                className="absolute right-4 top-4 cursor-pointer rounded-inner opacity-70 transition-opacity hover:opacity-100 focus-visible:focus-outline disabled:pointer-events-none"
+              >
+                <XIcon className="size-4" />
+                <span className="sr-only">{closeLabel}</span>
+              </DialogPrimitive.Close>
+            ) : null}
+          </OverlayContainerProvider>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

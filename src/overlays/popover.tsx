@@ -5,6 +5,7 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { motionPopover } from "./_internal/animations"
+import { useOverlayContainer } from "./_internal/overlay-container"
 
 type PopoverContentProps = React.ComponentProps<typeof PopoverPrimitive.Content>
 
@@ -48,6 +49,11 @@ function Popover({
   onFocusOutside,
   onEscapeKeyDown,
 }: PopoverProps) {
+  // Inside a Dialog, AlertDialog or Sheet the content renders into the modal
+  // (not into <body>), where the wheel and touch scrolling are not locked.
+  // `null`: the modal is mounting; its element comes in the next pass.
+  const container = useOverlayContainer()
+
   return (
     <PopoverPrimitive.Root
       open={open}
@@ -60,32 +66,34 @@ function Popover({
           {trigger}
         </PopoverPrimitive.Trigger>
       ) : null}
-      <PopoverPrimitive.Portal>
-        <PopoverPrimitive.Content
-          data-slot="popover-content"
-          align={align}
-          side={side}
-          sideOffset={sideOffset}
-          collisionPadding={collisionPadding}
-          aria-label={ariaLabel}
-          aria-labelledby={ariaLabelledby}
-          onInteractOutside={onInteractOutside}
-          onPointerDownOutside={onPointerDownOutside}
-          onFocusOutside={onFocusOutside}
-          onEscapeKeyDown={onEscapeKeyDown}
-          className={cn(
-            "z-(--z-popover) w-72 rounded-container border border-border-strong bg-popover p-4 text-popover-foreground outline-none",
-            motionPopover,
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-            "origin-(--radix-popover-content-transform-origin)",
-            className,
-          )}
-        >
-          {children}
-        </PopoverPrimitive.Content>
-      </PopoverPrimitive.Portal>
+      {container === null ? null : (
+        <PopoverPrimitive.Portal container={container}>
+          <PopoverPrimitive.Content
+            data-slot="popover-content"
+            align={align}
+            side={side}
+            sideOffset={sideOffset}
+            collisionPadding={collisionPadding}
+            aria-label={ariaLabel}
+            aria-labelledby={ariaLabelledby}
+            onInteractOutside={onInteractOutside}
+            onPointerDownOutside={onPointerDownOutside}
+            onFocusOutside={onFocusOutside}
+            onEscapeKeyDown={onEscapeKeyDown}
+            className={cn(
+              "z-(--z-popover) w-72 rounded-container border border-border-strong bg-popover p-4 text-popover-foreground outline-none",
+              motionPopover,
+              "data-[state=open]:animate-in data-[state=closed]:animate-out",
+              "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+              "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+              "origin-(--radix-popover-content-transform-origin)",
+              className,
+            )}
+          >
+            {children}
+          </PopoverPrimitive.Content>
+        </PopoverPrimitive.Portal>
+      )}
     </PopoverPrimitive.Root>
   )
 }

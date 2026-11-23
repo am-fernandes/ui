@@ -7,6 +7,7 @@ import * as React from "react"
 import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
 import { motionMenu } from "./_internal/animations"
+import { useOverlayContainer } from "./_internal/overlay-container"
 
 type MenuIcon = React.ComponentType<{ className?: string }>
 
@@ -308,6 +309,8 @@ function GroupRows({ group }: { group: DropdownMenuGroup }) {
 
 function SubmenuRow({ item }: { item: DropdownMenuSubmenu }) {
   const Icon = item.icon
+  // Same container as the menu itself (the modal it was opened from, if any).
+  const container = useOverlayContainer()
   return (
     <DropdownMenuPrimitive.Sub>
       <DropdownMenuPrimitive.SubTrigger
@@ -322,7 +325,7 @@ function SubmenuRow({ item }: { item: DropdownMenuSubmenu }) {
         <span className="min-w-0 flex-1 truncate">{item.label}</span>
         <ChevronRight className="ml-auto size-4" aria-hidden />
       </DropdownMenuPrimitive.SubTrigger>
-      <DropdownMenuPrimitive.Portal>
+      <DropdownMenuPrimitive.Portal container={container}>
         <DropdownMenuPrimitive.SubContent
           data-slot="dropdown-menu-sub-content"
           sideOffset={4}
@@ -388,6 +391,11 @@ function DropdownMenu({
   modal = true,
   className,
 }: DropdownMenuProps) {
+  // Inside a Dialog, AlertDialog or Sheet the menu renders into the modal (not
+  // into <body>): see `OverlayContainerProvider`. `null`: the modal is still
+  // mounting and its element comes in the next pass.
+  const container = useOverlayContainer()
+
   return (
     <DropdownMenuPrimitive.Root
       open={open}
@@ -398,23 +406,25 @@ function DropdownMenu({
       <DropdownMenuPrimitive.Trigger asChild data-slot="dropdown-menu-trigger">
         {trigger}
       </DropdownMenuPrimitive.Trigger>
-      <DropdownMenuPrimitive.Portal>
-        <DropdownMenuPrimitive.Content
-          data-slot="dropdown-menu-content"
-          side={side}
-          align={align}
-          sideOffset={sideOffset}
-          collisionPadding={8}
-          loop
-          className={cn(
-            contentClass,
-            "origin-(--radix-dropdown-menu-content-transform-origin)",
-            className,
-          )}
-        >
-          <Entries items={items} />
-        </DropdownMenuPrimitive.Content>
-      </DropdownMenuPrimitive.Portal>
+      {container === null ? null : (
+        <DropdownMenuPrimitive.Portal container={container}>
+          <DropdownMenuPrimitive.Content
+            data-slot="dropdown-menu-content"
+            side={side}
+            align={align}
+            sideOffset={sideOffset}
+            collisionPadding={8}
+            loop
+            className={cn(
+              contentClass,
+              "origin-(--radix-dropdown-menu-content-transform-origin)",
+              className,
+            )}
+          >
+            <Entries items={items} />
+          </DropdownMenuPrimitive.Content>
+        </DropdownMenuPrimitive.Portal>
+      )}
     </DropdownMenuPrimitive.Root>
   )
 }
