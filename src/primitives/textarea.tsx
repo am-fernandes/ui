@@ -5,7 +5,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { useAnnounceWhen } from "./_internal/announce"
 import { type ControlSize, controlMinHeight, controlPaddingX } from "./_internal/control-size"
-import { FieldShell, type LabelPosition } from "./_internal/field-shell"
+import { FieldShell, type LabelPosition, fieldReadOnlyClass } from "./_internal/field-shell"
 import { observeValue } from "./_internal/observe-value"
 import { useFieldIds } from "./_internal/use-field-ids"
 
@@ -69,6 +69,7 @@ function Textarea({
   labels,
   className,
   disabled,
+  readOnly,
   "aria-describedby": describedBy,
   ref,
   value,
@@ -208,6 +209,9 @@ function Textarea({
         describedBy,
       )}
       disabled={disabled}
+      readOnly={readOnly}
+      // Disabled wins: a disabled field is dimmed, not filled.
+      data-readonly={readOnly && !disabled ? "" : undefined}
       required={required}
       maxLength={maxLength}
       value={value}
@@ -218,6 +222,7 @@ function Textarea({
       }}
       className={cn(
         "w-full rounded-element border border-input bg-card text-sm field-states",
+        fieldReadOnlyClass,
         textareaSize[size],
         "placeholder:text-placeholder",
         "disabled:cursor-default",

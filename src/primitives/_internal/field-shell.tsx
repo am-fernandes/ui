@@ -22,6 +22,16 @@ export function fieldTriggerSizeClass(size: ControlSize = "md"): string {
   return cn(fieldTriggerBase, controlHeight[size], controlPaddingX[size])
 }
 
+/**
+ * The look of a read-only field, for the element that carries `field-states`
+ * when it has `data-readonly`: a muted fill and no hover ring, so a computed
+ * or locked value does not look typeable. It keeps its focus look: a
+ * read-only field is still reached with Tab and its text can be copied.
+ * Not for a disabled field, whose dimming already says it.
+ */
+export const fieldReadOnlyClass =
+  "data-readonly:bg-muted data-readonly:[--field-hover-ring:transparent]"
+
 /** The trigger at the default size (`md`). */
 export const fieldTriggerClass = fieldTriggerSizeClass("md")
 

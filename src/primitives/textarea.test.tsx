@@ -28,6 +28,30 @@ describe("Textarea", () => {
     expect(document.querySelector('[data-slot="label-required"]')).toHaveTextContent("*")
   })
 
+  describe("readOnly", () => {
+    it("is focusable and submitted, cannot be edited, and is marked for its look", async () => {
+      const user = userEvent.setup()
+      render(
+        <form data-testid="form">
+          <Textarea label="Histórico" name="historico" readOnly defaultValue="Proposta enviada" />
+        </form>,
+      )
+      const textarea = screen.getByRole("textbox", { name: "Histórico" })
+      await user.click(textarea)
+      expect(textarea).toHaveFocus()
+      await user.type(textarea, "x")
+      expect(textarea).toHaveValue("Proposta enviada")
+      const form = screen.getByTestId("form") as HTMLFormElement
+      expect(new FormData(form).get("historico")).toBe("Proposta enviada")
+      expect(textarea).toHaveAttribute("data-readonly")
+    })
+
+    it("is not marked read-only when it is disabled", () => {
+      render(<Textarea label="Histórico" readOnly disabled />)
+      expect(screen.getByRole("textbox")).not.toHaveAttribute("data-readonly")
+    })
+  })
+
   it("renders maxLength counter when set", () => {
     render(<Textarea label="X" maxLength={100} value="abc" onChange={() => {}} />)
     expect(screen.getByText("3/100")).toBeInTheDocument()

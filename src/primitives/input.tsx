@@ -4,7 +4,7 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { type ControlSize, controlHeight, controlPaddingX } from "./_internal/control-size"
-import { FieldShell, type LabelPosition } from "./_internal/field-shell"
+import { FieldShell, type LabelPosition, fieldReadOnlyClass } from "./_internal/field-shell"
 import { useFieldIds } from "./_internal/use-field-ids"
 
 // The icon slots take the horizontal padding of the size on their outer side.
@@ -43,19 +43,24 @@ function Input({
   size = "md",
   className,
   disabled,
+  readOnly,
   "aria-describedby": describedBy,
   ref,
   ...props
 }: InputProps) {
   const ids = useFieldIds(id)
+  // Disabled wins: a disabled field is dimmed, not filled.
+  const isReadOnly = Boolean(readOnly) && !disabled
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
 
   const inputEl = (
     <div
       data-slot="input-wrapper"
+      data-readonly={isReadOnly ? "" : undefined}
       className={cn(
         "relative flex w-full items-center rounded-element border border-input bg-card text-sm field-states",
+        fieldReadOnlyClass,
         controlHeight[size],
         hasError && "border-destructive-text field-error",
         disabled && "cursor-default",
@@ -79,6 +84,7 @@ function Input({
           describedBy,
         )}
         disabled={disabled}
+        readOnly={readOnly}
         required={required}
         className={cn(
           "h-full w-full min-w-0 bg-transparent placeholder:text-placeholder outline-none disabled:cursor-default",

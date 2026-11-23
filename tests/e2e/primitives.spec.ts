@@ -421,6 +421,47 @@ test.describe("Input", () => {
     await expect(page.getByRole("alert")).toBeVisible()
   })
 
+  // A read-only field used to look exactly like an editable one: a computed
+  // or locked value seemed typeable.
+  test("read-only looks different from editable: filled, and no hover ring", async ({ page }) => {
+    const field = (slot: Locator) =>
+      slot.evaluate((el) => {
+        const style = getComputedStyle(el)
+        return { background: style.backgroundColor, shadow: style.boxShadow }
+      })
+    // No fade between the resting and the hovered state.
+    const settle = (p: Page) =>
+      p.addStyleTag({ content: "*,*::before,*::after{transition:none!important}" })
+
+    await open(page, "primitives-input--with-description")
+    await settle(page)
+    const editable = page.locator('[data-slot="input-wrapper"]')
+    const editableRest = await field(editable)
+    await editable.hover()
+    const editableHover = await field(editable)
+    expect(editableHover.shadow).not.toBe(editableRest.shadow)
+
+    await open(page, "primitives-input--read-only")
+    await settle(page)
+    const readOnly = page.locator('[data-slot="input-wrapper"]')
+    const readOnlyRest = await field(readOnly)
+    expect(readOnlyRest.background).not.toBe(editableRest.background)
+    await readOnly.hover()
+    const readOnlyHover = await field(readOnly)
+    // A transparent ring, or none: nothing is drawn.
+    expect(
+      readOnlyHover.shadow === "none" ||
+        /rgba\(0, 0, 0, 0\)|transparent/.test(readOnlyHover.shadow),
+    ).toBe(true)
+
+    // Still reachable and readable, only not editable.
+    const input = page.getByRole("textbox", { name: "ID" })
+    await input.focus()
+    await expect(input).toBeFocused()
+    await page.keyboard.type("x")
+    await expect(input).toHaveValue("user-123456")
+  })
+
   test("password toggle changes input type", async ({ page }) => {
     await open(page, "primitives-input--password-toggle")
     // `exact`: the toggle button is named "Mostrar senha", which also contains "Senha".

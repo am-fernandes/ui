@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
 import { Input } from "./input"
@@ -98,6 +99,39 @@ describe("Input", () => {
     it("is our prop, not the native `size` attribute", () => {
       render(<Input label="X" size="sm" />)
       expect(screen.getByLabelText("X")).not.toHaveAttribute("size")
+    })
+  })
+
+  // The look itself (fill, no hover ring) is measured in a real browser by
+  // tests/e2e/primitives.spec.ts ("Input read-only").
+  describe("readOnly", () => {
+    const wrapper = () => document.querySelector('[data-slot="input-wrapper"]')
+
+    it("is readable, focusable and submitted, but cannot be edited", async () => {
+      const user = userEvent.setup()
+      render(
+        <form data-testid="form">
+          <Input label="Código" name="codigo" readOnly defaultValue="PRP-1042" />
+        </form>,
+      )
+      const input = screen.getByRole("textbox", { name: "Código" })
+      await user.click(input)
+      expect(input).toHaveFocus()
+      await user.type(input, "x")
+      expect(input).toHaveValue("PRP-1042")
+      const form = screen.getByTestId("form") as HTMLFormElement
+      expect(new FormData(form).get("codigo")).toBe("PRP-1042")
+      expect(wrapper()).toHaveAttribute("data-readonly")
+    })
+
+    it("is not marked read-only when it is disabled: disabled wins", () => {
+      render(<Input label="Código" readOnly disabled defaultValue="PRP-1042" />)
+      expect(wrapper()).not.toHaveAttribute("data-readonly")
+    })
+
+    it("is not marked read-only by default", () => {
+      render(<Input label="Código" />)
+      expect(wrapper()).not.toHaveAttribute("data-readonly")
     })
   })
 

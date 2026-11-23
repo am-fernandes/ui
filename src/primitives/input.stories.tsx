@@ -25,6 +25,7 @@ const meta: Meta<typeof Input> = {
           "**Posições do label:** `up` (default), `left`, `hidden` (sr-only para a11y sem visual).",
           "**Slots:** `leadingIcon` (esquerda) e `trailingIcon` (direita).",
           "**Tamanhos:** `size` — `sm` (32px), `md` (40px, padrão) ou `lg` (44px). É a altura da caixa com a borda, igual à de um `Button` do mesmo tamanho.",
+          "**Somente leitura:** `readOnly` mostra um valor que não se edita (calculado, travado, já enviado). O campo ganha fundo `muted` e perde o anel de hover, mas continua focável, copiável e vai no envio do formulário. Não use `disabled` para isso: o valor sai do `FormData` e fica apagado.",
         ].join("\n"),
       },
     },
@@ -144,6 +145,24 @@ export const Disabled: Story = {
 
 export const ReadOnly: Story = {
   args: { label: "ID", readOnly: true, value: "user-123456" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Fundo `muted` e sem anel de hover: o valor se lê, se copia e vai no envio, mas não se edita. Compare com o editável e o desabilitado em `ReadOnlyComparison`.",
+      },
+    },
+  },
+}
+
+export const ReadOnlyComparison: Story = {
+  render: () => (
+    <div className="flex w-80 flex-col gap-3">
+      <Input label="Editável" defaultValue="R$ 1.250.000,00" />
+      <Input label="Somente leitura" readOnly defaultValue="R$ 1.250.000,00" />
+      <Input label="Desabilitado" disabled defaultValue="R$ 1.250.000,00" />
+    </div>
+  ),
 }
 
 export const Sizes: Story = {
