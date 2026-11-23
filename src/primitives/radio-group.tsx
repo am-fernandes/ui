@@ -96,6 +96,9 @@ function RadioGroup({
         onValueChange={setValue}
         data-orientation={orientation}
         disabled={disabled}
+        // Radix disables each radio; the group says it too, and its name
+        // and messages are then read as part of an unavailable control.
+        aria-disabled={disabled || undefined}
         required={required}
         aria-labelledby={hasLabel ? ids.labelId : undefined}
         aria-describedby={ids.describedBy(

@@ -900,6 +900,8 @@ test.describe("Stories pass WCAG 2.1 AA in both themes", () => {
     "primitives-input--read-only-comparison",
     "primitives-input--disabled",
     "primitives-radiogroup--with-error",
+    "primitives-radiogroup--disabled",
+    "primitives-segmentedcontrol--as-field",
     "primitives-skeleton--card",
     "primitives-switch--with-error",
     "primitives-textarea--with-error",

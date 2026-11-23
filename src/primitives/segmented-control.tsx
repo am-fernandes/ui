@@ -185,6 +185,8 @@ function SegmentedControl({
       value={value}
       onValueChange={setValue}
       disabled={disabled}
+      // Radix disables each segment; the group says it too.
+      aria-disabled={disabled || undefined}
       name={name}
       required={required}
       // No `orientation`: with one, Radix drops the arrows of the other axis,

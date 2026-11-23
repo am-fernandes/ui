@@ -462,4 +462,12 @@ describe("SegmentedControl", () => {
       expect(screen.getByRole("alert")).toHaveTextContent("Escolha um período.")
     })
   })
+
+  it("says the whole group is unavailable when it is disabled", () => {
+    render(<SegmentedControl label="Período" options={options} disabled />)
+    expect(screen.getByRole("radiogroup", { name: "Período" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    )
+  })
 })

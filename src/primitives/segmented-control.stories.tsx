@@ -238,7 +238,6 @@ export const AsField: Story = {
       <SegmentedControl
         label="Período (desabilitado)"
         labelPosition="up"
-        description="Disponível depois de escolher o empreendimento."
         options={periods}
         defaultValue="dia"
         disabled

@@ -250,4 +250,16 @@ describe("RadioGroup", () => {
       )
     })
   })
+
+  // Radix only disables each radio: the group itself did not say it, and its
+  // name (dimmed with it) read as ordinary text to a screen reader and to axe.
+  it("says the whole group is unavailable when it is disabled", () => {
+    const { rerender } = render(<RadioGroup label="Plano" options={VALUES} disabled />)
+    expect(screen.getByRole("radiogroup", { name: "Plano" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    )
+    rerender(<RadioGroup label="Plano" options={VALUES} />)
+    expect(screen.getByRole("radiogroup")).not.toHaveAttribute("aria-disabled")
+  })
 })
