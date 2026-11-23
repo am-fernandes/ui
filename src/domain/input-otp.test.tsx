@@ -152,4 +152,20 @@ describe("InputOTP", () => {
     )
     expect(faded).toEqual([container.querySelector('[data-slot="field-shell"]')])
   })
+  // Regressão: com error, as caixas tinham a mesma borda de sem erro; só a
+  // mensagem embaixo mudava.
+  it("com error, cada caixa fica marcada como inválida, com a borda do erro", () => {
+    const { container, rerender } = render(
+      <InputOTP length={4} value="" onValueChange={() => {}} error="Código expirado" />,
+    )
+    const slots = container.querySelectorAll('[data-slot="input-otp-slot"]')
+    for (const slot of slots) {
+      expect(slot).toHaveAttribute("data-invalid", "true")
+      expect(slot).toHaveClass("border-destructive-text")
+    }
+    rerender(<InputOTP length={4} value="" onValueChange={() => {}} />)
+    for (const slot of container.querySelectorAll('[data-slot="input-otp-slot"]')) {
+      expect(slot).not.toHaveAttribute("data-invalid")
+    }
+  })
 })

@@ -1042,7 +1042,7 @@ const effectiveOpacity = (el: Locator) =>
     return opacity
   })
 
-test.describe("InputOTP: desabilitado", () => {
+test.describe("InputOTP: desabilitado e erro", () => {
   test("desabilitado, o campo esmaece uma vez só (0,5), não duas", async ({ page }) => {
     await gotoStory(page, "domain-inputotp--disabled")
     const slot = page.locator('[data-slot="input-otp-slot"]').first()
@@ -1050,6 +1050,19 @@ test.describe("InputOTP: desabilitado", () => {
     expect(await effectiveOpacity(slot)).toBeCloseTo(0.5, 2)
     // O rótulo esmaece junto, do mesmo tanto.
     expect(await effectiveOpacity(page.getByText("Código verificado"))).toBeCloseTo(0.5, 2)
+  })
+  test("com erro, as caixas ficam com a borda vermelha do erro", async ({ page }) => {
+    await gotoStory(page, "domain-inputotp--with-error")
+    const message = page.getByRole("alert")
+    const errorColor = await message.evaluate((el) => getComputedStyle(el).color)
+    const slots = page.locator('[data-slot="input-otp-slot"]')
+    await expect(slots).toHaveCount(6)
+    for (const i of [0, 3, 5]) {
+      await expect(slots.nth(i)).toHaveCSS("border-top-color", errorColor)
+      await expect(slots.nth(i)).toHaveCSS("border-bottom-color", errorColor)
+    }
+    await expect(slots.first()).toHaveCSS("border-left-color", errorColor)
+    await expect(slots.last()).toHaveCSS("border-right-color", errorColor)
   })
 })
 

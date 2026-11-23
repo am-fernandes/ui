@@ -24,15 +24,19 @@ export interface InputOTPProps {
   ref?: React.Ref<HTMLInputElement>
 }
 
-function Slot({ slot }: { slot: SlotProps }) {
+function Slot({ slot, invalid }: { slot: SlotProps; invalid: boolean }) {
   return (
     <div
       data-slot="input-otp-slot"
       data-active={slot.isActive || undefined}
+      data-invalid={invalid || undefined}
       className={cn(
         "relative flex h-10 w-10 items-center justify-center border-y border-r border-input font-mono text-sm tabular-nums transition-colors",
         "first:rounded-l-element first:border-l last:rounded-r-element",
         "data-[active=true]:z-10 data-[active=true]:outline-1 data-[active=true]:-outline-offset-1 data-[active=true]:outline-ring data-[active=true]:shadow-[inset_0_0_0_2px_var(--field-focus-ring)]",
+        // With an error the boxes are red, like the border of any other field,
+        // and the focused one stays red too.
+        invalid && "border-destructive-text data-[active=true]:outline-destructive-text",
       )}
     >
       {slot.char ?? slot.placeholderChar}
@@ -96,7 +100,7 @@ function InputOTP({
           <div className="flex items-center">
             {slots.map((slot, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: slots are positional and fixed-length
-              <Slot key={i} slot={slot} />
+              <Slot key={i} slot={slot} invalid={hasError} />
             ))}
           </div>
         )}
