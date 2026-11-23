@@ -92,6 +92,27 @@ test.describe("Button", () => {
     await expect(submits).toHaveText("Envios: 2")
   })
 
+  test("asChild + disabled: the link is dimmed, focusable and does not navigate", async ({
+    page,
+  }) => {
+    await open(page, "primitives-button--as-child")
+    const link = page.getByRole("link", { name: "Relatório indisponível" })
+    await expect(link).toHaveAttribute("aria-disabled", "true")
+    const style = await link.evaluate((el) => {
+      const computed = getComputedStyle(el)
+      return { opacity: computed.opacity, cursor: computed.cursor }
+    })
+    expect(style).toEqual({ opacity: "0.5", cursor: "default" })
+
+    // A real mouse click, then the keyboard: neither follows the href.
+    const box = await link.boundingBox()
+    await page.mouse.click((box?.x ?? 0) + (box?.width ?? 0) / 2, (box?.y ?? 0) + 10)
+    await link.focus()
+    await expect(link).toBeFocused()
+    await page.keyboard.press("Enter")
+    expect(new URL(page.url()).hash).toBe("")
+  })
+
   test("disabled state blocks clicks", async ({ page }) => {
     await open(page, "primitives-button--all-states")
     const button = page.locator('[data-slot="button"]:disabled').first()

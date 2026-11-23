@@ -364,13 +364,16 @@ export const AsChild: Story = {
       <Button asChild variant="outline">
         <a href="/docs">Ir para docs</a>
       </Button>
+      <Button asChild variant="outline" disabled>
+        <a href="#relatorio">Relatório indisponível</a>
+      </Button>
     </div>
   ),
   parameters: {
     docs: {
       description: {
         story:
-          "`asChild` faz o botão renderizar como o filho (aqui um `<a>`), preservando estilos. Útil para integrar com bibliotecas de roteamento (Next.js `Link`, etc.).",
+          "`asChild` faz o botão renderizar como o filho (aqui um `<a>`), preservando estilos. Útil para integrar com bibliotecas de roteamento (Next.js `Link`, etc.). Com `disabled` ou `loading`, o filho recebe `aria-disabled` e `data-disabled` (um link não tem `disabled`), fica esmaecido, continua alcançável pelo teclado e o clique não navega nem chama os handlers. O spinner não é injetado no filho.",
       },
     },
   },

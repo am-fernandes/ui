@@ -3,7 +3,7 @@
 import { Slot } from "@radix-ui/react-slot"
 import { type VariantProps, cva } from "class-variance-authority"
 import { Loader2 } from "lucide-react"
-import type * as React from "react"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { useAnnounceWhen } from "./_internal/announce"
@@ -15,14 +15,15 @@ import { controlHeight, controlPaddingX } from "./_internal/control-size"
 // `buttonVariants()` right even where the result is not run through `cn()`.
 //
 // `aria-disabled` is how a button is unavailable without leaving the tab
-// order (while loading): it loses the pointer cursor and every hover and
-// pressed reaction, like a natively disabled one.
+// order (while loading, or when it is a link): it loses the pointer cursor
+// and every hover and pressed reaction, like a natively disabled one.
+// `data-disabled` dims whatever is disabled, a real button or not.
 const buttonVariants = cva(
   cn(
     "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-element border text-sm font-medium cursor-pointer",
     "transition focus-visible:focus-outline",
     "motion-safe:pointer-fine:not-aria-disabled:active:scale-[0.98]",
-    "disabled:pointer-events-none disabled:opacity-50 aria-disabled:cursor-default",
+    "disabled:pointer-events-none disabled:opacity-50 data-disabled:opacity-50 aria-disabled:cursor-default",
     "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   ),
   {
@@ -105,16 +106,26 @@ function Button({
   ...props
 }: ButtonProps) {
   const Comp = asChild ? Slot : "button"
-  // Loading keeps the button in the tab order: a native `disabled` in the
-  // middle of a save throws the keyboard focus to the page body. An explicit
-  // `disabled` still wins.
-  const busy = loading && !disabled && !asChild
+  // Two ways of being unavailable:
+  // - natively `disabled`, when asked to be and only on a real <button>;
+  // - `aria-disabled` plus ignored activation. While loading, because a native
+  //   `disabled` in the middle of a save throws the keyboard focus to the page
+  //   body. And always with `asChild`: the child may be a link, where
+  //   `disabled` means nothing and the click would still go through.
+  const nativeDisabled = !asChild && Boolean(disabled)
+  const softDisabled = Boolean(disabled || loading) && !nativeDisabled
   useAnnounceWhen(loading, labels?.loading ?? defaultButtonLabels.loading)
 
-  // Slot requires exactly one child element. When asChild, skip the spinner
-  // injection — consumers can render their own loading state inside the child.
-  const content =
-    loading && !asChild ? (
+  let content = children
+  if (asChild) {
+    // Slot requires exactly one child element, so no spinner is injected here
+    // (the child can render its own). Slot also calls the child's own click
+    // handler before ours: an unavailable child has to lose it.
+    if (softDisabled && React.isValidElement<{ onClick?: unknown }>(children)) {
+      content = React.cloneElement(children, { onClick: undefined })
+    }
+  } else if (loading) {
+    content = (
       <>
         {/* Still laid out, so the button keeps its width, and still its name. */}
         <span
@@ -131,9 +142,8 @@ function Button({
           <Loader2 className="animate-spin" />
         </span>
       </>
-    ) : (
-      children
     )
+  }
 
   return (
     <Comp
@@ -142,16 +152,18 @@ function Button({
       type={asChild ? type : (type ?? "button")}
       data-slot="button"
       data-loading={loading ? "" : undefined}
+      // Dimmed: disabled, or a child that cannot show the spinner.
+      data-disabled={nativeDisabled || (asChild && softDisabled) ? "" : undefined}
       className={cn(
         buttonVariants({ variant, size }),
         loading && !asChild && "relative",
         className,
       )}
-      disabled={busy ? undefined : loading || disabled}
-      aria-disabled={busy || undefined}
+      disabled={nativeDisabled || undefined}
+      aria-disabled={softDisabled || undefined}
       aria-busy={loading || undefined}
       {...props}
-      onClick={busy ? ignoreActivation : onClick}
+      onClick={softDisabled ? ignoreActivation : onClick}
     >
       {content}
     </Comp>

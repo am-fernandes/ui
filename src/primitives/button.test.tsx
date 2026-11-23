@@ -250,6 +250,76 @@ describe("Button", () => {
     expect(link).toHaveAttribute("data-slot", "button")
   })
 
+  // A link cannot be `disabled`: the attribute means nothing on <a>, and the
+  // link stays clickable.
+  describe("asChild, disabled or loading", () => {
+    function renderLink(props: { disabled?: boolean; loading?: boolean }) {
+      const onButtonClick = vi.fn()
+      const onLinkClick = vi.fn()
+      render(
+        <Button asChild onClick={onButtonClick} {...props}>
+          <a href="/propostas/1042" onClick={onLinkClick}>
+            Abrir proposta
+          </a>
+        </Button>,
+      )
+      return {
+        link: screen.getByRole("link", { name: "Abrir proposta" }),
+        onButtonClick,
+        onLinkClick,
+      }
+    }
+
+    /** Clicks and reports whether the browser would have followed the link. */
+    function followsLink(link: HTMLElement) {
+      const event = new MouseEvent("click", { bubbles: true, cancelable: true })
+      link.dispatchEvent(event)
+      return !event.defaultPrevented
+    }
+
+    it("marks a disabled child as unavailable, with no `disabled` attribute", () => {
+      const { link } = renderLink({ disabled: true })
+      expect(link).not.toHaveAttribute("disabled")
+      expect(link).toHaveAttribute("aria-disabled", "true")
+      expect(link).toHaveAttribute("data-disabled")
+      expect(link).not.toHaveAttribute("aria-busy")
+    })
+
+    it("does not follow a disabled link and calls no click handler", () => {
+      const { link, onButtonClick, onLinkClick } = renderLink({ disabled: true })
+      expect(followsLink(link)).toBe(false)
+      expect(onButtonClick).not.toHaveBeenCalled()
+      expect(onLinkClick).not.toHaveBeenCalled()
+    })
+
+    it("treats loading the same way, and says it is busy", () => {
+      const { link, onButtonClick, onLinkClick } = renderLink({ loading: true })
+      expect(link).not.toHaveAttribute("disabled")
+      expect(link).toHaveAttribute("aria-disabled", "true")
+      expect(link).toHaveAttribute("data-disabled")
+      expect(link).toHaveAttribute("aria-busy", "true")
+      expect(followsLink(link)).toBe(false)
+      expect(onButtonClick).not.toHaveBeenCalled()
+      expect(onLinkClick).not.toHaveBeenCalled()
+    })
+
+    it("stays reachable from the keyboard, so it can be found and read", async () => {
+      const { link } = renderLink({ disabled: true })
+      await userEvent.tab()
+      expect(link).toHaveFocus()
+    })
+
+    it("works as a plain link when it is neither", () => {
+      const { link, onButtonClick, onLinkClick } = renderLink({})
+      expect(link).not.toHaveAttribute("aria-disabled")
+      expect(link).not.toHaveAttribute("data-disabled")
+      // jsdom does not navigate; the click only must not be cancelled.
+      expect(followsLink(link)).toBe(true)
+      expect(onButtonClick).toHaveBeenCalledOnce()
+      expect(onLinkClick).toHaveBeenCalledOnce()
+    })
+  })
+
   it("uses the system focus ring, and its own hover and pressed tones on the primary", () => {
     render(<Button>x</Button>)
     expect(screen.getByRole("button")).toHaveClass(
