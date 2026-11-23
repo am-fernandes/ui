@@ -198,4 +198,39 @@ describe("InputOTP", () => {
       expect(screen.getByRole("textbox")).toHaveAttribute("inputmode", "numeric")
     })
   })
+  // O campo não tinha name nem aria-required, e só funcionava controlado:
+  // um form nativo não recebia o código e o leitor de tela não ouvia que ele
+  // é obrigatório.
+  describe("name, obrigatório e modo não controlado", () => {
+    it("com name, o form nativo recebe o código", () => {
+      render(
+        <form data-testid="form">
+          <InputOTP length={4} name="codigo" value="1234" onValueChange={() => {}} />
+        </form>,
+      )
+      const data = new FormData(screen.getByTestId("form") as HTMLFormElement)
+      expect(data.get("codigo")).toBe("1234")
+    })
+
+    it("required: anunciado como obrigatório, e o form nativo não passa vazio", () => {
+      render(
+        <form data-testid="form">
+          <InputOTP length={4} label="Código" required value="" onValueChange={() => {}} />
+        </form>,
+      )
+      const input = screen.getByRole("textbox", { name: /Código/ })
+      expect(input).toHaveAttribute("aria-required", "true")
+      expect((screen.getByTestId("form") as HTMLFormElement).checkValidity()).toBe(false)
+    })
+
+    it("sem value, guarda o que foi digitado a partir de defaultValue", () => {
+      const onValueChange = vi.fn()
+      render(<InputOTP length={4} defaultValue="12" onValueChange={onValueChange} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input.value).toBe("12")
+      fireEvent.change(input, { target: { value: "123" } })
+      expect(input.value).toBe("123")
+      expect(onValueChange).toHaveBeenLastCalledWith("123")
+    })
+  })
 })

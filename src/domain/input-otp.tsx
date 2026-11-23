@@ -9,8 +9,11 @@ import { useFieldIds } from "../primitives/_internal/use-field-ids"
 
 export interface InputOTPProps {
   length: number
-  value: string
-  onValueChange: (value: string) => void
+  /** The code typed so far. Without it, the field keeps its own value from `defaultValue`. */
+  value?: string
+  /** Initial code of an uncontrolled field. */
+  defaultValue?: string
+  onValueChange?: (value: string) => void
   onComplete?: (value: string) => void
   /** Regular expression every character must match. Default: digits only. */
   pattern?: string
@@ -25,6 +28,8 @@ export interface InputOTPProps {
   labelPosition?: LabelPosition
   required?: boolean
   disabled?: boolean
+  /** Name of the field in a native form, which receives the code as typed. */
+  name?: string
   id?: string
   className?: string
   ref?: React.Ref<HTMLInputElement>
@@ -69,6 +74,7 @@ function acceptsLetters(pattern: string) {
 function InputOTP({
   length,
   value,
+  defaultValue,
   onValueChange,
   onComplete,
   pattern = REGEXP_ONLY_DIGITS,
@@ -79,6 +85,7 @@ function InputOTP({
   labelPosition,
   required,
   disabled,
+  name,
   id,
   className,
   ref,
@@ -106,7 +113,11 @@ function InputOTP({
         data-slot="input-otp"
         maxLength={length}
         value={value}
+        defaultValue={defaultValue}
         onChange={onValueChange}
+        name={name}
+        required={required}
+        aria-required={required ? true : undefined}
         onComplete={onComplete}
         pattern={pattern}
         inputMode={inputMode ?? (acceptsLetters(pattern) ? "text" : "numeric")}
