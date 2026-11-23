@@ -150,6 +150,9 @@ function Sheet({
         <DialogPrimitive.Content
           ref={contentRef}
           data-slot="sheet-content"
+          // Without a description Radix still points here, at an id no element
+          // has: leave the attribute out.
+          {...(description ? {} : { "aria-describedby": undefined })}
           data-side={side}
           data-size={size}
           className={cn(sheetVariants({ side, size }), className)}

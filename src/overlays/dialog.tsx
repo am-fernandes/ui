@@ -120,6 +120,9 @@ function Dialog({
         <DialogPrimitive.Content
           ref={contentRef}
           data-slot="dialog-content"
+          // Without a description Radix still points here, at an id no element
+          // has: leave the attribute out.
+          {...(description ? {} : { "aria-describedby": undefined })}
           className={cn(dialogContentBase, SIZE_CLASSES[size], className)}
           onOpenAutoFocus={onOpenAutoFocus}
           onCloseAutoFocus={returnFocus}

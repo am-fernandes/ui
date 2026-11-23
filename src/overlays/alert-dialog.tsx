@@ -15,6 +15,11 @@ import { isToastFocused } from "./_internal/toasts"
 export interface AlertDialogProps {
   trigger?: React.ReactNode
   title: React.ReactNode
+  /**
+   * What happens if the user confirms ("Esta ação não pode ser desfeita.").
+   * Optional, but an alert dialog should have one: it is what a screen
+   * reader reads after the title, and Radix warns in development without it.
+   */
   description?: React.ReactNode
   open?: boolean
   defaultOpen?: boolean
@@ -142,6 +147,9 @@ function AlertDialog({
         <AlertDialogPrimitive.Content
           ref={contentRef}
           data-slot="alert-dialog-content"
+          // Without a description Radix still points here, at an id no element
+          // has: leave the attribute out.
+          {...(description ? {} : { "aria-describedby": undefined })}
           className={cn(dialogContentBase, "max-w-lg", className)}
           onCloseAutoFocus={returnFocus}
           // Escape is the keyboard's "Cancelar", so it calls `onCancel` too
