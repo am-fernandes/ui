@@ -784,6 +784,27 @@ test.describe("MultiInput: nome acessível e teclado", () => {
   })
 })
 
+test.describe("MultiInput: limite de itens", () => {
+  test("com a lista cheia, o item novo é recusado e os antigos ficam", async ({ page }) => {
+    await gotoStory(page, "domain-multiinput--max-items-3")
+    const group = page.getByRole("group", { name: "Top 3 prioridades" })
+    const input = page.getByRole("textbox", { name: "Top 3 prioridades" })
+    await input.fill("tres")
+    await input.press("Enter")
+    await expect(group.getByRole("button", { name: /^Remover / })).toHaveCount(3)
+
+    await input.fill("quatro")
+    await input.press("Enter")
+    await expect(group.getByRole("button", { name: /^Remover / })).toHaveCount(3)
+    for (const item of ["um", "dois", "tres"]) {
+      await expect(group.getByRole("button", { name: `Remover ${item}` })).toBeVisible()
+    }
+    // O texto recusado continua no campo e o motivo aparece no aviso.
+    await expect(input).toHaveValue("quatro")
+    await expect(page.getByText("Limite de 3 itens atingido.")).toBeVisible()
+  })
+})
+
 test.describe("InputOTP", () => {
   test("typing 6 digits fires onComplete", async ({ page }) => {
     await gotoStory(page, "domain-inputotp--default")

@@ -385,4 +385,92 @@ describe("MultiInput", () => {
       expect(onValueChange).not.toHaveBeenCalled()
     })
   })
+
+  // Regressão: no modo número a lista era ordenada e depois cortada, então
+  // [10, 20, 30] + 5 com limite 3 virava [5, 10, 20]: o 30, que já estava
+  // lá, sumia.
+  describe("maxItems recusa os itens novos", () => {
+    it("lista de números cheia: o novo é recusado e os antigos ficam", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const onReject = vi.fn()
+      render(
+        <MultiInput
+          type="number"
+          label="Prazos"
+          value={[10, 20, 30]}
+          maxItems={3}
+          onValueChange={onValueChange}
+          onReject={onReject}
+        />,
+      )
+      const input = screen.getByRole("textbox")
+      await user.type(input, "5{Enter}")
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(onReject).toHaveBeenCalledWith("max-items")
+      // O texto fica no campo: a pessoa vê que ele não entrou.
+      expect(input).toHaveValue("5")
+    })
+
+    it("com espaço para um só, entra o primeiro novo e o resto é recusado", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const onReject = vi.fn()
+      render(
+        <MultiInput
+          type="number"
+          label="Prazos"
+          value={[10, 20]}
+          maxItems={3}
+          onValueChange={onValueChange}
+          onReject={onReject}
+        />,
+      )
+      // Entra o 40, digitado primeiro; o 5 não toma o lugar de quem já estava.
+      await user.type(screen.getByRole("textbox"), "40 5{Enter}")
+      expect(onValueChange).toHaveBeenLastCalledWith([10, 20, 40])
+      expect(onReject).toHaveBeenCalledWith("max-items")
+    })
+
+    it("lista de texto cheia: o novo é recusado, sem chamar onValueChange", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const onReject = vi.fn()
+      render(
+        <MultiInput
+          label="Tags"
+          value={["a", "b"]}
+          maxItems={2}
+          onValueChange={onValueChange}
+          onReject={onReject}
+        />,
+      )
+      const input = screen.getByRole("textbox")
+      await user.type(input, "c{Enter}")
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(onReject).toHaveBeenCalledWith("max-items")
+      expect(input).toHaveValue("c")
+    })
+
+    it("um item repetido não conta para o limite nem dispara onValueChange", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const onReject = vi.fn()
+      render(
+        <MultiInput
+          label="Tags"
+          value={["a", "b"]}
+          maxItems={2}
+          onValueChange={onValueChange}
+          onReject={onReject}
+        />,
+      )
+      const input = screen.getByRole("textbox")
+      await user.type(input, "a{Enter}")
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(onReject).not.toHaveBeenCalled()
+      // Já está na lista: o texto sai do campo.
+      expect(input).toHaveValue("")
+    })
+  })
 })

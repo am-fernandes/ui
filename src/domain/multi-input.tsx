@@ -36,7 +36,12 @@ interface MultiInputBaseProps {
   prefix?: string
   /** Optional suffix rendered after each token in its Badge (e.g. " dias", " %"). */
   suffix?: string
-  /** Maximum number of tokens. Extras are dropped and onReject is fired with "max-items". */
+  /**
+   * Maximum number of tokens. The ones already in the list always stay: new
+   * tokens enter while there is room and the rest are refused, with
+   * `onReject("max-items")`. When nothing fits, the typed text stays in the
+   * field.
+   */
   maxItems?: number
   /** Called when input is rejected (e.g. invalid numeric token, exceeds maxItems). */
   onReject?: (reason: "max-items" | "invalid") => void
@@ -113,31 +118,35 @@ function MultiInput(props: MultiInputProps) {
     return props.value
   }, [props.value, props.type])
 
+  /**
+   * The new tokens among `parsed` that fit: not in the list yet, in the order
+   * typed, up to the room `maxItems` leaves. `null` means the typed text was
+   * not consumed and stays in the field.
+   */
+  function accept<T extends string | number>(parsed: T[], current: T[]): T[] | null {
+    if (parsed.length === 0) return null
+    const fresh = [...new Set(parsed)].filter((token) => !current.includes(token))
+    // Only repeats of what is already there: nothing to add, text consumed.
+    if (fresh.length === 0) return []
+    const room = maxItems === undefined ? fresh.length : Math.max(0, maxItems - current.length)
+    if (fresh.length > room) onReject?.("max-items")
+    return room === 0 ? null : fresh.slice(0, room)
+  }
+
   function commitFromRaw(raw: string): boolean {
     if (props.type === "number") {
       const { tokens: parsed, hadInvalid } = parseNumberInput(raw)
       if (hadInvalid) onReject?.("invalid")
-      if (parsed.length === 0) return false
-      const set = new Set(props.value)
-      for (const n of parsed) set.add(n)
-      let next = [...set].sort((a, b) => a - b)
-      if (maxItems !== undefined && next.length > maxItems) {
-        next = next.slice(0, maxItems)
-        onReject?.("max-items")
+      const accepted = accept(parsed, props.value)
+      if (accepted === null) return false
+      if (accepted.length > 0) {
+        props.onValueChange([...props.value, ...accepted].sort((a, b) => a - b))
       }
-      props.onValueChange(next)
       return true
     }
-    const parsed = parseStringInput(raw)
-    if (parsed.length === 0) return false
-    const set = new Set(props.value)
-    for (const s of parsed) set.add(s)
-    let next = [...set]
-    if (maxItems !== undefined && next.length > maxItems) {
-      next = next.slice(0, maxItems)
-      onReject?.("max-items")
-    }
-    props.onValueChange(next)
+    const accepted = accept(parseStringInput(raw), props.value)
+    if (accepted === null) return false
+    if (accepted.length > 0) props.onValueChange([...props.value, ...accepted])
     return true
   }
 

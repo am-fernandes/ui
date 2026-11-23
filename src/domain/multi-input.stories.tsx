@@ -29,7 +29,7 @@ const meta = {
           "**Props principais:**",
           "- `value` / `onValueChange` — par controlado (`string[]` ou `number[]` conforme `type`).",
           "- `prefix` / `suffix` — strings concatenadas ao redor do valor dentro do Badge (ex.: `R$`, ` dias`).",
-          "- `maxItems` — teto de tokens; extras emitem `onReject('max-items')`.",
+          "- `maxItems` — teto de tokens. Os itens que já estão na lista ficam; os novos entram enquanto há espaço e os demais são recusados com `onReject('max-items')`.",
           "- `onReject` — chamado com `'max-items'` ou `'invalid'` (number-mode com token não numérico).",
           "- `label`, `description`, `error`, `required`, `labelPosition`, `placeholder`, `disabled`, `id` — padrão do `FieldShell`.",
           "",
@@ -190,7 +190,7 @@ export const MaxItems3: Story = {
     docs: {
       description: {
         story:
-          "Quando `maxItems` é excedido, o componente trunca e emite `onReject('max-items')`. Combine com `toast` para feedback.",
+          "Com a lista cheia, o item novo é recusado, os antigos ficam e o texto continua no campo. `onReject('max-items')` avisa: combine com `toast` para dar o motivo.",
       },
     },
   },
