@@ -113,6 +113,21 @@ export interface FileUploadLabels {
   uploadFailed?: string
   /** Accessible name of the progress bar of an item being sent. */
   uploadProgress?: (fileName: string) => string
+  /** Part of the default hint that tells the size limit; `limit` is formatted. */
+  maxSizeHint?: (limit: string) => string
+  /**
+   * Unit texts of every size shown (list, hint, refusal). The number is
+   * always written the Brazilian way: `1,5 MB`.
+   */
+  sizeUnits?: FileSizeUnits
+}
+
+/** Unit texts of the sizes `FileUpload` shows. */
+export interface FileSizeUnits {
+  bytes: string
+  kilobytes: string
+  megabytes: string
+  gigabytes: string
 }
 
 type ResolvedFileUploadLabels = Required<FileUploadLabels>
@@ -149,6 +164,8 @@ export const defaultFileUploadLabels: ResolvedFileUploadLabels = {
   uploading: (progress) => (progress == null ? "Enviando…" : `Enviando… ${Math.round(progress)}%`),
   uploadFailed: "Falha no envio",
   uploadProgress: (fileName) => `Envio de ${fileName}`,
+  maxSizeHint: (limit) => `até ${limit}`,
+  sizeUnits: { bytes: "B", kilobytes: "KB", megabytes: "MB", gigabytes: "GB" },
 }
 
 export interface FileUploadProps {
@@ -235,20 +252,36 @@ function fileMatchesAccept(file: File, accept?: string | string[]): boolean {
   })
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`
+const sizeNumber = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
+
+/** `1536` → `"1,5 KB"`; whole bytes below 1 KB (`"10 B"`). */
+function formatBytes(bytes: number, units: FileSizeUnits): string {
+  if (bytes < 1024) return `${bytes} ${units.bytes}`
+  const scale = [units.kilobytes, units.megabytes, units.gigabytes]
+  let value = bytes / 1024
+  let unit = 0
+  // Move up while the rounded number would read 1.024 or more of a unit.
+  while (unit < scale.length - 1 && Math.round(value * 10) / 10 >= 1024) {
+    value /= 1024
+    unit += 1
+  }
+  return `${sizeNumber.format(value)} ${scale[unit]}`
 }
 
-function defaultDescription(accept?: string | string[], maxSize?: number) {
+function defaultDescription(
+  labels: ResolvedFileUploadLabels,
+  accept?: string | string[],
+  maxSize?: number,
+) {
   const parts: string[] = []
   if (accept != null) {
     const patterns = Array.isArray(accept) ? accept : accept.split(",").map((s) => s.trim())
     parts.push(patterns.join(", "))
   }
-  if (maxSize != null) parts.push(`até ${formatBytes(maxSize)}`)
+  if (maxSize != null) parts.push(labels.maxSizeHint(formatBytes(maxSize, labels.sizeUnits)))
   return parts.length > 0 ? parts.join(" · ") : null
 }
 
@@ -356,7 +389,7 @@ function FileUpload({
   }
 
   const renderedDescription =
-    description !== undefined ? description : defaultDescription(accept, maxSize)
+    description !== undefined ? description : defaultDescription(mergedLabels, accept, maxSize)
 
   const hasError = error != null && error !== ""
   const hasHint = renderedDescription != null && renderedDescription !== ""
@@ -373,7 +406,8 @@ function FileUpload({
 
   const rejectionMessage = ({ file, reason }: FileUploadRejection) => {
     if (reason === "type") return mergedLabels.rejectedType(file.name)
-    if (reason === "size") return mergedLabels.rejectedSize(file.name, formatBytes(maxSize ?? 0))
+    if (reason === "size")
+      return mergedLabels.rejectedSize(file.name, formatBytes(maxSize ?? 0, mergedLabels.sizeUnits))
     return mergedLabels.rejectedMaxFiles(file.name, multiple ? (maxFiles ?? 1) : 1)
   }
 
@@ -584,7 +618,9 @@ function FileRow({
       </button>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-medium">{file.name}</span>
-        <span className="text-xs text-muted-foreground">{formatBytes(file.size)}</span>
+        <span className="text-xs text-muted-foreground">
+          {formatBytes(file.size, labels.sizeUnits)}
+        </span>
       </span>
       {removable ? (
         <Button
@@ -721,7 +757,9 @@ function ItemRow({
             {item.error || labels.uploadFailed}
           </span>
         ) : item.size != null ? (
-          <span className="text-xs text-muted-foreground">{formatBytes(item.size)}</span>
+          <span className="text-xs text-muted-foreground">
+            {formatBytes(item.size, labels.sizeUnits)}
+          </span>
         ) : null}
       </span>
       {onRemove ? (

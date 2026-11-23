@@ -882,7 +882,7 @@ test.describe("FileUpload: arquivo recusado", () => {
     const reasons = page.locator('[data-slot="file-upload-rejections"]')
     await expect(reasons.getByRole("listitem")).toHaveText([
       "contrato.pdf: tipo de arquivo não aceito",
-      /^planta\.png: maior que 2[.,]0 MB$/,
+      /^planta\.png: maior que 2,0 MB$/,
     ])
     // Fica logo abaixo da dropzone, e a descreve para o leitor de tela.
     const dropzone = page.getByRole("button", { name: "Imagens do imóvel" })

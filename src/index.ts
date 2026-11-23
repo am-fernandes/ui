@@ -149,6 +149,7 @@ export { CurrencyInput, type CurrencyInputProps } from "./domain/currency-input"
 export {
   FileUpload,
   defaultFileUploadLabels,
+  type FileSizeUnits,
   type FileUploadItem,
   type FileUploadLabels,
   type FileUploadProps,

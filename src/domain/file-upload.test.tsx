@@ -17,7 +17,7 @@ describe("FileUpload", () => {
     render(<FileUpload accept="image/png" maxSize={1024} />)
     expect(screen.getByText(/Arraste um arquivo/)).toBeInTheDocument()
     expect(screen.getByText(/image\/png/)).toBeInTheDocument()
-    expect(screen.getByText(/1\.0 KB/)).toBeInTheDocument()
+    expect(screen.getByText(/até 1,0 KB/)).toBeInTheDocument()
   })
 
   it("accepts a matching file and emits onValueChange", () => {
@@ -96,7 +96,7 @@ describe("FileUpload", () => {
       target: { files: [makeFile("notes.pdf", "application/pdf", 2048)] },
     })
     expect(screen.getByText("notes.pdf")).toBeInTheDocument()
-    expect(screen.getByText("2.0 KB")).toBeInTheDocument()
+    expect(screen.getByText("2,0 KB")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Abrir notes\.pdf em nova aba/ })).toBeInTheDocument()
   })
 
@@ -247,10 +247,10 @@ describe("FileUpload", () => {
 
   it("formatBytes renders MB and GB ranges in the description", () => {
     const { unmount } = render(<FileUpload maxSize={2 * 1024 * 1024} />)
-    expect(screen.getByText(/2\.0 MB/)).toBeInTheDocument()
+    expect(screen.getByText(/2,0 MB/)).toBeInTheDocument()
     unmount()
     render(<FileUpload maxSize={3 * 1024 * 1024 * 1024} />)
-    expect(screen.getByText(/3\.0 GB/)).toBeInTheDocument()
+    expect(screen.getByText(/3,0 GB/)).toBeInTheDocument()
   })
 
   it("description shows raw bytes when below 1 KB", () => {
@@ -271,7 +271,7 @@ describe("FileUpload", () => {
     render(<FileUpload maxSize={2048} />)
     // No middle dot since only one part
     expect(screen.queryByText(/·/)).not.toBeInTheDocument()
-    expect(screen.getByText(/2\.0 KB/)).toBeInTheDocument()
+    expect(screen.getByText(/2,0 KB/)).toBeInTheDocument()
   })
 
   it("renders the error message and marks the dropzone with the destructive class", () => {
@@ -888,7 +888,7 @@ describe("FileUpload", () => {
     it("arquivo acima do tamanho: aparece a mensagem, mesmo sem onReject", () => {
       render(<FileUpload maxSize={1024} />)
       choose(makeFile("planta.pdf", "application/pdf", 5000))
-      expect(screen.getByRole("alert")).toHaveTextContent("planta.pdf: maior que 1.0 KB")
+      expect(screen.getByRole("alert")).toHaveTextContent("planta.pdf: maior que 1,0 KB")
       expect(screen.queryByText("planta.pdf")).not.toBeInTheDocument()
     })
 
@@ -919,7 +919,7 @@ describe("FileUpload", () => {
       render(<FileUpload label="Anexar" maxSize={1024} />)
       choose(makeFile("planta.pdf", "application/pdf", 5000))
       expect(screen.getByRole("button", { name: "Anexar" })).toHaveAccessibleDescription(
-        /planta\.pdf: maior que 1\.0 KB/,
+        /planta\.pdf: maior que 1,0 KB/,
       )
     })
 
@@ -978,8 +978,54 @@ describe("FileUpload", () => {
       )
       const alert = screen.getByRole("alert")
       expect(alert).toHaveTextContent("a.txt: file type not allowed")
-      expect(alert).toHaveTextContent("b.pdf: larger than 1.0 KB")
+      expect(alert).toHaveTextContent("b.pdf: larger than 1,0 KB")
       expect(alert).toHaveTextContent("d.pdf: over the limit of 1")
+    })
+  })
+
+  // Regressão: os tamanhos saíam com ponto decimal ("até 1.0 KB") e o "até"
+  // e as unidades não podiam ser trocados.
+  describe("tamanhos em português", () => {
+    function choose(...files: File[]) {
+      const input = document.querySelector("input[type=file]") as HTMLInputElement
+      fireEvent.change(input, { target: { files } })
+    }
+
+    it("a dica, a lista e a recusa usam vírgula decimal", () => {
+      render(<FileUpload multiple maxSize={1024 * 1024 * 2.5} />)
+      expect(screen.getByText("até 2,5 MB")).toBeInTheDocument()
+      choose(makeFile("a.pdf", "application/pdf", 1536), makeFile("b.pdf", "application/pdf", 10))
+      expect(screen.getByText("1,5 KB")).toBeInTheDocument()
+      expect(screen.getByText("10 B")).toBeInTheDocument()
+      choose(makeFile("grande.pdf", "application/pdf", 1024 * 1024 * 3))
+      expect(screen.getByRole("alert")).toHaveTextContent("grande.pdf: maior que 2,5 MB")
+    })
+
+    it("a unidade sobe quando o arredondamento chega a 1.024", () => {
+      render(<FileUpload maxSize={1024 * 1024 - 1} />)
+      // 1.048.575 bytes são 1.023,999 KB: arredondado, já é 1,0 MB.
+      expect(screen.getByText("até 1,0 MB")).toBeInTheDocument()
+    })
+
+    it("gigabytes", () => {
+      render(<FileUpload maxSize={1024 * 1024 * 1024 * 2} />)
+      expect(screen.getByText("até 2,0 GB")).toBeInTheDocument()
+    })
+
+    it('o "até" e as unidades vêm de labels', () => {
+      render(
+        <FileUpload
+          multiple
+          maxSize={2048}
+          labels={{
+            maxSizeHint: (limit) => `up to ${limit}`,
+            sizeUnits: { bytes: "bytes", kilobytes: "kB", megabytes: "MB", gigabytes: "GB" },
+          }}
+        />,
+      )
+      expect(screen.getByText("up to 2,0 kB")).toBeInTheDocument()
+      choose(makeFile("a.pdf", "application/pdf", 10))
+      expect(screen.getByText("10 bytes")).toBeInTheDocument()
     })
   })
 
@@ -1000,7 +1046,7 @@ describe("FileUpload", () => {
       )
       expect(rows).toHaveLength(2)
       expect(rows[0]).toHaveTextContent("contrato.pdf")
-      expect(rows[0]).toHaveTextContent("2.0 KB")
+      expect(rows[0]).toHaveTextContent("2,0 KB")
       expect(rows[1]).toHaveTextContent("novo.txt")
     })
 
