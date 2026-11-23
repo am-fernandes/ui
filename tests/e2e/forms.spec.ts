@@ -29,14 +29,29 @@ test.describe("Calendar", () => {
     await expect(grid).toBeVisible()
   })
 
-  test("arrow keys navigate between days", async ({ page }) => {
-    await page.goto(story("forms-calendar--single"))
-    const grid = page.getByRole("grid").first()
-    await expect(grid).toBeVisible()
-    // Focus the grid then arrow-right
-    await grid.click()
+  test("arrow keys, Home, End, PageUp and PageDown move the focus between days", async ({
+    page,
+  }) => {
+    await gotoStory(page, "forms-calendar--single", "Selecionado:")
+    const day = (iso: string) => page.locator(`button[data-day="${iso}"]`)
+    await day("2025-06-10").focus()
     await page.keyboard.press("ArrowRight")
-    // No crash; some day button now has data-focused or aria-selected
+    await expect(day("2025-06-11")).toBeFocused()
+    await page.keyboard.press("ArrowDown")
+    await expect(day("2025-06-18")).toBeFocused()
+    await page.keyboard.press("ArrowLeft")
+    await expect(day("2025-06-17")).toBeFocused()
+    await page.keyboard.press("Home")
+    await expect(day("2025-06-15")).toBeFocused()
+    await page.keyboard.press("End")
+    await expect(day("2025-06-21")).toBeFocused()
+    await page.keyboard.press("PageDown")
+    await expect(day("2025-07-21")).toBeFocused()
+    await expect(page.getByRole("grid", { name: /julho 2025/i })).toBeVisible()
+    await page.keyboard.press("PageUp")
+    await expect(day("2025-06-21")).toBeFocused()
+    await page.keyboard.press("Enter")
+    await expect(page.getByText("Selecionado: 21/06/2025")).toBeVisible()
   })
 
   test("disabledDays=past disables past dates", async ({ page }) => {

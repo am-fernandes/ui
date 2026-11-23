@@ -344,8 +344,17 @@ const CalendarDayButton = React.memo(function CalendarDayButton({
 }: CalendarDayButtonProps) {
   const isOutside = !!modifiers.outside
 
+  // react-day-picker moves the keyboard focus by marking another day as
+  // `focused` (arrows, Home, End, PageUp, PageDown); its own day button then
+  // focuses itself. This one replaces it, so it has to do the same.
+  const buttonRef = React.useRef<HTMLButtonElement>(null)
+  React.useEffect(() => {
+    if (modifiers.focused) buttonRef.current?.focus()
+  }, [modifiers.focused])
+
   return (
     <Button
+      ref={buttonRef}
       variant="ghost"
       data-slot="calendar-day-button"
       {...(!isOutside && { "data-day": format(day.date, "yyyy-MM-dd") })}

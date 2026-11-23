@@ -196,6 +196,34 @@ describe("Calendar", () => {
     expect(selects.length).toBeGreaterThanOrEqual(1)
   })
 
+  it("arrow keys, Home, End, PageUp and PageDown move the focus between days", async () => {
+    const user = userEvent.setup()
+    render(<Calendar mode="single" defaultMonth={FIXED_MONTH} />)
+    dayButton("2025-06-10")?.focus()
+    expect(dayButton("2025-06-10")).toHaveFocus()
+
+    await user.keyboard("{ArrowRight}")
+    expect(dayButton("2025-06-11")).toHaveFocus()
+    await user.keyboard("{ArrowDown}")
+    expect(dayButton("2025-06-18")).toHaveFocus()
+    await user.keyboard("{ArrowLeft}")
+    expect(dayButton("2025-06-17")).toHaveFocus()
+    await user.keyboard("{ArrowUp}")
+    expect(dayButton("2025-06-10")).toHaveFocus()
+    // Weeks start on Sunday (ptBR in react-day-picker).
+    await user.keyboard("{Home}")
+    expect(dayButton("2025-06-08")).toHaveFocus()
+    await user.keyboard("{End}")
+    expect(dayButton("2025-06-14")).toHaveFocus()
+
+    // A new month comes in and the focus goes with it, never to <body>.
+    await user.keyboard("{PageDown}")
+    expect(dayButton("2025-07-14")).toHaveFocus()
+    await user.keyboard("{PageUp}")
+    expect(dayButton("2025-06-14")).toHaveFocus()
+    expect(document.activeElement).not.toBe(document.body)
+  })
+
   it("lets clicks pass through the nav overlay to the caption beneath it", () => {
     // The nav is absolutely positioned full-width over the caption row. jsdom
     // can't reproduce real hit-testing, so guard the fix structurally: the nav
