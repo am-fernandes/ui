@@ -124,3 +124,35 @@ export const Default: Story = {
     )
   },
 }
+
+export const ReadOnly: Story = {
+  args: { value: 12.5, onValueChange: () => {} },
+  render: () => {
+    const [value, setValue] = React.useState<number>(12.5)
+    return (
+      <div className="flex w-80 flex-col gap-4">
+        <PercentageInput
+          id="taxa-editable"
+          label="Comissão (editável)"
+          value={value}
+          onValueChange={setValue}
+        />
+        <PercentageInput
+          id="taxa-readonly"
+          label="Comissão (somente leitura)"
+          value={value}
+          onValueChange={setValue}
+          readOnly
+        />
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` é o estado de tela de consulta: fundo esmaecido, sem reação ao hover, com o valor legível, focável e enviado no formulário. `disabled` (50% de opacidade, fora do Tab e do envio) é para o campo que não se aplica.",
+      },
+    },
+  },
+}

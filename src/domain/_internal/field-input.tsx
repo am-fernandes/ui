@@ -19,6 +19,12 @@ export interface FieldInputProps
   labelPosition?: LabelPosition
   required?: boolean
   /**
+   * Shows the value without letting it be edited: it stays readable, takes
+   * focus, can be copied and is submitted with the form. Use it for a field
+   * on a view-only screen; `disabled` is for a field that does not apply.
+   */
+  readOnly?: boolean
+  /**
    * Name of the field in a native form. The form receives the **clean**
    * value (what `onValueChange` reports), carried by a hidden input; the
    * visible input, which shows the formatted text, has no name.
@@ -60,6 +66,7 @@ function FieldInput({
   error,
   labelPosition,
   required,
+  readOnly,
   id,
   name,
   form,
@@ -102,9 +109,14 @@ function FieldInput({
             leading != null && "pl-9",
             trailing != null && "pr-8",
             hasError && "border-destructive-text field-error",
+            // Read-only: a muted box that does not answer to hover (important,
+            // so it also wins over the hover tint of `field-error`). The focus
+            // look stays, because the field still takes focus.
+            readOnly && "bg-muted [--field-hover-ring:transparent]!",
             className,
           )}
           disabled={disabled}
+          readOnly={readOnly}
           form={form}
           {...props}
           value={display}

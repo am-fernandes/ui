@@ -271,7 +271,8 @@ function MaskedInput({
   // is looked at whole, so a number is found among labels and other numbers.
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     onPaste?.(e)
-    if (e.defaultPrevented) return
+    // A read-only field takes no paste; the browser already ignores it.
+    if (e.defaultPrevented || props.readOnly) return
     e.preventDefault()
     const el = e.currentTarget
     const start = el.selectionStart ?? el.value.length

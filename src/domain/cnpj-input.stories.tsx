@@ -25,6 +25,7 @@ const meta = {
           "- `disabled` — desabilita a edição.",
           "- `defaultValue` — valor inicial (sem máscara) quando o campo não é controlado: sem `value`, ele guarda o próprio valor.",
           "- `name` — nome no formulário nativo. O form recebe o valor **sem máscara**, por um input oculto.",
+          "- `readOnly` — somente leitura: o valor fica legível, recebe foco e é enviado, mas não é editável. Use em tela de consulta, no lugar de `disabled`.",
           "- Demais props do `<input>` (exceto `value`, `onChange`, `type`) são repassadas.",
           "",
           "**Validação:** o componente é apenas um formatador. Para validar o DV use `isValidCNPJ` de `@amfernandesinc/ui/lib/brazil`.",
@@ -206,5 +207,28 @@ export const WithValidationFeedback: Story = {
         </p>
       </div>
     )
+  },
+}
+
+export const ReadOnly: Story = {
+  args: {},
+  render: () => (
+    <div className="flex w-80 flex-col gap-4">
+      <CNPJInput id="cnpj-editable" label="CNPJ (editável)" defaultValue={"12ABC34501DE35"} />
+      <CNPJInput
+        id="cnpj-readonly"
+        label="CNPJ (somente leitura)"
+        defaultValue={"12ABC34501DE35"}
+        readOnly
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` é o estado de tela de consulta: fundo esmaecido, sem reação ao hover, com o valor legível, focável e enviado no formulário. `disabled` (50% de opacidade, fora do Tab e do envio) é para o campo que não se aplica.",
+      },
+    },
   },
 }

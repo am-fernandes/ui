@@ -134,3 +134,35 @@ export const Default: Story = {
     await expect(input).toHaveValue("1.234,56")
   },
 }
+
+export const ReadOnly: Story = {
+  args: { value: 1234.56, onValueChange: () => {} },
+  render: () => {
+    const [value, setValue] = React.useState<number>(1234.56)
+    return (
+      <div className="flex w-80 flex-col gap-4">
+        <CurrencyInput
+          id="valor-editable"
+          label="Valor do contrato (editável)"
+          value={value}
+          onValueChange={setValue}
+        />
+        <CurrencyInput
+          id="valor-readonly"
+          label="Valor do contrato (somente leitura)"
+          value={value}
+          onValueChange={setValue}
+          readOnly
+        />
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` é o estado de tela de consulta: fundo esmaecido, sem reação ao hover, com o valor legível, focável e enviado no formulário. `disabled` (50% de opacidade, fora do Tab e do envio) é para o campo que não se aplica.",
+      },
+    },
+  },
+}

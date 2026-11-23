@@ -23,6 +23,7 @@ const meta = {
           "- `disabled` — desabilita a edição.",
           "- `defaultValue` — valor inicial (sem máscara) quando o campo não é controlado: sem `value`, ele guarda o próprio valor.",
           "- `name` — nome no formulário nativo. O form recebe o valor **sem máscara**, por um input oculto.",
+          "- `readOnly` — somente leitura: o valor fica legível, recebe foco e é enviado, mas não é editável. Use em tela de consulta, no lugar de `disabled`.",
           "- `onComplete` — chamado com os oito dígitos quando o CEP fica completo por uma edição (oitavo dígito digitado ou CEP colado). É o gancho da consulta de endereço.",
           "- `loading` — mostra um indicador dentro do campo enquanto a consulta roda; o campo continua editável.",
           "- `labels` — textos do componente (`defaultCEPInputLabels`).",
@@ -234,6 +235,29 @@ export const AddressLookup: Story = {
       description: {
         story:
           "`onComplete` dispara quando o oitavo dígito entra (ou um CEP inteiro é colado) e `loading` mostra o indicador dentro do campo durante a consulta. O campo continua editável: corrigir o CEP dispara uma nova consulta.",
+      },
+    },
+  },
+}
+
+export const ReadOnly: Story = {
+  args: {},
+  render: () => (
+    <div className="flex w-80 flex-col gap-4">
+      <CEPInput id="cep-editable" label="CEP (editável)" defaultValue={"01310100"} />
+      <CEPInput
+        id="cep-readonly"
+        label="CEP (somente leitura)"
+        defaultValue={"01310100"}
+        readOnly
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` é o estado de tela de consulta: fundo esmaecido, sem reação ao hover, com o valor legível, focável e enviado no formulário. `disabled` (50% de opacidade, fora do Tab e do envio) é para o campo que não se aplica.",
       },
     },
   },

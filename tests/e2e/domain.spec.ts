@@ -237,6 +237,67 @@ test.describe("Campos com máscara: colar", () => {
   })
 })
 
+// Looks are measured here: jsdom has no stylesheet.
+test.describe("Somente leitura", () => {
+  const stories = [
+    { name: "CPFInput", id: "domain-cpfinput--read-only", label: "CPF", shown: "529.982.247-25" },
+    {
+      name: "CurrencyInput",
+      id: "domain-currencyinput--read-only",
+      label: "Valor do contrato",
+      shown: "1.234,56",
+    },
+  ]
+
+  // "none", or a ring whose colour is fully transparent.
+  const hasVisibleRing = (input: Locator) =>
+    input.evaluate((el) => {
+      const shadow = getComputedStyle(el).boxShadow
+      if (shadow === "none") return false
+      return !/rgba\(\s*0,\s*0,\s*0,\s*0\)|\/\s*0\)|transparent/.test(shadow)
+    })
+
+  for (const item of stories) {
+    test(`${item.name}: parece diferente do editável, não reage ao hover e não edita`, async ({
+      page,
+    }) => {
+      await gotoStory(page, item.id)
+      const editable = page.getByRole("textbox", { name: `${item.label} (editável)` })
+      const readOnly = page.getByRole("textbox", { name: `${item.label} (somente leitura)` })
+      await expect(readOnly).toHaveValue(item.shown)
+
+      const background = (input: Locator) =>
+        input.evaluate((el) => getComputedStyle(el).backgroundColor)
+      expect(await background(readOnly)).not.toBe(await background(editable))
+
+      // Not the disabled look: the field is fully opaque.
+      const opacity = await readOnly.evaluate((el) => {
+        let value = 1
+        for (let node: Element | null = el; node; node = node.parentElement) {
+          value *= Number(getComputedStyle(node).opacity)
+        }
+        return value
+      })
+      expect(opacity).toBe(1)
+
+      await editable.hover()
+      await expect.poll(() => hasVisibleRing(editable)).toBe(true)
+      await readOnly.hover()
+      await expect.poll(() => hasVisibleRing(readOnly)).toBe(false)
+
+      // Focusable, and the keyboard does not change it.
+      await editable.focus()
+      await page.keyboard.press("Tab")
+      await expect(readOnly).toBeFocused()
+      await expect.poll(() => hasVisibleRing(readOnly)).toBe(true)
+      await page.keyboard.press("End")
+      await page.keyboard.type("9")
+      await page.keyboard.press("Backspace")
+      await expect(readOnly).toHaveValue(item.shown)
+    })
+  }
+})
+
 test.describe("CEPInput: consulta de endereço", () => {
   test("o oitavo dígito dispara a consulta e o indicador aparece dentro do campo", async ({
     page,

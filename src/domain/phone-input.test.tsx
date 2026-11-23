@@ -392,4 +392,58 @@ describe("PhoneInput", () => {
       expect(input).toHaveValue("(11) 98")
     })
   })
+
+  // Tela de consulta: o valor fica legível e é enviado, mas não é editável.
+  // Antes só dava para fingir isso com `disabled`, a 50% de opacidade.
+  describe("somente leitura", () => {
+    it("mostra o valor, recebe foco e não aceita digitação", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(
+        <PhoneInput label="Campo" value="11987654321" onValueChange={onValueChange} readOnly />,
+      )
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveAttribute("readonly")
+      expect(input).not.toBeDisabled()
+      await user.tab()
+      expect(input).toHaveFocus()
+      await user.keyboard("{End}1{Backspace}")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("não aceita colagem", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(
+        <PhoneInput label="Campo" value="11987654321" onValueChange={onValueChange} readOnly />,
+      )
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.paste("(21) 99999-0000")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("continua sendo enviado no formulário", () => {
+      const { container } = render(
+        <form>
+          <PhoneInput name="campo" value="11987654321" onValueChange={vi.fn()} readOnly />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("campo")).toBe("11987654321")
+    })
+
+    it("tem aparência própria, diferente do campo editável e do desabilitado", () => {
+      const { container } = render(
+        <PhoneInput label="Campo" value="11987654321" onValueChange={vi.fn()} readOnly />,
+      )
+      expect(screen.getByRole("textbox").className).toMatch(/bg-muted/)
+      // Sem a opacidade de desabilitado no shell.
+      expect(container.querySelector("[data-slot='field-shell']")?.className).not.toMatch(
+        /opacity-50/,
+      )
+    })
+  })
 })

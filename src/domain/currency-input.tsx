@@ -35,7 +35,8 @@ function CurrencyInput({ value, onValueChange, onPaste, ...props }: CurrencyInpu
   // wrote ("1.500", "R$ 2.350,90", "1500.00") and replaces the value.
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     onPaste?.(e)
-    if (e.defaultPrevented) return
+    // A read-only field takes no paste; the browser already ignores it.
+    if (e.defaultPrevented || props.readOnly) return
     e.preventDefault()
     const pasted = parseBRNumber(e.clipboardData?.getData("text") ?? "")
     if (pasted == null) return
