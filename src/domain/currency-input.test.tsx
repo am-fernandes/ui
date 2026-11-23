@@ -458,4 +458,135 @@ describe("CurrencyInput", () => {
       expect(new FormData(form).get("valor")).toBe("0")
     })
   })
+
+  // Regressão: digitar "-50" dava 0,50, e um valor -50 vindo de fora mostrava
+  // "-50,00" e perdia o sinal na primeira tecla. Não havia como lançar
+  // estorno, desconto ou saldo devedor.
+  describe("allowNegative", () => {
+    function Negative({ initial = 0 }: { initial?: number }) {
+      const [value, setValue] = React.useState(initial)
+      return (
+        <>
+          <CurrencyInput label="Ajuste" allowNegative value={value} onValueChange={setValue} />
+          <output data-testid="value">{String(value)}</output>
+        </>
+      )
+    }
+
+    it("digitar -50 dá -0,50", async () => {
+      const user = userEvent.setup()
+      render(<Negative />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}-50")
+      expect(input).toHaveValue("-0,50")
+      expect(screen.getByTestId("value")).toHaveTextContent("-0.5")
+    })
+
+    it("o sinal digitado em zero aparece, mas só vira valor com um dígito", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<CurrencyInput allowNegative value={0} onValueChange={onValueChange} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}-")
+      expect(input).toHaveValue("-0,00")
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("o sinal sem dígito some quando o campo perde o foco", async () => {
+      const user = userEvent.setup()
+      render(<Negative />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}-")
+      expect(input).toHaveValue("-0,00")
+      await user.tab()
+      expect(input).toHaveValue("0,00")
+    })
+
+    it("um valor negativo continua negativo ao digitar mais um dígito", async () => {
+      const user = userEvent.setup()
+      render(<Negative initial={-50} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("-50,00")
+      await user.click(input)
+      await user.keyboard("{End}1")
+      expect(input).toHaveValue("-500,01")
+      expect(screen.getByTestId("value")).toHaveTextContent("-500.01")
+    })
+
+    it("digitar o sinal de novo volta a positivo, e + também", async () => {
+      const user = userEvent.setup()
+      render(<Negative initial={-12.34} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}-")
+      expect(input).toHaveValue("12,34")
+      await user.keyboard("-")
+      expect(input).toHaveValue("-12,34")
+      await user.keyboard("+")
+      expect(input).toHaveValue("12,34")
+    })
+
+    it("Backspace logo depois do sinal tira o sinal, não um dígito", async () => {
+      const user = userEvent.setup()
+      render(<Negative initial={-12.34} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "-|12,34"
+      await user.type(input, "{Backspace}", { initialSelectionStart: 1, initialSelectionEnd: 1 })
+      expect(input).toHaveValue("12,34")
+      expect(input.selectionStart).toBe(0)
+    })
+
+    it("um número negativo colado entra com o sinal", async () => {
+      const user = userEvent.setup()
+      render(<Negative />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.paste("R$ -1.234,56")
+      expect(input).toHaveValue("-1.234,56")
+      expect(screen.getByTestId("value")).toHaveTextContent("-1234.56")
+    })
+
+    it("o form recebe o número com o sinal", () => {
+      const { container } = render(
+        <form>
+          <CurrencyInput name="ajuste" allowNegative value={-1234.56} onValueChange={vi.fn()} />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("ajuste")).toBe("-1234.56")
+    })
+
+    it("abre o teclado de texto, porque o numérico do iOS não tem o sinal de menos", () => {
+      render(<CurrencyInput allowNegative value={0} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveAttribute("inputmode", "text")
+    })
+
+    describe("sem allowNegative (padrão)", () => {
+      it("o sinal digitado é ignorado", async () => {
+        const user = userEvent.setup()
+        render(<ControlledCurrencyInput />)
+        const input = screen.getByRole("textbox") as HTMLInputElement
+        await user.click(input)
+        await user.keyboard("{End}-50")
+        expect(input).toHaveValue("0,50")
+      })
+
+      it("um número negativo colado entra sem o sinal", async () => {
+        const user = userEvent.setup()
+        render(<ControlledCurrencyInput />)
+        const input = screen.getByRole("textbox") as HTMLInputElement
+        await user.click(input)
+        await user.paste("-50")
+        expect(input).toHaveValue("50,00")
+      })
+
+      it("o teclado continua numérico", () => {
+        render(<CurrencyInput value={0} onValueChange={vi.fn()} />)
+        expect(screen.getByRole("textbox")).toHaveAttribute("inputmode", "numeric")
+      })
+    })
+  })
 })

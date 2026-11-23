@@ -486,6 +486,39 @@ test.describe("CurrencyInput: editar no meio", () => {
   })
 })
 
+test.describe("CurrencyInput: valores negativos", () => {
+  test("com allowNegative, digitar -50 num campo limpo dá -0,50", async ({ page }) => {
+    await gotoStory(page, "domain-currencyinput--negative")
+    const input = page.getByRole("textbox", { name: /Ajuste de saldo/ })
+    await expect(input).toHaveValue("-150,00")
+    await input.press("ControlOrMeta+A")
+    await input.press("Delete")
+    await expect(input).toHaveValue("0,00")
+    await page.keyboard.type("-50")
+    await expect(input).toHaveValue("-0,50")
+    await expect(page.getByText("Valor interno: -0.5", { exact: true })).toBeVisible()
+  })
+
+  test("um valor negativo continua negativo ao receber mais um dígito", async ({ page }) => {
+    await gotoStory(page, "domain-currencyinput--negative")
+    const input = page.getByRole("textbox", { name: /Ajuste de saldo/ })
+    await input.press("End")
+    await page.keyboard.type("5")
+    await expect(input).toHaveValue("-1.500,05")
+    // O sinal de novo volta a positivo.
+    await page.keyboard.type("-")
+    await expect(input).toHaveValue("1.500,05")
+  })
+
+  test("sem allowNegative o sinal é ignorado", async ({ page }) => {
+    await gotoStory(page, "domain-currencyinput--playground")
+    const input = page.getByRole("textbox", { name: /Valor do contrato/ })
+    await input.press("End")
+    await page.keyboard.type("-50")
+    await expect(input).toHaveValue("0,50")
+  })
+})
+
 test.describe("CurrencyInput: colar", () => {
   test.beforeEach(async ({ context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"])

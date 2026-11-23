@@ -13,9 +13,22 @@ interface CurrencyInputProps extends DecimalFieldProps {
    */
   value: number
   onValueChange: (value: number) => void
+  /**
+   * Accepts negative values (a refund, a discount, a balance owed). The minus
+   * key makes the value negative, a second one or `+` makes it positive
+   * again, and a pasted negative number keeps its sign. The field then opens
+   * the text keyboard on phones: the iOS numeric keypad has no minus key.
+   * @default false
+   */
+  allowNegative?: boolean
 }
 
-function CurrencyInput({ value, onValueChange, ...props }: CurrencyInputProps) {
+function CurrencyInput({
+  value,
+  onValueChange,
+  allowNegative = false,
+  ...props
+}: CurrencyInputProps) {
   return (
     <DecimalInput
       {...props}
@@ -25,7 +38,7 @@ function CurrencyInput({ value, onValueChange, ...props }: CurrencyInputProps) {
       value={value}
       onValueChange={(next) => onValueChange(next ?? 0)}
       allowEmpty={false}
-      allowNegative={false}
+      allowNegative={allowNegative}
     />
   )
 }

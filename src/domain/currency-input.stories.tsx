@@ -206,3 +206,31 @@ export const Sizes: Story = {
     },
   },
 }
+
+export const Negative: Story = {
+  args: { value: 0, onValueChange: () => {} },
+  render: () => {
+    const [value, setValue] = React.useState<number>(-150)
+    return (
+      <div className="flex w-80 flex-col gap-2">
+        <CurrencyInput
+          id="adjustment"
+          label="Ajuste de saldo (R$)"
+          description="Use o sinal de menos para um estorno."
+          allowNegative
+          value={value}
+          onValueChange={setValue}
+        />
+        <p className="text-xs text-muted-foreground">Valor interno: {value}</p>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`allowNegative` aceita valores negativos: a tecla de menos torna o valor negativo, uma segunda (ou `+`) volta a positivo, e um número negativo colado mantém o sinal. O campo abre o teclado de texto no celular, porque o teclado numérico do iOS não tem o sinal de menos.",
+      },
+    },
+  },
+}
