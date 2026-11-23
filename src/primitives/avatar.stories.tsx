@@ -53,7 +53,7 @@ export const Default: Story = {
 }
 
 export const Fallback: Story = {
-  args: { alt: "John Doe", fallback: "JD" },
+  args: { alt: "João Dias", fallback: "JD" },
 }
 
 export const FallbackIcon: Story = {
@@ -74,7 +74,7 @@ export const WithStatusDot: Story = {
     <div className="relative inline-block">
       <Avatar
         src="https://github.com/shadcn.png"
-        alt="Online user"
+        alt="Ana Souza, online"
         fallback={<UserIcon className="size-5" />}
       />
       <span className="absolute right-0 bottom-0 size-3 rounded-full border-2 border-background bg-success" />
@@ -131,8 +131,11 @@ export const PortraitPhoto: Story = {
 export const IconFallbacks: Story = {
   render: () => (
     <div className="flex items-center gap-3">
-      <Avatar alt="User" fallback={<UserIcon className="size-5" />} />
-      <Avatar alt="Premium" fallback={<CrownIcon className="size-5 text-amber-500" />} />
+      <Avatar alt="Usuário" fallback={<UserIcon className="size-5" />} />
+      <Avatar
+        alt="Premium"
+        fallback={<CrownIcon className="size-5 text-category-yellow-solid" />}
+      />
     </div>
   ),
 }
