@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { useState } from "react"
 
 import { Button } from "../primitives/button"
+import { Input } from "../primitives/input"
 import { Collapsible } from "./collapsible"
 
 const meta: Meta<typeof Collapsible> = {
@@ -143,5 +144,26 @@ export const Nested: Story = {
   ),
   parameters: {
     docs: { description: { story: "Collapsibles aninhados — cada nível tem estado próprio." } },
+  },
+}
+
+export const KeepMounted: Story = {
+  render: () => (
+    <div className="flex w-96 flex-col gap-2">
+      <Collapsible title="Dados do comprador" keepMounted defaultOpen>
+        <div className="flex flex-col gap-3 pb-2">
+          <Input label="Nome" />
+          <Input label="E-mail" type="email" />
+        </div>
+      </Collapsible>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`keepMounted`: fechada, a seção continua no DOM (escondida e fora do Tab), então o que foi digitado nos campos não controlados não se perde. Sem ele, o conteúdo desmonta ao fechar.",
+      },
+    },
   },
 }

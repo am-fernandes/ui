@@ -1422,6 +1422,28 @@ test.describe("Toaster", () => {
   })
 })
 
+test.describe("Collapsible", () => {
+  // Closing unmounted the content, and an uncontrolled field came back empty.
+  test("keepMounted: a closed section collapses and keeps what was typed", async ({ page }) => {
+    await gotoStory(page, "overlays-collapsible--keep-mounted", "Dados do comprador")
+    const trigger = page.getByRole("button", { name: "Dados do comprador" })
+    const name = page.getByLabel("Nome")
+    await name.fill("Maria da Silva")
+
+    await trigger.click()
+    await expect(trigger).toHaveAttribute("aria-expanded", "false")
+    await expect(name).toBeHidden()
+    // Out of the tab order: Tab from the trigger leaves the section.
+    await trigger.focus()
+    await page.keyboard.press("Tab")
+    await expect(name).not.toBeFocused()
+
+    await trigger.click()
+    await expect(name).toBeVisible()
+    await expect(name).toHaveValue("Maria da Silva")
+  })
+})
+
 test.describe("IconButton", () => {
   test("shows its label as a tooltip on hover", async ({ page }) => {
     await gotoStory(page, "primitives-iconbutton--variants", "Excluir")
