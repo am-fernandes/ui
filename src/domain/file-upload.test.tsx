@@ -1094,6 +1094,15 @@ describe("FileUpload", () => {
     })
   })
 
+  // Regressão: o hover da miniatura baixava a opacidade dela inteira
+  // (hover:opacity-80) em vez de usar a camada de estado do sistema.
+  it("a miniatura usa a camada de estado, e não esmaece no hover", () => {
+    render(<FileUpload multiple value={[makeFile("a.pdf", "application/pdf")]} />)
+    const tile = screen.getByRole("button", { name: "Abrir a.pdf em nova aba" })
+    expect(tile.className).not.toMatch(/hover:opacity/)
+    expect(tile.querySelector("[data-slot=file-upload-tile-layer]")).toHaveClass("state-layer")
+  })
+
   // Regressão: escolher de novo um arquivo que já está na lista o colocava
   // duas vezes, e ele seria enviado duas vezes.
   describe("mesmo arquivo duas vezes", () => {

@@ -1012,3 +1012,27 @@ test.describe("FileUpload: form nativo", () => {
     await expect(page.getByTestId("form-data")).toHaveText("contrato.pdf")
   })
 })
+
+test.describe("FileUpload: hover na miniatura", () => {
+  const cases = [
+    { id: "domain-fileupload--read-only", tile: "Abrir contrato.pdf em nova aba" },
+    { id: "domain-fileupload--with-download", tile: "Ampliar foto.png" },
+  ]
+  for (const item of cases) {
+    test(`${item.tile}: o hover pinta uma camada por cima, sem apagar a miniatura`, async ({
+      page,
+    }) => {
+      await gotoStory(page, item.id)
+      const tile = page.getByRole("button", { name: item.tile })
+      const layer = tile.locator('[data-slot="file-upload-tile-layer"]')
+      await expect(layer).toHaveCSS("background-image", "none")
+      await tile.hover()
+      // Antes o hover baixava a opacidade da miniatura inteira para 0,8.
+      await expect(tile).toHaveCSS("opacity", "1")
+      await expect(layer).not.toHaveCSS("background-image", "none")
+      // A camada cobre a miniatura toda, imagem incluída.
+      const [tileBox, layerBox] = await Promise.all([tile.boundingBox(), layer.boundingBox()])
+      expect(layerBox).toEqual(tileBox)
+    })
+  }
+})

@@ -710,8 +710,8 @@ function FileRow({
         aria-label={action.label}
         title={action.label}
         className={cn(
-          "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-element bg-muted text-muted-foreground cursor-pointer transition-opacity",
-          "hover:opacity-80 focus-visible:focus-outline",
+          TILE_CLASS,
+          "cursor-pointer focus-visible:focus-outline",
           disabled && "cursor-default opacity-50",
         )}
       >
@@ -724,6 +724,7 @@ function FileRow({
         ) : (
           <Download className="size-4" />
         )}
+        {disabled ? null : <TileLayer />}
       </button>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-medium">{file.name}</span>
@@ -749,6 +750,23 @@ function FileRow({
 
 const IMAGE_EXTENSION = /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i
 
+const TILE_CLASS =
+  "relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-element bg-muted text-muted-foreground"
+
+/**
+ * The hover and pressed tint of a preview tile. It is a layer over the tile,
+ * not the tile's own background, so it also covers an image thumbnail.
+ */
+function TileLayer() {
+  return (
+    <span
+      aria-hidden
+      data-slot="file-upload-tile-layer"
+      className="absolute inset-0 rounded-[inherit] state-layer"
+    />
+  )
+}
+
 /** A file the component did not pick: a saved attachment or an upload in progress. */
 function ItemRow({
   item,
@@ -772,8 +790,6 @@ function ItemRow({
       : undefined
   const isImage = url != null && IMAGE_EXTENSION.test(item.name)
   const isPdf = /\.pdf$/i.test(item.name)
-  const tileClass =
-    "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-element bg-muted text-muted-foreground"
 
   let tile: React.ReactNode
   if (isImage && url != null) {
@@ -785,12 +801,13 @@ function ItemRow({
         aria-label={labels.zoomImage(item.name)}
         title={labels.zoomImage(item.name)}
         className={cn(
-          tileClass,
-          "cursor-pointer transition-opacity hover:opacity-80 focus-visible:focus-outline",
+          TILE_CLASS,
+          "cursor-pointer focus-visible:focus-outline",
           disabled && "cursor-default opacity-50",
         )}
       >
         <img src={url} alt={item.name} loading="lazy" className="size-full object-cover" />
+        {disabled ? null : <TileLayer />}
       </button>
     )
   } else if (url != null && !disabled) {
@@ -806,21 +823,19 @@ function ItemRow({
         download={isPdf ? undefined : item.name}
         aria-label={linkLabel}
         title={linkLabel}
-        className={cn(
-          tileClass,
-          "cursor-pointer transition-opacity hover:opacity-80 focus-visible:focus-outline",
-        )}
+        className={cn(TILE_CLASS, "cursor-pointer focus-visible:focus-outline")}
       >
         {isPdf ? (
           <FileIcon className="size-4" aria-hidden />
         ) : (
           <Download className="size-4" aria-hidden />
         )}
+        <TileLayer />
       </a>
     )
   } else {
     tile = (
-      <span className={cn(tileClass, disabled && "opacity-50")}>
+      <span className={cn(TILE_CLASS, disabled && "opacity-50")}>
         {status === "uploading" ? (
           <Loader2 className="size-4 animate-spin" aria-hidden />
         ) : (
