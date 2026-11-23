@@ -345,6 +345,40 @@ describe("Tour", () => {
     })
   })
 
+  // Non-modal for the mouse, but Tab only went round the callout (X,
+  // Próximo, X…): a keyboard user could not reach the element the step was
+  // about, nor the rest of the page.
+  describe("keyboard", () => {
+    it("Tab past the last control goes to the target", async () => {
+      renderTour()
+      expect(screen.getByRole("button", { name: "Próximo" })).toHaveFocus()
+      await userEvent.tab()
+      expect(screen.getByRole("button", { name: "Novo lead" })).toHaveFocus()
+      // The tour is still running.
+      expect(dialog()).toHaveAccessibleName("Crie leads")
+    })
+
+    it("Shift+Tab before the first control goes to the target too", async () => {
+      renderTour()
+      screen.getByRole("button", { name: "Fechar tour" }).focus()
+      await userEvent.tab({ shift: true })
+      expect(screen.getByRole("button", { name: "Novo lead" })).toHaveFocus()
+    })
+
+    it("Tab inside the callout still moves between its controls", async () => {
+      renderTour({ defaultStep: 1 })
+      screen.getByRole("button", { name: "Fechar tour" }).focus()
+      await userEvent.tab()
+      expect(screen.getByRole("button", { name: "Voltar" })).toHaveFocus()
+    })
+
+    it("without a target on the page, Tab stays in the callout", async () => {
+      renderTour({ steps: [{ target: "#nao-existe", title: "Sumiu" }] })
+      await userEvent.tab()
+      expect(dialog()).toContainElement(document.activeElement as HTMLElement)
+    })
+  })
+
   // The target was resolved once per step. A node replaced by a new one
   // (same selector: React remounted it) left the spotlight at 8×8 in the top
   // corner; a target that appears later (data still loading) was never found.

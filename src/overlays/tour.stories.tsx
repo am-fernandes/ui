@@ -113,7 +113,7 @@ const meta = {
           '- `open` controla quando o tour roda; `onClose(reason)` avisa como terminou: `"completed"` (Concluir na última etapa) ou `"dismissed"` (X ou Esc). Salve a conclusão ali para não repetir o tour.',
           "- `spotlight` escurece a página em volta do alvo (padrão ligado). `showProgress` mostra “2 de 5”.",
           "",
-          "Não é modal: a página continua usável e clicar fora não encerra o tour. O foco vai para o balão a cada etapa e volta para onde estava no fim.",
+          "Não é modal: a página continua usável e clicar fora não encerra o tour. O foco vai para o balão a cada etapa e volta para onde estava no fim; o Tab, passando dos botões do balão, vai para o alvo e segue pela página.",
           "Mantenha tours curtos e nunca deixe informação essencial só dentro deles.",
         ].join("\n"),
       },

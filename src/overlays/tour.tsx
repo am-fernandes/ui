@@ -78,6 +78,15 @@ function resolveTarget(target: TourTarget | undefined): HTMLElement | null {
   return target.current
 }
 
+const TABBABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+/** The target itself when it takes focus, or the first control inside it. */
+function focusableIn(target: HTMLElement): HTMLElement | null {
+  if (target.matches(TABBABLE)) return target
+  return target.querySelector<HTMLElement>(TABBABLE)
+}
+
 function fallbackRect(): DOMRect {
   // No target on the page: show the callout near the top-centre of the viewport.
   return new DOMRect(window.innerWidth / 2, window.innerHeight / 3, 0, 0)
@@ -136,7 +145,8 @@ function useTargetBox(element: HTMLElement | null, active: boolean): Box | null 
  *
  * Non-modal: the page stays usable, clicks outside don't end the tour,
  * Escape and the X dismiss it. Focus moves into the callout on each step and
- * goes back to where it was when the tour ends.
+ * goes back to where it was when the tour ends; Tab past the callout's
+ * controls goes to the target and on through the page.
  *
  * Keep tours short and never put must-know information only in a tour.
  */
@@ -298,6 +308,21 @@ function Tour({
             // A tour ends on purpose (X, Escape, Concluir) — not because the
             // user clicked the very element the step points at.
             onInteractOutside={(event) => event.preventDefault()}
+            // Non-modal for the keyboard too. Radix loops Tab inside the
+            // callout; past its last control (or before its first) focus
+            // goes to the target, the thing the step is about, and from
+            // there on through the page. Without a focusable target the loop
+            // stays. (Runs before Radix's own handler on the same element.)
+            onKeyDown={(event) => {
+              if (event.key !== "Tab" || event.altKey || event.ctrlKey || event.metaKey) return
+              const controls = [...event.currentTarget.querySelectorAll<HTMLElement>(TABBABLE)]
+              const edge = event.shiftKey ? controls[0] : controls[controls.length - 1]
+              if (!edge || document.activeElement !== edge) return
+              const destination = targetRef.current ? focusableIn(targetRef.current) : null
+              if (!destination) return
+              event.preventDefault()
+              destination.focus()
+            }}
             onOpenAutoFocus={(event) => {
               event.preventDefault()
               primaryRef.current?.focus()

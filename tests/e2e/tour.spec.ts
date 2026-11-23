@@ -98,6 +98,21 @@ test.describe("Tour", () => {
     await expect(page.getByTestId("tour-result")).toHaveText("Tour fechado antes do fim")
   })
 
+  // Tab only went round the callout (X, Próximo, X…).
+  test("Tab leaves the callout for the target and the page; the tour stays", async ({ page }) => {
+    await gotoTour(page)
+    await startTour(page)
+    await expect(page.getByRole("button", { name: "Próximo" })).toBeFocused()
+    await page.keyboard.press("Tab")
+    await expect(page.locator("#tour-novo-lead")).toBeFocused()
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("textbox", { name: "Buscar lead" })).toBeFocused()
+    await expect(page.getByRole("dialog", { name: "Cadastre um lead" })).toBeVisible()
+    // Escape still ends it from the page.
+    await page.keyboard.press("Escape")
+    await expect(page.getByRole("dialog")).toHaveCount(0)
+  })
+
   test("Concluir on the last step completes; the X dismisses", async ({ page }) => {
     await gotoTour(page)
     await startTour(page)
