@@ -616,4 +616,15 @@ describe("MultiInput", () => {
       expect(form.checkValidity()).toBe(true)
     })
   })
+  // Os itens de um campo desabilitado ficavam a 50% sem nada dizer que o
+  // grupo estava inativo: o leitor de tela não ouvia, e o axe cobrava deles
+  // o contraste de texto ativo.
+  it("desabilitado, o grupo é anunciado como desabilitado", () => {
+    const { rerender } = render(
+      <MultiInput label="Áreas" disabled value={["civil"]} onValueChange={vi.fn()} />,
+    )
+    expect(screen.getByRole("group", { name: "Áreas" })).toHaveAttribute("aria-disabled", "true")
+    rerender(<MultiInput label="Áreas" value={["civil"]} onValueChange={vi.fn()} />)
+    expect(screen.getByRole("group", { name: "Áreas" })).not.toHaveAttribute("aria-disabled")
+  })
 })

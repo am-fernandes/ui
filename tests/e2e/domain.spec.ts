@@ -1113,6 +1113,28 @@ test.describe("InputOTP: desabilitado e erro", () => {
   })
 })
 
+// These stories had axe's color-contrast rule switched off. It is on again:
+// every rule the Storybook test-runner enforces, in both themes.
+test.describe("Acessibilidade sem regra desligada, nos dois temas", () => {
+  for (const id of [
+    "domain-multiinput--with-error",
+    "domain-multiinput--disabled",
+    "domain-inputotp--with-error",
+  ]) {
+    test(`${id}: sem violação no tema claro e no escuro`, async ({ page }) => {
+      await gotoStory(page, id)
+      await expectNoA11yViolations(page, "#storybook-root")
+      await page.evaluate(() => {
+        const style = document.createElement("style")
+        style.textContent = "*,*::before,*::after{transition:none!important}"
+        document.head.append(style)
+        document.documentElement.classList.add("dark")
+      })
+      await expectNoA11yViolations(page, "#storybook-root")
+    })
+  }
+})
+
 test.describe("FileUpload: form nativo", () => {
   const id = "domain-fileupload--native-form"
   const picker = 'input[type="file"]:not([name])'

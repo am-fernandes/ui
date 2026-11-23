@@ -298,6 +298,9 @@ function MultiInput(props: MultiInputProps) {
         )}
         // biome-ignore lint/a11y/useSemanticElements: <fieldset> conflicts with the flex chip layout.
         role="group"
+        // The items of a disabled field are part of an inactive control: a
+        // screen reader hears it, and they are exempt from text contrast.
+        aria-disabled={disabled ? true : undefined}
         // Named by the visible label, like the text input inside it.
         aria-labelledby={hasLabel ? ids.labelId : undefined}
         aria-label={
