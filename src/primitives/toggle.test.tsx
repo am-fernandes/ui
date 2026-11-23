@@ -70,6 +70,15 @@ describe("Toggle", () => {
     expect(btn.className).toContain("data-[state=on]:text-warning")
   })
 
+  // The contrast of that edge (3:1 or more against the surface and against the
+  // fill, in both themes) is measured by tests/e2e/primitives.spec.ts.
+  it("outlines the pressed default variant in the functional blue", () => {
+    render(<Toggle defaultPressed>Favorito</Toggle>)
+    const btn = screen.getByRole("button", { name: "Favorito" })
+    expect(btn).toHaveClass("data-[state=on]:border-ring", "data-[state=on]:bg-accent")
+    expect(btn).not.toHaveClass("data-[state=on]:border-accent")
+  })
+
   // The measured heights (32, 40 and 44px) are asserted in a real browser by
   // tests/e2e/control-size.spec.ts.
   describe("size", () => {

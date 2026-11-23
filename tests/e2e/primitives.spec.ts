@@ -15,6 +15,41 @@ async function open(page: Page, id: string) {
   await expect(page.locator("#storybook-root > *").first()).toBeVisible({ timeout: 15_000 })
 }
 
+/** Turns the dark theme on the way an app does, with no fade in between. */
+async function setDarkTheme(page: Page) {
+  await page.addStyleTag({ content: "*,*::before,*::after{transition:none!important}" })
+  await page.evaluate(() => document.documentElement.classList.add("dark"))
+}
+
+/**
+ * WCAG contrast ratio between two CSS colours, resolved by the browser (the
+ * tokens are oklch, and computed styles come back in that notation).
+ */
+function contrast(page: Page, first: string, second: string) {
+  return page.evaluate(
+    ([a, b]) => {
+      const canvas = document.createElement("canvas")
+      canvas.width = canvas.height = 1
+      const context = canvas.getContext("2d", { willReadFrequently: true })
+      if (!context) throw new Error("no 2d context")
+      const luminance = (color: string) => {
+        context.fillStyle = "#ffffff"
+        context.fillRect(0, 0, 1, 1)
+        context.fillStyle = color
+        context.fillRect(0, 0, 1, 1)
+        const linear = Array.from(context.getImageData(0, 0, 1, 1).data.slice(0, 3), (v) => {
+          const channel = v / 255
+          return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+        })
+        return 0.2126 * (linear[0] ?? 0) + 0.7152 * (linear[1] ?? 0) + 0.0722 * (linear[2] ?? 0)
+      }
+      const [high, low] = [luminance(a as string), luminance(b as string)].sort((x, y) => y - x)
+      return ((high ?? 0) + 0.05) / ((low ?? 0) + 0.05)
+    },
+    [first, second],
+  )
+}
+
 test.describe("Button", () => {
   test("renders and is clickable", async ({ page }) => {
     await open(page, "primitives-button--secondary")
@@ -174,6 +209,33 @@ test.describe("IconButton", () => {
     await page.getByRole("button", { name: "Editar proposta" }).click()
     await expect(last).toHaveText("Última ação: editar")
   })
+})
+
+test.describe("Toggle", () => {
+  for (const theme of ["light", "dark"] as const) {
+    test(`the pressed default variant has an edge of 3:1 or more (${theme})`, async ({ page }) => {
+      await open(page, "primitives-toggle--all-variants")
+      if (theme === "dark") await setDarkTheme(page)
+      const colours = (name: string) =>
+        page.getByRole("button", { name, exact: true }).evaluate((el) => {
+          const style = getComputedStyle(el)
+          return { border: style.borderTopColor, fill: style.backgroundColor }
+        })
+      const off = await colours("default off")
+      const on = await colours("default on")
+      // The surface the toggle sits on is the fill of the unpressed one.
+      const surface = off.fill
+
+      const onEdge = await contrast(page, on.border, surface)
+      expect(onEdge, "pressed border against the surface").toBeGreaterThanOrEqual(3)
+      expect(
+        await contrast(page, on.border, on.fill),
+        "pressed border against its own fill",
+      ).toBeGreaterThanOrEqual(3)
+      // Pressed must never be the fainter of the two states.
+      expect(onEdge).toBeGreaterThanOrEqual(await contrast(page, off.border, surface))
+    })
+  }
 })
 
 test.describe("Checkbox", () => {

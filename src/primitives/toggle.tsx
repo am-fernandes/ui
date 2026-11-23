@@ -37,12 +37,14 @@ const toggleVariants = cva(
         // Off = plain outline (`border-input bg-card`, same as
         // Button's `outline` variant so a Toggle in its idle state lines
         // up next to outline buttons without looking thinner).
-        // On = solid fill in the variant colour, mirroring Button's
-        // `default` / `destructive` solid look — at-a-glance the on-state
-        // reads as "this is engaged".
+        // On = the colour of the variant. The status variants take a solid
+        // fill. The default takes the selection tone (`accent`), which alone
+        // is only 1.2:1 from the surface, so its edge is the functional blue
+        // (`ring`): 5.6:1 against the surface and 4.6:1 against the fill
+        // (8.2 and 5.9 in the dark theme). Pressed is never the fainter state.
         default: [
           "border-input bg-card",
-          "data-[state=on]:bg-accent data-[state=on]:text-accent-foreground data-[state=on]:border-accent",
+          "data-[state=on]:bg-accent data-[state=on]:text-accent-foreground data-[state=on]:border-ring",
         ].join(" "),
         info: [
           "border-input bg-card",
