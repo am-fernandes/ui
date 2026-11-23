@@ -32,7 +32,7 @@ const meta = {
           "- Para trocar entre **conteúdos diferentes**, cada um com o seu painel, use `Tabs`.",
           "- Para um liga/desliga independente, use `Toggle`.",
           "",
-          "`label` é obrigatório: é o nome do grupo para o leitor de tela (não aparece na tela). Setas movem e selecionam; o grupo inteiro é uma parada só do Tab.",
+          "`label` é obrigatório: é o nome do grupo para o leitor de tela (não aparece na tela). As quatro setas movem e selecionam (→ e ↓ avançam, ← e ↑ voltam); o grupo inteiro é uma parada só do Tab.",
         ].join("\n"),
       },
     },

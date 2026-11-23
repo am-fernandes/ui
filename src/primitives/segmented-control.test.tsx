@@ -156,6 +156,27 @@ describe("SegmentedControl", () => {
     expect(onValueChange.mock.calls).toEqual([["semana"]])
   })
 
+  // The radio group pattern uses the four arrows: Right and Down go to the
+  // next option, Left and Up to the previous one.
+  it("moves and selects with the vertical arrows too", async () => {
+    const onValueChange = vi.fn()
+    render(
+      <SegmentedControl
+        label="Período"
+        options={options}
+        defaultValue="dia"
+        onValueChange={onValueChange}
+      />,
+    )
+    await userEvent.tab()
+    await userEvent.keyboard("{ArrowDown}")
+    expect(screen.getByRole("radio", { name: "Semana" })).toHaveFocus()
+    expect(screen.getByRole("radio", { name: "Semana" })).toHaveAttribute("aria-checked", "true")
+    await userEvent.keyboard("{ArrowUp}")
+    expect(screen.getByRole("radio", { name: "Dia" })).toHaveFocus()
+    expect(onValueChange.mock.calls).toEqual([["semana"], ["dia"]])
+  })
+
   it("selects even when the arrow key is released before focus moves", async () => {
     const onValueChange = vi.fn()
     render(

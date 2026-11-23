@@ -62,7 +62,7 @@ export interface SegmentedControlProps {
  * switching between different panels of content use `Tabs`; for an
  * independent on/off use `Toggle`.
  *
- * Built on Radix RadioGroup: `role="radiogroup"`, arrow keys move and select,
+ * Built on Radix RadioGroup: `role="radiogroup"`, the four arrow keys move and select,
  * one Tab stop for the whole group.
  */
 function SegmentedControl({
@@ -120,7 +120,8 @@ function SegmentedControl({
       disabled={disabled}
       name={name}
       required={required}
-      orientation="horizontal"
+      // No `orientation`: with one, Radix drops the arrows of the other axis,
+      // and a radio group answers to all four.
       loop
       className={cn(
         // The track has the control height; the segments stretch to fill it.

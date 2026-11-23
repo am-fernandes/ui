@@ -404,6 +404,19 @@ test.describe("SegmentedControl", () => {
     await expect(page.getByRole("radio", { name: "Dia" })).toHaveAttribute("aria-checked", "true")
   })
 
+  test("the vertical arrows move and select as well", async ({ page }) => {
+    await open(page, "primitives-segmentedcontrol--default")
+    await page.keyboard.press("Tab")
+    await page.keyboard.press("ArrowDown")
+    const mes = page.getByRole("radio", { name: "Mês" })
+    await expect(mes).toBeFocused()
+    await expect(mes).toHaveAttribute("aria-checked", "true")
+    await page.keyboard.press("ArrowUp")
+    const semana = page.getByRole("radio", { name: "Semana" })
+    await expect(semana).toBeFocused()
+    await expect(semana).toHaveAttribute("aria-checked", "true")
+  })
+
   test("selected segment stands out and the focus ring is visible", async ({ page }) => {
     await open(page, "primitives-segmentedcontrol--default")
     const selected = page.getByRole("radio", { name: "Semana" })
