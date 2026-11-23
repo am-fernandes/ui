@@ -23,7 +23,7 @@ const meta: Meta<typeof AlertDialog> = {
           "- `description?: ReactNode` — texto secundário.",
           "- `children?: ReactNode` — body adicional (renderiza entre description e botões).",
           "- `onConfirm: () => void` — handler do botão principal.",
-          "- `onCancel?: () => void` — handler do botão cancelar.",
+          "- `onCancel?: () => void` — chamado em `Cancelar` e no Esc.",
           "- `confirmLabel?: string` — default `'Confirmar'`.",
           "- `cancelLabel?: string` — default `'Cancelar'`.",
           "- `confirmVariant?: ButtonProps['variant']` — visual do botão de ação (use `destructive` para ações destrutivas).",

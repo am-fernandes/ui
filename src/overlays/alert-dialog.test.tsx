@@ -137,6 +137,37 @@ describe("AlertDialog", () => {
     expect(onCancel).toHaveBeenCalled()
   })
 
+  // Escape is the keyboard's "Cancelar": it closed the dialog without telling
+  // the consumer, who was left with a half-done flow (a draft not discarded,
+  // a selection not cleared).
+  it("Escape cancels: onCancel is called once, as with the Cancelar button", async () => {
+    const onCancel = vi.fn()
+    const onOpenChange = vi.fn()
+    render(
+      <AlertDialog
+        defaultOpen
+        title="Descartar alterações?"
+        onConfirm={() => {}}
+        onCancel={onCancel}
+        onOpenChange={onOpenChange}
+      />,
+    )
+    await userEvent.keyboard("{Escape}")
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
+  })
+
+  it("a second Escape while it closes does not cancel again", async () => {
+    const exit = mockExitAnimation(CONTENT)
+    const onCancel = vi.fn()
+    render(<AlertDialog defaultOpen title="X" onConfirm={() => {}} onCancel={onCancel} />)
+    await userEvent.keyboard("{Escape}")
+    await userEvent.keyboard("{Escape}")
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    exit.restore()
+  })
+
   it("renders children above the buttons when provided", () => {
     render(
       <AlertDialog open title="X" onConfirm={() => {}}>

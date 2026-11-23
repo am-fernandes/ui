@@ -19,6 +19,7 @@ export interface AlertDialogProps {
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
   onConfirm: () => void
+  /** Called on "Cancelar" and on Escape. */
   onCancel?: () => void
   confirmLabel?: string
   cancelLabel?: string
@@ -85,10 +86,15 @@ function AlertDialog({
           data-slot="alert-dialog-content"
           className={cn(dialogContentBase, "max-w-lg", className)}
           onCloseAutoFocus={returnFocus}
-          // Escape typed with focus in a toast (they float above the dialog)
-          // is for the toast, not for the dialog.
+          // Escape is the keyboard's "Cancelar", so it calls `onCancel` too
+          // (once: not again while the dialog closes). Escape typed with
+          // focus in a toast (they float above the dialog) is for the toast.
           onEscapeKeyDown={(e) => {
-            if (isToastFocused()) e.preventDefault()
+            if (isToastFocused()) {
+              e.preventDefault()
+              return
+            }
+            if (isOpen) onCancel?.()
           }}
         >
           <OverlayContainerProvider container={overlayContainer}>
