@@ -647,3 +647,42 @@ test.describe("SegmentedControl", () => {
     await expect(page.getByRole("tooltip", { name: "Lista" })).toBeVisible()
   })
 })
+
+/** The colour of the pixel at (`x`, `y`), as fractions of the element's box, in a screenshot. */
+async function pixelAt(page: Page, locator: Locator, x: number, y: number) {
+  const png = await locator.screenshot({ animations: "disabled" })
+  return page.evaluate(
+    async ({ data, fx, fy }) => {
+      const blob = await (await fetch(`data:image/png;base64,${data}`)).blob()
+      const bitmap = await createImageBitmap(blob)
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+      const context = canvas.getContext("2d")
+      if (!context) throw new Error("no 2d context")
+      context.drawImage(bitmap, 0, 0)
+      const [r = 0, g = 0, b = 0] = context.getImageData(
+        Math.floor(bitmap.width * fx),
+        Math.floor(bitmap.height * fy),
+        1,
+        1,
+      ).data
+      return { r, g, b }
+    },
+    { data: png.toString("base64"), fx: x, fy: y },
+  )
+}
+
+test.describe("Avatar", () => {
+  // The story's photo is 100×200 in three bands: green on top, blue in the
+  // middle half, red at the bottom. Squashed into the circle (`fill`), the
+  // green shows at the top; cropped (`cover`), only the blue middle shows.
+  test("a portrait photo is cropped to the circle, not squashed", async ({ page }) => {
+    await open(page, "primitives-avatar--portrait-photo")
+    const photo = page.locator('[data-slot="avatar-image"]')
+    await expect(photo).toBeVisible()
+    const avatar = page.locator('[data-slot="avatar"]')
+    for (const y of [0.15, 0.5, 0.85]) {
+      const { r, g, b } = await pixelAt(page, avatar, 0.5, y)
+      expect({ y, blue: b > 150 && r < 100 && g < 150 }).toEqual({ y, blue: true })
+    }
+  })
+})

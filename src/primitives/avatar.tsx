@@ -54,7 +54,8 @@ function Avatar({ src, alt, fallback, className, allowedProtocols, ref, ...props
           data-slot="avatar-image"
           src={src}
           alt=""
-          className="aspect-square h-full w-full"
+          // A photo that is not square is cropped to the centre, not squashed.
+          className="aspect-square h-full w-full object-cover"
         />
       ) : null}
       <AvatarPrimitive.Fallback
