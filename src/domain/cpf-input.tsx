@@ -1,5 +1,6 @@
 "use client"
 
+import { maskCPF } from "@/lib/_internal/masks"
 import { type MaskSpec, MaskedInput, type MaskedInputProps } from "./_internal/masked-input"
 
 interface CPFInputProps extends MaskedInputProps {
@@ -12,15 +13,6 @@ interface CPFInputProps extends MaskedInputProps {
   value?: string | null
   /** CPF inicial (dígitos limpos) de um campo não controlado. */
   defaultValue?: string
-}
-
-/** Aplica a máscara `000.000.000-00` sobre dígitos limpos. */
-function maskCPF(digits: string): string {
-  const d = digits.slice(0, 11)
-  if (d.length <= 3) return d
-  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`
-  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`
-  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9, 11)}`
 }
 
 const cpfSpec: MaskSpec = {

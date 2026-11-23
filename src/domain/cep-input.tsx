@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react"
 
+import { maskCEP } from "@/lib/_internal/masks"
 import { type MaskSpec, MaskedInput, type MaskedInputProps } from "./_internal/masked-input"
 
 export interface CEPInputLabels {
@@ -36,13 +37,6 @@ interface CEPInputProps extends MaskedInputProps {
   loading?: boolean
   /** Textos do componente. Padrão em pt-BR. */
   labels?: Partial<CEPInputLabels>
-}
-
-/** Aplica a máscara `00000-000` sobre dígitos limpos. */
-function maskCEP(digits: string): string {
-  const d = digits.slice(0, 8)
-  if (d.length <= 5) return d
-  return `${d.slice(0, 5)}-${d.slice(5, 8)}`
 }
 
 const cepSpec: MaskSpec = {

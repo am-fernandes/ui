@@ -1,5 +1,6 @@
 "use client"
 
+import { dropCountryAndTrunkPrefix, maskPhone } from "@/lib/_internal/masks"
 import { type MaskSpec, MaskedInput, type MaskedInputProps } from "./_internal/masked-input"
 
 interface PhoneInputProps extends MaskedInputProps {
@@ -13,32 +14,6 @@ interface PhoneInputProps extends MaskedInputProps {
   value?: string | null
   /** Telefone inicial (dígitos limpos) de um campo não controlado. */
   defaultValue?: string
-}
-
-/**
- * Aplica a máscara de telefone:
- *   - 10 dígitos → `(00) 0000-0000`
- *   - 11 dígitos → `(00) 00000-0000`
- */
-function maskPhone(digits: string): string {
-  const d = digits.slice(0, 11)
-  if (d.length === 0) return ""
-  if (d.length <= 2) return `(${d}`
-  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`
-  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7, 11)}`
-}
-
-/**
- * Um número com mais de 11 dígitos veio com algo na frente do DDD: o código
- * do país (`55`) e, depois dele, o zero de operadora (`011`). Com 11 dígitos
- * ou menos nada é retirado: `55` também é DDD (Santa Maria, RS).
- */
-function dropCountryAndTrunkPrefix(digits: string) {
-  let value = digits
-  if (value.length > 11 && value.startsWith("55")) value = value.slice(2)
-  if (value.length > 11 && value.startsWith("0")) value = value.slice(1)
-  return { value, dropped: digits.length - value.length }
 }
 
 const phoneSpec: MaskSpec = {

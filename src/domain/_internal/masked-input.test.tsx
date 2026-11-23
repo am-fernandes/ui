@@ -1,4 +1,11 @@
+import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
+
+import { formatCEP, formatCNPJ, formatCPF, formatPhone } from "@/lib/format"
+import { CEPInput } from "../cep-input"
+import { CNPJInput } from "../cnpj-input"
+import { CPFInput } from "../cpf-input"
+import { PhoneInput } from "../phone-input"
 
 import { type MaskSpec, applyEdit, applyPaste, caretAfter, cleanValue } from "./masked-input"
 
@@ -169,5 +176,37 @@ describe("applyPaste", () => {
 
   it("texto sem caractere significativo não muda nada", () => {
     expect(applyPaste(withExtract, "1234", "abc", 2, 2)).toEqual({ raw: "1234", caret: 2 })
+  })
+})
+
+// Uma tabela que mostra o documento com format.ts e o campo que o edita
+// precisam escrever a mesma coisa.
+describe("os campos e format.ts mostram o mesmo texto", () => {
+  it.each([
+    ["CPF", <CPFInput key="c" label="Doc" defaultValue="52998224725" />, formatCPF("52998224725")],
+    [
+      "CNPJ numérico",
+      <CNPJInput key="n" label="Doc" defaultValue="11222333000181" />,
+      formatCNPJ("11222333000181"),
+    ],
+    [
+      "CNPJ alfanumérico",
+      <CNPJInput key="a" label="Doc" defaultValue="12ABC34501DE35" />,
+      formatCNPJ("12ABC34501DE35"),
+    ],
+    ["CEP", <CEPInput key="e" label="Doc" defaultValue="01310100" />, formatCEP("01310100")],
+    [
+      "celular",
+      <PhoneInput key="p" label="Doc" defaultValue="11987654321" />,
+      formatPhone("11987654321"),
+    ],
+    [
+      "fixo",
+      <PhoneInput key="f" label="Doc" defaultValue="1134567890" />,
+      formatPhone("1134567890"),
+    ],
+  ])("%s", (_, field, formatted) => {
+    render(field)
+    expect(screen.getByRole("textbox", { name: "Doc" })).toHaveValue(formatted)
   })
 })
