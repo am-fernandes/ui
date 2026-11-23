@@ -699,6 +699,17 @@ test.describe("Tooltip", () => {
     await expect(page.getByRole("tooltip")).toHaveCount(0)
   })
 
+  // The enter animation keyed on data-state="open", which Radix never sets on
+  // a tooltip ("delayed-open" or "instant-open"): it just popped in.
+  test("fades and zooms in when it appears", async ({ page }) => {
+    await gotoStory(page, "overlays-tooltip--sides", "top")
+    await page.getByRole("button", { name: "top", exact: true }).hover()
+    const content = page.locator('[data-slot="tooltip-content"]')
+    await expect(content).toBeVisible()
+    expect(await content.getAttribute("data-state")).toMatch(/^(delayed|instant)-open$/)
+    expect(await content.evaluate((el) => getComputedStyle(el).animationName)).toBe("enter")
+  })
+
   test("appears on keyboard focus and Escape dismisses it", async ({ page }) => {
     await gotoStory(page, "overlays-tooltip--sides", "top")
     await page.keyboard.press("Tab")
