@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 
+import { matchesSearch } from "../lib/text"
 import { Dialog } from "../overlays/dialog"
 import { Button } from "../primitives/button"
 import { Combobox, type ComboboxOption } from "./combobox"
@@ -331,6 +332,107 @@ export const LongList: Story = {
           onValueChange={setValue}
           placeholder="Selecione"
           searchPlaceholder="Filtrar..."
+        />
+      </div>
+    )
+  },
+}
+
+const thousandsOfOptions: ComboboxOption[] = Array.from({ length: 2000 }, (_, i) => ({
+  value: String(i + 1),
+  label: `Unidade ${i + 1}`,
+}))
+
+export const ManyOptions: Story = {
+  name: "Many options (2.000)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com milhares de opções, só as primeiras 100 que casam com a busca ficam na tela (`maxVisibleOptions`), mais a escolhida; uma linha diz quantas ficaram de fora e pede para continuar digitando. Abrir e digitar continuam rápidos.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState<string | undefined>()
+    return (
+      <div className="w-[320px]">
+        <Combobox
+          options={thousandsOfOptions}
+          label="Unidade"
+          value={value}
+          onValueChange={setValue}
+          placeholder="Selecione uma unidade"
+        />
+      </div>
+    )
+  },
+}
+
+const cities = [
+  "São Paulo",
+  "Rio de Janeiro",
+  "Belo Horizonte",
+  "Brasília",
+  "Salvador",
+  "Fortaleza",
+  "Curitiba",
+  "Recife",
+  "Porto Alegre",
+  "Goiânia",
+  "Belém",
+  "Manaus",
+  "Campinas",
+  "São Luís",
+  "Maceió",
+  "Natal",
+  "Florianópolis",
+  "João Pessoa",
+  "Ribeirão Preto",
+  "Uberlândia",
+].map((city, i) => ({ value: String(i + 1), label: city }))
+
+/** Stands in for an API: answers after a short delay. */
+function useCitySearch(search: string) {
+  const [options, setOptions] = useState<ComboboxOption[]>(cities.slice(0, 8))
+  const [loading, setLoading] = useState(false)
+  useEffect(() => {
+    setLoading(true)
+    const timer = setTimeout(() => {
+      setOptions(cities.filter((city) => matchesSearch(city.label, search)).slice(0, 8))
+      setLoading(false)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [search])
+  return { options, loading }
+}
+
+export const ServerSearch: Story = {
+  name: "Server search",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Busca no servidor: `onSearchChange` recebe o termo, as opções que voltam vão em `options` e `shouldFilter={false}` desliga o filtro local. Enquanto `loading`, a lista diz que está carregando em vez de dizer que nada foi encontrado. A escolha mantém o nome no gatilho mesmo quando a próxima busca não a traz.",
+      },
+    },
+  },
+  render: () => {
+    const [search, setSearch] = useState("")
+    const [value, setValue] = useState<string | undefined>()
+    const { options, loading } = useCitySearch(search)
+    return (
+      <div className="w-[320px]">
+        <Combobox
+          options={options}
+          shouldFilter={false}
+          onSearchChange={setSearch}
+          loading={loading}
+          label="Cidade"
+          value={value}
+          onValueChange={setValue}
+          placeholder="Selecione uma cidade"
+          searchPlaceholder="Buscar cidade..."
         />
       </div>
     )

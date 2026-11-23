@@ -391,6 +391,90 @@ describe("Combobox", () => {
   })
 })
 
+describe("Combobox: listas grandes e busca no servidor", () => {
+  const many: ComboboxOption[] = Array.from({ length: 250 }, (_, i) => ({
+    value: `o-${i + 1}`,
+    label: `Opção ${i + 1}`,
+  }))
+
+  it("renders at most maxVisibleOptions (100) and says how many are hidden", async () => {
+    render(<Combobox options={many} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await screen.findByRole("listbox")
+    expect(screen.getAllByRole("option")).toHaveLength(100)
+    expect(screen.getByText(/150 opções a mais/)).toBeInTheDocument()
+    expect(screen.getByText(/continue digitando/i)).toBeInTheDocument()
+  })
+
+  it("filters the whole list, not just what is on screen, and drops the line when all fit", async () => {
+    render(<Combobox options={many} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.type(await screen.findByPlaceholderText("Buscar..."), "opcao 24")
+    // 24 and 240-249
+    expect(screen.getAllByRole("option")).toHaveLength(11)
+    expect(screen.getByRole("option", { name: /Opção 249/ })).toBeInTheDocument()
+    expect(screen.queryByText(/opções a mais/)).toBeNull()
+  })
+
+  it("keeps the chosen option in the list even past the cap", async () => {
+    render(<Combobox options={many} value="o-200" placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByRole("option", { name: /Opção 200/ })).toBeInTheDocument()
+    expect(screen.getByText(/149 opções a mais/)).toBeInTheDocument()
+  })
+
+  it("maxVisibleOptions and the line's text can be changed", async () => {
+    render(
+      <Combobox
+        options={many}
+        placeholder="Pick"
+        maxVisibleOptions={10}
+        labels={{ hiddenOptions: (n) => `+${n} itens` }}
+      />,
+    )
+    await userEvent.click(screen.getByRole("combobox"))
+    await screen.findByRole("listbox")
+    expect(screen.getAllByRole("option")).toHaveLength(10)
+    expect(screen.getByText("+240 itens")).toBeInTheDocument()
+  })
+
+  it("server search: reports the term and shows the options as given with shouldFilter={false}", async () => {
+    const onSearchChange = vi.fn()
+    const serverOptions: ComboboxOption[] = [
+      { value: "1", label: "Alpha" },
+      { value: "2", label: "Bravo" },
+    ]
+    render(
+      <Combobox
+        options={serverOptions}
+        shouldFilter={false}
+        onSearchChange={onSearchChange}
+        placeholder="Pick"
+      />,
+    )
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.type(await screen.findByPlaceholderText("Buscar..."), "zz")
+    expect(onSearchChange).toHaveBeenLastCalledWith("zz")
+    // Nothing matches "zz" locally, but the server's answer is shown as is.
+    expect(screen.getAllByRole("option")).toHaveLength(2)
+  })
+
+  it("loading: says it is loading instead of saying nothing was found", async () => {
+    render(<Combobox options={[]} loading shouldFilter={false} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByText("Carregando…")).toBeInTheDocument()
+    expect(screen.queryByText("Nenhuma opção encontrada.")).toBeNull()
+  })
+
+  it("server search: keeps showing the chosen label when the options no longer contain it", () => {
+    const { rerender } = render(
+      <Combobox options={[{ value: "1", label: "Alpha" }]} value="1" shouldFilter={false} />,
+    )
+    rerender(<Combobox options={[{ value: "2", label: "Bravo" }]} value="1" shouldFilter={false} />)
+    expect(screen.getByRole("combobox")).toHaveTextContent("Alpha")
+  })
+})
+
 describe("useComboboxOptions", () => {
   it("maps {id, nome} entities to {value, label}", () => {
     const { result } = renderHook(() =>

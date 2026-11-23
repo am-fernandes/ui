@@ -20,9 +20,29 @@ const CREATE_ACTION_VALUE = "__create_action__"
 
 // The search looks at what the user reads (the label) and at the option's
 // keywords, never at `value`: with numeric ids, "10" would match id 101.
-function filterOption(value: string, search: string, keywords?: string[]) {
-  if (value === CREATE_ACTION_VALUE) return 1
-  return (keywords ?? []).some((keyword) => matchesSearch(keyword, search)) ? 1 : 0
+function optionMatches(option: ComboboxOption, search: string) {
+  return (
+    matchesSearch(option.label, search) ||
+    (option.keywords ?? []).some((keyword) => matchesSearch(keyword, search))
+  )
+}
+
+const countFormatter = new Intl.NumberFormat("pt-BR")
+
+export interface ComboboxLabels {
+  /** Shown instead of the empty message while `loading`. */
+  loading: string
+  /**
+   * The line under a long list, when only the first `maxVisibleOptions`
+   * matches are on screen. Receives how many are left out.
+   */
+  hiddenOptions: (count: number) => string
+}
+
+export const defaultComboboxLabels: ComboboxLabels = {
+  loading: "Carregando…",
+  hiddenOptions: (count) =>
+    `${countFormatter.format(count)} ${count === 1 ? "opção a mais" : "opções a mais"}. Continue digitando para filtrar.`,
 }
 
 function toArray<T>(v: T | T[] | undefined | null): T[] {
@@ -56,6 +76,30 @@ interface ComboboxBaseProps {
   labelPosition?: LabelPosition
   required?: boolean
   id?: string
+  /**
+   * Called with the search text as the user types (and with `""` when the
+   * list closes). For a search on the server, pass the results in `options`
+   * and turn the local filter off with `shouldFilter={false}`.
+   */
+  onSearchChange?: (search: string) => void
+  /** The options are being fetched: the list says so instead of "nothing found". */
+  loading?: boolean
+  /**
+   * `false` shows `options` exactly as given, without filtering them by the
+   * search: for options that already come filtered from the server.
+   * @default true
+   */
+  shouldFilter?: boolean
+  /**
+   * Most options rendered at once. With a long list only the first matches
+   * are on screen (plus the chosen ones), and a line says how many were left
+   * out and asks to keep typing. Opening and typing stay fast with thousands
+   * of options.
+   * @default 100
+   */
+  maxVisibleOptions?: number
+  /** Texts of the list. Defaults in `defaultComboboxLabels`. */
+  labels?: Partial<ComboboxLabels>
   ref?: React.Ref<HTMLButtonElement>
 }
 
@@ -104,8 +148,13 @@ export function Combobox(props: ComboboxProps) {
     labelPosition,
     required,
     id,
+    onSearchChange,
+    loading = false,
+    shouldFilter = true,
+    maxVisibleOptions = 100,
     ref,
   } = props
+  const l: ComboboxLabels = { ...defaultComboboxLabels, ...props.labels }
 
   const resolvedPlaceholder = placeholder ?? "Selecione..."
   const resolvedSearchPlaceholder = searchPlaceholder ?? "Buscar..."
@@ -127,6 +176,33 @@ export function Combobox(props: ComboboxProps) {
   const hasDescription = description != null && description !== ""
 
   const isMultiple = props.multiple === true
+  const chosen = React.useMemo(() => toArray(props.value), [props.value])
+
+  // Labels of the options seen so far, so a choice keeps its name in the
+  // trigger and chips after a server search replaces `options`.
+  const seenLabels = React.useRef(new Map<string, string>())
+  for (const option of options) seenLabels.current.set(option.value, option.label)
+  const labelOf = (value: string) => seenLabels.current.get(value)
+
+  const changeSearch = (next: string) => {
+    setSearch(next)
+    onSearchChange?.(next)
+  }
+
+  // Only the first matches are rendered: mounting thousands of options made
+  // opening and every key take hundreds of milliseconds. The chosen ones are
+  // always kept, so the list can open on them.
+  const { visibleOptions, hiddenCount } = React.useMemo(() => {
+    const matches =
+      shouldFilter && search.trim() !== ""
+        ? options.filter((option) => optionMatches(option, search))
+        : options
+    const chosenSet = new Set(chosen)
+    const visible = matches.filter(
+      (option, index) => index < maxVisibleOptions || chosenSet.has(option.value),
+    )
+    return { visibleOptions: visible, hiddenCount: matches.length - visible.length }
+  }, [options, search, shouldFilter, maxVisibleOptions, chosen])
 
   const handleSingleSelect = (currentValue: string) => {
     if (!isMultiple && props.onValueChange) {
@@ -159,7 +235,7 @@ export function Combobox(props: ComboboxProps) {
       props.onValueChange(trimmed)
     }
     setOpen(false)
-    setSearch("")
+    changeSearch("")
   }
 
   const handleRemoveValue = (valueToRemove: string, e: React.SyntheticEvent) => {
@@ -193,8 +269,8 @@ export function Combobox(props: ComboboxProps) {
         : `${count} ${count === 1 ? "selecionado" : "selecionados"}`
       return <span className="text-foreground">{countText}</span>
     }
-    const selectedOption = options.find((o) => o.value === props.value)
-    if (selectedOption) return selectedOption.label
+    const selectedLabel = props.value ? labelOf(props.value) : undefined
+    if (selectedLabel != null) return selectedLabel
     if (creatable && props.value) return props.value
     return <span className="text-placeholder">{resolvedPlaceholder}</span>
   }
@@ -219,8 +295,7 @@ export function Combobox(props: ComboboxProps) {
     return (
       <div className="flex flex-wrap gap-1 items-center" data-slot="combobox-badges">
         {visibleValues.map((val) => {
-          const option = options.find((o) => o.value === val)
-          const labelText = option?.label || val
+          const labelText = labelOf(val) || val
           return (
             <Badge
               key={val}
@@ -319,19 +394,21 @@ export function Combobox(props: ComboboxProps) {
             onOpenChange={(isOpen) => {
               if (disabled) return
               setOpen(isOpen)
-              if (!isOpen) setSearch("")
+              if (!isOpen && search !== "") changeSearch("")
             }}
             align="start"
             trigger={trigger}
             aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
             className={cn("p-0", popoverWidth || "w-[--radix-popover-trigger-width]")}
           >
-            <CommandPrimitive filter={filterOption} className="flex h-full w-full flex-col">
+            {/* The list is filtered here, not by cmdk: it only gets what is on screen. */}
+            <CommandPrimitive shouldFilter={false} className="flex h-full w-full flex-col">
               <div className="flex items-center gap-2 border-b px-3" cmdk-input-wrapper="">
                 <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
                 <CommandPrimitive.Input
                   placeholder={resolvedSearchPlaceholder}
-                  onValueChange={setSearch}
+                  value={search}
+                  onValueChange={changeSearch}
                   className="flex w-full rounded-element bg-transparent py-2.5 text-sm outline-none placeholder:text-placeholder"
                 />
               </div>
@@ -340,7 +417,7 @@ export function Combobox(props: ComboboxProps) {
                 onTouchMove={(e) => e.stopPropagation()}
                 className="max-h-75 overflow-y-auto overflow-x-hidden overscroll-y-contain p-1"
               >
-                {!showCreateOption ? (
+                {!showCreateOption && !loading ? (
                   <CommandPrimitive.Empty className="py-6 text-center text-sm text-muted-foreground">
                     {resolvedEmptyMessage}
                   </CommandPrimitive.Empty>
@@ -349,23 +426,19 @@ export function Combobox(props: ComboboxProps) {
                   {showCreateOption ? (
                     <CommandPrimitive.Item
                       value={CREATE_ACTION_VALUE}
-                      keywords={[trimmedSearch]}
                       onSelect={() => handleCreate(trimmedSearch)}
                       className="relative flex cursor-default select-none items-center rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover"
                     >
                       Usar: &ldquo;{trimmedSearch}&rdquo;
                     </CommandPrimitive.Item>
                   ) : null}
-                  {options.map((option) => {
-                    const isSelected = isMultiple
-                      ? toArray(props.value).includes(option.value)
-                      : props.value === option.value
+                  {visibleOptions.map((option) => {
+                    const isSelected = chosen.includes(option.value)
 
                     return (
                       <CommandPrimitive.Item
                         key={option.value}
                         value={option.value}
-                        keywords={[option.label, ...(option.keywords ?? [])]}
                         disabled={option.disabled}
                         onSelect={() => {
                           if (isMultiple) handleMultipleSelect(option.value)
@@ -389,6 +462,16 @@ export function Combobox(props: ComboboxProps) {
                   })}
                 </CommandPrimitive.Group>
               </CommandPrimitive.List>
+              {loading || hiddenCount > 0 ? (
+                // biome-ignore lint/a11y/useSemanticElements: <output> is for the result of a calculation; this tells that the list is loading or cut short.
+                <p
+                  role="status"
+                  data-slot="combobox-status"
+                  className="border-t px-3 py-2 text-xs text-muted-foreground"
+                >
+                  {loading ? l.loading : l.hiddenOptions(hiddenCount)}
+                </p>
+              ) : null}
             </CommandPrimitive>
           </Popover>
           {clearButton}

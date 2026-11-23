@@ -119,3 +119,29 @@ test.describe("Combobox: limpar", () => {
     await expect(trigger).toBeFocused()
   })
 })
+
+test.describe("Combobox: lista grande", () => {
+  test("com 2.000 opções, abre e filtra montando no máximo 100", async ({ page }) => {
+    await gotoStory(page, "forms-combobox--many-options", "Selecione uma unidade")
+    await page.getByRole("combobox", { name: "Unidade" }).click()
+    const list = page.getByRole("listbox")
+    await expect(list).toBeVisible()
+    await expect(list.getByRole("option")).toHaveCount(100)
+    await expect(
+      page.getByText("1.900 opções a mais. Continue digitando para filtrar."),
+    ).toBeVisible()
+
+    const search = page.getByPlaceholder("Buscar...")
+    await search.pressSequentially("unidade 19")
+    // 19, 190-199 and 1900-1999: 111 matches, 100 on screen.
+    await expect(list.getByRole("option")).toHaveCount(100)
+    await expect(page.getByText("11 opções a mais. Continue digitando para filtrar.")).toBeVisible()
+    await search.pressSequentially("99")
+    await expect(list.getByRole("option")).toHaveCount(1)
+    await expect(list.getByRole("option", { name: "Unidade 1999" })).toBeVisible()
+    await expect(page.getByText(/opções a mais/)).toHaveCount(0)
+
+    await page.keyboard.press("Enter")
+    await expect(page.getByRole("combobox", { name: "Unidade" })).toHaveText(/Unidade 1999/)
+  })
+})
