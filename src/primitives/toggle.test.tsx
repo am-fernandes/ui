@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
-import { Toggle } from "./toggle"
+import { Toggle, toggleVariants } from "./toggle"
 
 describe("Toggle", () => {
   it("renders children and an unpressed state by default", () => {
@@ -70,10 +70,28 @@ describe("Toggle", () => {
     expect(btn.className).toContain("data-[state=on]:text-warning")
   })
 
-  it("applies size=sm classes", () => {
-    render(<Toggle size="sm">Small</Toggle>)
-    const btn = screen.getByRole("button")
-    expect(btn.className).toContain("px-2.5")
-    expect(btn.className).toContain("py-1.5")
+  // The measured heights (32, 40 and 44px) are asserted in a real browser by
+  // tests/e2e/control-size.spec.ts.
+  describe("size", () => {
+    it("takes the height of the shared control sizes, md by default", () => {
+      const { rerender } = render(<Toggle>x</Toggle>)
+      const btn = () => screen.getByRole("button")
+      expect(btn()).toHaveClass("h-control-md", "px-3")
+      expect(btn().className).not.toMatch(/(^|\s)py-/)
+
+      rerender(<Toggle size="sm">x</Toggle>)
+      expect(btn()).toHaveClass("h-control-sm", "px-2.5")
+
+      rerender(<Toggle size="lg">x</Toggle>)
+      expect(btn()).toHaveClass("h-control-lg", "px-4")
+    })
+
+    it('still accepts "default", the old name of md', () => {
+      const { rerender } = render(<Toggle size="default">x</Toggle>)
+      const legacy = screen.getByRole("button").className
+      rerender(<Toggle size="md">x</Toggle>)
+      expect(screen.getByRole("button").className).toBe(legacy)
+      expect(toggleVariants({ size: "default" })).toBe(toggleVariants({ size: "md" }))
+    })
   })
 })

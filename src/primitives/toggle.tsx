@@ -5,6 +5,7 @@ import { type VariantProps, cva } from "class-variance-authority"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { type ControlSize, controlHeight, controlPaddingX } from "./_internal/control-size"
 
 /**
  * Button-like control whose value is binary (on / off). Separate from
@@ -56,19 +57,20 @@ const toggleVariants = cva(
           "data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground data-[state=on]:border-destructive",
         ].join(" "),
       },
-      // No explicit height: padding + border resolve the box exactly the
-      // way Button does, so Toggle and Button at the same `size` line up
-      // pixel-for-pixel (the previous `h-10` clamped Toggle to 40px while
-      // outline-style Buttons came out at 42px because of their border).
+      // The height of the whole box, border included (32, 40 and 44px): the
+      // same shared control heights as Button, IconButton and Input, so a
+      // Toggle lines up with any of them at the same `size`.
       size: {
-        sm: "px-2.5 py-1.5",
-        default: "px-3 py-2.5",
-        lg: "px-4 py-3",
+        sm: `${controlHeight.sm} ${controlPaddingX.sm}`,
+        md: `${controlHeight.md} ${controlPaddingX.md}`,
+        lg: `${controlHeight.lg} ${controlPaddingX.lg}`,
+        // The name `md` had before every control shared `sm | md | lg`.
+        default: `${controlHeight.md} ${controlPaddingX.md}`,
       },
     },
     defaultVariants: {
       variant: "default",
-      size: "default",
+      size: "md",
     },
   },
 )
@@ -76,6 +78,13 @@ const toggleVariants = cva(
 export interface ToggleProps
   extends Omit<React.ComponentPropsWithoutRef<typeof TogglePrimitive.Root>, "asChild">,
     VariantProps<typeof toggleVariants> {
+  /**
+   * `sm` 32px, `md` 40px, `lg` 44px: the height of the whole box, the same as
+   * a `Button` or an `Input` of that size. `"default"` is the deprecated name
+   * of `"md"` and still works.
+   * @default "md"
+   */
+  size?: ControlSize | "default"
   ref?: React.Ref<React.ElementRef<typeof TogglePrimitive.Root>>
 }
 

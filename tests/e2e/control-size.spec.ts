@@ -9,6 +9,7 @@ const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 const CONTROLS = [
   { slot: "button", count: 6 },
   { slot: "icon-button", count: 2, square: true },
+  { slot: "toggle", count: 2 },
 ]
 
 const HEIGHTS = { sm: 32, md: 40, lg: 44 } as const

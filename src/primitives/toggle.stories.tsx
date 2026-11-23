@@ -25,7 +25,7 @@ const meta: Meta<typeof Toggle> = {
           "- `pressed` / `defaultPressed` — `boolean`.",
           "- `onPressedChange` — `(pressed: boolean) => void`.",
           "- `variant` — `default | info | success | warning | destructive`.",
-          "- `size` — `sm | default | lg`.",
+          '- `size` — `sm` (32px), `md` (40px, default) or `lg` (44px): the height of the whole box, the same as a `Button` or an `Input` of that size. `"default"` is the deprecated name of `md`.',
           "- `disabled` — standard.",
           "",
           "**Example**",
@@ -58,11 +58,12 @@ const meta: Meta<typeof Toggle> = {
     },
     size: {
       control: "inline-radio",
-      options: ["sm", "default", "lg"],
-      description: "Tamanho do controle (espelha o Button).",
+      options: ["sm", "md", "lg"],
+      description:
+        'Altura da caixa, borda incluída: 32, 40 ou 44px, as mesmas do `Button`. `"default"` é o nome antigo de `md` e continua aceito.',
       table: {
-        type: { summary: "'sm' | 'default' | 'lg'" },
-        defaultValue: { summary: "'default'" },
+        type: { summary: "'sm' | 'md' | 'lg'" },
+        defaultValue: { summary: "'md'" },
       },
     },
     pressed: {
@@ -76,7 +77,7 @@ const meta: Meta<typeof Toggle> = {
   args: {
     children: "Watch",
     variant: "default",
-    size: "default",
+    size: "md",
   },
 }
 
@@ -189,9 +190,9 @@ export const AllVariants: Story = {
           <Star />
           sm
         </Toggle>
-        <Toggle size="default">
+        <Toggle size="md">
           <Star />
-          default
+          md
         </Toggle>
         <Toggle size="lg">
           <Star />
