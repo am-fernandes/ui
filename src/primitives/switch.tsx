@@ -62,14 +62,9 @@ function Switch({
 
   const labelEl = hasLabel ? (
     // 2px down: the first line of the label (20px) is centred on the 24px track.
-    <div className="flex flex-col gap-0.5 pt-0.5">
-      <Label
-        htmlFor={ids.controlId}
-        required={required}
-        disabled={disabled}
-        id={ids.labelId}
-        className="whitespace-nowrap"
-      >
+    // `min-w-0`: a long label wraps here instead of pushing out of the container.
+    <div className="flex min-w-0 flex-col gap-0.5 pt-0.5">
+      <Label htmlFor={ids.controlId} required={required} disabled={disabled} id={ids.labelId}>
         {label}
       </Label>
       {hasDescription ? (

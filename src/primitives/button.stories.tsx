@@ -189,6 +189,41 @@ export const Sizes: Story = {
   },
 }
 
+const LONG_LABEL = "Enviar proposta comercial para análise"
+
+export const LongLabel: Story = {
+  render: () => (
+    <div
+      data-testid="narrow"
+      className="flex w-44 flex-col items-start gap-3 rounded-element border border-dashed border-border-strong p-2"
+    >
+      <Button variant="outline" className="max-w-full" title={LONG_LABEL}>
+        <span className="min-w-0 truncate">{LONG_LABEL}</span>
+      </Button>
+      <Button
+        variant="outline"
+        className="h-auto min-h-control-md py-2 text-left whitespace-normal"
+      >
+        {LONG_LABEL}
+      </Button>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: [
+          "O rótulo de um botão fica numa linha só: a altura é a do controle e não cresce. Rótulo curto é a regra. Quando o texto pode ser maior que o espaço (um dado do usuário, uma tela estreita), escolha um dos dois:",
+          "",
+          '- **truncar**: `className="max-w-full"` no botão e o texto num `<span className="min-w-0 truncate">`, com `title` para o texto inteiro;',
+          '- **quebrar**: `className="h-auto min-h-control-md py-2 whitespace-normal"`, e o botão cresce em altura.',
+          "",
+          "Sem um dos dois, o botão não quebra o texto e passa da largura do contêiner.",
+        ].join("\n"),
+      },
+    },
+  },
+}
+
 export const WithIcons: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-3">

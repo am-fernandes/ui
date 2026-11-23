@@ -141,6 +141,23 @@ test.describe("Button", () => {
     await expect(submits).toHaveText("Envios: 2")
   })
 
+  test("a long label stays inside a narrow container, truncated or wrapped", async ({ page }) => {
+    await open(page, "primitives-button--long-label")
+    const container = await page.getByTestId("narrow").boundingBox()
+    const limit = (container?.x ?? 0) + (container?.width ?? 0)
+    const [truncated, wrapped] = await Promise.all(
+      [0, 1].map((index) => page.getByRole("button").nth(index).boundingBox()),
+    )
+    expect((truncated?.x ?? 0) + (truncated?.width ?? 0)).toBeLessThanOrEqual(limit)
+    expect(truncated?.height).toBe(40)
+    expect((wrapped?.x ?? 0) + (wrapped?.width ?? 0)).toBeLessThanOrEqual(limit)
+    expect(wrapped?.height).toBeGreaterThan(40)
+    // The whole text is still the name of the truncated one.
+    await expect(
+      page.getByRole("button", { name: "Enviar proposta comercial para análise" }),
+    ).toHaveCount(2)
+  })
+
   test("asChild + disabled: the link is dimmed, focusable and does not navigate", async ({
     page,
   }) => {
@@ -335,6 +352,19 @@ test.describe("Label", () => {
     expect(line.lineCount).toBeGreaterThanOrEqual(3)
     // 14px text on 14px lines had the lines touching.
     expect(line.lineHeight / line.fontSize).toBeGreaterThanOrEqual(1.4)
+    expect(Math.abs(line.controlCentre - line.firstLineCentre)).toBeLessThanOrEqual(1)
+  })
+
+  test("a long switch label wraps inside its container instead of running out of it", async ({
+    page,
+  }) => {
+    await open(page, "primitives-switch--long-label")
+    const container = await page.getByTestId("narrow").boundingBox()
+    const label = await page.locator('[data-slot="label"]').boundingBox()
+    const right = (box: { x: number; width: number } | null) => (box?.x ?? 0) + (box?.width ?? 0)
+    expect(right(label)).toBeLessThanOrEqual(right(container))
+    const line = await firstLine(page.getByRole("switch"), page.locator('[data-slot="label"]'))
+    expect(line.lineCount).toBeGreaterThanOrEqual(3)
     expect(Math.abs(line.controlCentre - line.firstLineCentre)).toBeLessThanOrEqual(1)
   })
 
