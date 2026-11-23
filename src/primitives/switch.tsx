@@ -81,20 +81,24 @@ function Switch({
     </SwitchPrimitive.Root>
   )
 
-  const labelEl = hasLabel ? (
-    // 2px down: the first line of the label (20px) is centred on the 24px track.
-    // `min-w-0`: a long label wraps here instead of pushing out of the container.
-    <div className="flex min-w-0 flex-col gap-0.5 pt-0.5">
-      <Label htmlFor={ids.controlId} required={required} disabled={disabled} id={ids.labelId}>
-        {label}
-      </Label>
-      {hasDescription ? (
-        <p id={ids.descriptionId} className="text-xs text-muted-foreground">
-          {description}
-        </p>
-      ) : null}
-    </div>
-  ) : null
+  // The description shows with or without a label: aria-describedby points at it.
+  const labelEl =
+    hasLabel || hasDescription ? (
+      // 2px down: the first line of the label (20px) is centred on the 24px track.
+      // `min-w-0`: a long label wraps here instead of pushing out of the container.
+      <div className="flex min-w-0 flex-col gap-0.5 pt-0.5">
+        {hasLabel ? (
+          <Label htmlFor={ids.controlId} required={required} disabled={disabled} id={ids.labelId}>
+            {label}
+          </Label>
+        ) : null}
+        {hasDescription ? (
+          <p id={ids.descriptionId} className="text-xs text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
+      </div>
+    ) : null
 
   return (
     <div

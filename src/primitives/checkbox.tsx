@@ -97,11 +97,19 @@ function Checkbox({
           </CheckboxPrimitive.Indicator>
         </CheckboxPrimitive.Root>
 
-        {hasLabel ? (
+        {/* The description shows with or without a label: aria-describedby points at it. */}
+        {hasLabel || hasDescription ? (
           <div className="flex flex-col gap-0.5">
-            <Label htmlFor={ids.controlId} required={required} disabled={disabled} id={ids.labelId}>
-              {label}
-            </Label>
+            {hasLabel ? (
+              <Label
+                htmlFor={ids.controlId}
+                required={required}
+                disabled={disabled}
+                id={ids.labelId}
+              >
+                {label}
+              </Label>
+            ) : null}
             {hasDescription ? (
               <p
                 id={ids.descriptionId}

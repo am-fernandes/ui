@@ -74,4 +74,13 @@ describe("Checkbox", () => {
     await userEvent.click(screen.getByRole("checkbox", { name: "Todas" }))
     expect(onCheckedChange).toHaveBeenLastCalledWith(false)
   })
+
+  // With no label the description was dropped, and aria-describedby pointed at
+  // an id that was not in the page.
+  it("shows the description and describes the box with it when there is no label", () => {
+    render(<Checkbox aria-label="Selecionar linha" description="Proposta 1042" />)
+    const box = screen.getByRole("checkbox", { name: "Selecionar linha" })
+    expect(screen.getByText("Proposta 1042")).toBeInTheDocument()
+    expect(box).toHaveAccessibleDescription("Proposta 1042")
+  })
 })

@@ -232,4 +232,11 @@ describe("Switch", () => {
       expect(reported).toEqual([true, false])
     })
   })
+
+  it("shows the description and describes the switch with it when there is no label", () => {
+    render(<Switch aria-label="Notificar" description="Por e-mail, uma vez por dia" />)
+    const control = screen.getByRole("switch", { name: "Notificar" })
+    expect(screen.getByText("Por e-mail, uma vez por dia")).toBeInTheDocument()
+    expect(control).toHaveAccessibleDescription("Por e-mail, uma vez por dia")
+  })
 })
