@@ -4,6 +4,7 @@ import {
   centsToDisplay,
   formatBRL,
   fromCents,
+  parseBRNumber,
   parseMaskedValue,
   percentFromValue,
   percentOfTotal,
@@ -148,5 +149,70 @@ describe("parseMaskedValue", () => {
 
   it("handles whole numbers", () => {
     expect(parseMaskedValue("1.000,00")).toBe(1000)
+  })
+})
+
+describe("parseBRNumber", () => {
+  it("sem separador é um número inteiro", () => {
+    expect(parseBRNumber("1500")).toBe(1500)
+    expect(parseBRNumber("0")).toBe(0)
+    expect(parseBRNumber("007")).toBe(7)
+  })
+
+  it("com vírgula, ela é o separador decimal e os pontos são de milhar", () => {
+    expect(parseBRNumber("1.500,00")).toBe(1500)
+    expect(parseBRNumber("1500,5")).toBe(1500.5)
+    expect(parseBRNumber("1.234,5")).toBe(1234.5)
+    expect(parseBRNumber("12,5")).toBe(12.5)
+    expect(parseBRNumber("0,05")).toBe(0.05)
+    expect(parseBRNumber("1.234.567,89")).toBe(1234567.89)
+    expect(parseBRNumber(",5")).toBe(0.5)
+  })
+
+  it("sem vírgula, um ponto seguido de um ou dois dígitos é decimal", () => {
+    expect(parseBRNumber("2350.9")).toBe(2350.9)
+    expect(parseBRNumber("1500.00")).toBe(1500)
+    expect(parseBRNumber("0.5")).toBe(0.5)
+  })
+
+  it("sem vírgula, pontos de milhar bem formados são milhar", () => {
+    expect(parseBRNumber("1.500")).toBe(1500)
+    expect(parseBRNumber("350.000")).toBe(350000)
+    expect(parseBRNumber("12.345")).toBe(12345)
+    expect(parseBRNumber("1.234.567")).toBe(1234567)
+  })
+
+  it("sem vírgula, um ponto que não pode ser de milhar é decimal", () => {
+    // Formato de máquina: quatro dígitos antes do ponto ou zero na frente.
+    expect(parseBRNumber("1234.567")).toBe(1234.567)
+    expect(parseBRNumber("0.125")).toBe(0.125)
+    expect(parseBRNumber("12.3456")).toBe(12.3456)
+  })
+
+  it("ignora R$, espaços e texto em volta", () => {
+    expect(parseBRNumber("R$ 2.350,90")).toBe(2350.9)
+    expect(parseBRNumber("  R$\u00a01.500,00  ")).toBe(1500)
+    expect(parseBRNumber("Total: R$ 350.000,00 à vista")).toBe(350000)
+    expect(parseBRNumber("12,5%")).toBe(12.5)
+    expect(parseBRNumber("1 500,00")).toBe(1500)
+  })
+
+  it("ignora ponto final ou vírgula sobrando nas pontas", () => {
+    expect(parseBRNumber("R$ 1.500,00.")).toBe(1500)
+    expect(parseBRNumber("1500,")).toBe(1500)
+  })
+
+  it("lê o sinal de menos antes do número", () => {
+    expect(parseBRNumber("-50")).toBe(-50)
+    expect(parseBRNumber("R$ -1.234,56")).toBe(-1234.56)
+    expect(parseBRNumber("\u22121.234,56")).toBe(-1234.56)
+    expect(parseBRNumber("10-20")).toBe(1020)
+  })
+
+  it("devolve null quando não há número", () => {
+    expect(parseBRNumber("")).toBeNull()
+    expect(parseBRNumber("abc")).toBeNull()
+    expect(parseBRNumber("R$ ,")).toBeNull()
+    expect(parseBRNumber("-")).toBeNull()
   })
 })

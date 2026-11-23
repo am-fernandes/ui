@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
@@ -134,5 +135,93 @@ describe("CurrencyInput", () => {
     )
     const shell = container.querySelector("[data-slot='field-shell']")
     expect(shell?.getAttribute("data-label-position")).toBe("left")
+  })
+
+  // Regressão: a colagem passava pelo mesmo caminho da digitação ("centavos
+  // primeiro"), então "350.000" da planilha virava R$ 3.500,00 na proposta.
+  describe("colagem", () => {
+    async function pasteInto(text: string, initial = 0) {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      function Harness() {
+        const [value, setValue] = React.useState(initial)
+        return (
+          <CurrencyInput
+            label="Valor"
+            value={value}
+            onValueChange={(next) => {
+              onValueChange(next)
+              setValue(next)
+            }}
+          />
+        )
+      }
+      render(<Harness />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.paste(text)
+      return { input, onValueChange }
+    }
+
+    it.each([
+      ["1500", 1500, "1.500,00"],
+      ["1.500", 1500, "1.500,00"],
+      ["350.000", 350000, "350.000,00"],
+      ["350000", 350000, "350.000,00"],
+      ["1500,5", 1500.5, "1.500,50"],
+      ["1.234,5", 1234.5, "1.234,50"],
+      ["2350.9", 2350.9, "2.350,90"],
+      ["1.500,00", 1500, "1.500,00"],
+      ["1500.00", 1500, "1.500,00"],
+      ["R$ 2.350,90", 2350.9, "2.350,90"],
+      ["0,05", 0.05, "0,05"],
+    ])("%s vira %d reais", async (text, value, shown) => {
+      const { input, onValueChange } = await pasteInto(text)
+      expect(onValueChange).toHaveBeenLastCalledWith(value)
+      expect(input).toHaveValue(shown)
+    })
+
+    it("o valor colado substitui o que estava no campo", async () => {
+      const { input, onValueChange } = await pasteInto("1.500,00", 99.9)
+      expect(onValueChange).toHaveBeenLastCalledWith(1500)
+      expect(input).toHaveValue("1.500,00")
+    })
+
+    it("arredonda para centavos o que vem com mais casas", async () => {
+      const { onValueChange } = await pasteInto("10,999")
+      expect(onValueChange).toHaveBeenLastCalledWith(11)
+    })
+
+    it("texto sem número não muda o campo", async () => {
+      const { input, onValueChange } = await pasteInto("a combinar", 250)
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(input).toHaveValue("250,00")
+    })
+
+    it("um número grande demais para o campo não entra", async () => {
+      const { input, onValueChange } = await pasteInto("99999999999999999999", 250)
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(input).toHaveValue("250,00")
+    })
+
+    it("o onPaste de quem usa o campo é chamado e pode cancelar a colagem", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const onPaste = vi.fn((e: React.ClipboardEvent<HTMLInputElement>) => e.preventDefault())
+      render(<CurrencyInput value={0} onValueChange={onValueChange} onPaste={onPaste} />)
+      await user.click(screen.getByRole("textbox"))
+      await user.paste("1500")
+      expect(onPaste).toHaveBeenCalledTimes(1)
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("a digitação continua sendo de centavos primeiro", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCurrencyInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}1500")
+      expect(input).toHaveValue("15,00")
+    })
   })
 })

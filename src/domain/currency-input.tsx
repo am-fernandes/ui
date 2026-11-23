@@ -2,7 +2,7 @@
 
 import type * as React from "react"
 
-import { centsToDisplay, fromCents, toCents } from "@/lib/currency"
+import { centsToDisplay, fromCents, parseBRNumber, toCents } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
@@ -27,6 +27,9 @@ interface CurrencyInputProps
   ref?: React.Ref<HTMLInputElement>
 }
 
+/** Fifteen digits of cents: what round-trips exactly through a float. */
+const MAX_CENTS = 999_999_999_999_999
+
 function CurrencyInput({
   className,
   value,
@@ -39,6 +42,7 @@ function CurrencyInput({
   required,
   id,
   ref,
+  onPaste,
   ...props
 }: CurrencyInputProps) {
   const ids = useFieldIds(id)
@@ -50,6 +54,19 @@ function CurrencyInput({
     const digits = e.target.value.replace(/\D/g, "").slice(0, 15)
     const newCents = Number.parseInt(digits, 10) || 0
     onValueChange(fromCents(newCents))
+  }
+
+  // Typed digits fill the cents first; a pasted text is a number someone
+  // wrote ("1.500", "R$ 2.350,90", "1500.00") and replaces the value.
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    onPaste?.(e)
+    if (e.defaultPrevented) return
+    e.preventDefault()
+    const pasted = parseBRNumber(e.clipboardData?.getData("text") ?? "")
+    if (pasted == null) return
+    const cents = toCents(Math.abs(pasted))
+    if (cents > MAX_CENTS) return
+    onValueChange(fromCents(cents))
   }
 
   return (
@@ -83,10 +100,11 @@ function CurrencyInput({
             hasError && "border-destructive-text field-error",
             className,
           )}
-          value={display}
-          onChange={handleChange}
           disabled={disabled}
           {...props}
+          value={display}
+          onChange={handleChange}
+          onPaste={handlePaste}
         />
       </div>
     </FieldShell>

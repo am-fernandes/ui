@@ -57,6 +57,7 @@ export {
   centsToDisplay,
   formatBRL,
   fromCents,
+  parseBRNumber,
   parseMaskedValue,
   percentFromValue,
   percentOfTotal,

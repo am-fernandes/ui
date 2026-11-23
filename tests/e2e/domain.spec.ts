@@ -279,6 +279,34 @@ test.describe("CurrencyInput", () => {
   })
 })
 
+test.describe("CurrencyInput: colar", () => {
+  test.beforeEach(async ({ context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"])
+  })
+
+  const pastes = [
+    { text: "1500", shown: "1.500,00", value: "1500" },
+    { text: "1.500", shown: "1.500,00", value: "1500" },
+    { text: "350.000", shown: "350.000,00", value: "350000" },
+    { text: "1500,5", shown: "1.500,50", value: "1500.5" },
+    { text: "2350.9", shown: "2.350,90", value: "2350.9" },
+    { text: "1.500,00", shown: "1.500,00", value: "1500" },
+    { text: "1500.00", shown: "1.500,00", value: "1500" },
+    { text: "R$ 2.350,90", shown: "2.350,90", value: "2350.9" },
+  ]
+
+  for (const item of pastes) {
+    test(`"${item.text}" colado vira ${item.shown}`, async ({ page }) => {
+      await gotoStory(page, "domain-currencyinput--playground")
+      const input = page.getByRole("textbox", { name: /Valor do contrato/ })
+      await input.click()
+      await paste(page, item.text)
+      await expect(input).toHaveValue(item.shown)
+      await expect(page.getByText(`Valor interno: ${item.value}`, { exact: true })).toBeVisible()
+    })
+  }
+})
+
 test.describe("PercentageInput", () => {
   test("never goes above max", async ({ page }) => {
     await gotoStory(page, "domain-percentageinput--default")
