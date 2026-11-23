@@ -247,6 +247,8 @@ export interface FileUploadProps {
   required?: boolean
   /** The dropzone button: it takes the focus (`ref.current.focus()`), as React Hook Form does on an error. */
   ref?: React.Ref<HTMLButtonElement>
+  /** Called when the focus leaves the field: the dropzone and the buttons of the list. */
+  onBlur?: (event: React.FocusEvent<HTMLElement>) => void
 }
 
 function normalizeAccept(accept?: string | string[]): string | undefined {
@@ -338,6 +340,7 @@ function FileUpload({
   name,
   required = false,
   ref,
+  onBlur,
 }: FileUploadProps) {
   const mergedLabels: ResolvedFileUploadLabels = { ...defaultFileUploadLabels, ...labels }
   const resolvedLabel: React.ReactNode =
@@ -481,7 +484,19 @@ function FileUpload({
   }
 
   return (
-    <div className={cn("relative flex flex-col gap-3", className)} data-slot="file-upload">
+    <div
+      className={cn("relative flex flex-col gap-3", className)}
+      data-slot="file-upload"
+      onBlur={(e) => {
+        // The camera and image dialogs are portals: React bubbles their
+        // events here, but they are not the field.
+        if (!e.currentTarget.contains(e.target as Node)) return
+        // Moving between the dropzone and the list stays inside the field.
+        const next = e.relatedTarget as Node | null
+        if (next && e.currentTarget.contains(next)) return
+        onBlur?.(e)
+      }}
+    >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <button
           ref={setDropzoneRef}

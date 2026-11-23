@@ -1397,4 +1397,43 @@ describe("FileUpload", () => {
       expect(screen.getByRole("progressbar", { name: "Upload of a.pdf" })).toBeInTheDocument()
     })
   })
+  // Sem onBlur, o React Hook Form não marcava o campo como visitado.
+  describe("onBlur", () => {
+    it("é chamado quando o foco sai do campo, e não ao passar da dropzone para a lista", async () => {
+      const user = userEvent.setup()
+      const onBlur = vi.fn()
+      render(
+        <>
+          <FileUpload
+            label="Anexar"
+            multiple
+            value={[makeFile("a.pdf", "application/pdf")]}
+            onBlur={onBlur}
+          />
+          <button type="button">Depois</button>
+        </>,
+      )
+      await user.click(screen.getByRole("button", { name: "Anexar" }))
+      await user.tab()
+      expect(screen.getByRole("button", { name: "Abrir a.pdf em nova aba" })).toHaveFocus()
+      expect(onBlur).not.toHaveBeenCalled()
+      await user.click(screen.getByRole("button", { name: "Depois" }))
+      expect(onBlur).toHaveBeenCalledTimes(1)
+    })
+
+    it("o foco andando dentro do diálogo da imagem não conta como sair do campo", async () => {
+      const user = userEvent.setup()
+      const onBlur = vi.fn()
+      render(
+        <FileUpload downloadable value={[makeFile("foto.png", "image/png")]} onBlur={onBlur} />,
+      )
+      await user.click(screen.getByRole("button", { name: "Ampliar foto.png" }))
+      const dialog = await screen.findByRole("dialog")
+      onBlur.mockClear()
+      await user.tab()
+      await user.tab()
+      expect(dialog).toContainElement(document.activeElement as HTMLElement)
+      expect(onBlur).not.toHaveBeenCalled()
+    })
+  })
 })

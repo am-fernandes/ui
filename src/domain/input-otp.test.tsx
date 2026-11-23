@@ -233,4 +233,12 @@ describe("InputOTP", () => {
       expect(onValueChange).toHaveBeenLastCalledWith("123")
     })
   })
+  it("onBlur é chamado quando o foco sai do código", () => {
+    const onBlur = vi.fn()
+    render(<InputOTP length={4} value="" onValueChange={() => {}} onBlur={onBlur} />)
+    const input = screen.getByRole("textbox")
+    fireEvent.focus(input)
+    fireEvent.blur(input)
+    expect(onBlur).toHaveBeenCalledTimes(1)
+  })
 })

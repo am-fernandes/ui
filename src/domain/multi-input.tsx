@@ -87,6 +87,11 @@ interface MultiInputBaseProps {
   name?: string
   /** Class of the box that draws the border and holds the items. */
   className?: string
+  /**
+   * Called when the focus leaves the field (the text input and the items'
+   * remove buttons), after any typed text became an item.
+   */
+  onBlur?: (event: React.FocusEvent<HTMLElement>) => void
   /** The text input: it takes the focus, as React Hook Form does on an error. */
   ref?: React.Ref<HTMLInputElement>
 }
@@ -170,6 +175,7 @@ function MultiInput(props: MultiInputProps) {
     "aria-label": ariaLabel,
     name,
     className,
+    onBlur,
     ref,
   } = props
   const ids = useFieldIds(id)
@@ -309,6 +315,12 @@ function MultiInput(props: MultiInputProps) {
         data-slot="multi-input"
         data-type={props.type === "number" ? "number" : "string"}
         onClick={focusInput}
+        onBlur={(e) => {
+          // Moving between the text input and a remove button stays inside.
+          const next = e.relatedTarget as Node | null
+          if (next && e.currentTarget.contains(next)) return
+          onBlur?.(e)
+        }}
         className={cn(
           // The height comes from the control size; the vertical padding only
           // spaces the rows once the items wrap.

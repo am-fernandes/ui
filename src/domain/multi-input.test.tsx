@@ -671,4 +671,37 @@ describe("MultiInput", () => {
       expect(screen.getByRole("group", { name: "Contatos" })).toBeInTheDocument()
     })
   })
+  // Sem onBlur, o React Hook Form (mode "onBlur", touched) não sabia quando a
+  // pessoa saiu do campo.
+  describe("onBlur", () => {
+    it("é chamado quando o foco sai do campo, depois de o texto virar item", async () => {
+      const user = userEvent.setup()
+      const calls: string[] = []
+      render(
+        <>
+          <MultiInput
+            label="Tags"
+            value={["a"]}
+            onValueChange={(v) => calls.push(`change:${v.join(",")}`)}
+            onBlur={() => calls.push("blur")}
+          />
+          <button type="button">Depois</button>
+        </>,
+      )
+      await user.click(screen.getByRole("textbox", { name: "Tags" }))
+      await user.keyboard("b")
+      await user.click(screen.getByRole("button", { name: "Depois" }))
+      expect(calls).toEqual(["change:a,b", "blur"])
+    })
+
+    it("não é chamado quando o foco só passa para o × de um item", async () => {
+      const user = userEvent.setup()
+      const onBlur = vi.fn()
+      render(<MultiInput label="Tags" value={["a"]} onValueChange={vi.fn()} onBlur={onBlur} />)
+      await user.click(screen.getByRole("textbox", { name: "Tags" }))
+      await user.tab({ shift: true })
+      expect(screen.getByRole("button", { name: "Remover a" })).toHaveFocus()
+      expect(onBlur).not.toHaveBeenCalled()
+    })
+  })
 })

@@ -30,6 +30,8 @@ export interface InputOTPProps {
   disabled?: boolean
   /** Name of the field in a native form, which receives the code as typed. */
   name?: string
+  /** Called when the focus leaves the code. */
+  onBlur?: React.FocusEventHandler<HTMLInputElement>
   id?: string
   className?: string
   ref?: React.Ref<HTMLInputElement>
@@ -86,6 +88,7 @@ function InputOTP({
   required,
   disabled,
   name,
+  onBlur,
   id,
   className,
   ref,
@@ -116,6 +119,7 @@ function InputOTP({
         defaultValue={defaultValue}
         onChange={onValueChange}
         name={name}
+        onBlur={onBlur}
         required={required}
         aria-required={required ? true : undefined}
         onComplete={onComplete}
