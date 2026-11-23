@@ -204,7 +204,9 @@ export const AsCounter: Story = {
           <BellIcon className="size-6 text-muted-foreground" />
           <Badge
             variant="destructive"
-            className="-right-2 -top-2 absolute h-5 min-w-5 justify-center rounded-full px-1 text-[10px]"
+            // 12px (`text-xs`), the smallest text the system uses: 10px was
+            // hard to read, and a count is read at a glance.
+            className="-right-2 -top-2 absolute h-5 min-w-5 justify-center rounded-full px-1 text-xs"
           >
             {formatCount(n)}
           </Badge>

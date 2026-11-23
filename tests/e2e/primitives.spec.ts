@@ -831,3 +831,21 @@ test.describe("Typography", () => {
     }
   })
 })
+
+test.describe("Badge", () => {
+  test("a counter over an icon is at least 12px, and stays on one line", async ({ page }) => {
+    await open(page, "primitives-badge--as-counter")
+    const counters = await page.locator('[data-slot="badge"]').evaluateAll((badges) =>
+      badges.map((badge) => ({
+        text: badge.textContent,
+        fontSize: Number.parseFloat(getComputedStyle(badge).fontSize),
+        height: badge.getBoundingClientRect().height,
+      })),
+    )
+    expect(counters).toHaveLength(5)
+    for (const counter of counters) {
+      expect(counter.fontSize, `font size of "${counter.text}"`).toBeGreaterThanOrEqual(12)
+      expect(counter.height, `height of "${counter.text}"`).toBe(20)
+    }
+  })
+})
