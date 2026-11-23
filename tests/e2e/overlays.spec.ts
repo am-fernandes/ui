@@ -1520,6 +1520,34 @@ test.describe("Progress", () => {
   })
 })
 
+// The stories of Alert, AlertDialog and Progress turned off axe's
+// color-contrast and aria-progressbar-name rules, with reasons that no
+// longer held. With the rules back on, they pass in both themes.
+test.describe("axe without suppressions", () => {
+  for (const theme of ["light", "dark"] as const) {
+    const query = theme === "dark" ? DARK : ""
+
+    test(`Alert, every variant (${theme})`, async ({ page }) => {
+      await page.goto(story("overlays-alert--all-variants", query))
+      await expect(page.locator('[data-slot="alert"]')).toHaveCount(5, { timeout: 15_000 })
+      await expectNoA11yViolations(page, "#storybook-root")
+    })
+
+    test(`AlertDialog with a destructive confirm (${theme})`, async ({ page }) => {
+      await gotoStory(page, "overlays-alertdialog--with-body", "Cancelar assinatura", query)
+      await page.getByRole("button", { name: "Cancelar assinatura" }).click()
+      await settledBox(page.getByRole("alertdialog"))
+      await expectNoA11yViolations(page, '[role="alertdialog"]')
+    })
+
+    test(`Progress, named (${theme})`, async ({ page }) => {
+      await page.goto(story("overlays-progress--playground", query))
+      await expect(page.getByRole("progressbar")).toBeVisible({ timeout: 15_000 })
+      await expectNoA11yViolations(page, "#storybook-root")
+    })
+  }
+})
+
 test.describe("IconButton", () => {
   test("shows its label as a tooltip on hover", async ({ page }) => {
     await gotoStory(page, "primitives-iconbutton--variants", "Excluir")

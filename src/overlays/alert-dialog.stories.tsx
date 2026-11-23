@@ -74,10 +74,6 @@ export const Default: Story = {
     confirmVariant: "destructive",
     onConfirm: fn(),
   },
-  parameters: {
-    // destructive button token fails 4.5:1; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
-  },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
     const trigger = canvas.getByRole("button", { name: "Excluir documento" })
@@ -245,8 +241,6 @@ export const WithBody: Story = {
     </AlertDialog>
   ),
   parameters: {
-    // destructive button token fails 4.5:1; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story:

@@ -114,10 +114,6 @@ export const Destructive: Story = {
     title: "Erro ao salvar",
     description: "Tente novamente em alguns segundos.",
   },
-  parameters: {
-    // destructive token + body text on tinted bg fails 4.5:1; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
-  },
 }
 
 export const WithAction: Story = {
@@ -185,7 +181,6 @@ export const AllVariants: Story = {
     </div>
   ),
   parameters: {
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: { description: { story: "Todas as 5 variantes empilhadas." } },
   },
 }
