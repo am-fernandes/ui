@@ -176,6 +176,8 @@ interface InternalMaskedInputProps extends MaskedInputProps {
   spec: MaskSpec
   /** `data-slot` of the wrapper (`cpf-input`, `cep-input`…). */
   slot: string
+  /** Something fixed at the right edge of the field (the CEP spinner). */
+  trailing?: React.ReactNode
 }
 
 function MaskedInput({

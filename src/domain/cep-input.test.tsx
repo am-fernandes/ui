@@ -295,4 +295,104 @@ describe("CEPInput", () => {
       expect(input).toHaveValue("0131")
     })
   })
+
+  // Todo formulário de endereço consulta o CEP assim que ele fica completo.
+  describe("onComplete", () => {
+    function Lookup({
+      onComplete,
+      initial = "",
+    }: { onComplete: (cep: string) => void; initial?: string }) {
+      const [value, setValue] = React.useState(initial)
+      return <CEPInput label="CEP" value={value} onValueChange={setValue} onComplete={onComplete} />
+    }
+
+    it("dispara uma vez, com os oito dígitos, quando o oitavo é digitado", async () => {
+      const user = userEvent.setup()
+      const onComplete = vi.fn()
+      render(<Lookup onComplete={onComplete} />)
+      const input = screen.getByRole("textbox")
+      await user.type(input, "0131010")
+      expect(onComplete).not.toHaveBeenCalled()
+      await user.keyboard("0")
+      expect(onComplete).toHaveBeenCalledTimes(1)
+      expect(onComplete).toHaveBeenCalledWith("01310100")
+    })
+
+    it("dispara quando um CEP completo é colado", async () => {
+      const user = userEvent.setup()
+      const onComplete = vi.fn()
+      render(<Lookup onComplete={onComplete} />)
+      await user.click(screen.getByRole("textbox"))
+      await user.paste("CEP 01310-100")
+      expect(onComplete).toHaveBeenCalledTimes(1)
+      expect(onComplete).toHaveBeenCalledWith("01310100")
+    })
+
+    it("dispara de novo quando o CEP é corrigido e volta a ter oito dígitos", async () => {
+      const user = userEvent.setup()
+      const onComplete = vi.fn()
+      render(<Lookup onComplete={onComplete} initial="01310100" />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.keyboard("{End}{Backspace}")
+      expect(onComplete).not.toHaveBeenCalled()
+      await user.keyboard("9")
+      expect(onComplete).toHaveBeenCalledTimes(1)
+      expect(onComplete).toHaveBeenCalledWith("01310109")
+    })
+
+    it("não dispara por um value que chega pronto de fora", () => {
+      const onComplete = vi.fn()
+      const { rerender } = render(
+        <CEPInput value="" onValueChange={vi.fn()} onComplete={onComplete} />,
+      )
+      rerender(<CEPInput value="01310100" onValueChange={vi.fn()} onComplete={onComplete} />)
+      expect(onComplete).not.toHaveBeenCalled()
+    })
+
+    it("funciona no modo não controlado", async () => {
+      const user = userEvent.setup()
+      const onComplete = vi.fn()
+      render(<CEPInput onComplete={onComplete} />)
+      await user.type(screen.getByRole("textbox"), "01310100")
+      expect(onComplete).toHaveBeenCalledWith("01310100")
+    })
+  })
+
+  describe("loading", () => {
+    it("mostra um indicador dentro do campo e avisa o leitor de tela", () => {
+      const { container } = render(
+        <CEPInput label="CEP" value="01310100" onValueChange={vi.fn()} loading />,
+      )
+      expect(container.querySelector('[data-slot="cep-input-spinner"]')).not.toBeNull()
+      expect(screen.getByRole("textbox")).toHaveAttribute("aria-busy", "true")
+      expect(screen.getByRole("status")).toHaveTextContent("Buscando endereço…")
+    })
+
+    it("sem loading não há indicador nem aviso", () => {
+      const { container } = render(
+        <CEPInput label="CEP" value="01310100" onValueChange={vi.fn()} />,
+      )
+      expect(container.querySelector('[data-slot="cep-input-spinner"]')).toBeNull()
+      expect(screen.getByRole("textbox")).not.toHaveAttribute("aria-busy")
+      expect(screen.getByRole("status")).toBeEmptyDOMElement()
+    })
+
+    it("o campo continua editável enquanto carrega", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCEPInput initial="0131010" />)
+      const input = screen.getByRole("textbox")
+      expect(input).not.toBeDisabled()
+      await user.click(input)
+      await user.keyboard("{End}0")
+      expect(input).toHaveValue("01310-100")
+    })
+
+    it("o texto do aviso vem de labels", () => {
+      render(
+        <CEPInput value="" onValueChange={vi.fn()} loading labels={{ loading: "Looking up…" }} />,
+      )
+      expect(screen.getByRole("status")).toHaveTextContent("Looking up…")
+    })
+  })
 })

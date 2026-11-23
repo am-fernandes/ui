@@ -237,6 +237,52 @@ test.describe("Campos com máscara: colar", () => {
   })
 })
 
+test.describe("CEPInput: consulta de endereço", () => {
+  test("o oitavo dígito dispara a consulta e o indicador aparece dentro do campo", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-cepinput--address-lookup")
+    const input = page.getByRole("textbox", { name: "CEP" })
+    const spinner = page.locator('[data-slot="cep-input-spinner"]')
+    const address = page.getByTestId("address")
+
+    await input.pressSequentially("0131010")
+    await expect(spinner).toHaveCount(0)
+    await expect(address).toHaveText("Endereço: (informe o CEP)")
+
+    await input.pressSequentially("0")
+    await expect(input).toHaveValue("01310-100")
+    await expect(spinner).toBeVisible()
+    await expect(input).toHaveAttribute("aria-busy", "true")
+    await expect(page.getByRole("status")).toHaveText("Buscando endereço…")
+
+    // O indicador fica dentro da caixa do campo, não ao lado dela.
+    const field = await input.boundingBox()
+    const icon = await spinner.boundingBox()
+    if (!field || !icon) throw new Error("sem caixa para medir")
+    expect(icon.x).toBeGreaterThan(field.x)
+    expect(icon.x + icon.width).toBeLessThan(field.x + field.width)
+    expect(icon.y).toBeGreaterThan(field.y)
+    expect(icon.y + icon.height).toBeLessThan(field.y + field.height)
+
+    await expect(address).toHaveText("Avenida Paulista, Bela Vista, São Paulo - SP")
+    await expect(spinner).toHaveCount(0)
+    await expect(input).not.toHaveAttribute("aria-busy", "true")
+  })
+
+  test("corrigir o CEP durante a consulta dispara outra", async ({ page }) => {
+    await gotoStory(page, "domain-cepinput--address-lookup")
+    const input = page.getByRole("textbox", { name: "CEP" })
+    await input.pressSequentially("01310100")
+    await expect(page.locator('[data-slot="cep-input-spinner"]')).toBeVisible()
+    // O campo não trava enquanto carrega.
+    await page.keyboard.press("Backspace")
+    await page.keyboard.type("9")
+    await expect(input).toHaveValue("01310-109")
+    await expect(page.getByTestId("address")).toHaveText("CEP não encontrado")
+  })
+})
+
 test.describe("CNPJInput: CNPJ alfanumérico", () => {
   test("aceita o exemplo oficial digitado, em maiúsculas, e ele valida", async ({ page }) => {
     await gotoStory(page, "domain-cnpjinput--with-validation-feedback")

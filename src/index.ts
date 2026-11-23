@@ -136,7 +136,12 @@ export {
 export { Tabs, type TabsItemData, type TabsProps } from "./navigation/tabs"
 
 // Domain
-export { CEPInput, type CEPInputProps } from "./domain/cep-input"
+export {
+  CEPInput,
+  defaultCEPInputLabels,
+  type CEPInputLabels,
+  type CEPInputProps,
+} from "./domain/cep-input"
 export { CNPJInput, type CNPJInputProps } from "./domain/cnpj-input"
 export { CPFInput, type CPFInputProps } from "./domain/cpf-input"
 export { CurrencyInput, type CurrencyInputProps } from "./domain/currency-input"

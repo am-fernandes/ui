@@ -23,6 +23,9 @@ const meta = {
           "- `disabled` — desabilita a edição.",
           "- `defaultValue` — valor inicial (sem máscara) quando o campo não é controlado: sem `value`, ele guarda o próprio valor.",
           "- `name` — nome no formulário nativo. O form recebe o valor **sem máscara**, por um input oculto.",
+          "- `onComplete` — chamado com os oito dígitos quando o CEP fica completo por uma edição (oitavo dígito digitado ou CEP colado). É o gancho da consulta de endereço.",
+          "- `loading` — mostra um indicador dentro do campo enquanto a consulta roda; o campo continua editável.",
+          "- `labels` — textos do componente (`defaultCEPInputLabels`).",
           "- Demais props do `<input>` (exceto `value`, `onChange`, `type`) são repassadas.",
           "",
           "**Validação:** o componente é apenas um formatador. Para validar o tamanho use `isValidCEP` de `@amfernandesinc/ui/lib/brazil`.",
@@ -180,5 +183,58 @@ export const WithValidationFeedback: Story = {
         </p>
       </div>
     )
+  },
+}
+
+export const AddressLookup: Story = {
+  args: {},
+  render: () => {
+    const [cep, setCep] = React.useState("")
+    const [loading, setLoading] = React.useState(false)
+    const [address, setAddress] = React.useState<string | null>(null)
+    const timer = React.useRef<number | undefined>(undefined)
+    React.useEffect(() => () => window.clearTimeout(timer.current), [])
+
+    // Faz as vezes da chamada ao serviço de CEP.
+    const lookup = (value: string) => {
+      setLoading(true)
+      window.clearTimeout(timer.current)
+      timer.current = window.setTimeout(() => {
+        setAddress(
+          value === "01310100"
+            ? "Avenida Paulista, Bela Vista, São Paulo - SP"
+            : "CEP não encontrado",
+        )
+        setLoading(false)
+      }, 1200)
+    }
+
+    return (
+      <div className="flex w-80 flex-col gap-2">
+        <CEPInput
+          id="cep-lookup"
+          label="CEP"
+          description="Experimente 01310-100."
+          value={cep}
+          onValueChange={(value) => {
+            setCep(value)
+            setAddress(null)
+          }}
+          onComplete={lookup}
+          loading={loading}
+        />
+        <p className="text-sm" data-testid="address">
+          {address ?? "Endereço: (informe o CEP)"}
+        </p>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`onComplete` dispara quando o oitavo dígito entra (ou um CEP inteiro é colado) e `loading` mostra o indicador dentro do campo durante a consulta. O campo continua editável: corrigir o CEP dispara uma nova consulta.",
+      },
+    },
   },
 }
