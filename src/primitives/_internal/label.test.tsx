@@ -11,13 +11,48 @@ describe("Label (internal)", () => {
     expect(label.getAttribute("for")).toBe("x")
   })
 
-  it("renders an asterisk when required", () => {
+  // The asterisk had `aria-label="obrigatório"` on a <span>: it became part of
+  // the name of the control ("E-mail obrigatório"), on top of the "required"
+  // the control already announces.
+  it("draws the required asterisk for the eye only", () => {
     render(
-      <Label htmlFor="x" required>
+      <>
+        <Label htmlFor="x" required>
+          Nome
+        </Label>
+        <input id="x" required />
+      </>,
+    )
+    const asterisk = document.querySelector('[data-slot="label-required"]')
+    expect(asterisk).toHaveTextContent("*")
+    expect(asterisk).toHaveAttribute("aria-hidden", "true")
+    expect(asterisk).not.toHaveAttribute("aria-label")
+    expect(screen.getByRole("textbox")).toHaveAccessibleName("Nome")
+  })
+
+  it("adds hidden words for a control that cannot say it is required itself", () => {
+    render(
+      <>
+        <Label htmlFor="x" required requiredText="obrigatório">
+          Data
+        </Label>
+        <button id="x" type="button">
+          Escolher
+        </button>
+      </>,
+    )
+    expect(screen.getByRole("button")).toHaveAccessibleName("Data obrigatório")
+    expect(screen.getByText("obrigatório")).toHaveClass("sr-only")
+  })
+
+  it("has no asterisk and no hidden words when not required", () => {
+    render(
+      <Label htmlFor="x" requiredText="obrigatório">
         Nome
       </Label>,
     )
-    expect(screen.getByLabelText("obrigatório")).toBeInTheDocument()
+    expect(document.querySelector('[data-slot="label-required"]')).toBeNull()
+    expect(screen.queryByText("obrigatório")).not.toBeInTheDocument()
   })
 
   it("renders a span with no `for` when it names a group", () => {

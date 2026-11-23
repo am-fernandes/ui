@@ -72,14 +72,17 @@ describe("Switch", () => {
   })
 
   it("renders the required asterisk inside the label when required=true", () => {
-    render(<Switch label="Obrigatório" required />)
-    const asterisk = screen.getByLabelText("obrigatório")
+    render(<Switch label="Aceitar termos" required />)
+    const asterisk = document.querySelector('[data-slot="label-required"]')
     expect(asterisk).toHaveTextContent("*")
+    expect(asterisk?.closest("label")).toBe(screen.getByText("Aceitar termos"))
   })
 
-  it("sets aria-required on the control when required=true", () => {
-    render(<Switch label="R" required />)
-    expect(screen.getByRole("switch", { name: /R/ })).toHaveAttribute("aria-required", "true")
+  it("is required once: aria-required says it, the asterisk only shows it", () => {
+    render(<Switch label="Aceitar termos" required />)
+    const control = screen.getByRole("switch", { name: "Aceitar termos" })
+    expect(control).toHaveAttribute("aria-required", "true")
+    expect(control).toHaveAccessibleName("Aceitar termos")
   })
 
   it("wires aria-describedby to the description element", () => {

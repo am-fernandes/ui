@@ -20,6 +20,14 @@ describe("Textarea", () => {
     expect(screen.getByLabelText("X")).toHaveAttribute("aria-invalid", "true")
   })
 
+  it("is required once: the native attribute says it, the asterisk only shows it", () => {
+    render(<Textarea label="Observações" required />)
+    const textarea = screen.getByRole("textbox")
+    expect(textarea).toBeRequired()
+    expect(textarea).toHaveAccessibleName("Observações")
+    expect(document.querySelector('[data-slot="label-required"]')).toHaveTextContent("*")
+  })
+
   it("renders maxLength counter when set", () => {
     render(<Textarea label="X" maxLength={100} value="abc" onChange={() => {}} />)
     expect(screen.getByText("3/100")).toBeInTheDocument()

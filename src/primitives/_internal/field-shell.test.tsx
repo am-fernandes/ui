@@ -68,12 +68,69 @@ describe("FieldShell", () => {
     )
   })
 
-  it("renders required asterisk on label", () => {
-    render(
-      <FieldShell controlId="c" labelId="l" descriptionId="d" errorId="e" label="Nome" required>
-        <input id="c" />
-      </FieldShell>,
-    )
-    expect(screen.getByLabelText("obrigatório")).toBeInTheDocument()
+  describe("required", () => {
+    const asterisk = () => document.querySelector('[data-slot="label-required"]')
+
+    // The default serves a control that cannot announce "required" itself,
+    // such as the button that opens a date picker: the label says it.
+    it("draws the asterisk and, by default, says it in hidden words", () => {
+      render(
+        <FieldShell controlId="c" labelId="l" descriptionId="d" errorId="e" label="Data" required>
+          <button id="c" type="button">
+            Escolher
+          </button>
+        </FieldShell>,
+      )
+      expect(asterisk()).toHaveAttribute("aria-hidden", "true")
+      expect(screen.getByRole("button")).toHaveAccessibleName("Data obrigatório")
+    })
+
+    it("takes the hidden words from requiredLabel", () => {
+      render(
+        <FieldShell
+          controlId="c"
+          labelId="l"
+          descriptionId="d"
+          errorId="e"
+          label="Date"
+          required
+          requiredLabel="required"
+        >
+          <button id="c" type="button">
+            Pick
+          </button>
+        </FieldShell>,
+      )
+      expect(screen.getByRole("button")).toHaveAccessibleName("Date required")
+    })
+
+    it("keeps the name clean when the control announces it natively", () => {
+      render(
+        <FieldShell
+          controlId="c"
+          labelId="l"
+          descriptionId="d"
+          errorId="e"
+          label="Nome"
+          required
+          nativeRequired
+        >
+          <input id="c" required />
+        </FieldShell>,
+      )
+      expect(asterisk()).toHaveTextContent("*")
+      expect(screen.getByRole("textbox")).toHaveAccessibleName("Nome")
+      expect(screen.getByRole("textbox")).toBeRequired()
+    })
+
+    it("draws nothing when the field is not required", () => {
+      render(
+        <FieldShell controlId="c" labelId="l" descriptionId="d" errorId="e" label="Nome">
+          <input id="c" />
+        </FieldShell>,
+      )
+      expect(asterisk()).toBeNull()
+      expect(screen.getByRole("textbox")).toHaveAccessibleName("Nome")
+    })
   })
 })

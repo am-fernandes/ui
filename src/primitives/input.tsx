@@ -111,6 +111,7 @@ function Input({
       error={error}
       labelPosition={labelPosition}
       required={required}
+      nativeRequired
       disabled={disabled}
     >
       {inputEl}

@@ -5,7 +5,19 @@ import type * as React from "react"
 import { cn } from "@/lib/utils"
 
 interface InternalLabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
+  /**
+   * Draws a red asterisk after the text. The asterisk is for the eye only
+   * (`aria-hidden`): a control with `required` or `aria-required` already
+   * announces it, and an asterisk in its name would make it say so twice.
+   */
   required?: boolean
+  /**
+   * Words read with the name when `required` ("obrigatório"), for a control
+   * that cannot say it is required itself, such as the button that opens a
+   * date picker. Leave it out when the control has `required` or
+   * `aria-required`.
+   */
+  requiredText?: string
   /**
    * The control is disabled: the label stops inviting a click. It is not
    * dimmed here. The 50% of a disabled field goes once on the outermost piece
@@ -26,6 +38,7 @@ function Label({
   className,
   children,
   required,
+  requiredText,
   disabled,
   htmlFor,
   ref,
@@ -46,9 +59,16 @@ function Label({
     >
       {children}
       {required ? (
-        <span aria-label="obrigatório" className="ml-0.5 text-destructive-text">
-          *
-        </span>
+        <>
+          <span
+            data-slot="label-required"
+            aria-hidden="true"
+            className="ml-0.5 text-destructive-text"
+          >
+            *
+          </span>
+          {requiredText ? <span className="sr-only"> {requiredText}</span> : null}
+        </>
       ) : null}
     </Element>
   )

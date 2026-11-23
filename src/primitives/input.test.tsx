@@ -30,9 +30,13 @@ describe("Input", () => {
     expect(screen.getByLabelText("Busca")).toBeInTheDocument()
   })
 
-  it("renders required asterisk", () => {
+  it("is required once: the native attribute says it, the asterisk only shows it", () => {
     render(<Input label="Nome" required />)
-    expect(screen.getByLabelText("obrigatório")).toBeInTheDocument()
+    const input = screen.getByRole("textbox")
+    expect(input).toBeRequired()
+    // Not "Nome obrigatório": a screen reader would say "required" twice.
+    expect(input).toHaveAccessibleName("Nome")
+    expect(document.querySelector('[data-slot="label-required"]')).toHaveTextContent("*")
   })
 
   it("renders leadingIcon inside the input wrapper", () => {

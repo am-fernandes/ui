@@ -35,6 +35,17 @@ export interface FieldShellProps {
   error?: string
   labelPosition?: LabelPosition
   required?: boolean
+  /**
+   * Read with the label of a required field whose control cannot announce it
+   * itself (a button that opens a picker). @default "obrigatório"
+   */
+  requiredLabel?: string
+  /**
+   * The control carries `required` (or `aria-required`) and announces it: the
+   * label only draws the asterisk, with no words, so "obrigatório" is not
+   * said twice.
+   */
+  nativeRequired?: boolean
   disabled?: boolean
   className?: string
   children: React.ReactNode
@@ -50,6 +61,8 @@ function FieldShell({
   error,
   labelPosition = "up",
   required,
+  requiredLabel = "obrigatório",
+  nativeRequired = false,
   disabled,
   className,
   children,
@@ -75,6 +88,7 @@ function FieldShell({
           id={labelId}
           htmlFor={controlId}
           required={required}
+          requiredText={nativeRequired ? undefined : requiredLabel}
           disabled={disabled}
           className={cn(
             labelPosition === "hidden" && "sr-only",

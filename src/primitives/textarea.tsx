@@ -240,6 +240,7 @@ function Textarea({
       error={error}
       labelPosition={labelPosition}
       required={required}
+      nativeRequired
       disabled={disabled}
     >
       {textareaEl}
