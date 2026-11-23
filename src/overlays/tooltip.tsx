@@ -1,7 +1,7 @@
 "use client"
 
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
-import type * as React from "react"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { motionTooltip } from "./_internal/animations"
@@ -9,6 +9,17 @@ import { useOverlayContainer } from "./_internal/overlay-container"
 
 export interface TooltipProps {
   content: React.ReactNode
+  /**
+   * The element the tooltip describes: one element that takes a ref and
+   * spreads props (a `Button`, an `IconButton`, a link).
+   *
+   * A disabled control (`disabled`) gets no pointer or focus events, so it
+   * cannot open a tooltip by itself. It is wrapped in a focusable `<span>`
+   * that does: the tooltip opens on hover and on keyboard focus, which is the
+   * place to say why the action is unavailable ("Só o gestor pode excluir").
+   * Tooltips do not open on touch (a press activates the control): on a
+   * phone, say it in the page too.
+   */
   children: React.ReactNode
   open?: boolean
   defaultOpen?: boolean
@@ -18,6 +29,10 @@ export interface TooltipProps {
   align?: "start" | "center" | "end"
   sideOffset?: number
   className?: string
+}
+
+function isDisabledElement(node: React.ReactNode) {
+  return React.isValidElement<{ disabled?: unknown }>(node) && node.props.disabled === true
 }
 
 function Tooltip({
@@ -40,7 +55,19 @@ function Tooltip({
     <TooltipPrimitive.Provider delayDuration={delayDuration}>
       <TooltipPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
         <TooltipPrimitive.Trigger asChild data-slot="tooltip-trigger">
-          {children}
+          {isDisabledElement(children) ? (
+            // The disabled control has `pointer-events: none` (Button,
+            // IconButton), so the pointer reaches this span.
+            <span
+              // biome-ignore lint/a11y/noNoninteractiveTabindex: the only way a keyboard user reaches the explanation of a disabled control
+              tabIndex={0}
+              className="inline-flex cursor-default rounded-element focus-visible:focus-outline"
+            >
+              {children}
+            </span>
+          ) : (
+            children
+          )}
         </TooltipPrimitive.Trigger>
         {container === null ? null : (
           <TooltipPrimitive.Portal container={container}>

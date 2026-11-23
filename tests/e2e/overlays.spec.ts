@@ -669,6 +669,24 @@ test.describe("Sheet", () => {
 })
 
 test.describe("Tooltip", () => {
+  // A disabled button gets no pointer or focus events: its tooltip never
+  // opened, and "why can't I delete?" had no answer.
+  test("on a disabled button it opens on hover and on Tab", async ({ page }) => {
+    await gotoStory(page, "overlays-tooltip--on-disabled-button", "Excluir proposta")
+    const button = page.getByRole("button", { name: "Excluir proposta" })
+    await expect(button).toBeDisabled()
+    await button.hover({ force: true })
+    const tooltip = page.getByRole("tooltip", { name: /Só o gestor da carteira/ })
+    await expect(tooltip).toBeVisible()
+    await page.mouse.move(0, 0, { steps: 10 })
+    await expect(page.getByRole("tooltip")).toHaveCount(0)
+
+    await page.keyboard.press("Tab")
+    await expect(tooltip).toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(page.getByRole("tooltip")).toHaveCount(0)
+  })
+
   // The Sides story, not Default: Default has a `play` function that focuses
   // the trigger, so its tooltip is already open (and held open) by focus.
   test("appears on hover and disappears on mouse leave", async ({ page }) => {

@@ -173,3 +173,21 @@ export const OnIconButton: Story = {
     },
   },
 }
+
+export const OnDisabledButton: Story = {
+  render: () => (
+    <Tooltip content="Só o gestor da carteira pode excluir propostas aprovadas.">
+      <Button variant="destructive" disabled>
+        Excluir proposta
+      </Button>
+    </Tooltip>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Um botão desabilitado não recebe eventos de ponteiro nem foco, então o `Tooltip` o envolve num `<span>` focável: o tooltip abre no hover e no Tab e explica por que a ação não está disponível. No celular o tooltip não abre (o toque aciona o controle): diga o motivo também na página.",
+      },
+    },
+  },
+}
