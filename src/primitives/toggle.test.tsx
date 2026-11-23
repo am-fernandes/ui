@@ -59,6 +59,8 @@ describe("Toggle", () => {
     expect(onPressedChange).not.toHaveBeenCalled()
   })
 
+  // A complement only: the fills and the contrast of every pressed variant
+  // are measured by tests/e2e/primitives.spec.ts.
   it("applies variant=warning classes when pressed", () => {
     render(
       <Toggle variant="warning" defaultPressed>

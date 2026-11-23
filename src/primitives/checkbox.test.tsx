@@ -1,5 +1,6 @@
-import { render, screen } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
 import { Checkbox } from "./checkbox"
@@ -82,5 +83,74 @@ describe("Checkbox", () => {
     const box = screen.getByRole("checkbox", { name: "Selecionar linha" })
     expect(screen.getByText("Proposta 1042")).toBeInTheDocument()
     expect(box).toHaveAccessibleDescription("Proposta 1042")
+  })
+
+  // The minimum of CONTRIBUTING (step 6) for a control: keyboard, ref,
+  // required, aria-describedby and the form.
+  describe("as a form control", () => {
+    it("toggles with Space from the keyboard", async () => {
+      const user = userEvent.setup()
+      render(<Checkbox label="Aceito" />)
+      await user.tab()
+      const box = screen.getByRole("checkbox", { name: "Aceito" })
+      expect(box).toHaveFocus()
+      await user.keyboard(" ")
+      expect(box).toHaveAttribute("aria-checked", "true")
+      await user.keyboard(" ")
+      expect(box).toHaveAttribute("aria-checked", "false")
+    })
+
+    it("forwards the ref to the box", () => {
+      const ref = React.createRef<HTMLButtonElement>()
+      render(<Checkbox label="Aceito" ref={ref} />)
+      expect(ref.current).toBe(screen.getByRole("checkbox"))
+    })
+
+    it("is required on the control and blocks the form until checked", async () => {
+      const user = userEvent.setup()
+      render(
+        <form data-testid="form">
+          <Checkbox label="Aceito os termos" name="termos" required />
+        </form>,
+      )
+      const box = screen.getByRole("checkbox", { name: "Aceito os termos" })
+      expect(box).toHaveAttribute("aria-required", "true")
+      const form = screen.getByTestId("form") as HTMLFormElement
+      expect(form.checkValidity()).toBe(false)
+      await user.click(box)
+      expect(form.checkValidity()).toBe(true)
+      expect(new FormData(form).get("termos")).toBe("on")
+    })
+
+    it("is described by its description, its error and the consumer's ids", () => {
+      render(
+        <>
+          <Checkbox
+            label="Aceito"
+            description="Você pode revogar."
+            error="Obrigatório"
+            aria-describedby="extra"
+          />
+          <p id="extra">Veja a política.</p>
+        </>,
+      )
+      expect(screen.getByRole("checkbox")).toHaveAccessibleDescription(
+        "Você pode revogar. Obrigatório Veja a política.",
+      )
+      expect(screen.getByRole("checkbox")).toHaveAttribute("aria-invalid", "true")
+    })
+
+    it("goes back to its default on a form reset", async () => {
+      const user = userEvent.setup()
+      render(
+        <form data-testid="form">
+          <Checkbox label="Aceito" name="aceito" />
+        </form>,
+      )
+      const box = screen.getByRole("checkbox")
+      await user.click(box)
+      act(() => (screen.getByTestId("form") as HTMLFormElement).reset())
+      await waitFor(() => expect(box).toHaveAttribute("aria-checked", "false"))
+    })
   })
 })

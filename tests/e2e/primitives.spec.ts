@@ -269,6 +269,32 @@ test.describe("Toggle", () => {
       // Pressed must never be the fainter of the two states.
       expect(onEdge).toBeGreaterThanOrEqual(await contrast(page, off.border, surface))
     })
+
+    // The unit test only saw class names; this is what the eye gets.
+    test(`every pressed status variant is a fill of its own, its text readable (${theme})`, async ({
+      page,
+    }) => {
+      await open(page, "primitives-toggle--all-variants")
+      if (theme === "dark") await setDarkTheme(page)
+      const look = (name: string) =>
+        page.getByRole("button", { name, exact: true }).evaluate((el) => {
+          const style = getComputedStyle(el)
+          return { fill: style.backgroundColor, text: style.color }
+        })
+      const off = await look("default off")
+      const fills = new Set<string>()
+      for (const variant of ["info", "success", "warning", "destructive"]) {
+        const on = await look(`${variant} on`)
+        expect(on.fill, `${variant}: pressed has a fill`).not.toBe(off.fill)
+        expect(
+          await contrast(page, on.text, on.fill),
+          `${variant}: text on its fill`,
+        ).toBeGreaterThanOrEqual(4.5)
+        fills.add(on.fill)
+      }
+      // One colour per status: they are told apart.
+      expect(fills.size).toBe(4)
+    })
   }
 })
 

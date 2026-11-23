@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { ZapIcon } from "lucide-react"
-import type * as React from "react"
+import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
 import { RadioGroup } from "./radio-group"
@@ -193,5 +193,61 @@ describe("RadioGroup", () => {
     for (const radio of screen.getAllByRole("radio")) {
       expect(radio).toHaveAttribute("data-invalid")
     }
+  })
+
+  describe("keyboard and ref", () => {
+    it("is one Tab stop, and the arrows move and select", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(
+        <>
+          <RadioGroup
+            label="Plano"
+            options={VALUES}
+            defaultValue="free"
+            onValueChange={onValueChange}
+          />
+          <button type="button">depois</button>
+        </>,
+      )
+      await user.tab()
+      expect(screen.getByRole("radio", { name: "Free" })).toHaveFocus()
+      // Held down, as a real key press is while Radix moves the focus.
+      await user.keyboard("{ArrowDown>}")
+      await waitFor(() => expect(screen.getByRole("radio", { name: "Pro" })).toBeChecked())
+      await user.keyboard("{/ArrowDown}")
+      expect(screen.getByRole("radio", { name: "Pro" })).toHaveFocus()
+      expect(onValueChange).toHaveBeenLastCalledWith("pro")
+      // Team is disabled: the arrows skip it and loop back.
+      await user.keyboard("{ArrowDown>}")
+      await waitFor(() => expect(screen.getByRole("radio", { name: "Free" })).toHaveFocus())
+      await user.keyboard("{/ArrowDown}")
+      await user.tab()
+      expect(screen.getByRole("button", { name: "depois" })).toHaveFocus()
+    })
+
+    it("forwards the ref to the group", () => {
+      const ref = React.createRef<HTMLDivElement>()
+      render(<RadioGroup label="Plano" options={VALUES} ref={ref} />)
+      expect(ref.current).toBe(screen.getByRole("radiogroup"))
+    })
+
+    it("is described by its description, its error and the consumer's ids", () => {
+      render(
+        <>
+          <RadioGroup
+            label="Plano"
+            options={VALUES}
+            description="Pode mudar depois."
+            error="Escolha um plano."
+            aria-describedby="extra"
+          />
+          <p id="extra">Veja os preços.</p>
+        </>,
+      )
+      expect(screen.getByRole("radiogroup")).toHaveAccessibleDescription(
+        "Pode mudar depois. Escolha um plano. Veja os preços.",
+      )
+    })
   })
 })
