@@ -301,6 +301,11 @@ describe("formattedColumn", () => {
     expect(await screen.findByRole("tooltip")).toHaveTextContent("LEONARDO ALVES")
     await userEvent.keyboard("{Escape}")
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument()
+    // Enter (or Space) brings it back without leaving the text.
+    await userEvent.keyboard("{Enter}")
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("LEONARDO ALVES")
+    await userEvent.keyboard(" ")
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument()
   })
 
   it("is not a second tab stop inside a clickable row's button", async () => {

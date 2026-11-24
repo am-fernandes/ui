@@ -209,6 +209,12 @@ function TruncatedText({
           event.preventDefault()
           setOpen((current) => !current)
         }}
+        // Focus opens it; after Escape, Enter or Space brings it back.
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" && event.key !== " ") return
+          event.preventDefault()
+          setOpen((current) => !current)
+        }}
       >
         <span aria-hidden="true">{short}</span>
         <span className="sr-only">{full}</span>
