@@ -567,6 +567,40 @@ describe("Combobox: não controlado e formulário nativo", () => {
   })
 })
 
+describe("Combobox: onBlur", () => {
+  it("is called once, when the focus leaves the whole field", async () => {
+    const onBlur = vi.fn()
+    render(
+      <>
+        <Combobox options={options} defaultValue="a" onBlur={onBlur} placeholder="Pick" />
+        <button type="button">Fora</button>
+      </>,
+    )
+    const trigger = screen.getByRole("combobox")
+    await userEvent.click(trigger)
+    // Into the popover's search box and back: still inside.
+    expect(await screen.findByPlaceholderText("Buscar...")).toHaveFocus()
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() => expect(trigger).toHaveFocus())
+    // To the clear button: still inside.
+    await userEvent.tab()
+    expect(screen.getByRole("button", { name: "Limpar seleção" })).toHaveFocus()
+    expect(onBlur).not.toHaveBeenCalled()
+    await userEvent.tab()
+    expect(screen.getByRole("button", { name: "Fora" })).toHaveFocus()
+    expect(onBlur).toHaveBeenCalledTimes(1)
+  })
+
+  it("choosing an option and returning to the trigger is not a blur", async () => {
+    const onBlur = vi.fn()
+    render(<Combobox options={options} onBlur={onBlur} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.click(await screen.findByRole("option", { name: "Bravo" }))
+    await waitFor(() => expect(screen.getByRole("combobox")).toHaveFocus())
+    expect(onBlur).not.toHaveBeenCalled()
+  })
+})
+
 describe("Combobox: listas grandes e busca no servidor", () => {
   const many: ComboboxOption[] = Array.from({ length: 250 }, (_, i) => ({
     value: `o-${i + 1}`,

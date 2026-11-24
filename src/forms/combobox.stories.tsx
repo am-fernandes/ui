@@ -522,13 +522,16 @@ export const WithRHF: Story = {
     docs: {
       description: {
         story:
-          "Integração com `react-hook-form` via `<Controller>`. O Combobox é controlado, então mapeie `field.value`/`field.onChange` direto e use `fieldState.error?.message` para o erro.",
+          'Integração com `react-hook-form` via `<Controller>`: mapeie `field.value`, `field.onChange` e `field.onBlur` direto e use `fieldState.error?.message` para o erro. Com `mode: "onBlur"`, a validação roda quando o foco sai do campo inteiro (abrir a lista não conta).',
       },
     },
   },
   render: () => {
     type FormValues = { area: string }
     const { control, handleSubmit, formState } = useForm<FormValues>({
+      // Validates on leaving the field: Combobox calls onBlur when the focus
+      // leaves it as a whole, not when it moves into its list.
+      mode: "onBlur",
       defaultValues: { area: "" },
     })
     const [submitted, setSubmitted] = useState<FormValues | null>(null)
@@ -548,6 +551,7 @@ export const WithRHF: Story = {
               required
               value={field.value}
               onValueChange={field.onChange}
+              onBlur={field.onBlur}
               error={fieldState.error?.message}
               placeholder="Selecione"
             />

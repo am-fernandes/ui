@@ -247,3 +247,32 @@ test.describe("Combobox: popover", () => {
     expect(await list.getAttribute("id")).toBe(controls)
   })
 })
+
+test.describe("Combobox: onBlur", () => {
+  test("com react-hook-form em mode onBlur, valida ao sair do campo e não ao abrir a lista", async ({
+    page,
+  }) => {
+    await gotoStory(page, "forms-combobox--with-rhf", "Enviar")
+    const trigger = page.getByRole("combobox", { name: /Área de atuação/ })
+    const error = page.getByText("Escolha uma área antes de enviar")
+    await trigger.click()
+    await expect(page.getByRole("listbox")).toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(trigger).toBeFocused()
+    await expect(error).toHaveCount(0)
+    await page.keyboard.press("Tab")
+    await expect(error).toBeVisible()
+
+    await trigger.click()
+    await page.getByRole("option", { name: "Consultoria" }).click()
+    await expect(trigger).toBeFocused()
+    // The clear button is still the field; react-hook-form validates again
+    // when the focus leaves it.
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("button", { name: "Limpar seleção" })).toBeFocused()
+    await expect(error).toBeVisible()
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("button", { name: "Enviar" })).toBeFocused()
+    await expect(error).toHaveCount(0)
+  })
+})

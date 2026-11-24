@@ -104,6 +104,11 @@ interface ComboboxBaseProps {
    * carried by a hidden input.
    */
   name?: string
+  /**
+   * Called when the focus leaves the field as a whole. Moving between the
+   * trigger, the clear and remove buttons and the open list does not count.
+   */
+  onBlur?: (event: React.FocusEvent<HTMLElement>) => void
   /** Texts of the list. Defaults in `defaultComboboxLabels`. */
   labels?: Partial<ComboboxLabels>
   ref?: React.Ref<HTMLButtonElement>
@@ -165,6 +170,7 @@ export function Combobox(props: ComboboxProps) {
     shouldFilter = true,
     maxVisibleOptions = 100,
     name,
+    onBlur,
     ref,
   } = props
   const l: ComboboxLabels = { ...defaultComboboxLabels, ...props.labels }
@@ -194,6 +200,8 @@ export function Combobox(props: ComboboxProps) {
     listRef.current = node
     setListId(node?.id || undefined)
   }, [])
+  const fieldRef = React.useRef<HTMLDivElement>(null)
+  const commandRef = React.useRef<HTMLDivElement>(null)
   // Whether the option being chosen was clicked, not picked with Enter.
   const pickedWithPointer = React.useRef(false)
   const hasError = error != null && error !== ""
@@ -450,7 +458,19 @@ export function Combobox(props: ComboboxProps) {
       required={required}
       disabled={disabled}
     >
-      <div className="flex flex-col gap-2" data-slot="combobox">
+      <div
+        ref={fieldRef}
+        className="flex flex-col gap-2"
+        data-slot="combobox"
+        // React brings the focus events of the list's portal here too.
+        onBlur={(e) => {
+          const next = e.relatedTarget as Node | null
+          if (next && (fieldRef.current?.contains(next) || commandRef.current?.contains(next))) {
+            return
+          }
+          onBlur?.(e)
+        }}
+      >
         {multiBadges}
         <div className="relative" data-slot="combobox-control">
           <Popover
@@ -468,6 +488,7 @@ export function Combobox(props: ComboboxProps) {
           >
             {/* The list is filtered here, not by cmdk: it only gets what is on screen. */}
             <CommandPrimitive
+              ref={commandRef}
               shouldFilter={false}
               value={highlight}
               onValueChange={setHighlight}
