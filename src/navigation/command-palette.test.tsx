@@ -270,6 +270,38 @@ describe("CommandPalette", () => {
     })
   })
 
+  describe("search in Portuguese", () => {
+    const groups = [
+      {
+        items: [
+          { id: "cfg", label: "Configurações", onSelect: () => {} },
+          { id: "inv", label: "Convidar usuário", onSelect: () => {} },
+          { id: "rel", label: "Relatório mensal", keywords: ["balanço"], onSelect: () => {} },
+          { id: "exp-42", label: "Importar", onSelect: () => {} },
+        ],
+      },
+    ]
+
+    for (const [term, expected] of [
+      ["configuracoes", "Configurações"],
+      ["USUARIO", "Convidar usuário"],
+      ["relatorio", "Relatório mensal"],
+      ["balanco", "Relatório mensal"],
+    ] as const) {
+      it(`finds "${expected}" when typing "${term}"`, async () => {
+        render(<CommandPalette open title="X" groups={groups} />)
+        await userEvent.type(screen.getByRole("combobox"), term)
+        expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([expected])
+      })
+    }
+
+    it("does not match the item id as text", async () => {
+      render(<CommandPalette open title="X" groups={groups} />)
+      await userEvent.type(screen.getByRole("combobox"), "exp")
+      expect(screen.queryAllByRole("option")).toHaveLength(0)
+    })
+  })
+
   it("finds an item via custom keywords search", async () => {
     render(
       <CommandPalette

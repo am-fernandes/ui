@@ -4,6 +4,7 @@ import { Command as CommandPrimitive } from "cmdk"
 import { SearchIcon } from "lucide-react"
 import * as React from "react"
 
+import { matchesSearch } from "@/lib/text"
 import { cn } from "@/lib/utils"
 import { Dialog } from "../overlays/dialog"
 
@@ -30,7 +31,7 @@ export interface CommandPaletteItem {
  * position when another item has the same one. Items with neither (only
  * `render`) let cmdk read their text.
  */
-function itemValues(groups: CommandPaletteGroup[]): (string | undefined)[][] {
+function itemValues(groups: CommandPaletteGroup[]) {
   const labelCount = new Map<string, number>()
   for (const group of groups) {
     for (const item of group.items) {
@@ -39,13 +40,34 @@ function itemValues(groups: CommandPaletteGroup[]): (string | undefined)[][] {
       }
     }
   }
-  return groups.map((group, gi) =>
-    group.items.map((item, ii) => {
-      if (item.id != null) return item.id
+  // Values that are not text to search (an id, a label with its position):
+  // the search looks at the label and keywords instead.
+  const opaque = new Set<string>()
+  const values = groups.map((group, gi) =>
+    group.items.map((item, ii): string | undefined => {
+      if (item.id != null) {
+        opaque.add(item.id.trim())
+        return item.id
+      }
       if (!item.label) return undefined
-      return labelCount.get(item.label) === 1 ? item.label : `${item.label} (${gi + 1}.${ii + 1})`
+      if (labelCount.get(item.label) === 1) return item.label
+      const unique = `${item.label} (${gi + 1}.${ii + 1})`
+      opaque.add(unique.trim())
+      return unique
     }),
   )
+  return { values, opaque }
+}
+
+/**
+ * Search the way people type in Portuguese: no accents, any case
+ * ("configuracoes" finds "Configurações"), in the label and the keywords.
+ */
+function makeFilter(opaque: Set<string>) {
+  return (value: string, search: string, keywords?: string[]) => {
+    const text = opaque.has(value) ? (keywords ?? []) : [value, ...(keywords ?? [])]
+    return matchesSearch(text.join(" "), search) ? 1 : 0
+  }
 }
 
 export interface CommandPaletteGroup {
@@ -133,7 +155,8 @@ function CommandPalette({
   React.useEffect(() => {
     if (!open) setHighlighted("")
   }, [open])
-  const values = itemValues(groups)
+  const { values, opaque } = itemValues(groups)
+  const filter = makeFilter(opaque)
   const handleValueChange = (next: string) => {
     if (value === undefined) setHighlighted(next)
     onValueChange?.(next)
@@ -152,6 +175,7 @@ function CommandPalette({
         value={value ?? highlighted}
         onValueChange={handleValueChange}
         shouldFilter={shouldFilter}
+        filter={filter}
         className="flex h-full w-full flex-col"
       >
         <div
