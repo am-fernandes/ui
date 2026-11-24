@@ -32,7 +32,8 @@ const meta: Meta<typeof CommandPalette> = {
           "- `emptyMessage` — mensagem quando a busca não retorna resultado.",
           "- `loading` — renderiza um estado de carregando dentro da lista.",
           "- `title` / `description` — strings exclusivamente para screen-readers (`sr-only`).",
-          "- `value` / `onValueChange` — controle externo do termo buscado.",
+          "- `search` / `onSearchChange` — o termo digitado no campo (controlado ou não). Com `shouldFilter={false}` a paleta não filtra: mostra o que vier em `groups`, para busca no servidor.",
+          "- `value` / `onValueChange` — o item destacado (o que o Enter escolheria), não o termo buscado.",
           "- `labels` — `Partial<CommandPaletteLabels>` para tradução / customização de copy. Veja [Foundations/i18n](?path=/docs/foundations-i18n--docs).",
           "",
           "**Shape de `CommandPaletteItem`:**",
@@ -267,7 +268,70 @@ export const Loading: Story = {
     docs: {
       description: {
         story:
-          "Estado de loading — use enquanto resultados estão sendo carregados de uma API. Pareie com `value`/`onValueChange` para implementar busca assíncrona.",
+          "Estado de loading — use enquanto resultados estão sendo carregados de uma API. Pareie com `search`/`onSearchChange` e `shouldFilter={false}` para implementar busca assíncrona (veja `ServerSearch`).",
+      },
+    },
+  },
+}
+
+const leads = [
+  { id: "lead-1", nome: "João da Silva", cpf: "123.456.789-09" },
+  { id: "lead-2", nome: "Maria Conceição", cpf: "987.654.321-00" },
+  { id: "lead-3", nome: "José Antônio Souza", cpf: "111.444.777-35" },
+]
+
+function ServerSearchDemo() {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState("")
+  const [results, setResults] = useState(leads)
+  const [loading, setLoading] = useState(false)
+
+  // Stands in for a request to the server: the palette does not filter.
+  useEffect(() => {
+    setLoading(true)
+    const digits = search.replace(/\D/g, "")
+    const timer = window.setTimeout(() => {
+      setResults(
+        leads.filter((lead) => (digits ? lead.cpf.replace(/\D/g, "").includes(digits) : true)),
+      )
+      setLoading(false)
+    }, 400)
+    return () => window.clearTimeout(timer)
+  }, [search])
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <Button onClick={() => setOpen(true)}>Buscar lead por CPF</Button>
+      <CommandPalette
+        open={open}
+        onOpenChange={setOpen}
+        title="Buscar lead"
+        placeholder="Digite o CPF"
+        search={search}
+        onSearchChange={setSearch}
+        shouldFilter={false}
+        loading={loading}
+        groups={[
+          {
+            heading: "Leads",
+            items: results.map((lead) => ({
+              label: `${lead.nome} · ${lead.cpf}`,
+              onSelect: () => {},
+            })),
+          },
+        ]}
+      />
+    </div>
+  )
+}
+
+export const ServerSearch: Story = {
+  render: () => <ServerSearchDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Busca no servidor: `search`/`onSearchChange` dão o termo digitado, `loading` cobre a espera e `shouldFilter={false}` mostra os resultados como vieram (aqui, um lead pelo CPF).",
       },
     },
   },

@@ -152,6 +152,56 @@ describe("CommandPalette", () => {
     expect(screen.getByText("No results")).toBeInTheDocument()
   })
 
+  describe("search term", () => {
+    const groups = [
+      {
+        items: [
+          { label: "Dashboard", onSelect: () => {} },
+          { label: "Clientes", onSelect: () => {} },
+        ],
+      },
+    ]
+
+    it("reports the typed term through onSearchChange", async () => {
+      const onSearchChange = vi.fn()
+      render(<CommandPalette open title="X" groups={groups} onSearchChange={onSearchChange} />)
+      await userEvent.type(screen.getByRole("combobox"), "cli")
+      expect(onSearchChange).toHaveBeenLastCalledWith("cli")
+      expect(onSearchChange.mock.calls.map((call) => call[0])).toEqual(["c", "cl", "cli"])
+    })
+
+    it("takes a controlled search term", () => {
+      render(<CommandPalette open title="X" groups={groups} search="cli" />)
+      expect(screen.getByRole("combobox")).toHaveValue("cli")
+      expect(screen.getByRole("option", { name: "Clientes" })).toBeInTheDocument()
+      expect(screen.queryByRole("option", { name: "Dashboard" })).not.toBeInTheDocument()
+    })
+
+    it("shows the items as given with shouldFilter={false} (server search)", async () => {
+      const onSearchChange = vi.fn()
+      render(
+        <CommandPalette
+          open
+          title="X"
+          groups={[{ items: [{ label: "João da Silva", onSelect: () => {} }] }]}
+          shouldFilter={false}
+          onSearchChange={onSearchChange}
+        />,
+      )
+      // A CPF typed for a server search does not hide what the server sent.
+      await userEvent.type(screen.getByRole("combobox"), "123.456")
+      expect(onSearchChange).toHaveBeenLastCalledWith("123.456")
+      expect(screen.getByRole("option", { name: "João da Silva" })).toBeInTheDocument()
+    })
+
+    it("keeps value/onValueChange as the highlighted item", async () => {
+      const onValueChange = vi.fn()
+      render(<CommandPalette open title="X" groups={groups} onValueChange={onValueChange} />)
+      await userEvent.type(screen.getByRole("combobox"), "{ArrowDown}")
+      expect(onValueChange).toHaveBeenLastCalledWith("Clientes")
+    })
+  })
+
   it("finds an item via custom keywords search", async () => {
     render(
       <CommandPalette

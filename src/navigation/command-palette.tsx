@@ -2,7 +2,7 @@
 
 import { Command as CommandPrimitive } from "cmdk"
 import { SearchIcon } from "lucide-react"
-import type * as React from "react"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Dialog } from "../overlays/dialog"
@@ -46,7 +46,29 @@ export interface CommandPaletteProps {
   loading?: boolean
   title: string
   description?: string
+  /**
+   * The search term typed in the field (controlled). Pair it with
+   * `onSearchChange`; leave both out and the palette keeps the term itself.
+   */
+  search?: string
+  /**
+   * Called with the typed term on every change. For a server search (a lead
+   * by CPF, a contract by number) fetch with it, pass the results in
+   * `groups`, show `loading` meanwhile and set `shouldFilter={false}`.
+   */
+  onSearchChange?: (search: string) => void
+  /**
+   * `false` turns the local filtering off: the palette shows exactly what
+   * `groups` holds, already filtered by your server for `search`.
+   * @default true
+   */
+  shouldFilter?: boolean
+  /**
+   * The highlighted item, the one Enter would choose (arrow keys and the
+   * pointer move it). Not the search term: that is `search`.
+   */
   value?: string
+  /** Called when the highlighted item changes. See `value`. */
   onValueChange?: (value: string) => void
   /**
    * Override individual UI strings. Defaults are pt-BR. The standalone
@@ -64,6 +86,9 @@ function CommandPalette({
   loading,
   title,
   description = "",
+  search,
+  onSearchChange,
+  shouldFilter = true,
   value,
   onValueChange,
   labels,
@@ -71,6 +96,16 @@ function CommandPalette({
   const mergedLabels: CommandPaletteLabels = { ...defaultCommandPaletteLabels, ...labels }
   const resolvedPlaceholder = placeholder ?? mergedLabels.placeholder
   const resolvedEmptyMessage = emptyMessage ?? mergedLabels.emptyMessage
+  // cmdk only reports the highlighted item when it is controlled, so the
+  // palette holds it when the consumer does not.
+  const [highlighted, setHighlighted] = React.useState("")
+  React.useEffect(() => {
+    if (!open) setHighlighted("")
+  }, [open])
+  const handleValueChange = (next: string) => {
+    if (value === undefined) setHighlighted(next)
+    onValueChange?.(next)
+  }
   return (
     <Dialog
       open={open}
@@ -82,8 +117,9 @@ function CommandPalette({
     >
       <CommandPrimitive
         data-slot="command-palette"
-        value={value}
-        onValueChange={onValueChange}
+        value={value ?? highlighted}
+        onValueChange={handleValueChange}
+        shouldFilter={shouldFilter}
         className="flex h-full w-full flex-col"
       >
         <div
@@ -93,6 +129,8 @@ function CommandPalette({
         >
           <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
           <CommandPrimitive.Input
+            value={search}
+            onValueChange={onSearchChange}
             placeholder={resolvedPlaceholder}
             className="flex w-full rounded-element bg-transparent py-3 text-sm outline-none placeholder:text-placeholder"
           />
