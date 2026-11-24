@@ -602,7 +602,7 @@ export function Combobox(props: ComboboxProps) {
                     <CommandPrimitive.Item
                       value={CREATE_ACTION_VALUE}
                       onSelect={() => handleCreate(trimmedSearch)}
-                      className="relative flex cursor-default select-none items-center rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover"
+                      className="relative flex cursor-default select-none items-center rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover forced-colors:aria-selected:outline-2 forced-colors:aria-selected:outline-solid forced-colors:aria-selected:-outline-offset-2"
                     >
                       {l.create(trimmedSearch)}
                     </CommandPrimitive.Item>
@@ -625,7 +625,7 @@ export function Combobox(props: ComboboxProps) {
                           if (isMultiple) handleMultipleSelect(option.value)
                           else handleSingleSelect(option.value)
                         }}
-                        className="relative flex cursor-default select-none items-center gap-2 rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
+                        className="relative flex cursor-default select-none items-center gap-2 rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover forced-colors:aria-selected:outline-2 forced-colors:aria-selected:outline-solid forced-colors:aria-selected:-outline-offset-2 data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
                       >
                         <div
                           className={cn(

@@ -691,3 +691,26 @@ test.describe("Combobox: alvo do × dos itens", () => {
     }
   })
 })
+
+test.describe("Combobox: cores forçadas", () => {
+  test("a opção destacada pelo teclado continua visível em alto contraste", async ({ page }) => {
+    await page.emulateMedia({ forcedColors: "active" })
+    await gotoStory(page, "forms-combobox--default", "Selecione um status")
+    await page.getByRole("combobox", { name: "Status" }).click()
+    const outline = (name: string) =>
+      page.getByRole("option", { name }).evaluate((el) => getComputedStyle(el).outlineStyle)
+    await expect(page.getByRole("option", { name: "Aprovado" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    )
+    expect(await outline("Aprovado")).toBe("solid")
+    expect(await outline("Pendente")).toBe("none")
+    await page.keyboard.press("ArrowDown")
+    await expect(page.getByRole("option", { name: "Pendente" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    )
+    expect(await outline("Pendente")).toBe("solid")
+    expect(await outline("Aprovado")).toBe("none")
+  })
+})
