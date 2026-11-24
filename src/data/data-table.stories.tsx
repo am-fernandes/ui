@@ -187,7 +187,7 @@ const meta = {
           "- `onRowClick?: (row, event) => void` — torna cada linha clicável. A linha continua linha; o teclado chega à ação por um `<button>` que envolve o conteúdo da primeira célula. Clique ou tecla em controle dentro da linha (botão, link, campo, menu) não dispara `onRowClick`.",
           "- `rowClassName?: (row, index) => string | undefined` — classes por linha. Retorne `undefined` para a linha herdar o estilo padrão. Útil para destacar linhas.",
           "- `loading?: boolean` — exibe estado skeleton: linhas (count = `pagination.pageSize ?? 5`, células = `columns.length`), input de busca, contagem e botões de paginação. Wrapper recebe `aria-busy`.",
-          "- `downloadable?: boolean | { filename?, sheetName?, rowToRecord? }` — botão `Exportar para Excel` (ghost) à direita; abre popover com 3 escopos: dados filtrados, página atual, todos. Gera `.xlsx` via `xlsx` (SheetJS) lazy-loaded.",
+          "- `downloadable?: boolean | { filename?, sheetName?, rowToRecord? }` — botão `Exportar para Excel` (ghost) à direita; abre popover com 3 escopos: dados filtrados, página atual, todos. Gera `.xlsx` com `write-excel-file`, carregado só no primeiro export (ou `.csv` para o Excel brasileiro, se o nome terminar em `.csv`).",
           "- `className?: string` — classes extras no wrapper externo.",
           "",
           "**Helpers para colunas:**",
@@ -996,7 +996,7 @@ export const WithDownload: Story = {
           "2. **Exportar página atual** — só as linhas visíveis no momento (`getRowModel` — após filtro + paginação).",
           "3. **Exportar todos os dados** — o array `data` original, sem filtros nem paginação.",
           "",
-          '**Geração do arquivo**: usa `xlsx` (SheetJS) **lazy-loaded** via `await import("xlsx")` — o package só entra no bundle do consumer no primeiro clique de export. Default: 1 sheet ("Dados"), 1 linha por registro, 1 coluna por leaf column visível (label = `columnDef.header` quando string, senão `column.id`).',
+          '**Geração do arquivo**: usa `write-excel-file` **lazy-loaded** via `await import("write-excel-file/browser")` — o package só é baixado no primeiro clique de export. Datas saem como datas do Excel, no mesmo dia do calendário que a tabela mostra; o cabeçalho fica em negrito e congelado. Default: 1 sheet ("Dados"), 1 linha por registro, 1 coluna por leaf column visível (label = `columnDef.header` quando string, senão `column.id`).',
           "",
           "**Customização (objeto)**: `downloadable={{ filename, sheetName, rowToRecord }}`.",
           '- `filename` — default `"export.xlsx"`.',
@@ -1025,6 +1025,46 @@ export const WithDownload: Story = {
           "",
           "Botão fica `disabled` quando `data.length === 0`. Em `loading=true` vira skeleton.",
         ].join("\n"),
+      },
+    },
+  },
+}
+
+interface Assinatura {
+  numero: string
+  assinadoEm: Date
+}
+
+const assinaturas: Assinatura[] = [
+  { numero: "C-2026-001", assinadoEm: new Date(2026, 4, 19) },
+  { numero: "C-2026-002", assinadoEm: new Date(2026, 4, 20, 14, 30) },
+]
+
+const assinaturaColumns: ColumnDef<Assinatura>[] = [
+  { accessorKey: "numero", header: "Número" },
+  {
+    accessorKey: "assinadoEm",
+    header: "Assinado em",
+    cell: ({ row }) =>
+      row.original.assinadoEm.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }),
+  },
+]
+
+export const ExportDates: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        columns={assinaturaColumns}
+        data={assinaturas}
+        downloadable={{ filename: "assinaturas.xlsx" }}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Datas (`Date`) saem no `.xlsx` como datas do Excel, no mesmo dia e hora que a tabela mostra, em qualquer fuso do navegador.",
       },
     },
   },

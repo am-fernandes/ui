@@ -1,8 +1,11 @@
+import type { Cell, SheetData } from "write-excel-file/browser"
+
 /**
  * Spreadsheet export for `DataTable`. A name ending in `.csv` is written here
  * as a CSV that the Brazilian Excel opens right; anything else becomes an
- * `.xlsx`, through `xlsx` loaded only when called so the main bundle of
- * `@amfernandesinc/ui` stays small for consumers that never trigger a download.
+ * `.xlsx`, through `write-excel-file` loaded only when called so the main
+ * bundle of `@amfernandesinc/ui` stays small for consumers that never trigger
+ * a download.
  */
 
 /** A cell as it goes to the file. */
@@ -106,22 +109,114 @@ export function saveBlob(blob: Blob, filename: string): void {
   }, 100)
 }
 
+const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+/**
+ * The wall clock of a `Date` (its local fields) as the same fields in UTC.
+ * Excel has no time zones: `write-excel-file` turns a `Date` into a serial
+ * number from its UTC time, so a local-midnight date east or west of UTC
+ * would land on the day before or after. Moving the fields keeps the
+ * calendar day and the time the table shows.
+ */
+function wallClockAsUTC(date: Date): Date {
+  return new Date(
+    Date.UTC(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      date.getHours(),
+      date.getMinutes(),
+      date.getSeconds(),
+      date.getMilliseconds(),
+    ),
+  )
+}
+
+function xlsxCell(value: ExportValue): Cell {
+  if (value == null) return null
+  if (typeof value === "number") return Number.isFinite(value) ? { value, type: Number } : null
+  if (typeof value === "bigint") return { value: value.toString(), type: String }
+  if (typeof value === "boolean") return { value, type: Boolean }
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null
+    const midnight = value.getHours() === 0 && value.getMinutes() === 0 && value.getSeconds() === 0
+    return {
+      value: wallClockAsUTC(value),
+      type: Date,
+      format: midnight ? "dd/mm/yyyy" : "dd/mm/yyyy hh:mm",
+    }
+  }
+  return { value, type: String }
+}
+
+/** Width of a column in characters: its longest text, within reason. */
+function columnWidth(header: string, rows: ExportValue[][], index: number): number {
+  let longest = header.length
+  for (const row of rows) {
+    const value = row[index]
+    const length = value instanceof Date ? 16 : value == null ? 0 : String(value).length
+    if (length > longest) longest = length
+  }
+  return Math.min(Math.max(longest + 2, 8), 60)
+}
+
+/** Excel refuses `: \ / ? * [ ]` in a sheet name and cuts it at 31 characters. */
+function safeSheetName(name: string): string {
+  const cleaned = name.replace(/[:\\/?*[\]]/g, " ").slice(0, 31)
+  return cleaned.trim() === "" ? "Dados" : cleaned
+}
+
+/** The `.xlsx` file of a sheet: bold, frozen header row and dates as dates. */
+export async function buildXlsx(sheet: ExportSheet, sheetName: string): Promise<Blob> {
+  const { default: writeExcelFile } = await import("write-excel-file/browser")
+  const data: SheetData = [
+    sheet.headers.map((header) => ({ value: header, type: String, fontWeight: "bold" as const })),
+    ...sheet.rows.map((row) => sheet.headers.map((_, index) => xlsxCell(row[index]))),
+  ]
+  return writeExcelFile(data, {
+    sheet: safeSheetName(sheetName),
+    stickyRowsCount: 1,
+    columns: sheet.headers.map((header, index) => ({
+      width: columnWidth(header, sheet.rows, index),
+    })),
+  }).toBlob()
+}
+
+/**
+ * The file name and format for a requested name: `.csv` stays CSV, `.xlsx`
+ * stays; an older spreadsheet extension (`.xls`, `.xlsm`, `.xlsb`, `.ods`,
+ * `.txt`) becomes `.xlsx`, which is what is written; anything else gets
+ * `.xlsx` appended.
+ */
+export function exportFileName(filename: string): { name: string; format: "csv" | "xlsx" } {
+  if (/\.csv$/i.test(filename)) return { name: filename, format: "csv" }
+  if (/\.xlsx$/i.test(filename)) return { name: filename, format: "xlsx" }
+  if (/\.(xls|xlsm|xlsb|ods|txt)$/i.test(filename)) {
+    return { name: filename.replace(/\.[^.]+$/, ".xlsx"), format: "xlsx" }
+  }
+  return { name: `${filename}.xlsx`, format: "xlsx" }
+}
+
+/** Writes a sheet to a file and hands it to the browser as a download. */
+export async function downloadSheet(
+  sheet: ExportSheet,
+  filename: string,
+  sheetName: string,
+): Promise<void> {
+  const file = exportFileName(filename)
+  if (file.format === "csv") {
+    saveBlob(new Blob([buildCsv(sheet)], { type: "text/csv;charset=utf-8" }), file.name)
+    return
+  }
+  const blob = await buildXlsx(sheet, sheetName)
+  saveBlob(blob.type ? blob : new Blob([blob], { type: XLSX_TYPE }), file.name)
+}
+
+/** Records (one object per row, keyed by header) to a downloaded file. */
 export async function downloadXlsx(
   records: Record<string, unknown>[],
   filename: string,
   sheetName: string,
 ): Promise<void> {
-  if (/\.csv$/i.test(filename)) {
-    const csv = buildCsv(recordsToSheet(records))
-    saveBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), filename)
-    return
-  }
-  const safeFilename = /\.(xlsx|xlsm|xlsb|xls|ods|txt)$/i.test(filename)
-    ? filename
-    : `${filename}.xlsx`
-  const XLSX = await import("xlsx")
-  const worksheet = XLSX.utils.json_to_sheet(records)
-  const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName)
-  XLSX.writeFile(workbook, safeFilename)
+  await downloadSheet(recordsToSheet(records), filename, sheetName)
 }
