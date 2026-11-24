@@ -180,6 +180,7 @@ const meta = {
           "- `searchPlaceholder?: string` — placeholder do input de busca (default `Buscar...`).",
           "- `emptyMessage?: ReactNode` — conteúdo exibido quando `data` filtrado fica vazio (default `Nenhum resultado.`).",
           "- `pagination?: { pageSize?: number; pageSizeOptions?: number[] }` — habilita paginação. Quando `pageSizeOptions` é informado (ex.: `[10, 20, 50, 100]`), o footer mostra um `<select>` 'Linhas por página' que ao mudar reseta o cursor pra página 1 e propaga via `onPaginationChange`. Sem `pageSize` explícito, o tamanho inicial vira `pageSizeOptions[0]`.",
+          "- O rodapé usa a `Pagination` da lib: números de página, faixa (`11–20 de 243`) e o seletor de tamanho. A tabela volta à página 1 quando a busca, um filtro ou a ordenação mudam (`autoResetPage`, padrão `true`; `false` no modo servidor), não quando chega um novo array `data` com a mesma visão.",
           "- `showRowCount?: boolean` — mostra a contagem de registros no footer.",
           "- `globalFilter` / `onGlobalFilterChange` — filtro de busca controlado.",
           "- `pageIndex` / `onPaginationChange` / `rowCount` / `pageCount` / `manualPagination` — paginação server-side. `rowCount` é o total no servidor: o rodapé o mostra e a contagem de páginas sai dele.",

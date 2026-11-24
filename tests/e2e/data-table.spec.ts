@@ -101,3 +101,31 @@ test.describe("DataTable: exportação em outro fuso", () => {
     expect(sheet).toMatch(/<c r="B3"[^>]*><v>46162\.6041666/)
   })
 })
+
+test.describe("DataTable: paginação", () => {
+  test("o rodapé usa a Pagination da lib, com páginas, faixa e foco estável", async ({ page }) => {
+    await gotoTable(page, "data-datatable--paginated-with-page-size-selector")
+    const nav = page.getByRole("navigation", { name: "Paginação" })
+    await expect(nav.getByText("1–5 de 15")).toBeVisible()
+    await nav.getByRole("button", { name: "Página 3" }).click()
+    await expect(page.getByRole("cell", { name: "C-2026-011" })).toBeVisible()
+    await expect(nav.getByText("11–15 de 15")).toBeVisible()
+
+    await nav.getByRole("button", { name: "Página 1" }).click()
+    const next = nav.getByRole("button", { name: "Próxima página" })
+    await next.focus()
+    await page.keyboard.press("Enter")
+    await expect(nav.getByRole("button", { name: "Página 2" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    )
+    await expect(next).toBeFocused()
+
+    await nav.getByRole("combobox", { name: "Linhas por página" }).selectOption("10")
+    await expect(nav.getByRole("button", { name: "Página 1" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    )
+    await expect(nav.getByText("1–10 de 15")).toBeVisible()
+  })
+})

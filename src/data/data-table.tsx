@@ -18,20 +18,12 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  FilterX,
-  Search,
-} from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, FilterX, Search } from "lucide-react"
 import * as React from "react"
 
 import { compareText, matchesSearch } from "@/lib/text"
 import { cn } from "@/lib/utils"
+import { Pagination, type PaginationLabels } from "../navigation/pagination"
 import { Popover } from "../overlays/popover"
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
@@ -123,8 +115,18 @@ export interface DataTableLabels {
   pageSize: string
   /** Render the row-count line, given filtered + total counts. */
   rowCount: (filtered: number, total: number) => string
-  /** Render the "page X of Y" indicator. */
+  /**
+   * "Página X de Y". The footer now shows the page numbers of `Pagination`;
+   * this names its compact indicator only.
+   * @deprecated Use `pagination.pageOf`.
+   */
   pageIndicator: (pageIndex: number, pageCount: number) => string
+  /**
+   * Any other text of the footer's `Pagination` ("Paginação", "Primeira
+   * página", the "11–20 de 243" range…). `paginationPrevious`,
+   * `paginationNext` and `pageSize` above name its controls.
+   */
+  pagination: Partial<PaginationLabels>
   /** Render the column-header sort button aria-label. */
   sortBy: (headerText: string) => string
   /** Export-to-Excel trigger button label. */
@@ -165,6 +167,7 @@ export const defaultDataTableLabels: DataTableLabels = {
   pageSize: "Linhas por página",
   rowCount: defaultRowCount,
   pageIndicator: defaultPageIndicator,
+  pagination: {},
   sortBy: (headerText) => `Ordenar por ${headerText}`,
   exportTrigger: "Exportar para Excel",
   exportFiltered: "Exportar dados filtrados",
@@ -241,8 +244,17 @@ export interface DataTableProps<TData> {
   manualFiltering?: boolean
   /** Controlled page index (0-based). */
   pageIndex?: number
-  /** Controlled pagination change handler. */
+  /**
+   * Called with the new `{ pageIndex, pageSize }` on every page or page-size
+   * change. Without `pageIndex` it only listens: the table keeps its page.
+   */
   onPaginationChange?: OnChangeFn<PaginationState>
+  /**
+   * Go back to the first page when the search, a filter or the sort changes.
+   * A new `data` array with the same view keeps the page either way.
+   * Default `true`, or `false` with `manualPagination` (the server owns it).
+   */
+  autoResetPage?: boolean
   /**
    * Number of pages on the server (`manualPagination`). Optional when
    * `rowCount` is given: the count then derives from it and the page size.
@@ -469,6 +481,7 @@ function DataTable<TData>({
   onGlobalFilterChange: onGlobalFilterChangeProp,
   pageIndex: pageIndexProp,
   onPaginationChange: onPaginationChangeProp,
+  autoResetPage,
   pageCount,
   rowCount,
   manualPagination,
@@ -488,7 +501,9 @@ function DataTable<TData>({
   manualFiltering,
 }: DataTableProps<TData>) {
   const isGlobalFilterControlled = globalFilterProp !== undefined
-  const isPaginationControlled = pageIndexProp !== undefined || onPaginationChangeProp !== undefined
+  // The page is controlled by `pageIndex` alone: `onPaginationChange` without
+  // it is a listener, and the table keeps moving through its own pages.
+  const isPageIndexControlled = pageIndexProp !== undefined
   const isSortingControlled = sortingProp !== undefined
 
   const [internalSorting, setInternalSorting] = React.useState<SortingState>([])
@@ -500,27 +515,29 @@ function DataTable<TData>({
   // <option> — avoids React's "value didn't match any option" warning and
   // the visually-unselected state. `?.[0]` returns undefined for empty arrays
   // so the trailing `?? 10` is the catch-all when neither field is set.
-  const [paginationState, setPaginationState] = React.useState<PaginationState>(() => ({
+  const [internalPagination, setInternalPagination] = React.useState<PaginationState>(() => ({
     pageIndex: pageIndexProp ?? 0,
     pageSize: pagination?.pageSize ?? pagination?.pageSizeOptions?.[0] ?? 10,
   }))
 
   // Keep pageSize in sync with prop (consumer may change it later).
   React.useEffect(() => {
-    setPaginationState((prev) => {
+    setInternalPagination((prev) => {
       const nextPageSize = pagination?.pageSize ?? prev.pageSize
       if (prev.pageSize === nextPageSize) return prev
       return { ...prev, pageSize: nextPageSize }
     })
   }, [pagination?.pageSize])
 
-  // Sync controlled pageIndex into local state when present.
-  React.useEffect(() => {
-    if (pageIndexProp === undefined) return
-    setPaginationState((prev) =>
-      prev.pageIndex === pageIndexProp ? prev : { ...prev, pageIndex: pageIndexProp },
-    )
-  }, [pageIndexProp])
+  const effectivePageIndex = isPageIndexControlled ? pageIndexProp : internalPagination.pageIndex
+  const paginationState = React.useMemo<PaginationState>(
+    () => ({ pageIndex: effectivePageIndex, pageSize: internalPagination.pageSize }),
+    [effectivePageIndex, internalPagination.pageSize],
+  )
+  // The latest pagination, also between two changes of one event (the page
+  // size select reports the size, then page 1): each change builds on it.
+  const paginationRef = React.useRef(paginationState)
+  paginationRef.current = paginationState
 
   const globalFilter = isGlobalFilterControlled ? globalFilterProp : internalGlobalFilter
 
@@ -540,16 +557,18 @@ function DataTable<TData>({
 
   const handlePaginationChange: OnChangeFn<PaginationState> = React.useCallback(
     (updater) => {
+      const prev = paginationRef.current
       const next =
         typeof updater === "function"
-          ? (updater as (old: PaginationState) => PaginationState)(paginationState)
+          ? (updater as (old: PaginationState) => PaginationState)(prev)
           : updater
-      if (!isPaginationControlled) {
-        setPaginationState(next)
-      }
+      if (next.pageIndex === prev.pageIndex && next.pageSize === prev.pageSize) return
+      paginationRef.current = next
+      // The size is always the table's; the index only while uncontrolled.
+      setInternalPagination(next)
       onPaginationChangeProp?.(next)
     },
-    [isPaginationControlled, onPaginationChangeProp, paginationState],
+    [onPaginationChangeProp],
   )
 
   const handleSortingChange: OnChangeFn<SortingState> = React.useCallback(
@@ -623,6 +642,9 @@ function DataTable<TData>({
       onColumnFiltersChange: setColumnFilters,
       onGlobalFilterChange: handleGlobalFilterChange,
       onPaginationChange: paginationEnabled ? handlePaginationChange : undefined,
+      // The table decides when to go back to page 1 (see `autoResetPage`):
+      // TanStack's own reset fires on every new `data` array.
+      autoResetPageIndex: false,
       getCoreRowModel: getCoreRowModel(),
       getSortedRowModel: getSortedRowModel(),
       // Skip the client-side filter pass when the server is filtering.
@@ -674,6 +696,38 @@ function DataTable<TData>({
   const table = useReactTable(tableOptions)
   tableRef.current = table
 
+  // Back to page 1 when what the rows are changes (search, filters, sort) —
+  // not when a new `data` array arrives with the same view (a refetch, a
+  // row edited). Server pagination owns its page unless asked.
+  const shouldAutoResetPage = autoResetPage ?? !manualPagination
+  const viewKey = React.useMemo(
+    () => JSON.stringify([globalFilter, columnFilters, sorting]),
+    [globalFilter, columnFilters, sorting],
+  )
+  const lastViewKey = React.useRef(viewKey)
+  React.useLayoutEffect(() => {
+    if (lastViewKey.current === viewKey) return
+    lastViewKey.current = viewKey
+    if (!paginationEnabled || !shouldAutoResetPage) return
+    handlePaginationChange((prev) => ({ ...prev, pageIndex: 0 }))
+  }, [viewKey, paginationEnabled, shouldAutoResetPage, handlePaginationChange])
+
+  // A page that no longer exists (the data shrank) moves to the last one.
+  const pageCountNow = table.getPageCount()
+  React.useLayoutEffect(() => {
+    if (!paginationEnabled || manualPagination) return
+    const lastPage = Math.max(0, pageCountNow - 1)
+    if (paginationState.pageIndex > lastPage) {
+      handlePaginationChange((prev) => ({ ...prev, pageIndex: lastPage }))
+    }
+  }, [
+    pageCountNow,
+    paginationState.pageIndex,
+    paginationEnabled,
+    manualPagination,
+    handlePaginationChange,
+  ])
+
   const mergedLabels: DataTableLabels = { ...defaultDataTableLabels, ...labels }
   const resolvedSearchPlaceholder = searchPlaceholder ?? mergedLabels.search
   const resolvedEmptyMessage = emptyMessage ?? mergedLabels.empty
@@ -690,6 +744,18 @@ function DataTable<TData>({
           ? null
           : { filtered: data.length, total: data.length }
       : { filtered: table.getFilteredRowModel().rows.length, total: data.length }
+
+  // What the pager knows about the total: the rows (client side, or
+  // `rowCount`), the pages (`pageCount`), or nothing (cursor-like: next stays
+  // available while the page is full).
+  const pageTotals: { totalItems?: number; totalPages?: number; hasMore?: boolean } =
+    manualPagination
+      ? pageCount != null
+        ? { totalPages: pageCount }
+        : rowCount != null
+          ? { totalItems: rowCount }
+          : { hasMore: data.length >= paginationState.pageSize }
+      : { totalItems: table.getPrePaginationRowModel().rows.length }
 
   const skeletonRowCount = pagination?.pageSize ?? 5
   // Skip `meta.exportOnly` columns: they're absent from the rendered header,
@@ -1092,70 +1158,30 @@ function DataTable<TData>({
             <span />
           )}
           {paginationEnabled ? (
-            <div className="flex items-center gap-2">
-              {pagination?.pageSizeOptions && pagination.pageSizeOptions.length > 0 ? (
-                loading ? (
-                  <div
-                    data-slot="data-table-page-size-skeleton"
-                    className="h-9 w-28 animate-pulse rounded-element bg-primary/10"
-                  />
-                ) : (
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{mergedLabels.pageSize}</span>
-                    <select
-                      data-slot="data-table-page-size"
-                      value={table.getState().pagination.pageSize}
-                      onChange={(e) => {
-                        const next = Number(e.target.value)
-                        if (!Number.isFinite(next) || next <= 0) return
-                        // Atomic update: setting pageIndex and pageSize in a single
-                        // call avoids TanStack's setPageSize recomputing pageIndex
-                        // from the stale `old.pageIndex` (which would land on a
-                        // non-zero page when the user was past page 0).
-                        table.setPagination({ pageIndex: 0, pageSize: next })
-                      }}
-                      className="h-9 rounded-element border border-input bg-card px-2 text-xs text-foreground field-states"
-                    >
-                      {pagination.pageSizeOptions.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )
-              ) : null}
-              {loading ? (
-                <div className="h-4 w-24 animate-pulse rounded-inner bg-primary/10" />
-              ) : (
-                table.getPageCount() >= 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    {mergedLabels.pageIndicator(
-                      table.getState().pagination.pageIndex,
-                      Math.max(1, table.getPageCount()),
-                    )}
-                  </span>
-                )
-              )}
-              <Button
-                variant="outline"
-                className="size-9 p-0"
-                disabled={loading || !table.getCanPreviousPage()}
-                onClick={() => table.previousPage()}
-                aria-label={mergedLabels.paginationPrevious}
-              >
-                <ChevronLeft className="size-4" />
-              </Button>
-              <Button
-                variant="outline"
-                className="size-9 p-0"
-                disabled={loading || !table.getCanNextPage()}
-                onClick={() => table.nextPage()}
-                aria-label={mergedLabels.paginationNext}
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
+            <Pagination
+              page={paginationState.pageIndex + 1}
+              onPageChange={(page) =>
+                handlePaginationChange((prev) => ({ ...prev, pageIndex: page - 1 }))
+              }
+              {...pageTotals}
+              pageSize={paginationState.pageSize}
+              pageSizeOptions={pagination?.pageSizeOptions}
+              onPageSizeChange={(size) => {
+                if (!Number.isFinite(size) || size <= 0) return
+                // One change, page and size together, so a server consumer
+                // never fetches page N of the new size. Pagination's own
+                // "back to page 1" that follows is then a no-op.
+                handlePaginationChange({ pageIndex: 0, pageSize: size })
+              }}
+              disabled={loading}
+              labels={{
+                previous: mergedLabels.paginationPrevious,
+                next: mergedLabels.paginationNext,
+                pageSize: mergedLabels.pageSize,
+                pageOf: (page, total) => mergedLabels.pageIndicator(page - 1, total),
+                ...mergedLabels.pagination,
+              }}
+            />
           ) : null}
         </div>
       ) : null}

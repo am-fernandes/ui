@@ -1,5 +1,5 @@
 import type { ColumnDef, PaginationState } from "@tanstack/react-table"
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -31,6 +31,19 @@ function exportCall(n = 0): [Record<string, unknown>[], string, string, ExportSh
 import type { ExportSheet } from "./_xlsx-export"
 import { dateColumn, formattedColumn } from "./columns"
 import { DataTable } from "./data-table"
+
+/** The page the pager marks as current and the last page it offers. */
+function pager() {
+  const nav = screen.getByRole("navigation", { name: "Paginação" })
+  const current = within(nav).getByRole("button", { current: "page" })
+  const pages = within(nav).getAllByRole("button", { name: /^Página \d+$/ })
+  return { current: current.textContent, last: pages.at(-1)?.textContent }
+}
+
+/** A control of the pager is unavailable (aria-disabled, so it keeps its focus). */
+function isUnavailable(element: HTMLElement) {
+  return element.getAttribute("aria-disabled") === "true" || (element as HTMLButtonElement).disabled
+}
 
 interface Row {
   name: string
@@ -124,13 +137,13 @@ describe("DataTable", () => {
     expect(screen.getByText("Row 1")).toBeInTheDocument()
     expect(screen.getByText("Row 5")).toBeInTheDocument()
     expect(screen.queryByText("Row 6")).not.toBeInTheDocument()
-    expect(screen.getByText(/Página 1 de 3/)).toBeInTheDocument()
+    expect(pager()).toEqual({ current: "1", last: "3" })
 
     await userEvent.click(screen.getByRole("button", { name: "Próxima página" }))
     expect(screen.getByText("Row 6")).toBeInTheDocument()
     expect(screen.getByText("Row 10")).toBeInTheDocument()
     expect(screen.queryByText("Row 1")).not.toBeInTheDocument()
-    expect(screen.getByText(/Página 2 de 3/)).toBeInTheDocument()
+    expect(pager()).toEqual({ current: "2", last: "3" })
   })
 
   it("disables the next button on the last page", async () => {
@@ -141,7 +154,7 @@ describe("DataTable", () => {
     render(<DataTable columns={columns} data={many} pagination={{ pageSize: 5 }} />)
     const next = screen.getByRole("button", { name: "Próxima página" })
     await userEvent.click(next)
-    expect(next).toBeDisabled()
+    expect(isUnavailable(next)).toBe(true)
   })
 
   it("supports controlled pagination", async () => {
@@ -299,7 +312,7 @@ describe("DataTable", () => {
         pagination={{ pageSize: 5 }}
       />,
     )
-    expect(screen.getByText(/Página 1 de 4/)).toBeInTheDocument()
+    expect(pager()).toEqual({ current: "1", last: "4" })
     // With manualPagination, the rows array is rendered verbatim.
     expect(screen.getByText("Row 12")).toBeInTheDocument()
   })
@@ -349,6 +362,125 @@ describe("DataTable", () => {
     expect(btn).toBeTruthy()
   })
 
+  describe("pagination", () => {
+    const many: Row[] = Array.from({ length: 12 }, (_, i) => ({
+      name: `Row ${String(i + 1).padStart(2, "0")}`,
+      age: 20 + i,
+    }))
+
+    it("uses the library's Pagination, with page numbers and the range", () => {
+      render(<DataTable columns={columns} data={many} pagination={{ pageSize: 5 }} />)
+      const nav = screen.getByRole("navigation", { name: "Paginação" })
+      expect(within(nav).getByText("1–5 de 12")).toBeInTheDocument()
+      expect(pager()).toEqual({ current: "1", last: "3" })
+    })
+
+    it("goes straight to a page", async () => {
+      render(<DataTable columns={columns} data={many} pagination={{ pageSize: 5 }} />)
+      await userEvent.click(screen.getByRole("button", { name: "Página 3" }))
+      expect(screen.getByText("Row 11")).toBeInTheDocument()
+      expect(screen.queryByText("Row 01")).not.toBeInTheDocument()
+    })
+
+    it("does not freeze when only onPaginationChange is given", async () => {
+      const onPaginationChange = vi.fn()
+      render(
+        <DataTable
+          columns={columns}
+          data={many}
+          pagination={{ pageSize: 5 }}
+          onPaginationChange={onPaginationChange}
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Próxima página" }))
+      expect(screen.getByText("Row 06")).toBeInTheDocument()
+      expect(onPaginationChange).toHaveBeenLastCalledWith({ pageIndex: 1, pageSize: 5 })
+    })
+
+    it("keeps the page when a new data array arrives with the same filter and sort", async () => {
+      const { rerender } = render(
+        <DataTable columns={columns} data={many} pagination={{ pageSize: 5 }} />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Página 2" }))
+      rerender(<DataTable columns={columns} data={[...many]} pagination={{ pageSize: 5 }} />)
+      expect(pager().current).toBe("2")
+      expect(screen.getByText("Row 06")).toBeInTheDocument()
+    })
+
+    it("goes back to page 1 when the search or the sort changes", async () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={many}
+          pagination={{ pageSize: 5 }}
+          searchableColumns={["name"]}
+          sortableColumns={["name"]}
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Página 2" }))
+      await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
+      expect(pager().current).toBe("1")
+      await userEvent.click(screen.getByRole("button", { name: "Página 2" }))
+      await userEvent.type(screen.getByRole("textbox", { name: "Buscar na tabela" }), "Row")
+      expect(pager().current).toBe("1")
+    })
+
+    it("with autoResetPage={false}, keeps the page when the sort changes", async () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={many}
+          pagination={{ pageSize: 5 }}
+          sortableColumns={["name"]}
+          autoResetPage={false}
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Página 2" }))
+      await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
+      expect(pager().current).toBe("2")
+    })
+
+    it("moves to the last page when the data shrinks under the current one", async () => {
+      const { rerender } = render(
+        <DataTable columns={columns} data={many} pagination={{ pageSize: 5 }} />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Página 3" }))
+      rerender(<DataTable columns={columns} data={many.slice(0, 7)} pagination={{ pageSize: 5 }} />)
+      expect(pager()).toEqual({ current: "2", last: "2" })
+      expect(screen.getByText("Row 07")).toBeInTheDocument()
+    })
+
+    it("names the pager controls from DataTableLabels and labels.pagination", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={many}
+          pagination={{ pageSize: 5, pageSizeOptions: [5, 10] }}
+          labels={{
+            paginationPrevious: "Anterior",
+            paginationNext: "Seguinte",
+            pageSize: "Por página",
+            pagination: { range: (from, to, total) => `${from} a ${to} de ${total}` },
+          }}
+        />,
+      )
+      expect(screen.getByRole("button", { name: "Anterior" })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Seguinte" })).toBeInTheDocument()
+      expect(screen.getByRole("combobox", { name: "Por página" })).toBeInTheDocument()
+      expect(screen.getByText("1 a 5 de 12")).toBeInTheDocument()
+    })
+
+    it("keeps the focus on next when the page changes", async () => {
+      render(<DataTable columns={columns} data={many} pagination={{ pageSize: 5 }} />)
+      const next = screen.getByRole("button", { name: "Próxima página" })
+      next.focus()
+      await userEvent.keyboard("{Enter}")
+      await userEvent.keyboard("{Enter}")
+      expect(pager().current).toBe("3")
+      expect(next).toHaveFocus()
+    })
+  })
+
   describe("server mode", () => {
     const page: Row[] = Array.from({ length: 10 }, (_, i) => ({ name: `Row ${i + 1}`, age: i }))
 
@@ -364,7 +496,7 @@ describe("DataTable", () => {
         />,
       )
       expect(screen.getByText("243 registros")).toBeInTheDocument()
-      expect(screen.getByText("Página 1 de 25")).toBeInTheDocument()
+      expect(pager()).toEqual({ current: "1", last: "25" })
     })
 
     it("lets pageCount win over rowCount", () => {
@@ -378,7 +510,7 @@ describe("DataTable", () => {
           pagination={{ pageSize: 10 }}
         />,
       )
-      expect(screen.getByText("Página 1 de 30")).toBeInTheDocument()
+      expect(pager()).toEqual({ current: "1", last: "30" })
     })
 
     it("never shows a negative page count and keeps next available when the total is unknown", () => {
@@ -394,7 +526,7 @@ describe("DataTable", () => {
       expect(screen.queryByText(/-1/)).not.toBeInTheDocument()
       // The page's own 10 rows are not the total: no count is shown.
       expect(screen.queryByText("10 registros")).not.toBeInTheDocument()
-      expect(screen.getByRole("button", { name: "Próxima página" })).toBeEnabled()
+      expect(isUnavailable(screen.getByRole("button", { name: "Próxima página" }))).toBe(false)
     })
 
     it("hides export scopes the table cannot fill from the server page", async () => {
@@ -1086,16 +1218,16 @@ describe("DataTable", () => {
       // Start on page 1 of 3 — previous should be disabled.
       const prev = screen.getByRole("button", { name: "Página anterior" })
       const next = screen.getByRole("button", { name: "Próxima página" })
-      expect(prev).toBeDisabled()
-      expect(screen.getByText(/Página 1 de 3/)).toBeInTheDocument()
+      expect(isUnavailable(prev)).toBe(true)
+      expect(pager()).toEqual({ current: "1", last: "3" })
 
       // Advance to page 2, then go back via "Previous".
       await userEvent.click(next)
-      expect(screen.getByText(/Página 2 de 3/)).toBeInTheDocument()
-      expect(prev).not.toBeDisabled()
+      expect(pager()).toEqual({ current: "2", last: "3" })
+      expect(isUnavailable(prev)).toBe(false)
 
       await userEvent.click(prev)
-      expect(screen.getByText(/Página 1 de 3/)).toBeInTheDocument()
+      expect(pager()).toEqual({ current: "1", last: "3" })
       expect(screen.getByText("Row 1")).toBeInTheDocument()
       expect(screen.queryByText("Row 3")).not.toBeInTheDocument()
     })
@@ -1146,8 +1278,8 @@ describe("DataTable", () => {
       render(<DataTable columns={columns} data={data} loading pagination={{ pageSize: 2 }} />)
       const prev = screen.getByRole("button", { name: /Página anterior/i })
       const next = screen.getByRole("button", { name: /Próxima página/i })
-      expect(prev).toBeDisabled()
-      expect(next).toBeDisabled()
+      expect(isUnavailable(prev)).toBe(true)
+      expect(isUnavailable(next)).toBe(true)
     })
 
     it("sets aria-busy on the wrapper while loading", () => {
@@ -1230,13 +1362,13 @@ describe("DataTable", () => {
       const nextBtn = screen.getByRole("button", { name: "Próxima página" })
       await userEvent.click(nextBtn)
       await userEvent.click(nextBtn)
-      expect(screen.getByText(/Página 3 de 6/)).toBeInTheDocument()
+      expect(pager()).toEqual({ current: "3", last: "6" })
 
       const select = screen.getByRole("combobox", { name: /Linhas por página/i })
       await userEvent.selectOptions(select, "20")
 
       // After resize, cursor MUST be back on page 1 (not preserved at row 21).
-      expect(screen.getByText(/Página 1 de 3/)).toBeInTheDocument()
+      expect(pager()).toEqual({ current: "1", last: "3" })
       expect(screen.getByText("Row 1")).toBeInTheDocument()
       expect(screen.getByText("Row 20")).toBeInTheDocument()
       expect(screen.queryByText("Row 21")).not.toBeInTheDocument()
@@ -1309,8 +1441,8 @@ describe("DataTable", () => {
       expect(onPaginationChange).not.toHaveBeenCalled()
     })
 
-    it("renders a skeleton in place of the select while loading", () => {
-      const { container } = render(
+    it("keeps the select in place but unavailable while loading", () => {
+      render(
         <DataTable
           columns={columns}
           data={makeMany(20)}
@@ -1318,8 +1450,7 @@ describe("DataTable", () => {
           pagination={{ pageSize: 10, pageSizeOptions: [10, 20] }}
         />,
       )
-      expect(screen.queryByRole("combobox", { name: /Linhas por página/i })).not.toBeInTheDocument()
-      expect(container.querySelector('[data-slot="data-table-page-size-skeleton"]')).toBeTruthy()
+      expect(screen.getByRole("combobox", { name: /Linhas por página/i })).toBeDisabled()
     })
 
     it("uses custom labels.pageSize for the visible label (and accessible name)", () => {
