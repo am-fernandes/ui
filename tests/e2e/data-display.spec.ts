@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { type Locator, type Page, expect, test } from "@playwright/test"
 import { expectNoA11yViolations } from "./a11y"
 
@@ -176,5 +177,61 @@ test.describe("Image", () => {
     await goto(page, "data-image--custom-fallback", "image")
     await expect(page.getByRole("img", { name: "Ana Souza" })).toHaveText("AS")
     await expectNoA11yViolations(page, '[data-slot="image"]')
+  })
+})
+
+test.describe("Video", () => {
+  // 90×160 px, one second of VP9: a vertical phone video, served locally.
+  const VERTICAL = readFileSync(new URL("./fixtures/vertical.webm", import.meta.url))
+  const SAMPLE = /commondatastorage\.googleapis\.com/
+  const serve = (page: Page) =>
+    page.route(SAMPLE, (route) => route.fulfill({ contentType: "video/webm", body: VERTICAL }))
+
+  test("contains the frame by default and loads to ready", async ({ page }) => {
+    await serve(page)
+    await goto(page, "data-video--vertical-video", "video")
+    const [contained, cropped] = [
+      page.getByLabel("Tour do imóvel", { exact: true }),
+      page.getByLabel("Tour do imóvel, cortado"),
+    ]
+    await expect(contained).toHaveCSS("object-fit", "contain")
+    await expect(cropped).toHaveCSS("object-fit", "cover")
+    await expect(page.locator('[data-slot="video"]').first()).toHaveAttribute("data-state", "ready")
+    expect(
+      await contained.evaluate((v: HTMLVideoElement) => [v.videoWidth, v.videoHeight]),
+    ).toEqual([90, 160])
+  })
+
+  test("loading, then an error with a retry that plays the video", async ({ page }) => {
+    let attempt = 0
+    let release = () => {}
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    await page.route(/example\.com\/does-not-exist\.mp4/, async (route) => {
+      attempt += 1
+      if (attempt === 1) {
+        await held
+        await route.fulfill({ status: 404 })
+      } else {
+        await route.fulfill({ contentType: "video/webm", body: VERTICAL })
+      }
+    })
+    await page.goto(story("data-video--error-state"))
+    const box = page.locator('[data-slot="video"]')
+    await expect(box).toHaveAttribute("data-state", "loading", { timeout: 15_000 })
+    await expect(box).toHaveAttribute("aria-busy", "true")
+    await expect(page.locator('[data-slot="video-loading"]')).toBeVisible()
+
+    release()
+    const fallback = page.getByRole("group", { name: "Tour do imóvel" })
+    await expect(fallback).toContainText("Não foi possível carregar o vídeo")
+    await expect(page.locator("video")).toBeHidden()
+    await expectNoA11yViolations(page, '[data-slot="video"]')
+
+    await fallback.getByRole("button", { name: "Tentar de novo" }).click()
+    await expect(box).toHaveAttribute("data-state", "ready")
+    await expect(fallback).toHaveCount(0)
+    await expect(page.locator("video")).toBeVisible()
   })
 })

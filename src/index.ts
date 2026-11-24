@@ -56,7 +56,13 @@ export {
   type TreeNodeData,
   type TreeProps,
 } from "./data/tree"
-export { Video, type VideoCaptionTrack, type VideoProps } from "./data/video"
+export {
+  defaultVideoLabels,
+  Video,
+  type VideoCaptionTrack,
+  type VideoLabels,
+  type VideoProps,
+} from "./data/video"
 
 // Hooks
 export { useCopyToClipboard } from "./hooks/use-copy-to-clipboard"
