@@ -343,3 +343,35 @@ test.describe("DataTable: seleção", () => {
     expect(await other.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("none")
   })
 })
+
+test.describe("DataTable: telefone", () => {
+  test.use({ viewport: { width: 360, height: 740 } })
+
+  test("barra e rodapé quebram linha e nada sai da caixa a 360px", async ({ page }) => {
+    await gotoTable(page, "data-datatable--full-toolbar")
+    const root = page.locator('[data-slot="data-table"]')
+    const rootBox = await root.boundingBox()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360)
+    const parts = page.locator(
+      '[data-slot="data-table-toolbar"] :is(input, button), [data-slot="data-table-footer"] :is(button, select, span)',
+    )
+    const boxes = await parts.evaluateAll((elements) =>
+      elements.map((el) => {
+        const box = el.getBoundingClientRect()
+        return { left: box.left, right: box.right, width: box.width, text: el.textContent }
+      }),
+    )
+    expect(boxes.length).toBeGreaterThan(5)
+    for (const box of boxes) {
+      expect(box.left, box.text ?? "").toBeGreaterThanOrEqual((rootBox?.x ?? 0) - 1)
+      expect(box.right, box.text ?? "").toBeLessThanOrEqual(
+        (rootBox?.x ?? 0) + (rootBox?.width ?? 0) + 1,
+      )
+    }
+    // The search keeps a usable width and the page buttons keep their size.
+    const search = await page.getByRole("textbox", { name: "Buscar na tabela" }).boundingBox()
+    expect(search?.width ?? 0).toBeGreaterThanOrEqual(190)
+    const next = await page.getByRole("button", { name: "Próxima página" }).boundingBox()
+    expect(next?.width).toBe(40)
+  })
+})

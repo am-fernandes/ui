@@ -471,6 +471,38 @@ export const Selectable: Story = {
   },
 }
 
+export const FullToolbar: Story = {
+  render: () => {
+    function Wrapper() {
+      const [filtered, setFiltered] = useState(true)
+      return (
+        <div className="p-4">
+          <DataTable
+            aria-label="Contratos"
+            columns={columns}
+            data={contratos}
+            searchableColumns={["numero", "cliente"]}
+            onClearFilters={() => setFiltered(false)}
+            clearFiltersDisabled={!filtered}
+            downloadable
+            pagination={{ pageSize: 5, pageSizeOptions: [5, 10, 20] }}
+            showRowCount
+          />
+        </div>
+      )
+    }
+    return <Wrapper />
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Barra e rodapé completos (busca, limpar filtros, exportar, contagem, tamanho de página e páginas). Num telefone eles quebram linha em vez de espremer a busca ou sair da caixa.",
+      },
+    },
+  },
+}
+
 export const FilenameByScope: Story = {
   render: () => (
     <div className="p-6">

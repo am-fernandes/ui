@@ -1267,7 +1267,12 @@ function DataTable<TData>({
       aria-busy={loading || rootProps["aria-busy"] || undefined}
     >
       {hasSearch || hasDownload || hasClearFilters ? (
-        <div className="flex items-center justify-between gap-2">
+        // Wraps on a phone: the actions go under the search instead of
+        // squeezing it (or leaving the box).
+        <div
+          data-slot="data-table-toolbar"
+          className="flex flex-wrap items-center justify-between gap-2"
+        >
           {hasSearch ? (
             // Always-mounted input. Previously the loading state swapped the
             // input for a skeleton div, which made React unmount + remount the
@@ -1278,7 +1283,10 @@ function DataTable<TData>({
             <div
               data-slot="data-table-search"
               data-loading={loading || undefined}
-              className={cn("relative w-full max-w-sm", searchClassName)}
+              className={cn(
+                "relative w-full min-w-0 flex-[1_1_12rem] sm:max-w-sm",
+                searchClassName,
+              )}
             >
               <Search
                 className={cn(
@@ -1298,7 +1306,7 @@ function DataTable<TData>({
           ) : (
             <span aria-hidden />
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {hasClearFilters ? (
               <Button
                 type="button"
@@ -1598,7 +1606,10 @@ function DataTable<TData>({
         // gives the footer only 4px of internal top padding (was 12px). The
         // row count / pagination read as part of the table block instead of
         // floating below it; pb-3 keeps a normal bottom breath at the edge.
-        <div className="-mt-1 flex items-center justify-between gap-2 px-3 pt-1 pb-3">
+        <div
+          data-slot="data-table-footer"
+          className="-mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 pt-1 pb-3"
+        >
           {showRowCount && counts !== null ? (
             loading ? (
               <div className="h-4 w-32 animate-pulse rounded-inner bg-primary/10" />
