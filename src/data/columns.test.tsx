@@ -5,7 +5,8 @@ import {
   getCoreRowModel,
   getSortedRowModel,
 } from "@tanstack/react-table"
-import { render } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
 
 import { dateColumn, formattedColumn } from "./columns"
@@ -178,6 +179,13 @@ interface PhoneRow {
   name: string
 }
 
+/** The text drawn in a cell (a clipped value's full text is only for screen readers). */
+function visibleText(container: HTMLElement): string {
+  const clone = container.cloneNode(true) as HTMLElement
+  for (const hidden of clone.querySelectorAll(".sr-only")) hidden.remove()
+  return clone.textContent ?? ""
+}
+
 function renderFormattedCell(
   col: ColumnDef<PhoneRow>,
   value: unknown,
@@ -193,7 +201,7 @@ function renderFormattedCell(
   ).cell
   const node = cell({ getValue: () => value, row: { original: rowOriginal } })
   const { container } = render(<div>{node}</div>)
-  return container.textContent ?? ""
+  return visibleText(container)
 }
 
 describe("formattedColumn", () => {
@@ -268,13 +276,49 @@ describe("formattedColumn", () => {
     const { container } = render(
       <div>{cell({ getValue: () => "LEONARDO ALVES", row: { original: sampleRow } })}</div>,
     )
-    // The visible span shows the clipped form (5 chars + "…").
+    // What is drawn is the clipped form (5 chars + "…"); a screen reader
+    // reads the whole text, kept out of sight.
     const trigger = container.querySelector('[data-slot="tooltip-trigger"]')
-    expect(trigger?.textContent).toBe("LEONA…")
-    // The tooltip primitive (Radix) doesn't render the full content until
-    // opened — the trigger's child `span` is what users see at rest.
-    const span = container.querySelector("span")
-    expect(span?.textContent).toBe("LEONA…")
+    expect(trigger?.querySelector('[aria-hidden="true"]')?.textContent).toBe("LEONA…")
+    expect(trigger?.querySelector(".sr-only")?.textContent).toBe("LEONARDO ALVES")
+  })
+
+  it("opens the full text from the keyboard: the clipped text is focusable", async () => {
+    const col = formattedColumn<PhoneRow, string>({
+      accessorKey: "name",
+      header: "Nome",
+      truncate: { max: 5 },
+    })
+    const cell = (
+      col as unknown as {
+        cell: (ctx: { getValue: () => unknown; row: { original: PhoneRow } }) => React.ReactNode
+      }
+    ).cell
+    render(<div>{cell({ getValue: () => "LEONARDO ALVES", row: { original: sampleRow } })}</div>)
+    await userEvent.tab()
+    const trigger = document.activeElement as HTMLElement
+    expect(trigger).toHaveAttribute("data-slot", "tooltip-trigger")
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("LEONARDO ALVES")
+    await userEvent.keyboard("{Escape}")
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument()
+  })
+
+  it("is not a second tab stop inside a clickable row's button", async () => {
+    const { DataTable } = await import("./data-table")
+    const col = formattedColumn<PhoneRow, string>({
+      accessorKey: "name",
+      header: "Nome",
+      truncate: { max: 5 },
+    })
+    render(
+      <DataTable
+        columns={[col]}
+        data={[{ phone: null, name: "LEONARDO ALVES" }]}
+        onRowClick={() => {}}
+      />,
+    )
+    const action = screen.getByRole("button", { name: "LEONARDO ALVES" })
+    expect(action.querySelector("[tabindex]")).toBeNull()
   })
 
   it("counts code points (not UTF-16 units) so surrogate pairs aren't split", () => {

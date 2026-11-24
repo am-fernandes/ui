@@ -7,7 +7,7 @@ import { DropdownMenu } from "../overlays/dropdown-menu"
 import { Badge } from "../primitives/badge"
 import { Button } from "../primitives/button"
 import { IconButton } from "../primitives/icon-button"
-import { dateColumn } from "./columns"
+import { dateColumn, formattedColumn } from "./columns"
 import { DataTable } from "./data-table"
 
 interface Contrato {
@@ -498,6 +498,46 @@ export const FullToolbar: Story = {
       description: {
         story:
           "Barra e rodapé completos (busca, limpar filtros, exportar, contagem, tamanho de página e páginas). Num telefone eles quebram linha em vez de espremer a busca ou sair da caixa.",
+      },
+    },
+  },
+}
+
+interface Endereco {
+  numero: string
+  endereco: string
+}
+
+const enderecos: Endereco[] = [
+  {
+    numero: "C-2026-001",
+    endereco: "Avenida Brigadeiro Faria Lima, 3477, 14º andar, Itaim Bibi, São Paulo",
+  },
+  { numero: "C-2026-002", endereco: "Rua Augusta, 1200" },
+]
+
+export const TruncatedText: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        aria-label="Endereços"
+        columns={[
+          { accessorKey: "numero", header: "Número" },
+          formattedColumn<Endereco, string>({
+            accessorKey: "endereco",
+            header: "Endereço",
+            truncate: { max: 24 },
+          }),
+        ]}
+        data={enderecos}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`formattedColumn` com `truncate`: o texto cortado mostra o inteiro no hover, no foco do teclado (é uma parada de Tab) e num toque; o leitor de tela lê o texto inteiro.",
       },
     },
   },

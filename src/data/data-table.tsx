@@ -27,7 +27,7 @@ import { Pagination, type PaginationLabels } from "../navigation/pagination"
 import { DropdownMenu } from "../overlays/dropdown-menu"
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
-import { columnMeta, valueToText } from "./_internal/column-meta"
+import { InsideRowActionContext, columnMeta, valueToText } from "./_internal/column-meta"
 import {
   SELECTION_COLUMN_ID,
   type SelectionContextValue,
@@ -1582,7 +1582,9 @@ function DataTable<TData>({
                                 data-row-action=""
                                 className="-mx-1 cursor-pointer rounded-inner px-1 text-left focus-visible:focus-outline"
                               >
-                                {content}
+                                <InsideRowActionContext.Provider value={true}>
+                                  {content}
+                                </InsideRowActionContext.Provider>
                               </button>
                             ) : (
                               content

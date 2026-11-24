@@ -1,10 +1,16 @@
+"use client"
+
 import type { ColumnDef, Row } from "@tanstack/react-table"
-import type * as React from "react"
+import * as React from "react"
 
 import { DEFAULT_TIME_ZONE, formatDate } from "@/lib/date"
 import { cn } from "@/lib/utils"
 import { Tooltip, type TooltipProps } from "../overlays/tooltip"
-import { type InternalColumnMeta, valueToText } from "./_internal/column-meta"
+import {
+  InsideRowActionContext,
+  type InternalColumnMeta,
+  valueToText,
+} from "./_internal/column-meta"
 
 export type DateColumnShowTime = boolean | "auto"
 
@@ -164,8 +170,57 @@ type FormattedColumnAccessor<TData, TValue> =
     }
 
 /**
- * Cap displayed text length and show the full content on hover.
- * Only applies when the formatted output is a string longer than `max`.
+ * A clipped text whose full form is reachable by everyone: hover (mouse),
+ * focus (keyboard, it is a tab stop), a tap that toggles it (touch), and a
+ * screen reader reads the full text in place.
+ */
+function TruncatedText({
+  full,
+  short,
+  className,
+  side,
+  align,
+}: {
+  full: string
+  short: string
+  className?: string
+  side?: TooltipProps["side"]
+  align?: TooltipProps["align"]
+}) {
+  // Inside a clickable row's button the button is the tab stop.
+  const insideRowAction = React.useContext(InsideRowActionContext)
+  const [open, setOpen] = React.useState(false)
+  const tapping = React.useRef(false)
+  return (
+    <Tooltip content={full} open={open} onOpenChange={setOpen} side={side} align={align}>
+      <span
+        tabIndex={insideRowAction ? undefined : 0}
+        className={cn("rounded-inner focus-visible:focus-outline", className)}
+        // A tap does not open a tooltip (Radix ignores the focus that follows
+        // a pointer press and closes on click): toggle it here, and keep
+        // Radix's own handlers out of it (preventDefault).
+        onPointerDown={(event) => {
+          tapping.current = event.pointerType === "touch"
+          if (tapping.current) event.preventDefault()
+        }}
+        onClick={(event) => {
+          if (!tapping.current) return
+          tapping.current = false
+          event.preventDefault()
+          setOpen((current) => !current)
+        }}
+      >
+        <span aria-hidden="true">{short}</span>
+        <span className="sr-only">{full}</span>
+      </span>
+    </Tooltip>
+  )
+}
+
+/**
+ * Cap displayed text length; the full text shows on hover, on keyboard focus
+ * (the clipped text is a tab stop) and on a tap, and screen readers read it
+ * whole. Only applies when the formatted output is a string longer than `max`.
  */
 export interface TruncateOption {
   /** Max characters before clipping with "…" and showing a tooltip. */
@@ -282,9 +337,13 @@ export function formattedColumn<TData, TValue = unknown>(
         if (chars.length > truncate.max) {
           const short = `${chars.slice(0, truncate.max).join("").trimEnd()}…`
           return (
-            <Tooltip content={node} side={truncate.side ?? "bottom"} align={truncate.align}>
-              <span className={mergedClass}>{short}</span>
-            </Tooltip>
+            <TruncatedText
+              full={node}
+              short={short}
+              className={mergedClass}
+              side={truncate.side ?? "bottom"}
+              align={truncate.align}
+            />
           )
         }
       }

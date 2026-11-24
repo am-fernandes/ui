@@ -400,3 +400,25 @@ test.describe("DataTable: caixa de rolagem", () => {
     await expect(page.getByRole("region")).toHaveCount(0)
   })
 })
+
+test.describe("DataTable: texto cortado no toque", () => {
+  test.use({ hasTouch: true })
+
+  test("um toque mostra o texto inteiro e outro esconde", async ({ page }) => {
+    await gotoTable(page, "data-datatable--truncated-text")
+    const clipped = page.locator('[data-slot="tooltip-trigger"]').first()
+    await expect(clipped).toContainText("Avenida Brigadeiro Faria…")
+    await clipped.tap()
+    const tooltip = page.getByRole("tooltip")
+    await expect(tooltip).toContainText("Avenida Brigadeiro Faria Lima, 3477, 14º andar")
+    await clipped.tap()
+    await expect(tooltip).toHaveCount(0)
+  })
+
+  test("o teclado chega ao texto cortado e abre o texto inteiro", async ({ page }) => {
+    await gotoTable(page, "data-datatable--truncated-text")
+    await page.keyboard.press("Tab")
+    await expect(page.locator('[data-slot="tooltip-trigger"]').first()).toBeFocused()
+    await expect(page.getByRole("tooltip")).toContainText("Itaim Bibi, São Paulo")
+  })
+})

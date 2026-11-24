@@ -1,3 +1,5 @@
+import * as React from "react"
+
 /**
  * What `DataTable` reads from a column's `meta`. TanStack types `meta` as an
  * open object, so these keys are written as plain properties:
@@ -45,3 +47,9 @@ export function valueToText(value: unknown): string {
   if (Array.isArray(value)) return value.map(valueToText).join(", ")
   return String(value)
 }
+
+/**
+ * `true` inside the button that wraps a clickable row's first cell: content
+ * there must not add focusable elements of its own (a button cannot hold one).
+ */
+export const InsideRowActionContext = React.createContext(false)
