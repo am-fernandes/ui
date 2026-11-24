@@ -242,6 +242,45 @@ describe("Stepper", () => {
       expect(container.querySelector('[data-slot="stepper-compact"]')).toBeNull()
     })
 
+    it("keeps the earlier steps' content with keepMounted", async () => {
+      const wizard = (activeStep: number) => (
+        <Stepper
+          orientation="vertical"
+          keepMounted
+          activeStep={activeStep}
+          steps={[
+            { label: "Dados", content: <input aria-label="Nome" /> },
+            { label: "Endereço", content: <input aria-label="CEP" /> },
+          ]}
+        />
+      )
+      const { rerender } = render(wizard(0))
+      await userEvent.type(screen.getByRole("textbox", { name: "Nome" }), "Maria")
+      rerender(wizard(1))
+      expect(screen.getByLabelText("Nome")).not.toBeVisible()
+      expect(screen.getByRole("textbox", { name: "CEP" })).toBeVisible()
+      rerender(wizard(0))
+      expect(screen.getByRole("textbox", { name: "Nome" })).toHaveValue("Maria")
+    })
+
+    it("follows each step by its id when steps are added", async () => {
+      const wizard = (withExtra: boolean) => (
+        <Stepper
+          orientation="vertical"
+          activeStep={withExtra ? 1 : 0}
+          steps={[
+            ...(withExtra ? [{ id: "conjuge", label: "Cônjuge" }] : []),
+            { id: "dados", label: "Dados", content: <input aria-label="Nome" /> },
+          ]}
+        />
+      )
+      const { rerender } = render(wizard(false))
+      await userEvent.type(screen.getByRole("textbox", { name: "Nome" }), "Maria")
+      // A step is inserted before it: the same step, the same field.
+      rerender(wizard(true))
+      expect(screen.getByRole("textbox", { name: "Nome" })).toHaveValue("Maria")
+    })
+
     it("has no content block when the current step has none", () => {
       const { container } = renderStepper({ orientation: "vertical", activeStep: 0 })
       expect(container.querySelector('[data-slot="stepper-content"]')).toBeNull()

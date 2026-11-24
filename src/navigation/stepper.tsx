@@ -7,6 +7,12 @@ import { cn } from "@/lib/utils"
 import { IconButton } from "../primitives/icon-button"
 
 export interface StepperStep {
+  /**
+   * Stable identity of the step. Give one when steps come and go at runtime
+   * (a "Cônjuge" step that appears for married buyers): the other steps keep
+   * their content instead of shifting by position.
+   */
+  id?: string
   label: string
   description?: React.ReactNode
   /** Appends "Opcional" after the label. */
@@ -61,6 +67,13 @@ export interface StepperProps {
   isStepClickable?: (index: number) => boolean
   /** @default "horizontal" */
   orientation?: "horizontal" | "vertical"
+  /**
+   * Vertical only: keep every step's `content` in the DOM, hidden while it is
+   * not the current step, so uncontrolled fields keep what was typed when
+   * the user goes back.
+   * @default false
+   */
+  keepMounted?: boolean
   labels?: Partial<StepperLabels>
   className?: string
 }
@@ -162,6 +175,7 @@ function Stepper({
   onStepClick,
   isStepClickable,
   orientation = "horizontal",
+  keepMounted = false,
   labels,
   className,
 }: StepperProps) {
@@ -256,8 +270,8 @@ function Stepper({
     const reached = index <= activeStep
     return (
       <li
-        // biome-ignore lint/suspicious/noArrayIndexKey: steps are positional by nature
-        key={index}
+        // Without an id a step is its position.
+        key={step.id ?? index}
         data-slot="stepper-step"
         data-state={state}
         aria-current={!isButton(index) && state === "current" ? "step" : undefined}
@@ -286,8 +300,8 @@ function Stepper({
           />
         ) : null}
         {renderStepBody(step, index, state)}
-        {vertical && state === "current" && step.content ? (
-          <div data-slot="stepper-content" className="mt-3 pl-11">
+        {vertical && step.content && (state === "current" || keepMounted) ? (
+          <div data-slot="stepper-content" hidden={state !== "current"} className="mt-3 pl-11">
             {step.content}
           </div>
         ) : null}

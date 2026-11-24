@@ -23,7 +23,7 @@ const meta = {
         component: [
           "Sequência numerada de etapas para fluxos longos (cadastro, proposta). Mostra onde a pessoa está, o que já foi feito e o que falta.",
           "",
-          '- `steps` — `{ label, description?, optional?, disabled?, status?: "error" | "warning", content? }`.',
+          '- `steps` — `{ id?, label, description?, optional?, disabled?, status?: "error" | "warning", content? }`. Dê `id` quando etapas entram e saem.',
           "- `activeStep` (a partir de 0): as anteriores ficam concluídas. `activeStep={steps.length}` marca todas como concluídas.",
           "- `onStepClick` deixa as etapas clicáveis (navegação não linear).",
           '- `orientation="vertical"` empilha as etapas e mostra o `content` da etapa atual embaixo dela.',
@@ -167,7 +167,7 @@ function Wizard() {
   ]
   return (
     <div className="flex max-w-xl flex-col gap-4">
-      <Stepper steps={wizardSteps} activeStep={active} orientation="vertical" />
+      <Stepper steps={wizardSteps} activeStep={active} orientation="vertical" keepMounted />
       <div className="flex gap-2 pl-11">
         <Button variant="outline" disabled={active === 0} onClick={() => setActive((a) => a - 1)}>
           Voltar
@@ -186,7 +186,7 @@ export const Vertical: Story = {
     docs: {
       description: {
         story:
-          "Na vertical, o `content` da etapa atual aparece embaixo dela — bom para formulários em etapas.",
+          "Na vertical, o `content` da etapa atual aparece embaixo dela — bom para formulários em etapas. Com `keepMounted`, o conteúdo das outras etapas fica no DOM, escondido: ao voltar, o que foi digitado continua lá.",
       },
     },
   },
