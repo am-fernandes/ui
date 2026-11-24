@@ -73,6 +73,12 @@ export interface TimePickerProps {
    */
   readOnly?: boolean
   /**
+   * Called when the focus leaves the picker as a whole, after the field left
+   * was completed or cleared. Moving between the hour and the minutes does
+   * not count.
+   */
+  onBlur?: (event: React.FocusEvent<HTMLElement>) => void
+  /**
    * Name of the field in a native form. A hidden input sends `"HH:MM"`, or
    * `""` while the time is incomplete; the two visible fields have no name.
    */
@@ -216,6 +222,7 @@ function TimePicker({
   labels,
   name,
   readOnly = false,
+  onBlur,
   ref,
 }: TimePickerProps) {
   const l: TimePickerLabels = { ...defaultTimePickerLabels, ...labels }
@@ -416,6 +423,11 @@ function TimePicker({
         role="group"
         aria-label={ariaLabel ?? (typeof label === "string" ? label : l.group)}
         data-slot="time-picker"
+        onBlur={(e) => {
+          const next = e.relatedTarget as Node | null
+          if (next && e.currentTarget.contains(next)) return
+          onBlur?.(e)
+        }}
         data-disabled={disabled ? "true" : undefined}
         className={cn(
           containerClasses,

@@ -447,6 +447,26 @@ describe("TimePicker", () => {
     expect(screen.getByRole("group").className).toContain("bg-muted")
   })
 
+  it("onBlur: once, when the focus leaves both fields, after the time is reported", async () => {
+    const calls: string[] = []
+    render(
+      <>
+        <TimePicker
+          defaultValue=""
+          onValueChange={(v) => calls.push(`value:${v}`)}
+          onBlur={() => calls.push("blur")}
+        />
+        <button type="button">Fora</button>
+      </>,
+    )
+    const hour = screen.getByLabelText("Horas")
+    await userEvent.type(hour, "9:3")
+    expect(screen.getByLabelText("Minutos")).toHaveFocus()
+    expect(calls).not.toContain("blur")
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(calls).toEqual(["value:09:03", "blur"])
+  })
+
   it("forwards ref to the hour input", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<TimePicker value="" ref={ref} />)
