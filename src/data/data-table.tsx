@@ -7,6 +7,8 @@ import {
   type FilterFn,
   type OnChangeFn,
   type PaginationState,
+  type Row,
+  type SortingFn,
   type SortingState,
   type Table as TanstackTable,
   flexRender,
@@ -28,7 +30,7 @@ import {
 } from "lucide-react"
 import * as React from "react"
 
-import { matchesSearch } from "@/lib/text"
+import { compareText, matchesSearch } from "@/lib/text"
 import { cn } from "@/lib/utils"
 import { Popover } from "../overlays/popover"
 import { Button } from "../primitives/button"
@@ -178,6 +180,10 @@ export interface DataTableProps<TData> {
    * Whitelist of column ids (typically `accessorKey`) whose headers are sortable.
    * When omitted, **no** header is sortable. Mirrors the `searchableColumns`
    * opt-in pattern. Replaces the per-column `enableSorting` flag in the columnDef.
+   *
+   * Text sorts in Portuguese order (accents and case ignored, "Bloco 2" before
+   * "Bloco 10"), numbers by value and dates by time. A column's own
+   * `sortingFn` still wins.
    */
   sortableColumns?: string[]
   /** Placeholder for the search input. */
@@ -381,6 +387,30 @@ function isOwnRowClick(event: React.MouseEvent<HTMLTableRowElement>): boolean {
   return true
 }
 
+/**
+ * Default order of a sortable column: numbers by value, dates by time,
+ * booleans false first, and text in Portuguese order (`compareText`: accents
+ * and case ignored, "Bloco 2" before "Bloco 10"). Empty values come first.
+ * A column's own `sortingFn` takes precedence.
+ */
+function compareCellValues(a: unknown, b: unknown): number {
+  const aEmpty = a == null || a === ""
+  const bEmpty = b == null || b === ""
+  if (aEmpty || bEmpty) return aEmpty === bEmpty ? 0 : aEmpty ? -1 : 1
+  if (typeof a === "number" && typeof b === "number") {
+    if (Number.isNaN(a) || Number.isNaN(b)) return Number.isNaN(a) ? -1 : Number.isNaN(b) ? 1 : 0
+    return a - b
+  }
+  if (typeof a === "bigint" && typeof b === "bigint") return a < b ? -1 : a > b ? 1 : 0
+  if (a instanceof Date && b instanceof Date) return a.getTime() - b.getTime()
+  if (typeof a === "boolean" && typeof b === "boolean") return Number(a) - Number(b)
+  return compareText(valueToText(a), valueToText(b))
+}
+
+function defaultSortingFn<TData>(rowA: Row<TData>, rowB: Row<TData>, columnId: string): number {
+  return compareCellValues(rowA.getValue(columnId), rowB.getValue(columnId))
+}
+
 /** Width classes used to vary skeleton cell widths so rows don't look uniform. */
 const SKELETON_CELL_WIDTHS = ["w-3/4", "w-1/2", "w-2/3", "w-5/6", "w-3/5"] as const
 
@@ -547,6 +577,7 @@ function DataTable<TData>({
       },
       onSortingChange: handleSortingChange,
       manualSorting,
+      defaultColumn: { sortingFn: defaultSortingFn as SortingFn<TData> },
       onColumnFiltersChange: setColumnFilters,
       onGlobalFilterChange: handleGlobalFilterChange,
       onPaginationChange: paginationEnabled ? handlePaginationChange : undefined,

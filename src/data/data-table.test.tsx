@@ -332,6 +332,134 @@ describe("DataTable", () => {
     expect(btn).toBeTruthy()
   })
 
+  describe("sorting", () => {
+    interface Pessoa {
+      nome: string
+      idade?: number | null
+      nascimento?: Date
+      bloco?: string
+    }
+
+    function bodyColumn(index = 0) {
+      return screen
+        .getAllByRole("row")
+        .slice(1)
+        .map((row) => row.querySelectorAll("td")[index]?.textContent ?? "")
+    }
+
+    async function sortBy(name: string) {
+      await userEvent.click(screen.getByRole("button", { name: new RegExp(name) }))
+    }
+
+    it.each([
+      [
+        [
+          "ana",
+          "Bruno",
+          "carlos",
+          "Diego",
+          "Fábio",
+          "Gabriel",
+          "Zuleica",
+          "Álvaro",
+          "Ângela",
+          "Érica",
+          "Íris",
+          "Úrsula",
+        ],
+        [
+          "Álvaro",
+          "ana",
+          "Ângela",
+          "Bruno",
+          "carlos",
+          "Diego",
+          "Érica",
+          "Fábio",
+          "Gabriel",
+          "Íris",
+          "Úrsula",
+          "Zuleica",
+        ],
+      ],
+      [
+        ["Carlos", "Zuleica", "ana", "bruno", "Álvaro"],
+        ["Álvaro", "ana", "bruno", "Carlos", "Zuleica"],
+      ],
+    ])(
+      "sorts names in Portuguese order, ignoring accents and case (%#)",
+      async (input, expected) => {
+        render(
+          <DataTable
+            columns={[{ accessorKey: "nome", header: "Nome" }] as ColumnDef<Pessoa>[]}
+            data={input.map((nome) => ({ nome }))}
+            sortableColumns={["nome"]}
+          />,
+        )
+        await sortBy("Nome")
+        expect(bodyColumn()).toEqual(expected)
+        await sortBy("Nome")
+        expect(bodyColumn()).toEqual([...expected].reverse())
+      },
+    )
+
+    it("puts numbers inside text in numeric order", async () => {
+      render(
+        <DataTable
+          columns={[{ accessorKey: "bloco", header: "Bloco" }] as ColumnDef<Pessoa>[]}
+          data={["Bloco 10", "Bloco 2", "Bloco 1"].map((bloco) => ({ nome: bloco, bloco }))}
+          sortableColumns={["bloco"]}
+        />,
+      )
+      await sortBy("Bloco")
+      expect(bodyColumn()).toEqual(["Bloco 1", "Bloco 2", "Bloco 10"])
+    })
+
+    it("sorts numbers numerically and dates by time", async () => {
+      const cols: ColumnDef<Pessoa>[] = [
+        { accessorKey: "nome", header: "Nome" },
+        { accessorKey: "idade", header: "Idade" },
+        {
+          accessorKey: "nascimento",
+          header: "Nascimento",
+          cell: ({ row }) => row.original.nascimento?.toISOString().slice(0, 10),
+        },
+      ]
+      const rows: Pessoa[] = [
+        { nome: "B", idade: 9, nascimento: new Date(2001, 0, 1) },
+        { nome: "A", idade: 100, nascimento: new Date(1999, 11, 31) },
+        { nome: "C", idade: 10, nascimento: new Date(2000, 5, 15) },
+      ]
+      render(<DataTable columns={cols} data={rows} sortableColumns={["idade", "nascimento"]} />)
+      await sortBy("Idade")
+      await sortBy("Idade")
+      expect(bodyColumn(1)).toEqual(["9", "10", "100"])
+      await sortBy("Nascimento")
+      await sortBy("Nascimento")
+      expect(bodyColumn(0)).toEqual(["A", "C", "B"])
+    })
+
+    it("keeps a column's own sortingFn", async () => {
+      const cols: ColumnDef<Pessoa>[] = [
+        {
+          accessorKey: "nome",
+          header: "Nome",
+          // Length first: the column decides, not the default.
+          sortingFn: (a, b) => a.original.nome.length - b.original.nome.length,
+        },
+      ]
+      render(
+        <DataTable
+          columns={cols}
+          data={[{ nome: "Bia" }, { nome: "Al" }, { nome: "Carla" }]}
+          sortableColumns={["nome"]}
+        />,
+      )
+      await sortBy("Nome")
+      expect(bodyColumn()).toEqual(["Al", "Bia", "Carla"])
+    })
+  })
+
   describe("search", () => {
     interface Cliente {
       nome: string
