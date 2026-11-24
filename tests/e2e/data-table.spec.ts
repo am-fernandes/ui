@@ -49,7 +49,10 @@ test.describe("DataTable: linha clicável", () => {
     await page.keyboard.press("Enter")
     const menu = page.getByRole("menu")
     await expect(menu).toBeVisible()
+    // The menu moves the focus to its first item when it opens.
+    await expect(menu.getByRole("menuitem", { name: "Editar" })).toBeFocused()
     await page.keyboard.press("ArrowDown")
+    await expect(menu.getByRole("menuitem", { name: "Arquivar" })).toBeFocused()
     await page.keyboard.press("Enter")
     await expect(state).toContainText("Ação: Arquivar C-2026-002")
     await expect(state).toContainText("Linha aberta: nenhuma")

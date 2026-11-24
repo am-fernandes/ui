@@ -24,7 +24,7 @@ import * as React from "react"
 import { compareText, matchesSearch } from "@/lib/text"
 import { cn } from "@/lib/utils"
 import { Pagination, type PaginationLabels } from "../navigation/pagination"
-import { Popover } from "../overlays/popover"
+import { DropdownMenu } from "../overlays/dropdown-menu"
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
 import { columnMeta, valueToText } from "./_internal/column-meta"
@@ -336,7 +336,7 @@ export interface DataTableProps<TData>
   onRetry?: () => void
   /**
    * Render an "Exportar para Excel" ghost button on the right side of the toolbar.
-   * Clicking opens a popover with three scopes (filtered, current page, all rows).
+   * Clicking opens a menu (`DropdownMenu`) with the scopes the table can fill (filtered, current page, all rows).
    * Pass `true` to enable with defaults or an object to customize filename / sheet
    * name / row mapping.
    */
@@ -904,10 +904,8 @@ function DataTable<TData>({
     all: mergedLabels.exportAll,
   }
 
-  const [downloadMenuOpen, setDownloadMenuOpen] = React.useState(false)
   const runExport = React.useCallback(
     async (scope: ExportScope) => {
-      setDownloadMenuOpen(false)
       setExportingScope(scope)
       setExportFailed(false)
       try {
@@ -934,17 +932,18 @@ function DataTable<TData>({
         />
       )
     }
+    // The library's menu: arrows, Home/End, typeahead, Escape back to the
+    // trigger. While a file is being made the trigger is busy (`loading`,
+    // aria-disabled), so the focus Radix hands back to it stays there.
     return (
-      <Popover
+      <DropdownMenu
         align="end"
-        aria-label={mergedLabels.exportTrigger}
-        open={downloadMenuOpen}
-        onOpenChange={setDownloadMenuOpen}
+        className="w-56"
         trigger={
           <Button
             type="button"
             variant="outline"
-            disabled={data.length === 0 || exportingScope !== null}
+            disabled={data.length === 0}
             loading={exportingScope !== null}
             data-slot="data-table-download-trigger"
             className={cn("gap-2", downloadTriggerClassName)}
@@ -953,23 +952,14 @@ function DataTable<TData>({
             {mergedLabels.exportTrigger}
           </Button>
         }
-        className="w-56 p-1"
-      >
-        <div role="menu" className="flex flex-col">
-          {exportScopes.map((scope) => (
-            <button
-              key={scope}
-              type="button"
-              role="menuitem"
-              data-slot={`data-table-download-${scope}`}
-              className="rounded-element px-2 py-1.5 text-left text-sm transition-colors cursor-pointer state-layer"
-              onClick={() => runExport(scope)}
-            >
-              {scopeLabels[scope]}
-            </button>
-          ))}
-        </div>
-      </Popover>
+        items={exportScopes.map((scope) => ({
+          id: scope,
+          label: scopeLabels[scope],
+          onSelect: () => {
+            void runExport(scope)
+          },
+        }))}
+      />
     )
   }
 

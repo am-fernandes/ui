@@ -188,7 +188,7 @@ const meta = {
           "- `onRowClick?: (row, event) => void` — torna cada linha clicável. A linha continua linha; o teclado chega à ação por um `<button>` que envolve o conteúdo da primeira célula. Clique ou tecla em controle dentro da linha (botão, link, campo, menu) não dispara `onRowClick`.",
           "- `rowClassName?: (row, index) => string | undefined` — classes por linha. Retorne `undefined` para a linha herdar o estilo padrão. Útil para destacar linhas.",
           "- `loading?: boolean` — exibe estado skeleton: linhas (count = `pagination.pageSize ?? 5`, células = `columns.length`), input de busca, contagem e botões de paginação. Wrapper recebe `aria-busy`.",
-          "- `downloadable?: boolean | { filename?, sheetName?, rowToRecord? }` — botão `Exportar para Excel` (ghost) à direita; abre popover com 3 escopos: dados filtrados, página atual, todos. Gera `.xlsx` com `write-excel-file`, carregado só no primeiro export (ou `.csv` para o Excel brasileiro, se o nome terminar em `.csv`).",
+          "- `downloadable?: boolean | { filename?, sheetName?, rowToRecord? }` — botão `Exportar para Excel` (ghost) à direita; abre um menu (`DropdownMenu`, com setas e Escape) com os escopos: dados filtrados, página atual, todos. Gera `.xlsx` com `write-excel-file`, carregado só no primeiro export (ou `.csv` para o Excel brasileiro, se o nome terminar em `.csv`).",
           "- `aria-label` / `aria-labelledby` / `caption` — nome acessível da `<table>` (a `caption` também aparece, sob as linhas).",
           "- `className?: string` — classes extras no wrapper externo.",
           "",
@@ -953,7 +953,7 @@ export const WithDownload: Story = {
       <section className="space-y-2">
         <p className="text-muted-foreground text-xs">
           <strong className="text-foreground">Toolbar com busca + download</strong> — busca à
-          esquerda, botão `Exportar para Excel` (ghost) à direita. Clique pra abrir o popover com 3
+          esquerda, botão `Exportar para Excel` (ghost) à direita. Clique pra abrir o menu com os
           escopos.
         </p>
         <DataTable
@@ -990,7 +990,7 @@ export const WithDownload: Story = {
         story: [
           "Passe `downloadable` para expor um botão `Exportar para Excel` (variante ghost, ícone Download) à direita do toolbar.",
           "",
-          "O click abre um Popover com 3 itens:",
+          "O click abre um menu (`DropdownMenu`) com até 3 itens:",
           "1. **Exportar dados filtrados** — todas as linhas que passam pela busca (`getFilteredRowModel`), ignorando paginação.",
           "2. **Exportar página atual** — só as linhas visíveis no momento (`getRowModel` — após filtro + paginação).",
           "3. **Exportar todos os dados** — o array `data` original, sem filtros nem paginação.",

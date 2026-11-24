@@ -1241,7 +1241,28 @@ describe("DataTable", () => {
     it("names the export menu after its trigger", async () => {
       render(<DataTable columns={columns} data={data} downloadable />)
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
-      expect(screen.getByRole("dialog", { name: "Exportar para Excel" })).toBeInTheDocument()
+      expect(screen.getByRole("menu", { name: "Exportar para Excel" })).toBeInTheDocument()
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    })
+
+    it("works as a menu from the keyboard: arrows move, Enter exports, Escape closes", async () => {
+      render(<DataTable columns={columns} data={data} downloadable />)
+      const trigger = screen.getByRole("button", { name: /Exportar para Excel/i })
+      trigger.focus()
+      await userEvent.keyboard("{Enter}")
+      const items = screen.getAllByRole("menuitem")
+      expect(items[0]).toHaveFocus()
+      await userEvent.keyboard("{ArrowDown}")
+      expect(items[1]).toHaveFocus()
+      await userEvent.keyboard("{Escape}")
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+      expect(trigger).toHaveFocus()
+
+      await userEvent.keyboard("{Enter}")
+      await userEvent.keyboard("{ArrowDown}{ArrowDown}{Enter}")
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+      const [records] = exportCall()
+      expect(records).toHaveLength(3)
     })
 
     it("replaces the export button with a skeleton when loading", () => {
