@@ -30,7 +30,7 @@ export {
   type TruncateOption,
 } from "./data/columns"
 export { EmptyState, type EmptyStateProps } from "./data/empty-state"
-export { Image, type ImageProps } from "./data/image"
+export { defaultImageLabels, Image, type ImageLabels, type ImageProps } from "./data/image"
 export {
   ScrollArea,
   ScrollBar,

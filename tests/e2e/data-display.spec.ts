@@ -111,3 +111,70 @@ test.describe("ScrollArea", () => {
     await expectNoA11yViolations(page, '[data-slot="scroll-area"]')
   })
 })
+
+test.describe("Image", () => {
+  // The stories point at remote photos; serve them locally so the tests do
+  // not depend on the network, and hold the photo back when a test needs
+  // to see the loading state.
+  const PNG = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkqPtfDwAEwgHgnXW8HgAAAABJRU5ErkJggg==",
+    "base64",
+  )
+  async function servePhotos(page: Page, hold?: Promise<void>) {
+    await page.route(/images\.unsplash\.com|github\.com\/shadcn\.png/, async (route) => {
+      if (hold) await hold
+      await route.fulfill({ contentType: "image/png", body: PNG })
+    })
+    await page.route(/example\.com\/does-not-exist/, (route) => route.fulfill({ status: 404 }))
+  }
+
+  test("no image: the fallback takes the alt, and the text hides in a narrow box", async ({
+    page,
+  }) => {
+    await servePhotos(page)
+    await goto(page, "data-image--no-image", "image")
+    const boxes = page.getByRole("img", { name: "Fachada do imóvel" })
+    await expect(boxes).toHaveCount(2)
+    await expect(boxes.nth(0).getByText("Sem imagem")).toBeVisible()
+    // 64px avatar: icon only.
+    await expect(boxes.nth(1).getByText("Sem imagem")).toBeHidden()
+    await expectNoA11yViolations(page, '[data-slot="image"]')
+  })
+
+  test("a failed load shows the error fallback named by the alt", async ({ page }) => {
+    await servePhotos(page)
+    await goto(page, "data-image--error-state", "image")
+    const box = page.getByRole("img", { name: "Imagem inválida" })
+    await expect(box).toHaveAttribute("data-slot", "image-fallback")
+    await expect(box.getByText("Falha ao carregar imagem")).toBeVisible()
+    await expectNoA11yViolations(page, '[data-slot="image"]')
+  })
+
+  test("blurDataURL shows blurred while the photo loads, then the photo fades in", async ({
+    page,
+  }) => {
+    let release = () => {}
+    await servePhotos(
+      page,
+      new Promise<void>((resolve) => {
+        release = resolve
+      }),
+    )
+    await page.goto(story("data-image--blur-preview"))
+    const preview = page.locator('[data-slot="image-blur"] img')
+    await expect(preview).toBeVisible({ timeout: 15_000 })
+    expect(await preview.evaluate((el) => getComputedStyle(el).filter)).toMatch(/blur\(\d+px\)/)
+    release()
+    const photo = page.getByRole("img", { name: "Workspace com laptop e caderno" })
+    await expect(photo).toHaveCSS("opacity", "1")
+    await expect(preview).toHaveCount(0)
+    // The fade uses the medium duration token.
+    expect(await photo.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe("0.41s")
+  })
+
+  test("the custom fallback shows the lead's initials", async ({ page }) => {
+    await goto(page, "data-image--custom-fallback", "image")
+    await expect(page.getByRole("img", { name: "Ana Souza" })).toHaveText("AS")
+    await expectNoA11yViolations(page, '[data-slot="image"]')
+  })
+})

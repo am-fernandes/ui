@@ -11,17 +11,19 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Componente de imagem otimizado: lazy-load nativo, placeholder configurável, fallback de erro e `alt` obrigatório.",
+          'Componente de imagem otimizado: lazy-load nativo, placeholder configurável, estado "sem imagem" e `alt` obrigatório.',
           "",
           "**Props principais:**",
-          "- `src` — URL da imagem (obrigatório).",
-          "- `alt` — texto alternativo (obrigatório por acessibilidade).",
+          "- `src` — URL da imagem. Vazio, `null` ou `undefined` = sem imagem: mostra o `fallback` como estado normal, não como erro (imóvel sem foto).",
+          "- `alt` — texto alternativo (obrigatório por acessibilidade). Continua com o leitor de tela quando a imagem falha, é recusada ou não existe: o fallback recebe esse nome.",
           "- `aspectRatio` — razão `width / height` (ex.: `16/9`). Quando setado, o wrapper aplica `aspect-ratio` CSS e reserva o espaço evitando CLS.",
-          "- `placeholder` — `'skeleton'` (default, usa `<Skeleton>` do DS), `'blur'` (fundo `bg-muted` borrado) ou `'none'`.",
+          "- `placeholder` — `'skeleton'` (default, usa `<Skeleton>` do DS), `'blur'` ou `'none'`. `'blur'` mostra `blurDataURL` (uma miniatura `data:image/…`) borrada até a imagem chegar; sem `blurDataURL`, é só um bloco `bg-muted`.",
           "- `objectFit` — como a imagem preenche o wrapper: `'cover'` (default), `'contain'`, `'fill'`, `'none'`, `'scale-down'`.",
           "- `rounded` — borda arredondada: `'none'` (default), `'sm'`, `'md'`, `'lg'`, `'full'` (para avatares).",
           "- `loading` — `'lazy'` (default) ou `'eager'`. Mapeia direto para o atributo nativo do `<img>`.",
-          "- Em erro de carregamento, renderiza um fallback `Falha ao carregar imagem` no lugar.",
+          '- `fallback` — o que aparece no lugar da imagem sem `src`, com endereço recusado ou com erro de carga. Padrão: ícone + texto de `labels` (`empty` "Sem imagem", `error` "Falha ao carregar imagem"); o texto some em caixas com menos de 8rem.',
+          '- `allowedProtocols` — **substitui** a lista padrão (`http:`, `https:`): `["data:"]` aceita só data URI. Para acrescentar, espalhe a padrão: `[...DEFAULT_ALLOWED_RESOURCE_PROTOCOLS, "data:"]`.',
+          "- Uma imagem que já estava carregada quando o React montou (SSR com cache) aparece direto, sem ficar transparente.",
           "",
           "**Exemplo de uso:**",
           "",
@@ -102,6 +104,9 @@ type Story = StoryObj<typeof meta>
 const SAMPLE = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800"
 const AVATAR = "https://github.com/shadcn.png"
 const BROKEN = "https://example.com/does-not-exist.png"
+// 8×6 px version of SAMPLE, the size a server would inline for the blur.
+const SAMPLE_BLUR =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAIAAABxZ0isAAAAgElEQVR42gXBoREEIRAEQAJ7deoUCjUKsYWiVqBGndhCriAAAiAAAiAAgvruQPw6noF3Ii6kDRzkixIoT5d3SJySlmBLPlKu1EB9u8ahaSqW5q3laL3aAhk70yAm82LZrIftkoGWumFYnlaW1W3tGK99gY7ueXiZXpe37Tz+Xe9/e3tF8fXwD98AAAAASUVORK5CYII="
 
 export const Default: Story = {
   args: { src: SAMPLE, alt: "Workspace com laptop e caderno" },
@@ -159,6 +164,78 @@ export const Blur: Story = {
       <Image {...args} />
     </div>
   ),
+}
+
+export const BlurPreview: Story = {
+  name: "Blur (blurDataURL)",
+  args: {
+    src: SAMPLE,
+    alt: "Workspace com laptop e caderno",
+    aspectRatio: 4 / 3,
+    placeholder: "blur",
+    blurDataURL: SAMPLE_BLUR,
+  },
+  render: (args) => (
+    <div className="w-[400px]">
+      <Image {...args} />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com `blurDataURL`, a miniatura borrada ocupa o lugar até a foto chegar. Gere a miniatura no servidor (8 a 16 px de largura).",
+      },
+    },
+  },
+}
+
+export const NoImage: Story = {
+  args: { src: null, alt: "Fachada do imóvel", aspectRatio: 4 / 3 },
+  render: (args) => (
+    <div className="flex items-start gap-4">
+      <div className="w-[240px]">
+        <Image {...args} rounded="md" />
+      </div>
+      <div className="w-[64px]">
+        <Image {...args} aspectRatio={1} rounded="full" />
+      </div>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Sem `src` é um estado normal, não um erro: ícone e "Sem imagem". Em caixas estreitas (avatar) fica só o ícone. O leitor de tela lê o `alt`.',
+      },
+    },
+  },
+}
+
+export const CustomFallback: Story = {
+  args: {
+    src: null,
+    alt: "Ana Souza",
+    aspectRatio: 1,
+    rounded: "full",
+    fallback: (
+      <span className="flex size-full items-center justify-center bg-primary text-sm font-semibold text-primary-foreground">
+        AS
+      </span>
+    ),
+  },
+  render: (args) => (
+    <div className="w-[64px]">
+      <Image {...args} />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: "`fallback` troca o conteúdo padrão: aqui as iniciais do lead.",
+      },
+    },
+  },
 }
 
 export const ErrorState: Story = {
