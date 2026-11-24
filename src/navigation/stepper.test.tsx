@@ -301,6 +301,41 @@ describe("Stepper", () => {
       )
     })
 
+    describe("isStepClickable", () => {
+      // The usual wizard: go back to a finished step, never skip ahead.
+      const backOnly = (activeStep: number) => (index: number) => index < activeStep
+
+      it("makes only the chosen steps buttons, without dimming the others", async () => {
+        const onStepClick = vi.fn()
+        renderStepper({ onStepClick, activeStep: 2, isStepClickable: backOnly(2) })
+        const buttons = within(list()).getAllByRole("button")
+        expect(buttons.map((b) => b.textContent)).toEqual([
+          expect.stringContaining("Dados pessoais"),
+          expect.stringContaining("Endereço"),
+        ])
+        await userEvent.click(buttons[0]!)
+        expect(onStepClick).toHaveBeenCalledWith(0)
+        // The current and future steps are plain, at full opacity.
+        for (const li of items().slice(2)) {
+          expect(li.querySelector("button")).toBeNull()
+          expect(li.querySelector(".opacity-50")).toBeNull()
+        }
+        expect(items()[2]).toHaveAttribute("aria-current", "step")
+      })
+
+      it("lets the compact arrows go back but not ahead", async () => {
+        const onStepClick = vi.fn()
+        renderStepper({ onStepClick, activeStep: 2, isStepClickable: backOnly(2) })
+        const compact = screen.getByRole("group", { name: "Progresso" })
+        expect(within(compact).getByRole("button", { name: "Próxima etapa" })).toHaveAttribute(
+          "aria-disabled",
+          "true",
+        )
+        await userEvent.click(within(compact).getByRole("button", { name: "Etapa anterior" }))
+        expect(onStepClick).toHaveBeenCalledWith(1)
+      })
+    })
+
     it("has no compact controls without onStepClick", () => {
       renderStepper()
       expect(

@@ -52,6 +52,13 @@ export interface StepperProps {
   activeStep: number
   /** Enables non-linear navigation: every enabled step becomes a button. */
   onStepClick?: (index: number) => void
+  /**
+   * With `onStepClick`, which steps can be chosen. The usual wizard lets you
+   * go back but not skip ahead: `isStepClickable={(i) => i < activeStep}`.
+   * The other steps are shown as they are, not dimmed like `disabled` ones.
+   * @default every step that is not `disabled`
+   */
+  isStepClickable?: (index: number) => boolean
   /** @default "horizontal" */
   orientation?: "horizontal" | "vertical"
   labels?: Partial<StepperLabels>
@@ -147,6 +154,7 @@ function Stepper({
   steps,
   activeStep,
   onStepClick,
+  isStepClickable,
   orientation = "horizontal",
   labels,
   className,
@@ -154,6 +162,11 @@ function Stepper({
   const l: StepperLabels = { ...defaultStepperLabels, ...labels }
   const total = steps.length
   const vertical = orientation === "vertical"
+  /** Rendered as a button (a disabled step is a disabled button). */
+  const isButton = (index: number) =>
+    onStepClick !== undefined && (isStepClickable?.(index) ?? true)
+  /** Can be chosen right now. */
+  const canChoose = (index: number) => isButton(index) && !steps[index]?.disabled
 
   const renderStepBody = (step: StepperStep, index: number, state: StepState) => {
     const textAlign = vertical ? "items-start text-left" : "items-center text-center"
@@ -189,8 +202,20 @@ function Stepper({
       </>
     )
 
-    if (!onStepClick) {
-      return <div className={cn(layout, "min-w-0", step.disabled && "opacity-50")}>{inner}</div>
+    if (!onStepClick || !isButton(index)) {
+      return (
+        <div
+          className={cn(
+            layout,
+            "min-w-0",
+            // Same box as the buttons beside it, so indicators and connectors line up.
+            onStepClick && (vertical ? "-m-1 w-[calc(100%+0.5rem)] p-1" : "w-full p-1"),
+            step.disabled && "opacity-50",
+          )}
+        >
+          {inner}
+        </div>
+      )
     }
     return (
       <button
@@ -198,7 +223,7 @@ function Stepper({
         data-slot="stepper-step-button"
         disabled={step.disabled}
         aria-current={state === "current" ? "step" : undefined}
-        onClick={() => onStepClick(index)}
+        onClick={() => onStepClick?.(index)}
         className={cn(
           layout,
           "min-w-0 cursor-pointer rounded-element p-1 transition-colors state-layer",
@@ -222,7 +247,7 @@ function Stepper({
         key={index}
         data-slot="stepper-step"
         data-state={state}
-        aria-current={!onStepClick && state === "current" ? "step" : undefined}
+        aria-current={!isButton(index) && state === "current" ? "step" : undefined}
         className={cn("relative min-w-0", vertical ? "flex flex-col pb-6 last:pb-0" : "flex-1")}
       >
         {index > 0 && !vertical ? (
@@ -277,7 +302,7 @@ function Stepper({
 
   const nearestEnabled = (from: number, direction: 1 | -1) => {
     for (let i = from + direction; i >= 0 && i < total; i += direction) {
-      if (!steps[i]?.disabled) return i
+      if (canChoose(i)) return i
     }
     return null
   }

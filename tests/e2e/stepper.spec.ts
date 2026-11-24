@@ -48,6 +48,26 @@ test.describe("Stepper", () => {
     await expectConnectorsAligned(page)
   })
 
+  test("back-only steps: only finished steps are buttons, connectors still line up", async ({
+    page,
+  }) => {
+    await gotoStepper(page, "navigation-stepper--back-only")
+    const list = page.getByRole("list", { name: "Progresso" })
+    await expect(list.getByRole("button")).toHaveCount(2)
+    await expectConnectorsAligned(page)
+    // The steps ahead are not greyed out like disabled ones.
+    const ahead = page.locator('li[data-slot="stepper-step"]').nth(3)
+    const opacity = await ahead.evaluate(
+      (li) => getComputedStyle(li.firstElementChild?.nextElementSibling ?? li).opacity,
+    )
+    expect(opacity).toBe("1")
+    await list.getByRole("button").first().click()
+    await expect(page.locator('li[data-slot="stepper-step"]').first()).toHaveAttribute(
+      "data-state",
+      "current",
+    )
+  })
+
   test("vertical connector runs down the indicator's centre", async ({ page }) => {
     await gotoStepper(page, "navigation-stepper--vertical")
     const first = page.locator('li[data-slot="stepper-step"]').first()

@@ -86,6 +86,37 @@ export const Clickable: Story = {
   },
 }
 
+function BackOnlyStepper() {
+  const [active, setActive] = React.useState(2)
+  return (
+    <div className="flex flex-col gap-4">
+      <Stepper
+        steps={steps}
+        activeStep={active}
+        onStepClick={setActive}
+        isStepClickable={(index) => index < active}
+      />
+      <div className="flex gap-2">
+        <Button onClick={() => setActive((a) => Math.min(a + 1, steps.length - 1))}>
+          Continuar
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+export const BackOnly: Story = {
+  render: () => <BackOnlyStepper />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "O assistente comum: dá para voltar a uma etapa concluída, não pular adiante. `isStepClickable={(i) => i < activeStep}` faz só as etapas anteriores virarem botões; as próximas aparecem normais, sem o esmaecido de `disabled`.",
+      },
+    },
+  },
+}
+
 function Wizard() {
   const [active, setActive] = React.useState(0)
   const wizardSteps: StepperStep[] = [
