@@ -1,10 +1,13 @@
 "use client"
 
 import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import * as React from "react"
 import { type DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
+// The locale of react-day-picker, not date-fns': besides the month and day
+// names, it translates the accessible names (navigation buttons, "selecionado",
+// "Hoje"), which date-fns' locale leaves in English.
+import { ptBR } from "react-day-picker/locale"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "../primitives/button"

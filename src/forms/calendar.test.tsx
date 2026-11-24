@@ -224,6 +224,17 @@ describe("Calendar", () => {
     expect(document.activeElement).not.toBe(document.body)
   })
 
+  it("names the navigation and the days in Portuguese", () => {
+    render(<Calendar mode="single" defaultMonth={FIXED_MONTH} selected={new Date(2025, 5, 10)} />)
+    expect(screen.getByRole("button", { name: "Ir para o mês anterior" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Ir para o próximo mês" })).toBeInTheDocument()
+    expect(screen.getByRole("navigation", { name: "Barra de navegação" })).toBeInTheDocument()
+    expect(dayButton("2025-06-10")).toHaveAccessibleName(
+      /^terça-feira, 10 de junho de 2025, selecionado$/,
+    )
+    expect(document.body.textContent).not.toMatch(/Go to|selected|Today/)
+  })
+
   it("lets clicks pass through the nav overlay to the caption beneath it", () => {
     // The nav is absolutely positioned full-width over the caption row. jsdom
     // can't reproduce real hit-testing, so guard the fix structurally: the nav

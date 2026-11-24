@@ -54,6 +54,16 @@ test.describe("Calendar", () => {
     await expect(page.getByText("Selecionado: 21/06/2025")).toBeVisible()
   })
 
+  test("a navegação e os dias têm nomes em português", async ({ page }) => {
+    await gotoStory(page, "forms-calendar--single", "Selecionado:")
+    await expect(page.getByRole("button", { name: "Ir para o mês anterior" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Ir para o próximo mês" })).toBeVisible()
+    await expect(
+      page.getByRole("button", { name: "domingo, 15 de junho de 2025, selecionado" }),
+    ).toBeVisible()
+    await expect(page.getByRole("button", { name: /Go to/ })).toHaveCount(0)
+  })
+
   test("disabledDays=past disables past dates", async ({ page }) => {
     await page.goto(story("forms-calendar--disabled-past"))
     // At least one button has aria-disabled=true
