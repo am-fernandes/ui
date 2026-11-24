@@ -57,6 +57,8 @@ export interface DateInputProps {
    */
   value: string
   /** Called with the new ISO date, or `""`. */
+  onValueChange?: (value: string) => void
+  /** @deprecated Use `onValueChange`; it receives the same value. */
   onChange?: (value: string) => void
   disabled?: boolean
   className?: string
@@ -94,6 +96,7 @@ export interface DateInputProps {
 function DateInput({
   id,
   value,
+  onValueChange,
   onChange,
   disabled,
   className,
@@ -132,7 +135,9 @@ function DateInput({
 
   const report = (next: string) => {
     setSynced(next)
-    if (next !== current) onChange?.(next)
+    if (next === current) return
+    onValueChange?.(next)
+    onChange?.(next)
   }
 
   const inputRef = React.useRef<HTMLInputElement | null>(null)

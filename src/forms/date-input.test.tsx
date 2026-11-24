@@ -11,7 +11,7 @@ function Controlled({
   initial = "",
   onChangeSpy,
   ...props
-}: Omit<React.ComponentProps<typeof DateInput>, "value" | "onChange"> & {
+}: Omit<React.ComponentProps<typeof DateInput>, "value" | "onValueChange"> & {
   initial?: string
   onChangeSpy?: (value: string) => void
 }) {
@@ -22,7 +22,7 @@ function Controlled({
         label="Data de nascimento"
         {...props}
         value={value}
-        onChange={(next) => {
+        onValueChange={(next) => {
           onChangeSpy?.(next)
           setValue(next)
         }}
@@ -218,6 +218,15 @@ describe("DateInput", () => {
     expect(button).toBeDisabled()
     await userEvent.click(button)
     expect(screen.queryByRole("grid")).toBeNull()
+  })
+
+  it("reports through onValueChange, and still through the deprecated onChange", async () => {
+    const onValueChange = vi.fn()
+    const onChange = vi.fn()
+    render(<DateInput label="Data" value="" onValueChange={onValueChange} onChange={onChange} />)
+    await userEvent.type(input(), "01022024")
+    expect(onValueChange).toHaveBeenCalledWith("2024-02-01")
+    expect(onChange).toHaveBeenCalledWith("2024-02-01")
   })
 
   it("forwards the ref to the text field", () => {

@@ -19,7 +19,7 @@ const meta = {
           "",
           "**Props principais:**",
           "- `value` — string ISO (`YYYY-MM-DD`) ou vazio.",
-          "- `onChange(value)` — recebe nova string ISO ou `''` ao limpar.",
+          "- `onValueChange(value)` — recebe nova string ISO ou `''` ao limpar (`onChange` segue funcionando, obsoleto).",
           "- `placeholder` — texto exibido com o campo vazio.",
           "- `disabled` — desabilita o campo e o botão do calendário.",
           "- `labels` — textos do botão e do erro de data inválida.",
@@ -37,7 +37,7 @@ const meta = {
           '  id="birth"',
           '  label="Data de nascimento"',
           "  value={value}",
-          "  onChange={setValue}",
+          "  onValueChange={setValue}",
           "/>",
           "```",
         ].join("\n"),
@@ -71,7 +71,8 @@ const meta = {
       description: "Rótulo renderizado pelo componente. Use em vez de `<Label>` externo.",
       table: { type: { summary: "ReactNode" } },
     },
-    onChange: { control: false, table: { category: "Eventos" } },
+    onValueChange: { control: false, table: { category: "Eventos" } },
+    onChange: { control: false, table: { category: "Eventos", disable: true } },
   },
 } satisfies Meta<typeof DateInput>
 
@@ -94,7 +95,7 @@ export const Playground: Story = {
           id={args.id}
           label={args.label}
           value={value}
-          onChange={setValue}
+          onValueChange={setValue}
           placeholder={args.placeholder}
           disabled={args.disabled}
         />
@@ -110,7 +111,7 @@ export const Default: Story = {
     const [value, setValue] = useState("")
     return (
       <div className="flex w-[280px] flex-col gap-2">
-        <DateInput id="birth" label="Data de nascimento" value={value} onChange={setValue} />
+        <DateInput id="birth" label="Data de nascimento" value={value} onValueChange={setValue} />
         <span className="text-xs text-muted-foreground">ISO: {value || "(vazio)"}</span>
       </div>
     )
@@ -131,7 +132,7 @@ export const Typing: Story = {
     const [value, setValue] = useState("")
     return (
       <div className="flex w-[280px] flex-col gap-2">
-        <DateInput label="Data da visita" value={value} onChange={setValue} />
+        <DateInput label="Data da visita" value={value} onValueChange={setValue} />
         <span className="text-xs text-muted-foreground">ISO: {value || "(vazio)"}</span>
       </div>
     )
