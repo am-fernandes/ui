@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, userEvent, within } from "@storybook/test"
 import { useState } from "react"
+import { Controller, useForm } from "react-hook-form"
 
 import { DateInput } from "./date-input"
 
@@ -150,5 +151,57 @@ export const Typing: Story = {
     await userEvent.tab()
     await expect(canvas.getByRole("alert")).toHaveTextContent("Data inválida")
     await expect(canvas.getByText("ISO: (vazio)")).toBeInTheDocument()
+  },
+}
+
+export const WithRHF: Story = {
+  name: "react-hook-form integration",
+  args: { value: "" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Com `<Controller>`: `field.value`, `field.onChange` em `onValueChange` e `field.onBlur` em `onBlur`. Com `mode: "onBlur"`, a validação roda quando o foco sai do campo inteiro; ir ao botão do calendário ou abrir o calendário não conta.',
+      },
+    },
+  },
+  render: () => {
+    type FormValues = { nascimento: string }
+    const { control, handleSubmit } = useForm<FormValues>({
+      mode: "onBlur",
+      defaultValues: { nascimento: "" },
+    })
+    const [sent, setSent] = useState<FormValues | null>(null)
+    return (
+      <form
+        className="flex w-[280px] flex-col gap-3"
+        onSubmit={handleSubmit((data) => setSent(data))}
+      >
+        <Controller
+          name="nascimento"
+          control={control}
+          rules={{ required: "Informe a data de nascimento" }}
+          render={({ field, fieldState }) => (
+            <DateInput
+              label="Data de nascimento"
+              required
+              value={field.value}
+              onValueChange={field.onChange}
+              onBlur={field.onBlur}
+              error={fieldState.error?.message}
+            />
+          )}
+        />
+        <button
+          type="submit"
+          className="rounded-element border border-input bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+        >
+          Enviar
+        </button>
+        {sent ? (
+          <p className="text-xs text-muted-foreground">Enviado: {JSON.stringify(sent)}</p>
+        ) : null}
+      </form>
+    )
   },
 }

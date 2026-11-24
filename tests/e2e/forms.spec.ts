@@ -395,3 +395,29 @@ test.describe("Combobox: tamanhos", () => {
     }
   })
 })
+
+test.describe("DateInput: onBlur", () => {
+  test("com react-hook-form em mode onBlur, valida ao sair do campo, não ao ir ao calendário", async ({
+    page,
+  }) => {
+    await gotoStory(page, "forms-dateinput--with-rhf", "Enviar")
+    const field = page.getByRole("textbox", { name: /Data de nascimento/ })
+    const error = page.getByText("Informe a data de nascimento")
+    await field.click()
+    await page.keyboard.type("15")
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("button", { name: "Abrir calendário" })).toBeFocused()
+    await expect(error).toHaveCount(0)
+    await page.keyboard.press("Tab")
+    await expect(error).toBeVisible()
+    await expect(field).toHaveValue("15")
+
+    await field.fill("")
+    await field.pressSequentially("15031990")
+    await page.keyboard.press("Tab")
+    await page.keyboard.press("Tab")
+    await expect(error).toHaveCount(0)
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByText('Enviado: {"nascimento":"1990-03-15"}')).toBeVisible()
+  })
+})

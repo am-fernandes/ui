@@ -91,6 +91,12 @@ export interface DateInputProps {
    * which shows `dd/mm/aaaa`, has no name.
    */
   name?: string
+  /**
+   * Called when the focus leaves the field as a whole, after an invalid date
+   * was turned into `""`. Moving between the text, the calendar button and
+   * the open calendar does not count.
+   */
+  onBlur?: (event: React.FocusEvent<HTMLElement>) => void
   /** Texts of the field. Defaults in `defaultDateInputLabels`. */
   labels?: Partial<DateInputLabels>
   "aria-label"?: string
@@ -120,6 +126,7 @@ function DateInput({
   disabledDays,
   labels,
   name,
+  onBlur,
   "aria-label": ariaLabel,
   ref,
 }: DateInputProps) {
@@ -263,8 +270,11 @@ function DateInput({
         ref={wrapperRef}
         className="relative"
         data-slot="date-input"
+        // React brings the focus events of the calendar's portal here too.
         onBlur={(e) => {
-          if (!isInsideField(e.relatedTarget as Node | null)) leaveField()
+          if (isInsideField(e.relatedTarget as Node | null)) return
+          leaveField()
+          onBlur?.(e)
         }}
       >
         <input

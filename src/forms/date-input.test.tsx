@@ -289,6 +289,34 @@ describe("DateInput", () => {
     )
   })
 
+  it("onBlur: once, when the focus leaves the field, after the value is reported", async () => {
+    const calls: string[] = []
+    render(
+      <>
+        <DateInput
+          label="Data"
+          defaultValue="2025-03-14"
+          onValueChange={(v) => calls.push(`value:${v}`)}
+          onBlur={() => calls.push("blur")}
+        />
+        <button type="button">Fora</button>
+      </>,
+    )
+    await userEvent.clear(input())
+    await userEvent.type(input(), "15")
+    // To the calendar button and into the calendar: still the field.
+    await userEvent.tab()
+    await userEvent.keyboard("{Enter}")
+    await screen.findByRole("grid")
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Abrir calendário" })).toHaveFocus(),
+    )
+    expect(calls).toEqual(["value:"])
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(calls).toEqual(["value:", "blur"])
+  })
+
   it("forwards the ref to the text field", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<DateInput value="" ref={ref} />)
