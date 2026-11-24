@@ -358,6 +358,17 @@ describe("TimePicker", () => {
     expect(hadInvalid).toBe(false)
   })
 
+  it("size sets the box's height from the control sizes (md by default)", () => {
+    const { rerender } = render(<TimePicker value="" />)
+    const box = () => screen.getByRole("group")
+    expect(box().className).toContain("h-control-md")
+    expect(box().className).not.toMatch(/\bpy-3\b/)
+    rerender(<TimePicker value="" size="sm" />)
+    expect(box().className).toContain("h-control-sm")
+    rerender(<TimePicker value="" size="lg" />)
+    expect(box().className).toContain("h-control-lg")
+  })
+
   it("forwards ref to the hour input", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<TimePicker value="" ref={ref} />)

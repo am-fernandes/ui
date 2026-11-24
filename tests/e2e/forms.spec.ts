@@ -614,3 +614,13 @@ test.describe("TimePicker: digitar", () => {
     await expect(minute).toHaveValue("30")
   })
 })
+
+test.describe("TimePicker: tamanhos", () => {
+  test("sm, md e lg medem 32, 40 e 44 px, como os outros campos", async ({ page }) => {
+    await gotoStory(page, "forms-timepicker--sizes", "Tamanho lg")
+    for (const [size, height] of Object.entries({ sm: 32, md: 40, lg: 44 })) {
+      const box = await page.getByRole("group", { name: `Tamanho ${size}` }).boundingBox()
+      expect(box?.height, size).toBeCloseTo(height, 0)
+    }
+  })
+})

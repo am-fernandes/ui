@@ -3,6 +3,11 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import {
+  type ControlSize,
+  controlHeight,
+  controlPaddingX,
+} from "../primitives/_internal/control-size"
 import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 
@@ -11,8 +16,11 @@ const MAX_HOUR = 23
 const MIN_MINUTE = 0
 const MAX_MINUTE = 59
 
+// The height comes from the control size, like every field in a row. 16px
+// text on touch screens: iOS zooms the page into a focused field whose text
+// is smaller.
 const containerClasses =
-  "inline-flex items-center gap-1 rounded-element border border-input bg-card px-3 py-3 text-base field-states md:text-sm"
+  "inline-flex items-center gap-1 rounded-element border border-input bg-card text-sm pointer-coarse:text-base field-states"
 
 const fieldClasses =
   "w-7 bg-transparent text-center tabular-nums outline-none placeholder:text-placeholder disabled:cursor-default"
@@ -29,6 +37,12 @@ export interface TimePickerProps {
   error?: string
   labelPosition?: LabelPosition
   required?: boolean
+  /**
+   * Height of the box: `sm` 32px, `md` 40px, `lg` 44px, the same as a button
+   * or input of that size.
+   * @default "md"
+   */
+  size?: ControlSize
   /** Forwarded to the hour input. */
   ref?: React.Ref<HTMLInputElement>
 }
@@ -145,6 +159,7 @@ function TimePicker({
   error,
   labelPosition,
   required,
+  size = "md",
   ref,
 }: TimePickerProps) {
   const ids = useFieldIds(id)
@@ -316,7 +331,13 @@ function TimePicker({
         aria-label={ariaLabel ?? (typeof label === "string" ? label : "Horário")}
         data-slot="time-picker"
         data-disabled={disabled ? "true" : undefined}
-        className={cn(containerClasses, disabled && "cursor-default", className)}
+        className={cn(
+          containerClasses,
+          controlHeight[size],
+          controlPaddingX[size],
+          disabled && "cursor-default",
+          className,
+        )}
       >
         <TimeField
           ref={ref}

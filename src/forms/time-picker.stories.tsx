@@ -106,6 +106,24 @@ export const Default: Story = {
   },
 }
 
+export const Sizes: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` dá a altura da caixa: `sm` 32 px, `md` 40 px (padrão) e `lg` 44 px, a mesma de um botão ou campo do mesmo tamanho.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex flex-col gap-4">
+      {(["sm", "md", "lg"] as const).map((size) => (
+        <TimePicker key={size} size={size} label={`Tamanho ${size}`} value="09:30" />
+      ))}
+    </div>
+  ),
+}
+
 export const Disabled: Story = {
   render: () => <TimePicker label="Encerramento" value="18:00" disabled />,
 }
