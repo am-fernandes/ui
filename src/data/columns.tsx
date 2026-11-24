@@ -93,6 +93,13 @@ export function dateColumn<TData>(opts: DateColumnOptions<TData>): ColumnDef<TDa
   const meta: DataTableColumnMeta<TData> = {
     // Search what the cell shows ("19/05/2026"), not the ISO value.
     searchText: (_row, value) => formatValue(value) ?? "",
+    // Export a real date (the day and time the cell shows), not the ISO text.
+    export: (_row, value) => {
+      const parsed = parseDateValue(value)
+      if (!parsed) return null
+      if (inferShowTime(value, showTime)) return parsed
+      return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate())
+    },
   }
   return {
     accessorKey,

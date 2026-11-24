@@ -211,12 +211,3 @@ export async function downloadSheet(
   const blob = await buildXlsx(sheet, sheetName)
   saveBlob(blob.type ? blob : new Blob([blob], { type: XLSX_TYPE }), file.name)
 }
-
-/** Records (one object per row, keyed by header) to a downloaded file. */
-export async function downloadXlsx(
-  records: Record<string, unknown>[],
-  filename: string,
-  sheetName: string,
-): Promise<void> {
-  await downloadSheet(recordsToSheet(records), filename, sheetName)
-}

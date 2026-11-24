@@ -1,7 +1,7 @@
 import { unzipSync } from "fflate"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { buildCsv, buildXlsx, downloadXlsx } from "./_xlsx-export"
+import { buildCsv, buildXlsx, downloadSheet, recordsToSheet } from "./_xlsx-export"
 
 /** Files saved through the download link: the Blob and the name. */
 let saved: { blob: Blob; name: string }[]
@@ -41,7 +41,7 @@ function cellXml(files: Record<string, string>, ref: string): string {
   return sheet.match(new RegExp(`<c r="${ref}"[^>]*?(?:/>|>.*?</c>)`))?.[0] ?? ""
 }
 
-describe("downloadXlsx", () => {
+describe("downloadSheet", () => {
   it.each([
     ["contratos", "contratos.xlsx"],
     ["contratos.xlsx", "contratos.xlsx"],
@@ -51,7 +51,7 @@ describe("downloadXlsx", () => {
     ["relatorio.xls", "relatorio.xlsx"],
     ["relatorio.ods", "relatorio.xlsx"],
   ])("writes %s as %s", async (input, expected) => {
-    await downloadXlsx([{ a: 1 }], input, "Dados")
+    await downloadSheet({ headers: ["a"], rows: [[1]] }, input, "Dados")
     expect(saved.map((file) => file.name)).toEqual([expected])
     expect(saved[0]?.blob.type).toBe(
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -121,6 +121,23 @@ function readBytes(blob: Blob): Promise<Uint8Array> {
   })
 }
 
+describe("recordsToSheet", () => {
+  it("makes one column per key, in the order keys first appear", () => {
+    expect(
+      recordsToSheet([
+        { a: 1, b: "x" },
+        { b: "y", c: true },
+      ]),
+    ).toEqual({
+      headers: ["a", "b", "c"],
+      rows: [
+        [1, "x", undefined],
+        [undefined, "y", true],
+      ],
+    })
+  })
+})
+
 describe("CSV for Brazilian Excel", () => {
   const BOM = "﻿"
 
@@ -175,7 +192,11 @@ describe("CSV for Brazilian Excel", () => {
 
   describe("download", () => {
     it("a .csv name is written as CSV, not as xlsx", async () => {
-      await downloadXlsx([{ Nome: "Ana", Valor: 10.5 }], "relatorio.csv", "Dados")
+      await downloadSheet(
+        { headers: ["Nome", "Valor"], rows: [["Ana", 10.5]] },
+        "relatorio.csv",
+        "Dados",
+      )
       expect(saved.map((file) => file.name)).toEqual(["relatorio.csv"])
       expect(saved[0]?.blob.type).toBe("text/csv;charset=utf-8")
       const bytes = await readBytes(saved[0]?.blob as Blob)

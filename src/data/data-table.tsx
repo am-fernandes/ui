@@ -36,7 +36,13 @@ import { Popover } from "../overlays/popover"
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
 import { columnMeta, valueToText } from "./_internal/column-meta"
-import { downloadXlsx } from "./_xlsx-export"
+import {
+  type ExportSheet,
+  type ExportValue,
+  downloadSheet,
+  recordsToSheet,
+  toExportValue,
+} from "./_xlsx-export"
 
 export type { DataTableColumnMeta } from "./_internal/column-meta"
 
@@ -131,6 +137,8 @@ export interface DataTableLabels {
   exportAll: string
   /** "Clear filters" toolbar button label. */
   clearFilters: string
+  /** Message shown when an export fails (a fetcher rejects, the file cannot be written). */
+  exportError: string
 }
 
 const numberFormatter = new Intl.NumberFormat("pt-BR")
@@ -163,6 +171,7 @@ export const defaultDataTableLabels: DataTableLabels = {
   exportPage: "Exportar página atual",
   exportAll: "Exportar todos os dados",
   clearFilters: "Limpar filtros",
+  exportError: "Não foi possível exportar os dados. Tente de novo.",
 }
 
 export interface DataTableProps<TData> {
@@ -314,10 +323,12 @@ export interface DataTableDownloadable<TData> {
   /** Sheet name inside the workbook. Default `"Dados"`. */
   sheetName?: string
   /**
-   * Custom row → record mapping. Defaults to one column per visible leaf column,
-   * using the column's `header` (when it's a string) as the key and the resolved
-   * cell value as the cell content. The default resolver supports both
-   * `accessorKey` and `accessorFn` columns.
+   * Custom row → record mapping (one key per column of the file). Without it
+   * the file has what the screen shows: one column per column with data, in
+   * order, headed by its `header` text (or id), with the value its accessor
+   * reads (nested keys and `accessorFn` included). Columns without data
+   * (actions) are left out, `meta.exportOnly` columns are added, and a column
+   * can set `meta.export` to `false` (left out) or to `(row, value) => value`.
    */
   rowToRecord?: (row: TData, rowIndex: number) => Record<string, unknown>
   /**
@@ -339,6 +350,12 @@ export interface DataTableDownloadable<TData> {
    * "all" variant.
    */
   fetchFiltered?: () => Promise<TData[]>
+  /**
+   * Called when an export fails: a fetcher rejects, the file name function
+   * throws or the file cannot be written. The table also shows
+   * `labels.exportError` under the toolbar until the next export.
+   */
+  onExportError?: (error: unknown) => void
 }
 
 export type ExportScope = "filtered" | "page" | "all"
@@ -678,58 +695,77 @@ function DataTable<TData>({
   const downloadConfig: DataTableDownloadable<TData> | undefined =
     downloadable && typeof downloadable === "object" ? downloadable : undefined
 
-  const defaultRowToRecord = React.useCallback(
-    (row: TData, rowIndex: number): Record<string, unknown> => {
-      // Null-prototype object so a column header literally named
-      // `__proto__` / `constructor` assigns to a plain key instead of
-      // mutating the record's prototype chain on its way into xlsx.
-      const record = Object.create(null) as Record<string, unknown>
-      // Use ALL leaf cols (not just visible) so columns flagged
-      // `meta.exportOnly: true` — hidden from the table UI — still appear
-      // in the xlsx output.
-      const leafCols = table.getAllLeafColumns()
-      for (const col of leafCols) {
-        const headerDef = col.columnDef.header
-        const label = typeof headerDef === "string" && headerDef.length > 0 ? headerDef : col.id
-        // The column's own accessor, the one the cell reads: TanStack builds
-        // it for `accessorKey` too, nested keys ("cliente.nome") included.
-        const rawValue = col.accessorFn ? col.accessorFn(row, rowIndex) : undefined
-        record[label] = rawValue ?? ""
-      }
-      return record
-    },
-    [table],
-  )
-
   const [exportingScope, setExportingScope] = React.useState<ExportScope | null>(null)
+  const [exportFailed, setExportFailed] = React.useState(false)
+
+  /**
+   * The file for some rows. Without `rowToRecord`, what the screen shows:
+   * every leaf column with data (plus `meta.exportOnly` ones), in order, with
+   * the value its accessor reads; `meta.export` leaves a column out (`false`)
+   * or gives its value. Headers repeat as they are on screen.
+   */
+  const buildExportSheet = React.useCallback(
+    (rows: { original: TData; index: number }[]): ExportSheet => {
+      const rowToRecord = downloadConfig?.rowToRecord
+      if (rowToRecord)
+        return recordsToSheet(rows.map((row) => rowToRecord(row.original, row.index)))
+      const exportColumns = table.getAllLeafColumns().flatMap((column) => {
+        const meta = columnMeta<TData>(column.columnDef.meta)
+        if (meta.export === false) return []
+        const custom = typeof meta.export === "function" ? meta.export : undefined
+        const accessor = column.accessorFn
+        if (!accessor && !custom) return []
+        const header = column.columnDef.header
+        return [
+          {
+            header: typeof header === "string" && header.length > 0 ? header : column.id,
+            value: (row: TData, index: number): ExportValue => {
+              const value = accessor ? accessor(row, index) : undefined
+              return toExportValue(custom ? custom(row, value) : value)
+            },
+          },
+        ]
+      })
+      return {
+        headers: exportColumns.map((column) => column.header),
+        rows: rows.map((row) =>
+          exportColumns.map((column) => column.value(row.original, row.index)),
+        ),
+      }
+    },
+    [downloadConfig, table],
+  )
 
   const handleExport = React.useCallback(
     async (scope: ExportScope) => {
-      // When the parent runs paginated/filtered on the server, the
-      // table only holds the current page in `data`. Defer to the
-      // consumer-supplied fetchers so "Exportar todos"/"filtrados"
-      // hit the full server set instead of silently truncating.
-      let rows: TData[]
+      // When the parent runs paginated/filtered on the server, the table only
+      // holds the current page in `data`: the consumer's fetchers bring the
+      // full server set. "filtered" keeps the current sort (the pre-pagination
+      // model is filtered and sorted).
+      const fromFetch = (rows: TData[]) => rows.map((original, index) => ({ original, index }))
+      let rows: { original: TData; index: number }[]
       if (scope === "all" && downloadConfig?.fetchAll) {
-        rows = await downloadConfig.fetchAll()
+        rows = fromFetch(await downloadConfig.fetchAll())
       } else if (scope === "filtered" && downloadConfig?.fetchFiltered) {
-        rows = await downloadConfig.fetchFiltered()
+        rows = fromFetch(await downloadConfig.fetchFiltered())
       } else if (scope === "filtered") {
-        rows = table.getFilteredRowModel().rows.map((r) => r.original)
+        rows = table.getPrePaginationRowModel().rows
       } else if (scope === "page") {
-        rows = table.getRowModel().rows.map((r) => r.original)
+        rows = table.getRowModel().rows
       } else {
-        rows = data
+        rows = fromFetch(data)
       }
-      const mapper = downloadConfig?.rowToRecord ?? defaultRowToRecord
-      const records = rows.map(mapper)
       const filename =
         typeof downloadConfig?.filename === "function"
           ? downloadConfig.filename(scope)
           : downloadConfig?.filename
-      await downloadXlsx(records, filename || "export.xlsx", downloadConfig?.sheetName ?? "Dados")
+      await downloadSheet(
+        buildExportSheet(rows),
+        filename || "export.xlsx",
+        downloadConfig?.sheetName ?? "Dados",
+      )
     },
-    [data, defaultRowToRecord, downloadConfig, table],
+    [buildExportSheet, data, downloadConfig, table],
   )
 
   // Only the scopes the table can fill. With server pagination `data` is one
@@ -754,13 +790,18 @@ function DataTable<TData>({
     async (scope: ExportScope) => {
       setDownloadMenuOpen(false)
       setExportingScope(scope)
+      setExportFailed(false)
       try {
         await handleExport(scope)
+      } catch (error) {
+        // Never silent: the consumer hears about it and the user sees it.
+        setExportFailed(true)
+        downloadConfig?.onExportError?.(error)
       } finally {
         setExportingScope(null)
       }
     },
-    [handleExport],
+    [downloadConfig, handleExport],
   )
   const renderDownloadMenu = () => {
     if (loading) {
@@ -872,6 +913,16 @@ function DataTable<TData>({
             {hasDownload ? renderDownloadMenu() : null}
           </div>
         </div>
+      ) : null}
+
+      {exportFailed ? (
+        <p
+          data-slot="data-table-export-error"
+          role="alert"
+          className="text-sm text-destructive-text"
+        >
+          {mergedLabels.exportError}
+        </p>
       ) : null}
 
       <div className="overflow-hidden rounded-container border border-border-strong bg-card">

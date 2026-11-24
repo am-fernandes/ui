@@ -16,6 +16,12 @@ export interface DataTableColumnMeta<TData = unknown> {
   searchText?: (row: TData, value: unknown) => string
   /** Kept out of the screen but written to the exported file. */
   exportOnly?: boolean
+  /**
+   * The column in the exported file: `false` leaves it out; a function gives
+   * the value to write (row, accessor value). By default a column with data
+   * exports its accessor value and a column without (actions) is left out.
+   */
+  export?: boolean | ((row: TData, value: unknown) => unknown)
 }
 
 /** The DataTable part of a column's `meta`. */

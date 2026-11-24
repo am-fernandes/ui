@@ -992,7 +992,7 @@ export const WithDownload: Story = {
           "2. **Exportar página atual** — só as linhas visíveis no momento (`getRowModel` — após filtro + paginação).",
           "3. **Exportar todos os dados** — o array `data` original, sem filtros nem paginação.",
           "",
-          '**Geração do arquivo**: usa `write-excel-file` **lazy-loaded** via `await import("write-excel-file/browser")` — o package só é baixado no primeiro clique de export. Datas saem como datas do Excel, no mesmo dia do calendário que a tabela mostra; o cabeçalho fica em negrito e congelado. Default: 1 sheet ("Dados"), 1 linha por registro, 1 coluna por leaf column visível (label = `columnDef.header` quando string, senão `column.id`).',
+          '**Geração do arquivo**: usa `write-excel-file` **lazy-loaded** via `await import("write-excel-file/browser")` — o package só é baixado no primeiro clique de export. Datas saem como datas do Excel, no mesmo dia do calendário que a tabela mostra; o cabeçalho fica em negrito e congelado. Default: 1 sheet ("Dados"), 1 linha por registro e o que a tela mostra: 1 coluna por coluna com dado, na ordem, com o valor do acessor (chave aninhada e `accessorFn` inclusive) e o `header` como título (ou o id). Colunas sem dado (ações) ficam de fora; `meta.export: false` tira uma coluna e `meta.export: (row, value) => valor` troca o valor; `dateColumn` sai como data. "Exportar dados filtrados" mantém a ordenação da tela. Se a exportação falhar, `onExportError(error)` é chamado e a mensagem `labels.exportError` aparece sob a barra.',
           "",
           "**Customização (objeto)**: `downloadable={{ filename, sheetName, rowToRecord }}`.",
           '- `filename` — default `"export.xlsx"`.',

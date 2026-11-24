@@ -4,14 +4,31 @@ import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const { downloadXlsxMock } = vi.hoisted(() => ({
-  downloadXlsxMock: vi.fn(async () => undefined),
+const { downloadSheetMock } = vi.hoisted(() => ({
+  downloadSheetMock: vi.fn(
+    async (_sheet: ExportSheet, _filename: string, _sheetName: string) => {},
+  ),
 }))
 
-vi.mock("./_xlsx-export", () => ({
-  downloadXlsx: downloadXlsxMock,
+vi.mock("./_xlsx-export", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./_xlsx-export")>()),
+  downloadSheet: downloadSheetMock,
 }))
 
+/** The sheet of the nth export, also as records (header → value) and its file name. */
+function exportCall(n = 0): [Record<string, unknown>[], string, string, ExportSheet] {
+  const [sheet, filename, sheetName] = downloadSheetMock.mock.calls[n] as [
+    ExportSheet,
+    string,
+    string,
+  ]
+  const records = sheet.rows.map((row) =>
+    Object.fromEntries(sheet.headers.map((header, index) => [header, row[index]])),
+  )
+  return [records, filename, sheetName, sheet]
+}
+
+import type { ExportSheet } from "./_xlsx-export"
 import { dateColumn, formattedColumn } from "./columns"
 import { DataTable } from "./data-table"
 
@@ -624,7 +641,7 @@ describe("DataTable", () => {
 
   describe("downloadable", () => {
     beforeEach(() => {
-      downloadXlsxMock.mockClear()
+      downloadSheetMock.mockClear()
     })
 
     it("does not render the export button by default", () => {
@@ -666,12 +683,8 @@ describe("DataTable", () => {
       )
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar dados filtrados/i }))
-      expect(downloadXlsxMock).toHaveBeenCalledTimes(1)
-      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      expect(downloadSheetMock).toHaveBeenCalledTimes(1)
+      const [records] = exportCall()
       expect(records).toHaveLength(1)
       expect(records[0]).toMatchObject({ Name: "Alpha" })
     })
@@ -680,11 +693,7 @@ describe("DataTable", () => {
       render(<DataTable columns={columns} data={data} downloadable pagination={{ pageSize: 2 }} />)
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar página atual/i }))
-      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      const [records] = exportCall()
       expect(records).toHaveLength(2)
     })
 
@@ -701,11 +710,7 @@ describe("DataTable", () => {
       )
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
-      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      const [records] = exportCall()
       expect(records).toHaveLength(data.length)
     })
 
@@ -729,8 +734,134 @@ describe("DataTable", () => {
       expect(screen.getByText("João")).toBeInTheDocument()
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
-      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [Record<string, unknown>[]]
+      const [records] = exportCall()
       expect({ ...records[0] }).toEqual({ Cliente: "João", Cidade: "SANTOS", Valor: 10 })
+    })
+
+    async function exportScope(name: RegExp | string) {
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name }))
+    }
+
+    it("skips columns without data (actions) and keeps repeated header names apart", async () => {
+      interface Item {
+        nome: string
+        bruto: number
+        liquido: number
+      }
+      const cols: ColumnDef<Item>[] = [
+        { accessorKey: "nome", header: "Nome" },
+        { accessorKey: "bruto", header: "Valor" },
+        { accessorKey: "liquido", header: "Valor" },
+        { id: "acoes", header: "Ações", cell: () => <button type="button">Editar</button> },
+      ]
+      render(
+        <DataTable columns={cols} data={[{ nome: "A", bruto: 10, liquido: 8 }]} downloadable />,
+      )
+      await exportScope(/Exportar todos os dados/i)
+      const [, , , sheet] = exportCall()
+      expect(sheet.headers).toEqual(["Nome", "Valor", "Valor"])
+      expect(sheet.rows).toEqual([["A", 10, 8]])
+    })
+
+    it("keeps the current sort in the filtered export", async () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          sortableColumns={["name"]}
+          pagination={{ pageSize: 1 }}
+          downloadable
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
+      await exportScope(/Exportar dados filtrados/i)
+      const [, , , sheet] = exportCall()
+      expect(sheet.rows.map((row) => row[0])).toEqual(["Alpha", "Bravo", "Charlie"])
+    })
+
+    it("lets a column leave the file (meta.export: false) or give its own value", async () => {
+      const cols: ColumnDef<Row>[] = [
+        { accessorKey: "name", header: "Name", meta: { export: false } },
+        {
+          accessorKey: "age",
+          header: "Age",
+          meta: { export: (row: Row, value: unknown) => `${row.name}: ${value}` },
+        },
+      ]
+      render(<DataTable columns={cols} data={[data[0] as Row]} downloadable />)
+      await exportScope(/Exportar todos os dados/i)
+      const [, , , sheet] = exportCall()
+      expect(sheet).toEqual({ headers: ["Age"], rows: [["Bravo: 30"]] })
+    })
+
+    it("exports a dateColumn as a date, not as the ISO text", async () => {
+      interface Pedido {
+        vencimento: string
+        criadoEm: string
+      }
+      render(
+        <DataTable
+          columns={[
+            dateColumn<Pedido>({ accessorKey: "vencimento", header: "Vencimento" }),
+            dateColumn<Pedido>({ accessorKey: "criadoEm", header: "Criado em" }),
+          ]}
+          data={[{ vencimento: "2026-05-19", criadoEm: "2026-05-19T14:30:00" }]}
+          downloadable
+        />,
+      )
+      await exportScope(/Exportar todos os dados/i)
+      const [, , , sheet] = exportCall()
+      const [vencimento, criadoEm] = sheet.rows[0] as Date[]
+      expect(vencimento).toBeInstanceOf(Date)
+      expect([vencimento?.getFullYear(), vencimento?.getMonth(), vencimento?.getDate()]).toEqual([
+        2026, 4, 19,
+      ])
+      expect(vencimento?.getHours()).toBe(0)
+      expect([criadoEm?.getDate(), criadoEm?.getHours(), criadoEm?.getMinutes()]).toEqual([
+        19, 14, 30,
+      ])
+    })
+
+    it("reports a failed export to onExportError and on screen, never silently", async () => {
+      const failure = new Error("servidor fora")
+      const onExportError = vi.fn()
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          manualPagination
+          rowCount={30}
+          downloadable={{ fetchAll: () => Promise.reject(failure), onExportError }}
+        />,
+      )
+      await exportScope(/Exportar todos os dados/i)
+      expect(onExportError).toHaveBeenCalledWith(failure)
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Não foi possível exportar os dados. Tente de novo.",
+      )
+      expect(downloadSheetMock).not.toHaveBeenCalled()
+      // The trigger works again and a new attempt clears the message.
+      const trigger = screen.getByRole("button", { name: /Exportar para Excel/i })
+      expect(trigger).toBeEnabled()
+    })
+
+    it("reports a file that fails to be written", async () => {
+      downloadSheetMock.mockRejectedValueOnce(new Error("disco cheio"))
+      const onExportError = vi.fn()
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          downloadable={{ onExportError }}
+          labels={{ exportError: "Falhou." }}
+        />,
+      )
+      await exportScope(/Exportar todos os dados/i)
+      expect(onExportError).toHaveBeenCalledWith(new Error("disco cheio"))
+      expect(await screen.findByRole("alert")).toHaveTextContent("Falhou.")
+      await exportScope(/Exportar todos os dados/i)
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument()
     })
 
     it("uses custom filename, sheetName and rowToRecord when provided", async () => {
@@ -747,11 +878,7 @@ describe("DataTable", () => {
       )
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
-      const [records, filename, sheetName] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      const [records, filename, sheetName] = exportCall()
       expect(filename).toBe("contratos.xlsx")
       expect(sheetName).toBe("Contratos")
       expect(records[0]).toEqual({ NOME_CUSTOM: "BRAVO" })
@@ -767,11 +894,7 @@ describe("DataTable", () => {
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: menuItem }))
       expect(filename).toHaveBeenCalledWith(scope)
-      const [, resolved] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      const [, resolved] = exportCall()
       expect(resolved).toBe(`contratos-${scope}.xlsx`)
     })
 
@@ -779,11 +902,7 @@ describe("DataTable", () => {
       render(<DataTable columns={columns} data={data} downloadable={{ filename: () => "" }} />)
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
-      const [, resolved] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      const [, resolved] = exportCall()
       expect(resolved).toBe("export.xlsx")
     })
 
@@ -791,11 +910,7 @@ describe("DataTable", () => {
       render(<DataTable columns={columns} data={data} downloadable={{ filename: "" }} />)
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
-      const [, resolved] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      const [, resolved] = exportCall()
       expect(resolved).toBe("export.xlsx")
     })
 
