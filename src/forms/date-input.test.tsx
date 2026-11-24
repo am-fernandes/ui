@@ -239,6 +239,32 @@ describe("DateInput", () => {
     expect(onChange).toHaveBeenCalledWith("2024-02-01")
   })
 
+  it("without value, it keeps its own date, starting from defaultValue", async () => {
+    const onValueChange = vi.fn()
+    render(<DateInput label="Data" defaultValue="2025-03-14" onValueChange={onValueChange} />)
+    expect(input()).toHaveValue("14/03/2025")
+    await userEvent.clear(input())
+    await userEvent.type(input(), "01042025")
+    expect(input()).toHaveValue("01/04/2025")
+    expect(onValueChange).toHaveBeenLastCalledWith("2025-04-01")
+    await userEvent.click(screen.getByRole("button", { name: "Abrir calendário" }))
+    const day = await screen.findByRole("button", { name: /10 de abril de 2025/ })
+    await userEvent.click(day)
+    expect(input()).toHaveValue("10/04/2025")
+  })
+
+  it("an uncontrolled field goes back to defaultValue when its form is reset", async () => {
+    const { container } = render(
+      <form>
+        <DateInput label="Data" defaultValue="2025-03-14" />
+      </form>,
+    )
+    await userEvent.clear(input())
+    await userEvent.type(input(), "15")
+    ;(container.querySelector("form") as HTMLFormElement).reset()
+    await waitFor(() => expect(input()).toHaveValue("14/03/2025"))
+  })
+
   it("forwards the ref to the text field", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<DateInput value="" ref={ref} />)

@@ -16,6 +16,7 @@ import {
   isoToDate,
   isoToDigits,
   maskDateDigits,
+  toIsoDate,
 } from "./_internal/date-only"
 import { Calendar, type DisabledDays } from "./calendar"
 
@@ -50,12 +51,15 @@ const dateSpec: MaskSpec = {
 export interface DateInputProps {
   id?: string
   /**
-   * The date as an ISO string (`"yyyy-MM-dd"`), or `""` for no date. It
-   * changes only when the typed text is a whole valid date, when a day is
-   * picked in the calendar, or (to `""`) when the field is emptied or left
-   * with a date that is not valid.
+   * The date as an ISO string (`"yyyy-MM-dd"`), or `""` for no date,
+   * controlled. It changes only when the typed text is a whole valid date,
+   * when a day is picked in the calendar, or (to `""`) when the field is
+   * emptied or left with a date that is not valid. Leave it out to let the
+   * field keep its own date, starting from `defaultValue`.
    */
-  value: string
+  value?: string
+  /** Initial date (ISO) of an uncontrolled field. */
+  defaultValue?: string
   /** Called with the new ISO date, or `""`. */
   onValueChange?: (value: string) => void
   /** @deprecated Use `onValueChange`; it receives the same value. */
@@ -96,6 +100,7 @@ export interface DateInputProps {
 function DateInput({
   id,
   value,
+  defaultValue,
   onValueChange,
   onChange,
   disabled,
@@ -117,7 +122,9 @@ function DateInput({
   const hasLabel = label != null && label !== ""
   const hasDescription = description != null && description !== ""
 
-  const current = value ?? ""
+  const isControlled = value !== undefined
+  const [internal, setInternal] = React.useState(() => toIsoDate(defaultValue))
+  const current = isControlled ? (value ?? "") : internal
   // What is typed, as digits. It follows `value` when that changes from
   // outside, but not when it changes because this field reported it: an
   // invalid text reported as "" stays on screen to be fixed.
@@ -136,6 +143,7 @@ function DateInput({
   const report = (next: string) => {
     setSynced(next)
     if (next === current) return
+    if (!isControlled) setInternal(next)
     onValueChange?.(next)
     onChange?.(next)
   }
@@ -149,6 +157,25 @@ function DateInput({
     [ref],
   )
   const wrapperRef = React.useRef<HTMLDivElement>(null)
+
+  // An uncontrolled field goes back to `defaultValue` when its form is reset,
+  // like a native input. Read through a ref, so the listener is attached once.
+  const onFormReset = React.useRef(() => {})
+  onFormReset.current = () => {
+    if (isControlled) return
+    const initial = toIsoDate(defaultValue)
+    setInternal(initial)
+    setSynced(initial)
+    setDigits(isoToDigits(initial))
+    setOwnError(null)
+  }
+  React.useEffect(() => {
+    const form = inputRef.current?.form
+    if (form == null) return
+    const reset = () => onFormReset.current()
+    form.addEventListener("reset", reset)
+    return () => form.removeEventListener("reset", reset)
+  }, [])
   const popoverBodyRef = React.useRef<HTMLDivElement>(null)
 
   // React rewrites the input's value after every edit, which throws the caret
