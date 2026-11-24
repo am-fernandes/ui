@@ -42,7 +42,11 @@ export const defaultTimePickerLabels: TimePickerLabels = {
 }
 
 export interface TimePickerProps {
+  /** The time as `"HH:MM"`, or `""` while it is incomplete. */
   value?: string
+  /** Called with `"HH:MM"` once both fields hold a valid time, and with `""` otherwise. */
+  onValueChange?: (value: string) => void
+  /** @deprecated Use `onValueChange`; it receives the same value. */
   onChange?: (value: string) => void
   disabled?: boolean
   id?: string
@@ -170,6 +174,7 @@ TimeField.displayName = "TimeField"
 
 function TimePicker({
   value,
+  onValueChange,
   onChange,
   disabled,
   id,
@@ -215,6 +220,7 @@ function TimePicker({
   }
   const report = (next: string) => {
     setSynced(next)
+    onValueChange?.(next)
     onChange?.(next)
   }
 

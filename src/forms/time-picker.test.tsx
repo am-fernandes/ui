@@ -18,7 +18,7 @@ function Controlled({
   return (
     <TimePicker
       value={value}
-      onChange={(v) => {
+      onValueChange={(v) => {
         onChangeSpy?.(v)
         setValue(v)
       }}
@@ -385,6 +385,15 @@ describe("TimePicker", () => {
     render(<TimePicker value="" label="Início" required />)
     expect(screen.getByLabelText("Horas")).toHaveAttribute("aria-required", "true")
     expect(screen.getByLabelText("Minutos")).toHaveAttribute("aria-required", "true")
+  })
+
+  it("reports through onValueChange, and still through the deprecated onChange", () => {
+    const onValueChange = vi.fn()
+    const onChange = vi.fn()
+    render(<TimePicker value="10:00" onValueChange={onValueChange} onChange={onChange} />)
+    setInputValue(screen.getByLabelText("Minutos") as HTMLInputElement, "45")
+    expect(onValueChange).toHaveBeenLastCalledWith("10:45")
+    expect(onChange).toHaveBeenLastCalledWith("10:45")
   })
 
   it("forwards ref to the hour input", () => {
