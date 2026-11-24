@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { useIsMobile } from "./use-is-mobile"
+import { MOBILE_QUERY, useIsMobile } from "./use-is-mobile"
 
 type Listener = (event: MediaQueryListEvent) => void
 
@@ -21,7 +21,7 @@ function createMatchMediaStub(initial: boolean): FakeMediaQueryList {
   const listeners = new Set<Listener>()
   const mql: FakeMediaQueryList = {
     matches: initial,
-    media: "(max-width: 767px)",
+    media: MOBILE_QUERY,
     onchange: null,
     addListener: (l) => {
       listeners.add(l)
@@ -80,5 +80,13 @@ describe("useIsMobile", () => {
       mql.__fire(true)
     })
     expect(result.current).toBe(true)
+  })
+
+  it("asks the browser with Tailwind's md breakpoint in rem, like the CSS", () => {
+    const stub = createMatchMediaStub(false)
+    const matchMedia = vi.fn(() => stub)
+    Object.defineProperty(window, "matchMedia", { configurable: true, value: matchMedia })
+    renderHook(() => useIsMobile())
+    expect(matchMedia).toHaveBeenCalledWith("not all and (min-width: 48rem)")
   })
 })

@@ -129,7 +129,7 @@ export interface AppShellProps {
 export interface AppShellState {
   /** `true` while the desktop menu is the 64px icon rail. Always `false` inside the mobile menu. */
   collapsed: boolean
-  /** `true` below 768px (same breakpoint as `useIsMobile`). */
+  /** `true` below the `md:` breakpoint (48rem), same query as `useIsMobile`. */
   isMobile: boolean
   /** Closes the mobile menu. No-op when it is already closed. */
   closeMenu: () => void
