@@ -8,6 +8,12 @@ import { cn } from "@/lib/utils"
 import { Dialog } from "../overlays/dialog"
 
 export interface CommandPaletteItem {
+  /**
+   * Stable identity of the item: what `value`/`onValueChange` report for it.
+   * Give one whenever two items can share a label ("Exportar" in two groups,
+   * two clients with the same name); without it the label is used.
+   */
+  id?: string
   label?: string
   icon?: React.ComponentType<{ className?: string }>
   shortcut?: string
@@ -15,6 +21,31 @@ export interface CommandPaletteItem {
   disabled?: boolean
   render?: React.ReactNode
   keywords?: string[]
+}
+
+/**
+ * The cmdk value of each item. cmdk tells items apart by value only: two
+ * items with the same value are highlighted together and Enter runs the
+ * first. The `id` when there is one; else the label, made unique by its
+ * position when another item has the same one. Items with neither (only
+ * `render`) let cmdk read their text.
+ */
+function itemValues(groups: CommandPaletteGroup[]): (string | undefined)[][] {
+  const labelCount = new Map<string, number>()
+  for (const group of groups) {
+    for (const item of group.items) {
+      if (item.id == null && item.label) {
+        labelCount.set(item.label, (labelCount.get(item.label) ?? 0) + 1)
+      }
+    }
+  }
+  return groups.map((group, gi) =>
+    group.items.map((item, ii) => {
+      if (item.id != null) return item.id
+      if (!item.label) return undefined
+      return labelCount.get(item.label) === 1 ? item.label : `${item.label} (${gi + 1}.${ii + 1})`
+    }),
+  )
 }
 
 export interface CommandPaletteGroup {
@@ -102,6 +133,7 @@ function CommandPalette({
   React.useEffect(() => {
     if (!open) setHighlighted("")
   }, [open])
+  const values = itemValues(groups)
   const handleValueChange = (next: string) => {
     if (value === undefined) setHighlighted(next)
     onValueChange?.(next)
@@ -158,33 +190,43 @@ function CommandPalette({
                 "[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground",
               )}
             >
-              {group.items.map((item, ii) => (
-                <CommandPrimitive.Item
-                  key={`${gi}-${ii}-${item.label ?? "custom"}`}
-                  disabled={item.disabled}
-                  keywords={item.keywords}
-                  onSelect={() => {
-                    item.onSelect()
-                  }}
-                  className={cn(
-                    "relative flex cursor-default select-none items-center gap-2 rounded-element px-2 py-1.5 text-sm outline-none transition-colors",
-                    "aria-selected:state-hover",
-                    "data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50",
-                  )}
-                >
-                  {item.render ?? (
-                    <>
-                      {item.icon ? <item.icon className="size-4" /> : null}
-                      <span>{item.label}</span>
-                      {item.shortcut ? (
-                        <span className="ml-auto text-xs tracking-widest text-muted-foreground">
-                          {item.shortcut}
-                        </span>
-                      ) : null}
-                    </>
-                  )}
-                </CommandPrimitive.Item>
-              ))}
+              {group.items.map((item, ii) => {
+                const itemValue = values[gi]?.[ii]
+                // When the value is not the label (an id, or a label made
+                // unique), the label still has to be found by the search.
+                const keywords =
+                  item.label && itemValue !== item.label
+                    ? [item.label, ...(item.keywords ?? [])]
+                    : item.keywords
+                return (
+                  <CommandPrimitive.Item
+                    key={itemValue ?? `${gi}-${ii}`}
+                    value={itemValue}
+                    disabled={item.disabled}
+                    keywords={keywords}
+                    onSelect={() => {
+                      item.onSelect()
+                    }}
+                    className={cn(
+                      "relative flex cursor-default select-none items-center gap-2 rounded-element px-2 py-1.5 text-sm outline-none transition-colors",
+                      "aria-selected:state-hover",
+                      "data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50",
+                    )}
+                  >
+                    {item.render ?? (
+                      <>
+                        {item.icon ? <item.icon className="size-4" /> : null}
+                        <span>{item.label}</span>
+                        {item.shortcut ? (
+                          <span className="ml-auto text-xs tracking-widest text-muted-foreground">
+                            {item.shortcut}
+                          </span>
+                        ) : null}
+                      </>
+                    )}
+                  </CommandPrimitive.Item>
+                )
+              })}
             </CommandPrimitive.Group>
           ))}
         </CommandPrimitive.List>

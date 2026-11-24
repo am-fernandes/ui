@@ -202,6 +202,74 @@ describe("CommandPalette", () => {
     })
   })
 
+  describe("items with the same label", () => {
+    function setup(withIds: boolean) {
+      const exportClients = vi.fn()
+      const exportContracts = vi.fn()
+      render(
+        <CommandPalette
+          open
+          title="X"
+          groups={[
+            {
+              heading: "Clientes",
+              items: [
+                { id: withIds ? "c-exp" : undefined, label: "Exportar", onSelect: exportClients },
+                { id: withIds ? "c-imp" : undefined, label: "Importar", onSelect: () => {} },
+              ],
+            },
+            {
+              heading: "Contratos",
+              items: [
+                { id: withIds ? "k-exp" : undefined, label: "Exportar", onSelect: exportContracts },
+              ],
+            },
+          ]}
+        />,
+      )
+      return { exportClients, exportContracts }
+    }
+
+    for (const withIds of [true, false]) {
+      it(`moves through each one and runs the right one (${withIds ? "with" : "without"} id)`, async () => {
+        const { exportClients, exportContracts } = setup(withIds)
+        const selected = () =>
+          screen.getAllByRole("option").filter((o) => o.ariaSelected === "true")
+        expect(selected()).toHaveLength(1)
+        await userEvent.type(screen.getByRole("combobox"), "{ArrowDown}")
+        expect(selected().map((o) => o.textContent)).toEqual(["Importar"])
+        await userEvent.type(screen.getByRole("combobox"), "{ArrowDown}")
+        const [last] = selected()
+        expect(selected()).toHaveLength(1)
+        expect(last).toBe(screen.getAllByRole("option")[2])
+        await userEvent.type(screen.getByRole("combobox"), "{Enter}")
+        expect(exportContracts).toHaveBeenCalledTimes(1)
+        expect(exportClients).not.toHaveBeenCalled()
+      })
+    }
+
+    it("reports the item id as the highlighted value", async () => {
+      const onValueChange = vi.fn()
+      render(
+        <CommandPalette
+          open
+          title="X"
+          onValueChange={onValueChange}
+          groups={[
+            {
+              items: [
+                { id: "lead-1", label: "João", onSelect: () => {} },
+                { id: "lead-2", label: "João", onSelect: () => {} },
+              ],
+            },
+          ]}
+        />,
+      )
+      await userEvent.type(screen.getByRole("combobox"), "{ArrowDown}")
+      expect(onValueChange).toHaveBeenLastCalledWith("lead-2")
+    })
+  })
+
   it("finds an item via custom keywords search", async () => {
     render(
       <CommandPalette

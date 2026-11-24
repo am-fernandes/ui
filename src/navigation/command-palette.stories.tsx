@@ -315,6 +315,7 @@ function ServerSearchDemo() {
           {
             heading: "Leads",
             items: results.map((lead) => ({
+              id: lead.id,
               label: `${lead.nome} · ${lead.cpf}`,
               onSelect: () => {},
             })),
