@@ -75,6 +75,38 @@ test.describe("Pagination", () => {
     await expect(page.getByRole("link", { name: "Página 8", exact: true })).toBeFocused()
   })
 
+  test("on a phone the pager stays on one row, in the compact layout", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 })
+    for (const [id, indicator] of [
+      ["navigation-pagination--default", "Página 1 de 10"],
+      ["navigation-pagination--many-pages", "Página 25 de 50"],
+    ] as const) {
+      await gotoPagination(page, id)
+      const nav = page.getByRole("navigation", { name: "Paginação" })
+      await expect(nav.getByText(indicator)).toBeVisible()
+      await expect(nav.getByRole("button", { name: /^Página \d+$/ })).toHaveCount(0)
+      // One row: every shown item has the same vertical centre.
+      const centres = await nav.getByRole("listitem").evaluateAll((items) =>
+        items
+          .map((item) => item.getBoundingClientRect())
+          .filter((box) => box.width > 0)
+          .map((box) => Math.round(box.top + box.height / 2)),
+      )
+      expect(new Set(centres).size, id).toBe(1)
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      )
+      expect(overflow, id).toBeLessThanOrEqual(0)
+    }
+    // The first/last shortcuts give way in this 295px container.
+    await expect(page.getByRole("button", { name: "Primeira página" })).toBeHidden()
+    // With room, the numbers come back and the indicator goes.
+    await page.setViewportSize({ width: 1280, height: 720 })
+    const nav = page.getByRole("navigation", { name: "Paginação" })
+    await expect(nav.getByRole("button", { name: "Página 25", exact: true })).toBeVisible()
+    await expect(nav.getByText("Página 25 de 50")).toBeHidden()
+  })
+
   test("ellipses keep 7 slots at the start, middle and end", async ({ page }) => {
     await gotoPagination(page, "navigation-pagination--many-pages")
     await expect(current(page)).toHaveText("25")

@@ -271,6 +271,27 @@ describe("Pagination", () => {
     })
   })
 
+  describe("narrow containers", () => {
+    it("measures its own width and keeps a compact indicator for when numbers do not fit", () => {
+      renderPagination({ page: 3 })
+      const nav = screen.getByRole("navigation")
+      expect(nav).toHaveClass("@container")
+      // Shown by a container query instead of the numbers (the real check is
+      // in tests/e2e/pagination.spec.ts, at 375px).
+      expect(screen.getByText("Página 3 de 10")).toHaveAttribute(
+        "data-slot",
+        "pagination-indicator",
+      )
+      const pageItem = screen.getByRole("button", { name: "Página 3" }).closest("li")
+      expect(pageItem?.className).toMatch(/(^|\s)hidden(\s|$)/)
+    })
+
+    it("needs no fallback when there are no numbers (compact, cursor)", () => {
+      renderPagination({ page: 3, variant: "compact" })
+      expect(screen.getAllByText("Página 3 de 10")).toHaveLength(1)
+    })
+  })
+
   describe("compact variant", () => {
     it("shows 'Página N de M' between previous and next", async () => {
       const { onPageChange } = renderPagination({ page: 3, variant: "compact" })

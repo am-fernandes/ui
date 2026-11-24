@@ -72,7 +72,10 @@ export interface PaginationProps {
   variant?: "pages" | "compact"
   /** Pages shown on each side of the current one. @default 1 */
   siblingCount?: number
-  /** Also show first/last page buttons. @default false */
+  /**
+   * Also show first/last page buttons. In a container narrower than 320px
+   * they give way, and previous/next remain. @default false
+   */
   showFirstLast?: boolean
   /**
    * Render real links instead of buttons (`?page=3` URLs, crawlable, open in
@@ -125,6 +128,25 @@ export function getPaginationItems(page: number, totalPages: number, siblingCoun
     return [1, "start-ellipsis", ...range(totalPages - edgeCount + 1, totalPages)]
   }
   return [1, "start-ellipsis", ...range(left, right), "end-ellipsis", totalPages]
+}
+
+// Container widths (Tailwind's named sizes) and the classes that show the
+// page numbers from that width up. Literal strings, so Tailwind finds them.
+const ROOM = [
+  { min: 320, block: "@xs:block", flex: "@xs:flex", hide: "@xs:hidden" },
+  { min: 384, block: "@sm:block", flex: "@sm:flex", hide: "@sm:hidden" },
+  { min: 448, block: "@md:block", flex: "@md:flex", hide: "@md:hidden" },
+  { min: 512, block: "@lg:block", flex: "@lg:flex", hide: "@lg:hidden" },
+  { min: 576, block: "@xl:block", flex: "@xl:flex", hide: "@xl:hidden" },
+  { min: 672, block: "@2xl:block", flex: "@2xl:flex", hide: "@2xl:hidden" },
+  { min: 768, block: "@3xl:block", flex: "@3xl:flex", hide: "@3xl:hidden" },
+  { min: 896, block: "@4xl:block", flex: "@4xl:flex", hide: "@4xl:hidden" },
+] as const
+
+/** The smallest container that holds `controls` square controls on one row. */
+function roomFor(controls: number, controlPx: number) {
+  const need = controls * (controlPx + 4) - 4
+  return ROOM.find((room) => room.min >= need) ?? ROOM[ROOM.length - 1]!
 }
 
 function totalPageCount(totalItems?: number, totalPages?: number, pageSize = 10) {
@@ -348,22 +370,38 @@ function Pagination({
       </li>
     )
   } else {
-    middle = getPaginationItems(current, total, siblingCount).map((item) =>
-      typeof item === "number" ? (
-        <li key={item}>{pageControl(item)}</li>
-      ) : (
-        <li
-          key={item}
-          aria-hidden="true"
-          data-slot="pagination-ellipsis"
-          className={cn(
-            "flex items-center justify-center text-muted-foreground",
-            size === "sm" ? "h-8 w-6 text-xs" : "h-10 w-8 text-sm",
-          )}
-        >
-          …
+    // When the numbers do not fit on one row (a phone, a narrow card), the
+    // pager falls back to the compact layout instead of wrapping: a container
+    // query on the <nav> swaps the numbers for "Página 3 de 10".
+    const pageItems = getPaginationItems(current, total, siblingCount)
+    const steps = 2 + (showFirstLast ? 2 : 0)
+    const room = roomFor(pageItems.length + steps, size === "sm" ? 32 : 40)
+    middle = (
+      <>
+        {pageItems.map((item) =>
+          typeof item === "number" ? (
+            <li key={item} className={cn("hidden", room.block)}>
+              {pageControl(item)}
+            </li>
+          ) : (
+            <li
+              key={item}
+              aria-hidden="true"
+              data-slot="pagination-ellipsis"
+              className={cn(
+                "hidden items-center justify-center text-muted-foreground",
+                room.flex,
+                size === "sm" ? "h-8 w-6 text-xs" : "h-10 w-8 text-sm",
+              )}
+            >
+              …
+            </li>
+          ),
+        )}
+        <li data-slot="pagination-indicator" className={cn(indicatorClass, room.hide)}>
+          {l.pageOf(current, total)}
         </li>
-      ),
+      </>
     )
   }
 
@@ -389,7 +427,11 @@ function Pagination({
       ref={navRef}
       aria-label={l.navigation}
       data-slot="pagination"
-      className={cn("flex flex-wrap items-center justify-between gap-x-4 gap-y-2", className)}
+      // A container: the page numbers show only when they fit in one row.
+      className={cn(
+        "@container flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-2",
+        className,
+      )}
     >
       {summary !== null || sizes !== null ? (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -430,8 +472,12 @@ function Pagination({
         </div>
       ) : null}
       <ul className="flex flex-wrap items-center gap-1">
+        {/* Below 320px even the compact row would wrap: the first/last
+            shortcuts give way, previous and next stay. */}
         {showFirstLastButtons ? (
-          <li>{step(1, canPrevious, l.first, <ChevronsLeft />, "pagination-first")}</li>
+          <li className="hidden @xs:block">
+            {step(1, canPrevious, l.first, <ChevronsLeft />, "pagination-first")}
+          </li>
         ) : null}
         <li>
           {step(current - 1, canPrevious, l.previous, <ChevronLeft />, "pagination-previous")}
@@ -439,7 +485,9 @@ function Pagination({
         {middle}
         <li>{step(current + 1, canNext, l.next, <ChevronRight />, "pagination-next")}</li>
         {showFirstLastButtons ? (
-          <li>{step(lastPage, canNext, l.last, <ChevronsRight />, "pagination-last")}</li>
+          <li className="hidden @xs:block">
+            {step(lastPage, canNext, l.last, <ChevronsRight />, "pagination-last")}
+          </li>
         ) : null}
       </ul>
     </nav>
