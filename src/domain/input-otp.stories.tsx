@@ -185,6 +185,30 @@ export const Disabled: Story = {
   render: (args) => <InputOTP {...args} />,
 }
 
+export const ReadOnly: Story = {
+  args: {
+    length: 6,
+    defaultValue: "482913",
+    label: "Código enviado ao cliente",
+    description: "Só para conferência; o cliente digita o código no app.",
+    readOnly: true,
+    name: "codigo",
+  },
+  render: (args) => (
+    <form onSubmit={(event) => event.preventDefault()}>
+      <InputOTP {...args} />
+    </form>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly`: o código aparece em caixas com fundo `muted`, sem cursor piscando; não muda por digitação, colagem ou apagar, continua focável e vai no formulário.",
+      },
+    },
+  },
+}
+
 export const OnComplete: Story = {
   render: () => {
     const [value, setValue] = useState<string>("")

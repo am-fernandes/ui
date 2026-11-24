@@ -247,4 +247,49 @@ describe("InputOTP", () => {
     fireEvent.blur(input)
     expect(onBlur).toHaveBeenCalledTimes(1)
   })
+
+  describe("readOnly", () => {
+    it("keeps the code: typing, pasting and deleting change nothing", () => {
+      const onValueChange = vi.fn()
+      const { container } = render(
+        <InputOTP
+          length={6}
+          defaultValue="482913"
+          readOnly
+          onValueChange={onValueChange}
+          label="Código"
+        />,
+      )
+      const input = container.querySelector("input") as HTMLInputElement
+      expect(input).toHaveAttribute("readonly")
+      expect(input).toHaveAttribute("data-readonly")
+      fireEvent.change(input, { target: { value: "111111" } })
+      fireEvent.paste(input, { clipboardData: { getData: () => "999999" } })
+      fireEvent.change(input, { target: { value: "" } })
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(input.value).toBe("482913")
+    })
+
+    it("fills the boxes with the muted read-only look and no blinking caret", () => {
+      const { container } = render(
+        <InputOTP length={4} defaultValue="12" readOnly label="Código" />,
+      )
+      const input = container.querySelector("input") as HTMLInputElement
+      input.focus()
+      const slots = [...container.querySelectorAll('[data-slot="input-otp-slot"]')]
+      expect(slots.every((s) => s.classList.contains("bg-muted"))).toBe(true)
+      expect(container.querySelector(".animate-caret-blink")).toBeNull()
+    })
+
+    it("is still sent with the form", () => {
+      const { container } = render(
+        <form>
+          <InputOTP length={6} defaultValue="482913" readOnly name="codigo" label="Código" />
+        </form>,
+      )
+      expect(new FormData(container.querySelector("form") as HTMLFormElement).get("codigo")).toBe(
+        "482913",
+      )
+    })
+  })
 })

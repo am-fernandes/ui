@@ -1,7 +1,7 @@
 "use client"
 
 import { OTPInput, REGEXP_ONLY_DIGITS, type SlotProps } from "input-otp"
-import type * as React from "react"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
@@ -28,6 +28,11 @@ export interface InputOTPProps {
   labelPosition?: LabelPosition
   required?: boolean
   disabled?: boolean
+  /**
+   * Shows the code without letting it change (typing, pasting or deleting).
+   * It still takes focus, can be copied, and is sent with the form.
+   */
+  readOnly?: boolean
   /** Name of the field in a native form, which receives the code as typed. */
   name?: string
   /** Called when the focus leaves the code. */
@@ -37,7 +42,15 @@ export interface InputOTPProps {
   ref?: React.Ref<HTMLInputElement>
 }
 
-function Slot({ slot, invalid }: { slot: SlotProps; invalid: boolean }) {
+function Slot({
+  slot,
+  invalid,
+  readOnly,
+}: {
+  slot: SlotProps
+  invalid: boolean
+  readOnly: boolean
+}) {
   return (
     <div
       data-slot="input-otp-slot"
@@ -50,10 +63,12 @@ function Slot({ slot, invalid }: { slot: SlotProps; invalid: boolean }) {
         // With an error the boxes are red, like the border of any other field,
         // and the focused one stays red too.
         invalid && "border-destructive-text data-[active=true]:outline-destructive-text",
+        // Read-only: the muted fill of the library's read-only fields.
+        readOnly && "bg-muted",
       )}
     >
       {slot.char ?? slot.placeholderChar}
-      {slot.hasFakeCaret ? (
+      {slot.hasFakeCaret && !readOnly ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="h-4 w-px animate-caret-blink bg-foreground duration-1000" />
         </div>
@@ -87,6 +102,7 @@ function InputOTP({
   labelPosition,
   required,
   disabled,
+  readOnly: readOnlyProp = false,
   name,
   onBlur,
   id,
@@ -94,6 +110,18 @@ function InputOTP({
   ref,
 }: InputOTPProps) {
   const ids = useFieldIds(id)
+  // Disabled wins: a disabled field is dimmed, not filled.
+  const readOnly = readOnlyProp && !disabled
+  // The code is always handed to input-otp as controlled, so a read-only
+  // field can refuse a change: the package's paste handler (with a paste
+  // transformer, or on iOS) writes the value without the input's say.
+  const [inner, setInner] = React.useState(defaultValue ?? "")
+  const current = value ?? inner
+  const change = (next: string) => {
+    if (readOnly) return
+    if (value === undefined) setInner(next)
+    onValueChange?.(next)
+  }
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
 
@@ -115,9 +143,10 @@ function InputOTP({
         id={ids.controlId}
         data-slot="input-otp"
         maxLength={length}
-        value={value}
-        defaultValue={defaultValue}
-        onChange={onValueChange}
+        value={current}
+        onChange={change}
+        readOnly={readOnly}
+        data-readonly={readOnly ? "" : undefined}
         name={name}
         onBlur={onBlur}
         required={required}
@@ -134,7 +163,7 @@ function InputOTP({
           <div className="flex items-center">
             {slots.map((slot, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: slots are positional and fixed-length
-              <Slot key={i} slot={slot} invalid={hasError} />
+              <Slot key={i} slot={slot} invalid={hasError} readOnly={readOnly} />
             ))}
           </div>
         )}
