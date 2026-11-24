@@ -28,6 +28,8 @@ interface TimeGridViewProps {
   moreLabel: (count: number) => string
   /** Most events side by side in a day column; the rest go to a "+N". */
   maxColumns: number
+  /** Hour the keyboard's "new event" button of a day gives to `onSlotClick`. */
+  slotHour: number
 }
 
 const GUTTER = "3.5rem"
@@ -46,8 +48,11 @@ export function TimeGridView({
   todayLabel,
   moreLabel,
   maxColumns,
+  slotHour,
 }: TimeGridViewProps) {
-  const { now } = React.useContext(ScheduleContext)
+  const { now, onSlotClick, newEventLabel } = React.useContext(ScheduleContext)
+  const at = (day: Date, minutes: number) =>
+    new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, minutes)
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const columns = `${GUTTER} repeat(${days.length}, minmax(0, 1fr))`
   const hours = Array.from({ length: Math.max(0, maxHour - minHour) }, (_, i) => minHour + i)
@@ -89,15 +94,30 @@ export function TimeGridView({
               <span aria-hidden="true" className="truncate text-muted-foreground">
                 {weekdayShort(day)}
               </span>
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "inline-flex size-6 items-center justify-center rounded-full tabular-nums",
-                  isToday && "bg-primary font-semibold text-primary-foreground",
-                )}
-              >
-                {day.getDate()}
-              </span>
+              {onSlotClick ? (
+                <button
+                  type="button"
+                  data-slot="schedule-new-event"
+                  aria-label={newEventLabel(formatDayLong(day))}
+                  onClick={() => onSlotClick(at(day, slotHour * 60))}
+                  className={cn(
+                    "inline-flex size-6 cursor-pointer items-center justify-center rounded-full tabular-nums state-layer focus-visible:focus-outline",
+                    isToday && "bg-primary font-semibold text-primary-foreground",
+                  )}
+                >
+                  {day.getDate()}
+                </button>
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "inline-flex size-6 items-center justify-center rounded-full tabular-nums",
+                    isToday && "bg-primary font-semibold text-primary-foreground",
+                  )}
+                >
+                  {day.getDate()}
+                </span>
+              )}
               <span className="sr-only">
                 {formatDayLong(day)}
                 {isToday ? `, ${todayLabel.toLowerCase()}` : ""}
@@ -170,11 +190,25 @@ export function TimeGridView({
             )
             const isToday = isSameDay(day, now)
             return (
+              // biome-ignore lint/a11y/useKeyWithClickEvents: the keyboard uses the day's button (data-slot="schedule-new-event").
               <div
                 key={isoDay(day)}
                 data-slot="schedule-day-column"
                 data-date={isoDay(day)}
-                className="relative border-l"
+                // A click on the empty grid gives the time under the pointer,
+                // rounded down to the half hour. The keyboard has the day's
+                // button in the header.
+                onClick={
+                  onSlotClick
+                    ? (event) => {
+                        if (event.target !== event.currentTarget) return
+                        const y = event.clientY - event.currentTarget.getBoundingClientRect().top
+                        const halfHours = Math.floor((y / hourHeight) * 2)
+                        onSlotClick(at(day, minHour * 60 + halfHours * 30))
+                      }
+                    : undefined
+                }
+                className={cn("relative border-l", onSlotClick && "cursor-pointer")}
                 style={{
                   backgroundImage:
                     "linear-gradient(to bottom, var(--color-border) 1px, transparent 1px)",

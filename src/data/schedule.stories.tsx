@@ -153,6 +153,43 @@ export const ManyAtOnce: Story = {
   },
 }
 
+export const NewEventOnSlot: Story = {
+  name: "New Event On Slot",
+  render: (args) => {
+    const [slot, setSlot] = React.useState<Date | null>(null)
+    const [range, setRange] = React.useState("")
+    return (
+      <div className="flex flex-col gap-3">
+        <Schedule
+          {...args}
+          defaultView="week"
+          onSlotClick={setSlot}
+          onRangeChange={({ start, end }) =>
+            setRange(`${start.toLocaleDateString("pt-BR")} até ${end.toLocaleDateString("pt-BR")}`)
+          }
+        />
+        <p data-testid="slot" className="text-sm">
+          Agendar visita em:{" "}
+          {slot
+            ? slot.toLocaleString("pt-BR", { dateStyle: "full", timeStyle: "short" })
+            : "clique num horário vazio"}
+        </p>
+        <p data-testid="range" className="text-sm text-muted-foreground">
+          Buscando eventos de {range}
+        </p>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`onSlotClick` recebe o horário clicado na grade (arredondado para a meia hora) ou o dia, no mês. Pelo teclado, o número de cada dia vira um botão "Novo evento em …". `onRangeChange` informa o período na tela para buscar os eventos no servidor.',
+      },
+    },
+  },
+}
+
 export const WithEventDetails: Story = {
   args: {
     defaultView: "week",

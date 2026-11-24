@@ -176,6 +176,34 @@ test.describe("Schedule — week and day", () => {
     await expect(more).toBeFocused()
   })
 
+  test("a click on an empty slot gives its time, and the keyboard has a button per day", async ({
+    page,
+  }) => {
+    await gotoSchedule(page, "data-schedule--new-event-on-slot")
+    await expect(page.getByTestId("range")).toContainText("15/11/2026 até 22/11/2026")
+    const column = page.locator('[data-slot="schedule-day-column"][data-date="2026-11-20"]')
+    await column.scrollIntoViewIfNeeded()
+    const grid = page.locator('[data-slot="schedule-scroll"]')
+    await grid.evaluate((el) => {
+      el.scrollTop = 13 * 48
+    })
+    const box = (await column.boundingBox())!
+    // A point on the 14:00 line plus 10 minutes, at the right edge of the column.
+    const y = box.y + 14 * HOUR + (10 / 60) * HOUR
+    await page.mouse.click(box.x + box.width - 4, y)
+    await expect(page.getByTestId("slot")).toContainText("14:00")
+    await expect(page.getByTestId("slot")).toContainText("20 de novembro")
+
+    const dayButton = page.getByRole("button", { name: "Novo evento em sábado, 21 de novembro" })
+    await dayButton.focus()
+    await page.keyboard.press("Enter")
+    await expect(page.getByTestId("slot")).toContainText("21 de novembro")
+    await expect(page.getByTestId("slot")).toContainText("08:00")
+
+    await page.getByRole("button", { name: "Próxima semana" }).click()
+    await expect(page.getByTestId("range")).toContainText("22/11/2026 até 29/11/2026")
+  })
+
   test("switches views from the keyboard", async ({ page }) => {
     await gotoSchedule(page, "data-schedule--week")
     await page.getByRole("radio", { name: "Semana" }).focus()

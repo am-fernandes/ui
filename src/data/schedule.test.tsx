@@ -1,8 +1,14 @@
-import { act, render, screen, within } from "@testing-library/react"
+import { act, fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { Schedule, type ScheduleEvent, type ScheduleProps, defaultScheduleLabels } from "./schedule"
+import {
+  Schedule,
+  type ScheduleEvent,
+  type ScheduleProps,
+  defaultScheduleLabels,
+  getScheduleRange,
+} from "./schedule"
 
 const TODAY = new Date(2026, 10, 18, 10, 30) // qua. 18 nov. 2026, 10:30
 const at = (day: number, hour = 0, minute = 0, month = 10) =>
@@ -471,6 +477,79 @@ describe("Schedule", () => {
     it("starts on today's date when there is no defaultDate", () => {
       render(<Schedule events={[]} today={new Date(2027, 1, 3)} />)
       expect(screen.getByRole("heading", { name: "fevereiro de 2027" })).toBeInTheDocument()
+    })
+  })
+
+  describe("slots and ranges", () => {
+    it("month: a day's number is a button that gives that day at 00:00", async () => {
+      const onSlotClick = vi.fn()
+      renderSchedule({ onSlotClick })
+      await userEvent.click(
+        screen.getByRole("button", { name: "Novo evento em sexta-feira, 20 de novembro" }),
+      )
+      expect(onSlotClick).toHaveBeenCalledWith(new Date(2026, 10, 20))
+    })
+
+    it("month: a click on the empty part of a day gives that day", async () => {
+      const onSlotClick = vi.fn()
+      const { container } = renderSchedule({ onSlotClick })
+      const cell = container.querySelector(
+        '[data-slot="schedule-day"][data-date="2026-11-24"]',
+      ) as HTMLElement
+      await userEvent.click(cell)
+      expect(onSlotClick).toHaveBeenCalledWith(new Date(2026, 10, 24))
+    })
+
+    it("week: the header button gives the day at scrollToHour, the grid the half hour clicked", async () => {
+      const onSlotClick = vi.fn()
+      const { container } = renderSchedule({ defaultView: "week", onSlotClick, scrollToHour: 9 })
+      await userEvent.click(
+        screen.getByRole("button", { name: "Novo evento em sexta-feira, 20 de novembro" }),
+      )
+      expect(onSlotClick).toHaveBeenLastCalledWith(new Date(2026, 10, 20, 9))
+
+      const column = container.querySelector(
+        '[data-slot="schedule-day-column"][data-date="2026-11-20"]',
+      ) as HTMLElement
+      column.getBoundingClientRect = () => ({ top: 0 }) as DOMRect
+      // 14h45 from the top of the grid (48px per hour) → the 14:30 slot.
+      fireEvent.click(column, { clientY: 14.75 * 48 })
+      expect(onSlotClick).toHaveBeenLastCalledWith(new Date(2026, 10, 20, 14, 30))
+    })
+
+    it("without onSlotClick the days are not buttons", () => {
+      renderSchedule()
+      expect(screen.queryByRole("button", { name: /^Novo evento em/ })).toBeNull()
+    })
+
+    it("reports the visible range on mount and whenever it changes", async () => {
+      const onRangeChange = vi.fn()
+      renderSchedule({ onRangeChange })
+      expect(onRangeChange).toHaveBeenCalledTimes(1)
+      expect(onRangeChange).toHaveBeenLastCalledWith({
+        start: new Date(2026, 10, 1),
+        end: new Date(2026, 11, 6),
+        view: "month",
+      })
+      await userEvent.click(screen.getByRole("button", { name: "Próximo mês" }))
+      expect(onRangeChange).toHaveBeenLastCalledWith({
+        start: new Date(2026, 10, 29),
+        end: new Date(2027, 0, 3),
+        view: "month",
+      })
+      await userEvent.click(screen.getByRole("radio", { name: "Semana" }))
+      expect(onRangeChange).toHaveBeenLastCalledWith(expect.objectContaining({ view: "week" }))
+    })
+
+    it("getScheduleRange gives the same range, for the first fetch", () => {
+      expect(getScheduleRange("week", new Date(2026, 10, 18), { weekStartsOn: 1 })).toEqual({
+        start: new Date(2026, 10, 16),
+        end: new Date(2026, 10, 23),
+      })
+      expect(getScheduleRange("month", new Date(2026, 10, 18))).toEqual({
+        start: new Date(2026, 10, 1),
+        end: new Date(2026, 11, 6),
+      })
     })
   })
 })

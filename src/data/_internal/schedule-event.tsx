@@ -23,11 +23,16 @@ export interface ScheduleContextValue {
   renderEventDetails?: (event: ScheduleEventData) => React.ReactNode
   /** "Now" — today's date and the time used by the current-time line. */
   now: Date
+  /** Click or keyboard on an empty day or time slot. */
+  onSlotClick?: (date: Date) => void
+  /** Name of the button that creates an event on a day ("Novo evento em …"). */
+  newEventLabel: (day: string) => string
 }
 
 export const ScheduleContext = React.createContext<ScheduleContextValue>({
   allDayLabel: "Dia inteiro",
   now: new Date(0),
+  newEventLabel: (day) => `Novo evento em ${day}`,
 })
 
 export const DEFAULT_EVENT_COLOR: ScheduleColor = "blue"

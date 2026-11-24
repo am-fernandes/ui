@@ -1,6 +1,6 @@
 "use client"
 
-import { addDays, isSameDay, isSameMonth } from "date-fns"
+import { addDays, isSameDay, isSameMonth, startOfDay } from "date-fns"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -34,7 +34,7 @@ interface MonthViewProps {
 const ROW_TEMPLATE = `1.75rem repeat(${MONTH_MAX_LANES}, 1.625rem) 1.625rem`
 
 export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthViewProps) {
-  const { now } = React.useContext(ScheduleContext)
+  const { now, onSlotClick, newEventLabel } = React.useContext(ScheduleContext)
   const weeks: Date[][] = []
   for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7))
 
@@ -65,6 +65,7 @@ export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthVi
               const isToday = isSameDay(day, now)
               const outside = !isSameMonth(day, date)
               return (
+                // biome-ignore lint/a11y/useKeyWithClickEvents: the keyboard uses the day's button (data-slot="schedule-new-event").
                 <div
                   key={isoDay(day)}
                   data-slot="schedule-day"
@@ -75,19 +76,44 @@ export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthVi
                     "min-w-0 px-1 pt-1",
                     col < 6 && "border-r",
                     outside && "bg-muted/40",
+                    onSlotClick && "cursor-pointer",
                   )}
                   style={{ gridColumn: col + 1, gridRow: "1 / -1" }}
+                  // A click on the empty part of a day gives that day at 00:00.
+                  onClick={
+                    onSlotClick
+                      ? (event) => {
+                          if (event.target === event.currentTarget) onSlotClick(startOfDay(day))
+                        }
+                      : undefined
+                  }
                 >
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "inline-flex size-6 items-center justify-center rounded-full text-xs tabular-nums",
-                      outside && "text-muted-foreground",
-                      isToday && "bg-primary font-semibold text-primary-foreground",
-                    )}
-                  >
-                    {day.getDate()}
-                  </span>
+                  {onSlotClick ? (
+                    <button
+                      type="button"
+                      data-slot="schedule-new-event"
+                      aria-label={newEventLabel(formatDayLong(day))}
+                      onClick={() => onSlotClick(startOfDay(day))}
+                      className={cn(
+                        "inline-flex size-6 cursor-pointer items-center justify-center rounded-full text-xs tabular-nums state-layer focus-visible:focus-outline",
+                        outside && "text-muted-foreground",
+                        isToday && "bg-primary font-semibold text-primary-foreground",
+                      )}
+                    >
+                      {day.getDate()}
+                    </button>
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "inline-flex size-6 items-center justify-center rounded-full text-xs tabular-nums",
+                        outside && "text-muted-foreground",
+                        isToday && "bg-primary font-semibold text-primary-foreground",
+                      )}
+                    >
+                      {day.getDate()}
+                    </span>
+                  )}
                   <span className="sr-only">
                     {formatDayLong(day)}
                     {isToday ? `, ${todayLabel.toLowerCase()}` : ""}

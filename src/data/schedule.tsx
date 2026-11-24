@@ -55,6 +55,8 @@ export interface ScheduleLabels {
   /** List view with no events in the period. */
   empty: string
   loading: string
+  /** Name of the button on a day that calls `onSlotClick` ("Novo evento em sábado, 21 de novembro"). */
+  newEvent: (day: string) => string
 }
 
 export const defaultScheduleLabels: ScheduleLabels = {
@@ -77,6 +79,7 @@ export const defaultScheduleLabels: ScheduleLabels = {
   more: (count) => `+${count} mais`,
   empty: "Nenhum evento neste período",
   loading: "Carregando…",
+  newEvent: (day) => `Novo evento em ${day}`,
 }
 
 const ALL_VIEWS: ScheduleView[] = ["month", "week", "day", "list"]
@@ -100,6 +103,19 @@ export interface ScheduleProps {
    */
   today?: Date
   onEventClick?: (event: ScheduleEvent) => void
+  /**
+   * Click on an empty day (month) or time slot (week, day): receives the
+   * day at 00:00, or the time clicked rounded down to the half hour. From
+   * the keyboard, each day's number or header becomes a button that gives
+   * the day at `scrollToHour`. Use it to start "Agendar visita".
+   */
+  onSlotClick?: (date: Date) => void
+  /**
+   * Called with the period on screen whenever it changes, and once on
+   * mount: fetch the events of `{ start, end }` (end exclusive). Same range
+   * as `getScheduleRange`.
+   */
+  onRangeChange?: (range: { start: Date; end: Date; view: ScheduleView }) => void
   /** When set, clicking an event opens a popover with this content. */
   renderEventDetails?: (event: ScheduleEvent) => React.ReactNode
   /** First day of the week. @default 0 (domingo) */
@@ -155,6 +171,8 @@ function Schedule({
   onDateChange,
   today,
   onEventClick,
+  onSlotClick,
+  onRangeChange,
   renderEventDetails,
   weekStartsOn = 0,
   minHour = 0,
@@ -194,6 +212,13 @@ function Schedule({
   }
 
   const range = getViewRange(view, date, weekStartsOn, listDays)
+  const rangeStart = range.start.getTime()
+  const rangeEnd = range.end.getTime()
+  const onRangeChangeRef = React.useRef(onRangeChange)
+  onRangeChangeRef.current = onRangeChange
+  React.useEffect(() => {
+    onRangeChangeRef.current?.({ start: new Date(rangeStart), end: new Date(rangeEnd), view })
+  }, [rangeStart, rangeEnd, view])
   const visible = events
     .filter((e) => eventOverlapsRange(e, range.start, range.end))
     .sort(compareEvents)
@@ -207,8 +232,10 @@ function Schedule({
       onEventClick: onEventClick as ScheduleContextValue["onEventClick"],
       renderEventDetails: renderEventDetails as ScheduleContextValue["renderEventDetails"],
       now,
+      onSlotClick,
+      newEventLabel: l.newEvent,
     }),
-    [l.allDay, onEventClick, renderEventDetails, now],
+    [l.allDay, onEventClick, renderEventDetails, now, onSlotClick, l.newEvent],
   )
 
   let body: React.ReactNode
@@ -244,6 +271,7 @@ function Schedule({
         allDayLabel={l.allDay}
         todayLabel={l.today}
         moreLabel={l.more}
+        slotHour={scrollToHour}
         maxColumns={maxColumns ?? (view === "day" ? 6 : 3)}
       />
     )
@@ -315,4 +343,18 @@ function Schedule({
 
 Schedule.displayName = "Schedule"
 
-export { Schedule }
+/**
+ * The period a view shows, the same one `onRangeChange` reports: `start` is
+ * the first visible day at 00:00 and `end` the day after the last one
+ * (exclusive). Use it to fetch the events before the first render.
+ */
+function getScheduleRange(
+  view: ScheduleView,
+  date: Date,
+  options: { weekStartsOn?: WeekStart; listDays?: number } = {},
+): { start: Date; end: Date } {
+  const { start, end } = getViewRange(view, date, options.weekStartsOn ?? 0, options.listDays ?? 7)
+  return { start, end }
+}
+
+export { Schedule, getScheduleRange }

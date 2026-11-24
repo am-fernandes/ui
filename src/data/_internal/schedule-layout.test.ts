@@ -162,6 +162,7 @@ describe("layoutDayColumn", () => {
       expect(p).toMatchObject({ top: 10 * 48, height: 48 })
     } finally {
       // Assigning undefined would set the string "undefined" (UTC).
+      // biome-ignore lint/performance/noDelete: process.env.TZ must be removed, not set to a value.
       if (original === undefined) delete process.env.TZ
       else process.env.TZ = original
     }

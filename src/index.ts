@@ -41,6 +41,7 @@ export {
 export {
   Schedule,
   defaultScheduleLabels,
+  getScheduleRange,
   type ScheduleColor,
   type ScheduleEvent,
   type ScheduleLabels,
