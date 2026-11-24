@@ -5,7 +5,7 @@ import { type VariantProps, cva } from "class-variance-authority"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { motionSheet, overlayBase } from "./_internal/animations"
+import { motionSheet, sheetOverlayBase } from "./_internal/animations"
 import { modalBodyClass } from "./_internal/modal-body"
 import { DEFAULT_CLOSE_LABEL, ModalCloseButton, titleBesideClose } from "./_internal/modal-close"
 import {
@@ -146,7 +146,7 @@ function Sheet({
     <DialogPrimitive.Root open={isOpen} onOpenChange={setOpen}>
       {trigger ? <DialogPrimitive.Trigger asChild>{trigger}</DialogPrimitive.Trigger> : null}
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay data-slot="sheet-overlay" className={overlayBase} />
+        <DialogPrimitive.Overlay data-slot="sheet-overlay" className={sheetOverlayBase} />
         <DialogPrimitive.Content
           ref={contentRef}
           data-slot="sheet-content"

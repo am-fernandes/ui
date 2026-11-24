@@ -624,6 +624,28 @@ test.describe("Sheet", () => {
     await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
   })
 
+  // The backdrop left in 175ms (the dialogs' exit) while the panel slid out
+  // for 410ms: the page lit up before the panel had gone.
+  test("backdrop and panel leave together", async ({ page }) => {
+    await gotoStory(page, "overlays-sheet--with-footer", "Abrir com footer")
+    await page.getByRole("button", { name: "Abrir com footer" }).click()
+    const panel = page.getByRole("dialog", { name: "Editar projeto" })
+    await settledBox(panel)
+    // Closed and read in the same task: nothing has ended yet.
+    const durations = await panel.evaluate(async (el) => {
+      ;(el.querySelector('[data-slot="sheet-close"]') as HTMLElement).click()
+      await new Promise(requestAnimationFrame)
+      const overlay = document.querySelector('[data-slot="sheet-overlay"]') as HTMLElement
+      return {
+        overlay: getComputedStyle(overlay).animationDuration,
+        panel: getComputedStyle(el).animationDuration,
+        states: [overlay.dataset.state, el.dataset.state],
+      }
+    })
+    expect(durations.states).toEqual(["closed", "closed"])
+    expect(durations.overlay).toBe(durations.panel)
+  })
+
   // One width (384px) for every content: no room for a detail panel with a
   // two-column form, too much for a short filter list.
   test("size sets the width of a side panel; on a phone it stays 3/4 of the screen", async ({
