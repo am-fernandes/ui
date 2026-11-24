@@ -20,7 +20,7 @@ describe("Calendar", () => {
   it("renders with ptBR locale by default", () => {
     render(<Calendar mode="single" defaultMonth={new Date(2025, 0, 15)} />)
     // ptBR -> Portuguese month name (January = "janeiro")
-    expect(screen.getByText(/janeiro/i)).toBeInTheDocument()
+    expect(screen.getByRole("grid", { name: /janeiro 2025/i })).toBeInTheDocument()
   })
 
   it("renders a grid", () => {
@@ -233,6 +233,18 @@ describe("Calendar", () => {
       /^terça-feira, 10 de junho de 2025, selecionado$/,
     )
     expect(document.body.textContent).not.toMatch(/Go to|selected|Today/)
+  })
+
+  it("announces the month when it changes (polite live region)", async () => {
+    const user = userEvent.setup()
+    render(<Calendar mode="single" defaultMonth={FIXED_MONTH} />)
+    const status = screen.getByRole("status")
+    expect(status).toHaveAttribute("aria-live", "polite")
+    expect(status).toHaveTextContent("junho 2025")
+    await user.click(screen.getByRole("button", { name: "Ir para o próximo mês" }))
+    expect(screen.getByRole("status")).toHaveTextContent("julho 2025")
+    // The caption is still the button that opens the quick navigation.
+    expect(screen.getByRole("button", { name: /julho 2025/ })).toBeInTheDocument()
   })
 
   it("lets clicks pass through the nav overlay to the caption beneath it", () => {

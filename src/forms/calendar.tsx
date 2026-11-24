@@ -242,21 +242,30 @@ function Calendar({
       ),
       ...(quickNavEnabled && {
         CaptionLabel: ({ className, children }: React.ComponentProps<"span">) => (
-          <Button
-            ref={captionButtonRef}
-            type="button"
-            variant="ghost"
-            data-slot="calendar-caption-button"
-            aria-expanded={false}
-            className={cn("h-(--cell-size) gap-1 px-2 select-none", className)}
-            onClick={() => {
-              setPendingYear(displayedMonthRef.current.getFullYear())
-              setQuickNavView("years")
-            }}
-          >
-            {children}
-            <ChevronDownIcon aria-hidden="true" className="size-4 text-muted-foreground" />
-          </Button>
+          <>
+            <Button
+              ref={captionButtonRef}
+              type="button"
+              variant="ghost"
+              data-slot="calendar-caption-button"
+              aria-expanded={false}
+              className={cn("h-(--cell-size) gap-1 px-2 select-none", className)}
+              onClick={() => {
+                setPendingYear(displayedMonthRef.current.getFullYear())
+                setQuickNavView("years")
+              }}
+            >
+              {children}
+              <ChevronDownIcon aria-hidden="true" className="size-4 text-muted-foreground" />
+            </Button>
+            {/* react-day-picker announces the month through its caption
+                (role="status"); a button cannot be a live region, so the
+                announcement gets its own hidden element. */}
+            {/* biome-ignore lint/a11y/useSemanticElements: <output> is for the result of a calculation; this announces the month shown. */}
+            <span role="status" aria-live="polite" className="sr-only">
+              {children}
+            </span>
+          </>
         ),
       }),
     }),
