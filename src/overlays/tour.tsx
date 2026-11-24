@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "../primitives/button"
 import { IconButton } from "../primitives/icon-button"
 import { motionPopover } from "./_internal/animations"
+import type { OverlayContentProps } from "./_internal/content-props"
 
 export type TourTarget = React.RefObject<HTMLElement | null> | string | (() => HTMLElement | null)
 
@@ -61,6 +62,13 @@ export interface TourProps {
   /** Show "2 de 5" in each step. @default true */
   showProgress?: boolean
   labels?: Partial<TourLabels>
+  /** The content panel (`[data-slot="tour-step"]`). */
+  ref?: React.Ref<HTMLDivElement>
+  /**
+   * Attributes for the content panel: `id`, `data-*`, `aria-*`, handlers.
+   * The overlay's own props win over these.
+   */
+  contentProps?: OverlayContentProps
 }
 
 const SPOTLIGHT_PADDING = 4
@@ -160,6 +168,8 @@ function Tour({
   spotlight = true,
   showProgress = true,
   labels,
+  ref,
+  contentProps,
 }: TourProps) {
   const l: TourLabels = { ...defaultTourLabels, ...labels }
   const [internalStep, setInternalStep] = React.useState(defaultStep)
@@ -296,6 +306,8 @@ function Tour({
         <PopoverPrimitive.Anchor virtualRef={virtualRef} />
         <PopoverPrimitive.Portal>
           <PopoverPrimitive.Content
+            {...contentProps}
+            ref={ref}
             data-slot="tour-step"
             data-step={index}
             aria-labelledby={titleId}

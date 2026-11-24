@@ -7,6 +7,7 @@ import * as React from "react"
 import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
 import { motionMenu } from "./_internal/animations"
+import type { OverlayContentProps } from "./_internal/content-props"
 import { useOverlayContainer } from "./_internal/overlay-container"
 import { asTriggerElement } from "./_internal/trigger-child"
 
@@ -131,6 +132,13 @@ export interface DropdownMenuProps {
   modal?: boolean
   /** Classes for the menu panel (e.g. a fixed width). */
   className?: string
+  /** The menu panel (`[data-slot="dropdown-menu-content"]`). */
+  ref?: React.Ref<HTMLDivElement>
+  /**
+   * Attributes for the menu panel: `id`, `data-*`, `aria-*`, handlers. The
+   * menu's own props win over these (its key and pointer handlers among them).
+   */
+  contentProps?: OverlayContentProps
 }
 
 const contentClass = cn(
@@ -428,6 +436,8 @@ function DropdownMenu({
   sideOffset = 4,
   modal = true,
   className,
+  ref,
+  contentProps,
 }: DropdownMenuProps) {
   // Inside a Dialog, AlertDialog or Sheet the menu renders into the modal (not
   // into <body>): see `OverlayContainerProvider`. `null`: the modal is still
@@ -465,6 +475,8 @@ function DropdownMenu({
               sideOffset={sideOffset}
               className={className}
               items={items}
+              contentRef={ref}
+              contentProps={contentProps}
             />
           </ModalityContext.Provider>
         </DropdownMenuPrimitive.Portal>
@@ -479,10 +491,19 @@ function MenuContent({
   sideOffset,
   className,
   items,
-}: Pick<DropdownMenuProps, "side" | "align" | "sideOffset" | "className" | "items">) {
+  contentRef,
+  contentProps,
+}: Pick<
+  DropdownMenuProps,
+  "side" | "align" | "sideOffset" | "className" | "items" | "contentProps"
+> & {
+  contentRef?: React.Ref<HTMLDivElement>
+}) {
   const modality = useMenuModality()
   return (
     <DropdownMenuPrimitive.Content
+      {...contentProps}
+      ref={contentRef}
       {...modality}
       data-slot="dropdown-menu-content"
       side={side}

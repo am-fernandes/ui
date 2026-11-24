@@ -5,6 +5,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { motionPopover } from "./_internal/animations"
+import type { OverlayContentProps } from "./_internal/content-props"
 import { useOverlayContainer } from "./_internal/overlay-container"
 import { asAnchorElement, asTriggerElement } from "./_internal/trigger-child"
 
@@ -43,6 +44,13 @@ export interface PopoverProps {
   onPointerDownOutside?: PopoverContentProps["onPointerDownOutside"]
   onFocusOutside?: PopoverContentProps["onFocusOutside"]
   onEscapeKeyDown?: PopoverContentProps["onEscapeKeyDown"]
+  /** The content panel (`[data-slot="popover-content"]`). */
+  ref?: React.Ref<HTMLDivElement>
+  /**
+   * Attributes for the content panel: `id`, `data-*`, `aria-*`, handlers.
+   * The overlay's own props win over these.
+   */
+  contentProps?: OverlayContentProps
 }
 
 function Popover({
@@ -64,6 +72,8 @@ function Popover({
   onPointerDownOutside,
   onFocusOutside,
   onEscapeKeyDown,
+  ref,
+  contentProps,
 }: PopoverProps) {
   // Inside a Dialog, AlertDialog or Sheet the content renders into the modal
   // (not into <body>), where the wheel and touch scrolling are not locked.
@@ -118,6 +128,8 @@ function Popover({
       {container === null ? null : (
         <PopoverPrimitive.Portal container={container}>
           <PopoverPrimitive.Content
+            {...contentProps}
+            ref={ref}
             data-slot="popover-content"
             align={align}
             side={side}

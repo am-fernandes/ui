@@ -5,8 +5,10 @@ import { Loader2 } from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useComposedRefs } from "../primitives/_internal/compose-refs"
 import { Button, type ButtonProps } from "../primitives/button"
 import { dialogContentBase, overlayBase } from "./_internal/animations"
+import type { OverlayContentProps } from "./_internal/content-props"
 import { modalBodyClass } from "./_internal/modal-body"
 import { useModalOpen, useReturnFocus } from "./_internal/modal-state"
 import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
@@ -48,6 +50,13 @@ export interface AlertDialogProps {
    */
   onCloseAutoFocus?: (event: Event) => void
   className?: string
+  /** The content panel (`[data-slot="alert-dialog-content"]`). */
+  ref?: React.Ref<HTMLDivElement>
+  /**
+   * Attributes for the content panel: `id`, `data-*`, `aria-*`, handlers.
+   * The overlay's own props win over these.
+   */
+  contentProps?: OverlayContentProps
 }
 
 // The look of a disabled `Button`, for one that keeps the focus.
@@ -76,6 +85,8 @@ function AlertDialog({
   children,
   onCloseAutoFocus,
   className,
+  ref,
+  contentProps,
 }: AlertDialogProps) {
   const [isOpen, handleOpenChange] = useModalOpen({ open, defaultOpen, onOpenChange })
   // Without a `trigger`, focus goes back to where it was when the dialog opened.
@@ -138,6 +149,7 @@ function AlertDialog({
   // The popovers, menus and tooltips opened inside the dialog render into its
   // content element (see `OverlayContainerProvider`).
   const [overlayContainer, contentRef] = useOverlayContainerState()
+  const composedContentRef = useComposedRefs(contentRef, ref)
 
   return (
     <AlertDialogPrimitive.Root open={isOpen} onOpenChange={handleOpenChange}>
@@ -149,7 +161,8 @@ function AlertDialog({
       <AlertDialogPrimitive.Portal>
         <AlertDialogPrimitive.Overlay data-slot="alert-dialog-overlay" className={overlayBase} />
         <AlertDialogPrimitive.Content
-          ref={contentRef}
+          {...contentProps}
+          ref={composedContentRef}
           data-slot="alert-dialog-content"
           // Without a description Radix still points here, at an id no element
           // has: leave the attribute out.

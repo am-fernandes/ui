@@ -4,7 +4,9 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useComposedRefs } from "../primitives/_internal/compose-refs"
 import { dialogContentBase, overlayBase } from "./_internal/animations"
+import type { OverlayContentProps } from "./_internal/content-props"
 import { modalBodyClass } from "./_internal/modal-body"
 import { DEFAULT_CLOSE_LABEL, ModalCloseButton, titleBesideClose } from "./_internal/modal-close"
 import {
@@ -70,6 +72,13 @@ export interface DialogProps {
   size?: "sm" | "md" | "lg" | "xl"
   /** Extra class on the content element. */
   className?: string
+  /** The content panel (`[data-slot="dialog-content"]`). */
+  ref?: React.Ref<HTMLDivElement>
+  /**
+   * Attributes for the content panel: `id`, `data-*`, `aria-*`, handlers.
+   * The overlay's own props win over these.
+   */
+  contentProps?: OverlayContentProps
 }
 
 const SIZE_CLASSES = {
@@ -95,6 +104,8 @@ function Dialog({
   onCloseAutoFocus,
   size = "md",
   className,
+  ref,
+  contentProps,
 }: DialogProps) {
   const showCloseButton = dismissible && !hideCloseButton
   const [isOpen, setOpen] = useModalOpen({ open, defaultOpen, onOpenChange })
@@ -107,6 +118,7 @@ function Dialog({
   // The popovers, menus and tooltips opened inside the dialog render into its
   // content element (see `OverlayContainerProvider`).
   const [overlayContainer, contentRef] = useOverlayContainerState()
+  const composedContentRef = useComposedRefs(contentRef, ref)
   const footerContent = renderModalFooter(footer, () => setOpen(false))
 
   return (
@@ -119,7 +131,8 @@ function Dialog({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay data-slot="dialog-overlay" className={overlayBase} />
         <DialogPrimitive.Content
-          ref={contentRef}
+          {...contentProps}
+          ref={composedContentRef}
           data-slot="dialog-content"
           // Without a description Radix still points here, at an id no element
           // has: leave the attribute out.

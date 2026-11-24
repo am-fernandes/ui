@@ -5,6 +5,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { motionTooltip } from "./_internal/animations"
+import type { OverlayContentProps } from "./_internal/content-props"
 import { useOverlayContainer } from "./_internal/overlay-container"
 import { asTooltipTarget } from "./_internal/trigger-child"
 
@@ -30,6 +31,13 @@ export interface TooltipProps {
   align?: "start" | "center" | "end"
   sideOffset?: number
   className?: string
+  /** The content panel (`[data-slot="tooltip-content"]`). */
+  ref?: React.Ref<HTMLDivElement>
+  /**
+   * Attributes for the content panel: `id`, `data-*`, `aria-*`, handlers.
+   * The overlay's own props win over these.
+   */
+  contentProps?: OverlayContentProps
 }
 
 function isDisabledElement(node: React.ReactNode) {
@@ -47,6 +55,8 @@ function Tooltip({
   align,
   sideOffset = 4,
   className,
+  ref,
+  contentProps,
 }: TooltipProps) {
   // Inside a Dialog, AlertDialog or Sheet the tooltip renders into the modal
   // (see `OverlayContainerProvider`). `null`: the modal is still mounting.
@@ -75,6 +85,8 @@ function Tooltip({
         {container === null ? null : (
           <TooltipPrimitive.Portal container={container}>
             <TooltipPrimitive.Content
+              {...contentProps}
+              ref={ref}
               data-slot="tooltip-content"
               side={side}
               align={align}
