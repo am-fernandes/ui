@@ -160,3 +160,39 @@ test.describe("Combobox: lista grande", () => {
     await expect(page.getByRole("combobox", { name: "Unidade" })).toHaveText(/Unidade 1999/)
   })
 })
+
+test.describe("DateInput: digitar", () => {
+  test("digitar 15031990 mostra 15/03/1990 e reporta 1990-03-15", async ({ page }) => {
+    await gotoStory(page, "forms-dateinput--default", "ISO: (vazio)")
+    const field = page.getByRole("textbox", { name: "Data de nascimento" })
+    await field.click()
+    await page.keyboard.type("15031990")
+    await expect(field).toHaveValue("15/03/1990")
+    await expect(page.getByText("ISO: 1990-03-15")).toBeVisible()
+
+    // Editing in the middle keeps the caret where it was.
+    await field.evaluate((el: HTMLInputElement) => el.setSelectionRange(5, 5))
+    await page.keyboard.press("Backspace")
+    await expect(field).toHaveValue("15/01/990")
+    expect(await field.evaluate((el: HTMLInputElement) => el.selectionStart)).toBe(4)
+    await page.keyboard.type("4")
+    await expect(field).toHaveValue("15/04/1990")
+    await expect(page.getByText("ISO: 1990-04-15")).toBeVisible()
+  })
+
+  test("o calendário abre no dia escolhido e Enter mantém a data", async ({ page }) => {
+    await gotoStory(page, "forms-dateinput--default", "ISO: (vazio)")
+    const field = page.getByRole("textbox", { name: "Data de nascimento" })
+    await field.fill("")
+    await field.pressSequentially("15031990")
+    await page.getByRole("button", { name: "Abrir calendário" }).click()
+    await expect(page.getByRole("grid", { name: /março 1990/i })).toBeVisible()
+    await expect(page.locator('button[data-day="1990-03-15"]')).toBeFocused()
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator('button[data-day="1990-03-16"]')).toBeFocused()
+    await page.keyboard.press("Enter")
+    await expect(page.getByRole("grid")).toHaveCount(0)
+    await expect(field).toHaveValue("16/03/1990")
+    await expect(page.getByText("ISO: 1990-03-16")).toBeVisible()
+  })
+})
