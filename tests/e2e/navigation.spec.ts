@@ -56,6 +56,58 @@ test.describe("Breadcrumb", () => {
   })
 })
 
+test.describe("CommandPalette", () => {
+  async function openPalette(page: Page, id: string) {
+    await page.goto(story(id))
+    await page.getByRole("button", { name: "Abrir paleta" }).click()
+    const palette = page.getByRole("dialog", { name: "Comandos" })
+    await expect(palette).toBeVisible()
+    return palette
+  }
+
+  for (const id of [
+    "navigation-commandpalette--with-icons",
+    "navigation-commandpalette--default",
+  ]) {
+    test(`the search field starts at the top of the palette: ${id}`, async ({ page }) => {
+      const palette = await openPalette(page, id)
+      // The dialog animates in: measure once it has settled.
+      await expect
+        .poll(async () => {
+          const dialog = (await palette.boundingBox())!
+          const field = (await palette.locator('[data-slot="command-input-wrap"]').boundingBox())!
+          return Math.round(field.y - dialog.y)
+        })
+        .toBeLessThanOrEqual(1)
+      // Still named and described for screen readers.
+      await expect(palette.getByRole("combobox", { name: "Comandos" })).toBeFocused()
+    })
+  }
+
+  test("keyboard: search without accents, arrows, Enter runs the item and closes", async ({
+    page,
+  }) => {
+    const palette = await openPalette(page, "navigation-commandpalette--default")
+    await page.keyboard.type("configuracoes")
+    await expect(palette.getByRole("option")).toHaveCount(1)
+    await expect(palette.getByRole("option", { name: "Configurações" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    )
+    await page.keyboard.press("Backspace")
+    await page.keyboard.press("Control+a")
+    await page.keyboard.press("Backspace")
+    await page.keyboard.press("ArrowDown")
+    await expect(palette.getByRole("option", { name: "Clientes" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    )
+    await page.keyboard.press("Enter")
+    await expect(page.getByRole("dialog")).toHaveCount(0)
+    await expect(page.getByRole("button", { name: "Abrir paleta" })).toBeFocused()
+  })
+})
+
 test.describe("AppShell", () => {
   test("menu header and navbar are both 64px and end on the same line", async ({ page }) => {
     await gotoShell(page, "navigation-appshell--default")

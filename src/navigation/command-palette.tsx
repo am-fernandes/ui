@@ -181,10 +181,13 @@ function CommandPalette({
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title={<span className="sr-only">{title}</span>}
-      description={description ? <span className="sr-only">{description}</span> : undefined}
+      title={title}
+      description={description || undefined}
       hideCloseButton
-      className="overflow-hidden p-0"
+      // Title and description are for screen readers only. Hiding their text
+      // was not enough: their empty rows and the gaps between them left a
+      // strip above the field. The elements themselves go out of the flow.
+      className="gap-0 overflow-hidden p-0 *:data-[slot=dialog-description]:sr-only *:data-[slot=dialog-title]:sr-only"
     >
       <CommandPrimitive
         data-slot="command-palette"
