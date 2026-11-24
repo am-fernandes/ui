@@ -357,11 +357,15 @@ test.describe("DataTable: telefone", () => {
     const parts = page.locator(
       '[data-slot="data-table-toolbar"] :is(input, button), [data-slot="data-table-footer"] :is(button, select, span)',
     )
+    // Only what is drawn: the Pagination keeps its compact layout in the DOM,
+    // hidden, for its container query, and hidden boxes measure 0 at x=0.
     const boxes = await parts.evaluateAll((elements) =>
-      elements.map((el) => {
-        const box = el.getBoundingClientRect()
-        return { left: box.left, right: box.right, width: box.width, text: el.textContent }
-      }),
+      elements
+        .map((el) => {
+          const box = el.getBoundingClientRect()
+          return { left: box.left, right: box.right, width: box.width, text: el.textContent }
+        })
+        .filter((box) => box.width > 1),
     )
     expect(boxes.length).toBeGreaterThan(5)
     for (const box of boxes) {
