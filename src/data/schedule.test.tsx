@@ -301,6 +301,25 @@ describe("Schedule", () => {
       expect(within(eventButton(/^Daily/)).queryByText("09:00 – 09:30")).not.toBeInTheDocument()
     })
 
+    it("caps events side by side and lists the rest under '+N'", async () => {
+      const many = Array.from({ length: 5 }, (_, i) => ({
+        id: `v${i}`,
+        title: `Visita ${i}`,
+        start: at(19, 10),
+        end: at(19, 11),
+      }))
+      const { container } = renderSchedule({ defaultView: "week", events: many, maxColumns: 3 })
+      const column = container.querySelector(
+        '[data-slot="schedule-day-column"][data-date="2026-11-19"]',
+      ) as HTMLElement
+      const blocks = column.querySelectorAll('[data-slot="schedule-event"]')
+      expect(blocks).toHaveLength(2)
+      expect((blocks[0] as HTMLElement).style.width).toMatch(/^calc\(33\.333\d*% - 4px\)$/)
+      const more = within(column).getByRole("button", { name: /^\+3 mais/ })
+      await userEvent.click(more)
+      expect(await screen.findAllByRole("button", { name: /^Visita/ })).toHaveLength(5)
+    })
+
     it("draws the current-time line on today's column", () => {
       const { container } = renderSchedule({ defaultView: "week" })
       const lines = container.querySelectorAll('[data-slot="schedule-now"]')

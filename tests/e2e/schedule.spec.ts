@@ -156,6 +156,26 @@ test.describe("Schedule — week and day", () => {
     expect(placed[1]?.top).toBeCloseTo(1, 0)
   })
 
+  test("many events at once keep readable blocks and the rest goes to '+N'", async ({ page }) => {
+    await gotoSchedule(page, "data-schedule--many-at-once")
+    const column = page.locator('[data-slot="schedule-day-column"][data-date="2026-11-19"]')
+    const blocks = column.locator('[data-slot="schedule-event"]')
+    await expect(blocks).toHaveCount(2)
+    const columnWidth = (await column.boundingBox())?.width ?? 0
+    for (const b of await blocks.all()) {
+      const width = (await b.boundingBox())?.width ?? 0
+      expect(width).toBeGreaterThanOrEqual(columnWidth / 3 - 5)
+    }
+    const more = column.getByRole("button", { name: /^\+5 mais/ })
+    await expect(more).toBeVisible()
+    expect((await more.boundingBox())?.height).toBeGreaterThanOrEqual(24)
+    await more.click()
+    const list = page.getByRole("dialog")
+    await expect(list.getByRole("button", { name: /^Visita/ })).toHaveCount(5)
+    await page.keyboard.press("Escape")
+    await expect(more).toBeFocused()
+  })
+
   test("switches views from the keyboard", async ({ page }) => {
     await gotoSchedule(page, "data-schedule--week")
     await page.getByRole("radio", { name: "Semana" }).focus()

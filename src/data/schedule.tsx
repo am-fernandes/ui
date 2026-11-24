@@ -112,6 +112,12 @@ export interface ScheduleProps {
   scrollToHour?: number
   /** Week/day views: height of one hour, in px. @default 48 */
   hourHeight?: number
+  /**
+   * Week/day views: most events side by side in a day column. When more
+   * happen at the same time, the last column shows "+N" with the rest, so
+   * the blocks never get too narrow to read. @default 3 in the week, 6 in the day
+   */
+  maxColumns?: number
   /** List view: days shown from `date`. @default 7 */
   listDays?: number
   /** Shows a spinner with "Carregando…" in the header and marks the body `aria-busy`. */
@@ -155,6 +161,7 @@ function Schedule({
   maxHour = 24,
   scrollToHour = 8,
   hourHeight = 48,
+  maxColumns,
   listDays = 7,
   loading = false,
   headingLevel = 2,
@@ -236,6 +243,8 @@ function Schedule({
         scrollToHour={scrollToHour}
         allDayLabel={l.allDay}
         todayLabel={l.today}
+        moreLabel={l.more}
+        maxColumns={maxColumns ?? (view === "day" ? 6 : 3)}
       />
     )
   }

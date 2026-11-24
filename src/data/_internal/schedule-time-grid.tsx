@@ -4,6 +4,7 @@ import { addDays, isSameDay } from "date-fns"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { Popover } from "../../overlays/popover"
 import {
   eventOverlapsDay,
   eventOverlapsRange,
@@ -13,7 +14,7 @@ import {
   weekdayShort,
 } from "./schedule-dates"
 import { ScheduleContext, ScheduleEventButton, type ScheduleEventData } from "./schedule-event"
-import { layoutDayColumn, layoutRow } from "./schedule-layout"
+import { type ColumnOverflow, layoutDayColumn, layoutRow, limitColumns } from "./schedule-layout"
 
 interface TimeGridViewProps {
   days: Date[]
@@ -24,6 +25,9 @@ interface TimeGridViewProps {
   scrollToHour: number
   allDayLabel: string
   todayLabel: string
+  moreLabel: (count: number) => string
+  /** Most events side by side in a day column; the rest go to a "+N". */
+  maxColumns: number
 }
 
 const GUTTER = "3.5rem"
@@ -40,6 +44,8 @@ export function TimeGridView({
   scrollToHour,
   allDayLabel,
   todayLabel,
+  moreLabel,
+  maxColumns,
 }: TimeGridViewProps) {
   const { now } = React.useContext(ScheduleContext)
   const scrollRef = React.useRef<HTMLDivElement>(null)
@@ -158,7 +164,10 @@ export function TimeGridView({
           {days.map((day) => {
             // A shift from 22:00 to 01:00 is drawn on both days, clipped to each.
             const timed = events.filter((e) => !isAllDayRowEvent(e) && eventOverlapsDay(e, day))
-            const placements = layoutDayColumn(timed, day, minHour, maxHour, hourHeight)
+            const { placements, overflows } = limitColumns(
+              layoutDayColumn(timed, day, minHour, maxHour, hourHeight),
+              maxColumns,
+            )
             const isToday = isSameDay(day, now)
             return (
               <div
@@ -186,6 +195,14 @@ export function TimeGridView({
                     }}
                   />
                 ))}
+                {overflows.map((overflow) => (
+                  <ColumnMore
+                    key={`more-${overflow.top}`}
+                    day={day}
+                    overflow={overflow}
+                    moreLabel={moreLabel}
+                  />
+                ))}
                 {isToday && nowVisible ? (
                   <div
                     aria-hidden="true"
@@ -202,5 +219,52 @@ export function TimeGridView({
         </div>
       </div>
     </div>
+  )
+}
+
+function ColumnMore({
+  day,
+  overflow,
+  moreLabel,
+}: {
+  day: Date
+  overflow: ColumnOverflow<ScheduleEventData>
+  moreLabel: (count: number) => string
+}) {
+  const label = moreLabel(overflow.events.length)
+  const dayLabel = formatDayLong(day)
+  return (
+    <Popover
+      trigger={
+        <button
+          type="button"
+          data-slot="schedule-more"
+          aria-label={`${label}, ${dayLabel}`}
+          className="absolute z-[1] h-6 cursor-pointer truncate rounded-inner border border-border-strong bg-card px-1 text-left text-xs font-medium text-muted-foreground state-layer hover:text-foreground focus-visible:focus-outline-inset"
+          style={{
+            top: overflow.top + 1,
+            left: `calc(${(overflow.column / overflow.columns) * 100}% + 2px)`,
+            width: `calc(${100 / overflow.columns}% - 4px)`,
+          }}
+        >
+          {label}
+        </button>
+      }
+      align="start"
+      collisionPadding={8}
+      aria-label={dayLabel}
+      className="w-64 p-2"
+    >
+      <p className="px-1 pb-1.5 text-xs font-medium text-muted-foreground first-letter:uppercase">
+        {dayLabel}
+      </p>
+      <ul className="flex flex-col gap-0.5">
+        {overflow.events.map((event) => (
+          <li key={event.id}>
+            <ScheduleEventButton event={event} variant="chip" />
+          </li>
+        ))}
+      </ul>
+    </Popover>
   )
 }

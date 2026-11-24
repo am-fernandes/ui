@@ -1,7 +1,7 @@
 import { addDays } from "date-fns"
 import { describe, expect, it } from "vitest"
 
-import { hiddenCountByColumn, layoutDayColumn, layoutRow } from "./schedule-layout"
+import { hiddenCountByColumn, layoutDayColumn, layoutRow, limitColumns } from "./schedule-layout"
 
 const d = (day: number, hour = 0, minute = 0) => new Date(2026, 10, day, hour, minute)
 const week = Array.from({ length: 7 }, (_, i) => addDays(d(15), i)) // dom. 15 → sáb. 21
@@ -161,7 +161,9 @@ describe("layoutDayColumn", () => {
       const [p] = layoutDayColumn([ev("visita", start, end)], day, 0, 24, 48)
       expect(p).toMatchObject({ top: 10 * 48, height: 48 })
     } finally {
-      process.env.TZ = original
+      // Assigning undefined would set the string "undefined" (UTC).
+      if (original === undefined) delete process.env.TZ
+      else process.env.TZ = original
     }
   })
 
@@ -171,5 +173,45 @@ describe("layoutDayColumn", () => {
     const [second] = layoutDayColumn([shift], d(19), 0, 24, 48)
     expect(first).toMatchObject({ top: 22 * 48, height: 2 * 48 })
     expect(second).toMatchObject({ top: 0, height: 48 })
+  })
+})
+
+describe("limitColumns", () => {
+  const visits = Array.from({ length: 10 }, (_, i) => ev(`v${i}`, d(18, 10), d(18, 11)))
+
+  it("keeps clusters within the limit as they are", () => {
+    const two = layoutDayColumn(visits.slice(0, 2), d(18), 0, 24, 48)
+    expect(limitColumns(two, 3)).toEqual({ placements: two, overflows: [] })
+  })
+
+  it("shows maxColumns - 1 columns and puts the rest in one '+N' at the cluster top", () => {
+    const all = layoutDayColumn(visits, d(18), 0, 24, 48)
+    const { placements, overflows } = limitColumns(all, 3)
+    expect(placements.map((p) => p.event.id)).toEqual(["v0", "v1"])
+    expect(placements.every((p) => p.columns === 3)).toBe(true)
+    expect(overflows).toHaveLength(1)
+    expect(overflows[0]).toMatchObject({ top: 10 * 48, column: 2, columns: 3 })
+    expect(overflows[0]?.events.map((e) => e.id)).toEqual([
+      "v2",
+      "v3",
+      "v4",
+      "v5",
+      "v6",
+      "v7",
+      "v8",
+      "v9",
+    ])
+  })
+
+  it("treats separate clusters separately", () => {
+    const morning = Array.from({ length: 4 }, (_, i) => ev(`m${i}`, d(18, 9), d(18, 10)))
+    const afternoon = [ev("a0", d(18, 15), d(18, 16))]
+    const { placements, overflows } = limitColumns(
+      layoutDayColumn([...morning, ...afternoon], d(18), 0, 24, 48),
+      3,
+    )
+    expect(overflows).toHaveLength(1)
+    const afternoonBlock = placements.find((p) => p.event.id === "a0")
+    expect(afternoonBlock).toMatchObject({ column: 0, columns: 1 })
   })
 })

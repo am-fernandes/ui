@@ -109,6 +109,8 @@ export interface TimedPlacement<E extends ScheduleEventInput> {
   column: number
   /** Columns in its overlap cluster. */
   columns: number
+  /** Overlap cluster it belongs to (events that overlap, directly or not). */
+  cluster: number
 }
 
 /**
@@ -168,8 +170,10 @@ export function layoutDayColumn<E extends ScheduleEventInput>(
   let cluster: Array<(typeof items)[number] & { column: number }> = []
   let columnEnds: number[] = []
   let clusterEnd = Number.NEGATIVE_INFINITY
+  let clusterIndex = 0
 
   const flush = () => {
+    if (cluster.length > 0) clusterIndex += 1
     for (const item of cluster) {
       result.push({
         event: item.event,
@@ -177,6 +181,7 @@ export function layoutDayColumn<E extends ScheduleEventInput>(
         height: Math.max((item.end - item.start) * pxPerMin, minHeight),
         column: item.column,
         columns: columnEnds.length,
+        cluster: clusterIndex,
       })
     }
     cluster = []
@@ -197,4 +202,51 @@ export function layoutDayColumn<E extends ScheduleEventInput>(
   }
   flush()
   return result
+}
+
+export interface ColumnOverflow<E extends ScheduleEventInput> {
+  /** Events of the cluster that did not get a column. */
+  events: E[]
+  /** Top of the cluster, in px. */
+  top: number
+  column: number
+  columns: number
+}
+
+/**
+ * Keeps blocks readable when many events happen at the same time: a cluster
+ * wider than `maxColumns` shows its first `maxColumns - 1` columns and a
+ * "+N" in the last one, listing the rest.
+ */
+export function limitColumns<E extends ScheduleEventInput>(
+  placements: TimedPlacement<E>[],
+  maxColumns: number,
+): { placements: TimedPlacement<E>[]; overflows: ColumnOverflow<E>[] } {
+  const max = Math.max(2, Math.floor(maxColumns))
+  const shown: TimedPlacement<E>[] = []
+  const overflowByCluster = new Map<number, ColumnOverflow<E>>()
+  for (const p of placements) {
+    if (p.columns <= max) {
+      shown.push(p)
+      continue
+    }
+    if (p.column < max - 1) {
+      shown.push({ ...p, columns: max })
+      continue
+    }
+    const overflow = overflowByCluster.get(p.cluster) ?? {
+      events: [],
+      top: Number.POSITIVE_INFINITY,
+      column: max - 1,
+      columns: max,
+    }
+    overflow.events.push(p.event)
+    overflowByCluster.set(p.cluster, overflow)
+  }
+  // The "+N" sits at the top of its cluster.
+  for (const p of placements) {
+    const overflow = overflowByCluster.get(p.cluster)
+    if (overflow) overflow.top = Math.min(overflow.top, p.top)
+  }
+  return { placements: shown, overflows: [...overflowByCluster.values()] }
 }

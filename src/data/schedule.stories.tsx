@@ -129,6 +129,30 @@ export const List: Story = {
   args: { defaultView: "list" },
 }
 
+const corretores = ["Ana", "Bruno", "Camila", "Diego", "Elisa", "Fábio", "Gabi"]
+
+export const ManyAtOnce: Story = {
+  name: "Many At Once",
+  args: {
+    defaultView: "week",
+    events: corretores.map((nome, i) => ({
+      id: `visita-${i}`,
+      title: `Visita — ${nome}`,
+      start: at(19, 10),
+      end: at(19, 11, 30),
+      color: "blue" as const,
+    })),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Sete visitas no mesmo horário. Na semana cabem até três lado a lado (`maxColumns`); a terceira coluna vira "+5 mais", que abre a lista. Assim nenhum bloco fica estreito demais para ler.',
+      },
+    },
+  },
+}
+
 export const WithEventDetails: Story = {
   args: {
     defaultView: "week",
