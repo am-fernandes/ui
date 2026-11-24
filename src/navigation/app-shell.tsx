@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import { motionSheet, overlayBase } from "../overlays/_internal/animations"
 import { Tooltip } from "../overlays/tooltip"
 import { type AppShellItem, AppShellNavItem } from "./_internal/app-shell-item"
+import { useStoredBoolean, writeStoredBoolean } from "./_internal/stored-boolean"
 
 export type { AppShellItem }
 
@@ -125,26 +126,6 @@ export function useAppShell(): AppShellState {
 const STORAGE_KEY = "amf-ui:sidebar:collapsed"
 const MAIN_ID = "conteudo"
 
-function readStoredCollapsed(fallback: boolean): boolean {
-  if (typeof window === "undefined") return fallback
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (stored === "true") return true
-    if (stored === "false") return false
-  } catch {
-    // Storage can be blocked (private mode, sandboxed iframes): use the default.
-  }
-  return fallback
-}
-
-function writeStoredCollapsed(value: boolean) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, String(value))
-  } catch {
-    // Storage can be blocked: the choice just won't survive a reload.
-  }
-}
-
 const iconButtonClass = cn(
   "inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-element transition-colors",
   "state-layer",
@@ -208,14 +189,16 @@ function AppShell({
 }: AppShellProps) {
   const l: AppShellLabels = { ...defaultAppShellLabels, ...labels }
   const isMobile = useIsMobile()
-  const [collapsed, setCollapsed] = React.useState(() => readStoredCollapsed(defaultCollapsed))
+  // The saved choice comes through an external store: the server and the
+  // hydrating render both see "nothing saved", so they agree; the saved value
+  // is applied right after hydration.
+  const stored = useStoredBoolean(STORAGE_KEY)
+  const collapsed = stored ?? defaultCollapsed
   const [menuOpen, setMenuOpen] = React.useState(false)
   const sidebarId = React.useId()
 
   const toggleCollapsed = () => {
-    const next = !collapsed
-    setCollapsed(next)
-    writeStoredCollapsed(next)
+    writeStoredBoolean(STORAGE_KEY, !collapsed)
   }
 
   const closeMenu = React.useCallback(() => setMenuOpen(false), [])
