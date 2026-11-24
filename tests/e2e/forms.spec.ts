@@ -22,11 +22,11 @@ async function gotoStory(page: Page, id: string, ready?: string) {
 }
 
 test.describe("Calendar", () => {
-  test("renders weekday grid in ptBR locale", async ({ page }) => {
-    await page.goto(story("forms-calendar--single"))
-    // ptBR weekday short labels (rendered by react-day-picker)
-    const grid = page.getByRole("grid").first()
+  test("renders the grid in ptBR, weeks starting on Sunday", async ({ page }) => {
+    await gotoStory(page, "forms-calendar--single", "Selecionado:")
+    const grid = page.getByRole("grid", { name: "junho 2025" })
     await expect(grid).toBeVisible()
+    await expect(grid.locator("thead th").first()).toHaveAttribute("aria-label", "domingo")
   })
 
   test("arrow keys, Home, End, PageUp and PageDown move the focus between days", async ({
@@ -131,60 +131,61 @@ test.describe("Calendar", () => {
   })
 
   test("disabledDays=past disables past dates", async ({ page }) => {
-    await page.goto(story("forms-calendar--disabled-past"))
-    // At least one button has aria-disabled=true
-    const disabledDay = page
-      .locator('[aria-disabled="true"][role="gridcell"], [role="gridcell"][aria-disabled="true"]')
-      .first()
-    await expect(disabledDay.or(page.locator(".rdp-day_disabled").first())).toBeVisible({
-      timeout: 3000,
-    })
+    // The story shows June 2025, all of it in the past.
+    await gotoStory(page, "forms-calendar--disabled-past")
+    const day = page.locator('button[data-day="2025-06-10"]')
+    await expect(day).toBeDisabled()
+    await expect(page.locator('[role="gridcell"][data-disabled="true"]').first()).toBeVisible()
+    await day.click({ force: true })
+    await expect(page.locator('[role="gridcell"][aria-selected="true"]')).toHaveCount(0)
   })
 })
 
 test.describe("Combobox", () => {
   test("opens, filters, selects an option", async ({ page }) => {
-    await page.goto(story("forms-combobox--default"))
-    const trigger = page.getByRole("combobox").first()
+    await gotoStory(page, "forms-combobox--default", "Selecione um status")
+    const trigger = page.getByRole("combobox", { name: "Status" })
     await trigger.click()
-    // Type to filter
-    const input = page.getByPlaceholder(/buscar/i)
-    await expect(input).toBeVisible()
-    await input.fill("são paulo")
-    // First matching item
-    const option = page.getByRole("option").first()
-    if (await option.isVisible()) {
-      await option.click()
-    }
+    const input = page.getByPlaceholder("Buscar...")
+    await expect(input).toBeFocused()
+    await input.fill("PEND")
+    await expect(page.getByRole("option")).toHaveText(["Pendente"])
+    await page.getByRole("option", { name: "Pendente" }).click()
+    await expect(page.getByRole("listbox")).toHaveCount(0)
+    await expect(trigger).toHaveText(/Pendente/)
+    await expect(trigger).toBeFocused()
   })
 })
 
 test.describe("DateInput", () => {
-  test("opens popover and selects a date", async ({ page }) => {
-    await page.goto(story("forms-dateinput--default"))
-    const trigger = page.getByRole("button").first()
-    await trigger.click()
-    const grid = page.getByRole("grid").first()
-    await expect(grid).toBeVisible({ timeout: 3000 })
-    // Click any non-outside day
-    const days = page.locator("button[data-day]")
-    await days.first().click()
-    // Popover should close after selection
-    await expect(grid).not.toBeVisible({ timeout: 3000 })
+  test("opens the calendar and selects a date", async ({ page }) => {
+    await gotoStory(page, "forms-dateinput--default", "ISO: (vazio)")
+    await page.getByRole("button", { name: "Abrir calendário" }).click()
+    const grid = page.getByRole("grid")
+    await expect(grid).toBeVisible()
+    const day = page.locator("button[data-day]").nth(9)
+    const iso = await day.getAttribute("data-day")
+    await day.click()
+    await expect(grid).toHaveCount(0)
+    await expect(page.getByText(`ISO: ${iso}`)).toBeVisible()
+    await expect(page.getByRole("button", { name: "Abrir calendário" })).toBeFocused()
   })
 })
 
 test.describe("Combobox dentro de Dialog", () => {
   test("wheel rola a lista do dropdown e mantém o dialog aberto", async ({ page }) => {
-    await page.goto(story("forms-combobox--inside-dialog"))
+    await gotoStory(page, "forms-combobox--inside-dialog", "Abrir dialog")
     await page.getByRole("button", { name: "Abrir dialog" }).click()
-    await page.getByRole("combobox").click()
+    // The popover content is also role="dialog": find the Dialog by name.
+    const dialog = page.getByRole("dialog", { name: "Escolher opção" })
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole("combobox").click()
     const list = page.getByRole("listbox")
     await expect(list).toBeVisible()
     await list.hover()
     await page.mouse.wheel(0, 200)
     await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
-    await expect(page.getByRole("dialog")).toBeVisible()
+    await expect(dialog).toBeVisible()
   })
 })
 
