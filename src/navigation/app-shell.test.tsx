@@ -323,6 +323,19 @@ describe("AppShell", () => {
       expect(window.localStorage.getItem(STORAGE_KEY)).toBe("true")
     })
 
+    it("keeps keyboard focus on the toggle when collapsing and expanding", async () => {
+      const { aside } = renderShell({ defaultCollapsed: false })
+      const toggle = within(aside).getByRole("button", { name: "Recolher menu" })
+      toggle.focus()
+      await userEvent.keyboard("{Enter}")
+      expect(aside).toHaveAttribute("data-state", "collapsed")
+      expect(document.activeElement).toBe(toggle)
+      expect(toggle).toHaveAccessibleName("Expandir menu")
+      await userEvent.keyboard("{Enter}")
+      expect(aside).toHaveAttribute("data-state", "expanded")
+      expect(document.activeElement).toBe(toggle)
+    })
+
     it("points the collapse button at the menu it controls", () => {
       const { aside } = renderShell()
       const button = within(aside).getByRole("button", { name: "Expandir menu" })

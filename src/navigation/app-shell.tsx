@@ -205,6 +205,7 @@ function AppShell({
   const stored = useStoredBoolean(STORAGE_KEY)
   const collapsed = stored ?? defaultCollapsed
   const [menuOpen, setMenuOpen] = React.useState(false)
+  const [collapseTipOpen, setCollapseTipOpen] = React.useState(false)
   const sidebarId = React.useId()
 
   const toggleCollapsed = () => {
@@ -328,13 +329,17 @@ function AppShell({
           </nav>
 
           <div className="border-t px-3 py-2">
-            {collapsed ? (
-              <Tooltip content={l.expand} side="right">
-                {collapseButton}
-              </Tooltip>
-            ) : (
-              collapseButton
-            )}
+            {/* The same wrapper in both states: swapping it would remount the
+                button and throw keyboard focus to the page body. The tooltip
+                only opens on the rail, where the label is hidden. */}
+            <Tooltip
+              content={l.expand}
+              side="right"
+              open={collapsed && collapseTipOpen}
+              onOpenChange={setCollapseTipOpen}
+            >
+              {collapseButton}
+            </Tooltip>
           </div>
 
           {footer ? (

@@ -105,6 +105,18 @@ test.describe("AppShell", () => {
     await expect.poll(async () => (await aside.boundingBox())?.width).toBe(256)
   })
 
+  test("collapsing and expanding from the keyboard keeps focus on the toggle", async ({ page }) => {
+    await gotoShell(page, "navigation-appshell--default")
+    const aside = page.locator('aside[data-slot="app-shell-sidebar"]')
+    await page.getByRole("button", { name: "Recolher menu" }).focus()
+    await page.keyboard.press("Enter")
+    await expect(aside).toHaveAttribute("data-state", "collapsed")
+    await expect(page.getByRole("button", { name: "Expandir menu" })).toBeFocused()
+    await page.keyboard.press("Enter")
+    await expect(aside).toHaveAttribute("data-state", "expanded")
+    await expect(page.getByRole("button", { name: "Recolher menu" })).toBeFocused()
+  })
+
   test("collapsed rail shows the item label as a tooltip", async ({ page }) => {
     await gotoShell(page, "navigation-appshell--collapsed")
     await page.getByRole("link", { name: "Calculadora" }).hover()
