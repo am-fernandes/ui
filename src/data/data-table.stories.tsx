@@ -5,6 +5,7 @@ import { useState } from "react"
 
 import { DropdownMenu } from "../overlays/dropdown-menu"
 import { Badge } from "../primitives/badge"
+import { Button } from "../primitives/button"
 import { IconButton } from "../primitives/icon-button"
 import { dateColumn } from "./columns"
 import { DataTable } from "./data-table"
@@ -423,6 +424,48 @@ export const PinnedColumns: Story = {
       description: {
         story:
           '`pinnedColumns={{ left: ["numero", "cliente"] }}`: as colunas listadas vão para a esquerda e ficam no lugar quando a tabela rola para o lado, com uma linha depois da última.',
+      },
+    },
+  },
+}
+
+export const Selectable: Story = {
+  render: () => {
+    function Wrapper() {
+      const [archived, setArchived] = useState<string[]>([])
+      return (
+        <div className="space-y-2 p-6">
+          <p className="text-muted-foreground text-xs" data-testid="selection-state">
+            Arquivados:{" "}
+            <strong className="text-foreground">{archived.join(", ") || "nenhum"}</strong>
+          </p>
+          <DataTable
+            aria-label="Contratos"
+            columns={columns}
+            data={contratos}
+            getRowId={(row) => row.numero}
+            selectable
+            defaultSelectedRowIds={["C-2026-002"]}
+            pagination={{ pageSize: 5 }}
+            selectionActions={(ids) => (
+              <Button size="sm" variant="outline" onClick={() => setArchived(ids)}>
+                Arquivar
+              </Button>
+            )}
+          />
+        </div>
+      )
+    }
+    return <Wrapper />
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: [
+          "`selectable` põe uma caixa por linha (com o nome da linha) e uma no cabeçalho, que seleciona a página e mostra o estado misto. A seleção é uma lista de ids (`getRowId`), então sobrevive à troca de página.",
+          "",
+          '`selectionActions={(ids) => ...}` aparece numa barra acima da tabela, com a contagem e "Limpar seleção", enquanto há algo selecionado. Controle com `selectedRowIds` + `onSelectionChange`, ou comece com `defaultSelectedRowIds`.',
+        ].join("\n"),
       },
     },
   },

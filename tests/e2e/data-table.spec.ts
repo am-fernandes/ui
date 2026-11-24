@@ -296,3 +296,50 @@ test.describe("DataTable: colunas fixas", () => {
     expect(hit).toBe("Empresa A")
   })
 })
+
+test.describe("DataTable: seleção", () => {
+  test("caixas com alvo de 24px, estado misto e ações da seleção", async ({ page }) => {
+    await gotoTable(page, "data-datatable--selectable")
+    const row = page.getByRole("checkbox", { name: "Selecionar C-2026-001" })
+    const target = await row.evaluate((el) => {
+      const box = el.getBoundingClientRect()
+      const before = getComputedStyle(el, "::before")
+      return {
+        box: [box.width, box.height],
+        target: [
+          box.width - 2 * Number.parseFloat(before.left),
+          box.height - 2 * Number.parseFloat(before.top),
+        ],
+      }
+    })
+    expect(target.box).toEqual([16, 16])
+    expect(target.target).toEqual([24, 24])
+
+    const all = page.getByRole("checkbox", { name: "Selecionar todas as linhas da página" })
+    await expect(all).toHaveAttribute("aria-checked", "mixed")
+    await page.mouse.click(
+      ...((await row.boundingBox().then((b) => [(b?.x ?? 0) - 3, (b?.y ?? 0) - 3])) as [
+        number,
+        number,
+      ]),
+    )
+    await expect(row).toBeChecked()
+    await expect(page.getByText("2 selecionados")).toBeVisible()
+    await page.getByRole("button", { name: "Arquivar" }).click()
+    await expect(page.getByTestId("selection-state")).toContainText("C-2026-002, C-2026-001")
+  })
+
+  test("em cores forçadas, a linha selecionada tem contorno", async ({ page }) => {
+    await page.emulateMedia({ forcedColors: "active" })
+    await gotoTable(page, "data-datatable--selectable")
+    const selected = page.getByRole("row").filter({ hasText: "C-2026-002" })
+    await expect(selected).toHaveAttribute("data-state", "selected")
+    const outline = await selected.evaluate((el) => {
+      const style = getComputedStyle(el)
+      return { style: style.outlineStyle, width: style.outlineWidth }
+    })
+    expect(outline).toEqual({ style: "solid", width: "2px" })
+    const other = page.getByRole("row").filter({ hasText: "C-2026-003" })
+    expect(await other.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("none")
+  })
+})

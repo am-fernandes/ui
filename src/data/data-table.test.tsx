@@ -462,6 +462,147 @@ describe("DataTable", () => {
     })
   })
 
+  describe("row selection", () => {
+    interface Cliente {
+      id: string
+      nome: string
+    }
+    const clienteCols: ColumnDef<Cliente>[] = [{ accessorKey: "nome", header: "Nome" }]
+    const clientes: Cliente[] = ["Ana", "Bia", "Caio", "Davi", "Edu"].map((nome, i) => ({
+      id: `c${i + 1}`,
+      nome,
+    }))
+
+    it("adds a checkbox per row, named after the row, and a header checkbox", () => {
+      render(<DataTable columns={clienteCols} data={clientes} selectable />)
+      expect(
+        screen.getByRole("checkbox", { name: "Selecionar todas as linhas da página" }),
+      ).not.toBeChecked()
+      for (const nome of ["Ana", "Bia", "Caio"]) {
+        expect(screen.getByRole("checkbox", { name: `Selecionar ${nome}` })).not.toBeChecked()
+      }
+    })
+
+    it("selects rows, marks them and shows the bar with the count and the actions", async () => {
+      const onSelectionChange = vi.fn()
+      render(
+        <DataTable
+          columns={clienteCols}
+          data={clientes}
+          getRowId={(row) => row.id}
+          selectable
+          onSelectionChange={onSelectionChange}
+          selectionActions={(ids) => <button type="button">Arquivar {ids.join(",")}</button>}
+        />,
+      )
+      expect(screen.queryByText(/selecionad/)).not.toBeInTheDocument()
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Bia" }))
+      expect(onSelectionChange).toHaveBeenLastCalledWith(["c2"])
+      expect(screen.getByText("Bia").closest("tr")).toHaveAttribute("data-state", "selected")
+      expect(screen.getByText("1 selecionado")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Arquivar c2" })).toBeInTheDocument()
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Davi" }))
+      expect(onSelectionChange).toHaveBeenLastCalledWith(["c2", "c4"])
+      expect(screen.getByText("2 selecionados")).toBeInTheDocument()
+      await userEvent.click(screen.getByRole("button", { name: "Limpar seleção" }))
+      expect(onSelectionChange).toHaveBeenLastCalledWith([])
+      expect(screen.queryByText(/selecionad/)).not.toBeInTheDocument()
+    })
+
+    it("shows the mixed state in the header and selects the whole page from it", async () => {
+      const onSelectionChange = vi.fn()
+      render(
+        <DataTable
+          columns={clienteCols}
+          data={clientes}
+          getRowId={(row) => row.id}
+          selectable
+          onSelectionChange={onSelectionChange}
+          pagination={{ pageSize: 2 }}
+        />,
+      )
+      const all = screen.getByRole("checkbox", { name: "Selecionar todas as linhas da página" })
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Ana" }))
+      expect(all).toHaveAttribute("aria-checked", "mixed")
+      await userEvent.click(all)
+      expect(all).toBeChecked()
+      expect(onSelectionChange).toHaveBeenLastCalledWith(["c1", "c2"])
+      await userEvent.click(all)
+      expect(all).not.toBeChecked()
+      expect(onSelectionChange).toHaveBeenLastCalledWith([])
+    })
+
+    it("keeps the selection across pages, by id", async () => {
+      const onSelectionChange = vi.fn()
+      render(
+        <DataTable
+          columns={clienteCols}
+          data={clientes}
+          getRowId={(row) => row.id}
+          selectable
+          onSelectionChange={onSelectionChange}
+          pagination={{ pageSize: 2 }}
+        />,
+      )
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Ana" }))
+      await userEvent.click(screen.getByRole("button", { name: "Página 2" }))
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Caio" }))
+      expect(onSelectionChange).toHaveBeenLastCalledWith(["c1", "c3"])
+      expect(
+        screen.getByRole("checkbox", { name: "Selecionar todas as linhas da página" }),
+      ).toHaveAttribute("aria-checked", "mixed")
+      await userEvent.click(screen.getByRole("button", { name: "Página 1" }))
+      expect(screen.getByRole("checkbox", { name: "Selecionar Ana" })).toBeChecked()
+      expect(screen.getByText("2 selecionados")).toBeInTheDocument()
+    })
+
+    it("works controlled (selectedRowIds) and from defaultSelectedRowIds", async () => {
+      const onSelectionChange = vi.fn()
+      const { rerender } = render(
+        <DataTable
+          columns={clienteCols}
+          data={clientes}
+          getRowId={(row) => row.id}
+          selectable
+          selectedRowIds={["c3"]}
+          onSelectionChange={onSelectionChange}
+        />,
+      )
+      expect(screen.getByRole("checkbox", { name: "Selecionar Caio" })).toBeChecked()
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Ana" }))
+      expect(onSelectionChange).toHaveBeenLastCalledWith(["c3", "c1"])
+      // Controlled: nothing changes until the parent passes the new list.
+      expect(screen.getByRole("checkbox", { name: "Selecionar Ana" })).not.toBeChecked()
+      rerender(
+        <DataTable
+          columns={clienteCols}
+          data={clientes}
+          getRowId={(row) => row.id}
+          selectable
+          defaultSelectedRowIds={["c5"]}
+          key="uncontrolled"
+        />,
+      )
+      expect(screen.getByRole("checkbox", { name: "Selecionar Edu" })).toBeChecked()
+    })
+
+    it("does not open a clickable row from its checkbox, and keeps the row button on the data", async () => {
+      const onRowClick = vi.fn()
+      render(<DataTable columns={clienteCols} data={clientes} selectable onRowClick={onRowClick} />)
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Ana" }))
+      expect(onRowClick).not.toHaveBeenCalled()
+      expect(screen.getByRole("button", { name: "Ana" })).toBeInTheDocument()
+    })
+
+    it("leaves the checkbox column out of the export", async () => {
+      render(<DataTable columns={clienteCols} data={clientes} selectable downloadable />)
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
+      const [, , , sheet] = exportCall()
+      expect(sheet.headers).toEqual(["Nome"])
+    })
+  })
+
   describe("pinned columns", () => {
     interface Pedido {
       numero: string

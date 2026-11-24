@@ -29,6 +29,12 @@ import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
 import { columnMeta, valueToText } from "./_internal/column-meta"
 import {
+  SELECTION_COLUMN_ID,
+  type SelectionContextValue,
+  SelectionProvider,
+  selectionColumn,
+} from "./_internal/data-table-selection"
+import {
   type ExportSheet,
   type ExportValue,
   downloadSheet,
@@ -86,6 +92,8 @@ function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElem
       data-slot="table-row"
       className={cn(
         "border-b transition-colors hover:state-hover data-[state=selected]:bg-accent data-[state=selected]:text-accent-foreground",
+        // Forced colours drop the fill: a selected row keeps a system outline.
+        "forced-colors:data-[state=selected]:outline-2 forced-colors:data-[state=selected]:-outline-offset-2 forced-colors:data-[state=selected]:outline-[Highlight]",
         className,
       )}
       {...props}
@@ -171,6 +179,14 @@ export interface DataTableLabels {
   error: string
   /** The button that calls `onRetry`. */
   retry: string
+  /** Name of the header checkbox (`selectable`): it selects the rows of the page. */
+  selectPage: string
+  /** Name of a row's checkbox, from the text of the row's first column. */
+  selectRow: (rowText: string) => string
+  /** Count in the selection bar. */
+  selectedCount: (count: number) => string
+  /** The selection bar's button that clears the selection. */
+  clearSelection: string
 }
 
 const numberFormatter = new Intl.NumberFormat("pt-BR")
@@ -207,6 +223,11 @@ export const defaultDataTableLabels: DataTableLabels = {
   exportError: "Não foi possível exportar os dados. Tente de novo.",
   error: "Não foi possível carregar os dados.",
   retry: "Tentar de novo",
+  selectPage: "Selecionar todas as linhas da página",
+  selectRow: (rowText) => `Selecionar ${rowText}`,
+  selectedCount: (count) =>
+    count === 1 ? "1 selecionado" : `${numberFormatter.format(count)} selecionados`,
+  clearSelection: "Limpar seleção",
 }
 
 export interface DataTableProps<TData>
@@ -267,6 +288,26 @@ export interface DataTableProps<TData>
    * Default: on when `maxHeight` is set.
    */
   stickyHeader?: boolean
+  /**
+   * Adds a checkbox column: one per row (named after the row's first column)
+   * and one in the header that selects the rows of the page, with the mixed
+   * state when only some are. The selection is a list of row ids
+   * (`getRowId`, or the index), so it survives paging, sorting and server
+   * pages; selected rows are marked (`data-state="selected"`).
+   */
+  selectable?: boolean
+  /** Selected row ids, controlled. */
+  selectedRowIds?: string[]
+  /** Selected row ids on the first render, uncontrolled. */
+  defaultSelectedRowIds?: string[]
+  /** Called with every id selected after a change, in the order they were picked. */
+  onSelectionChange?: (rowIds: string[]) => void
+  /**
+   * Actions for the selected rows ("Arquivar", "Exportar"): shown in a bar
+   * above the table, with the count and a button to clear the selection,
+   * while something is selected.
+   */
+  selectionActions?: (rowIds: string[]) => React.ReactNode
   /**
    * Columns that stay in place while the table scrolls sideways, by id or
    * `accessorKey`: `{ left: ["numero", "cliente.nome"] }`. They move to the
@@ -591,6 +632,11 @@ function DataTable<TData>({
   maxHeight,
   stickyHeader,
   pinnedColumns,
+  selectable = false,
+  selectedRowIds,
+  defaultSelectedRowIds,
+  onSelectionChange,
+  selectionActions,
   pagination,
   showRowCount = false,
   globalFilter: globalFilterProp,
@@ -730,17 +776,45 @@ function DataTable<TData>({
     [searchableSet],
   )
 
-  const pinnedLeftKey = pinnedColumns?.left?.join("\u0000") ?? ""
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the joined names are the change signal for the list.
-  const pinnedLeftIds = React.useMemo(
-    () => resolveColumnIds(columns, pinnedColumns?.left),
-    [columns, pinnedLeftKey],
+  // Row selection, a list of row ids. Controlled by `selectedRowIds`.
+  const isSelectionControlled = selectedRowIds !== undefined
+  const [internalSelection, setInternalSelection] = React.useState<string[]>(
+    () => defaultSelectedRowIds ?? [],
   )
+  const selection = isSelectionControlled ? selectedRowIds : internalSelection
+  const selectionRef = React.useRef(selection)
+  selectionRef.current = selection
+  const setSelected = React.useCallback(
+    (rowIds: string[], selected: boolean) => {
+      const prev = selectionRef.current
+      const next = selected
+        ? [...prev, ...rowIds.filter((id) => !prev.includes(id))]
+        : prev.filter((id) => !rowIds.includes(id))
+      if (next.length === prev.length && next.every((id, index) => id === prev[index])) return
+      selectionRef.current = next
+      if (!isSelectionControlled) setInternalSelection(next)
+      onSelectionChange?.(next)
+    },
+    [isSelectionControlled, onSelectionChange],
+  )
+  const selectedSet = React.useMemo(() => new Set(selection), [selection])
+  const tableColumns = React.useMemo(
+    () => (selectable ? [selectionColumn<TData>(), ...columns] : columns),
+    [selectable, columns],
+  )
+
+  const pinnedLeftKey = pinnedColumns?.left?.join("\u0000") ?? ""
+  // The checkbox column, when there is one, is pinned in front of the others.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the joined names are the change signal for the list.
+  const pinnedLeftIds = React.useMemo(() => {
+    const ids = resolveColumnIds(columns, pinnedColumns?.left)
+    return selectable && ids.length > 0 ? [SELECTION_COLUMN_ID, ...ids] : ids
+  }, [columns, pinnedLeftKey, selectable])
 
   const tableOptions = React.useMemo(
     () => ({
       data,
-      columns,
+      columns: tableColumns,
       state: {
         sorting,
         columnFilters,
@@ -803,6 +877,7 @@ function DataTable<TData>({
     [
       data,
       columns,
+      tableColumns,
       sorting,
       columnFilters,
       globalFilter,
@@ -996,6 +1071,33 @@ function DataTable<TData>({
     ...table.getLeftVisibleLeafColumns(),
     ...table.getCenterVisibleLeafColumns(),
   ]
+
+  // The first column with data: its cell holds the row's action button
+  // (`onRowClick`) and its text names the row's checkbox.
+  const firstDataColumn = orderedLeafColumns.find(
+    (column) => column.id !== SELECTION_COLUMN_ID && column.accessorFn != null,
+  )
+  const rowActionColumnId = orderedLeafColumns.find(
+    (column) => column.id !== SELECTION_COLUMN_ID,
+  )?.id
+  const pageRows = loading || hasError ? [] : table.getRowModel().rows
+  const rowText = (rowId: string): string => {
+    const row = pageRows.find((candidate) => candidate.id === rowId)
+    if (!row || !firstDataColumn) return rowId
+    const value = row.getValue(firstDataColumn.id)
+    const meta = columnMeta<TData>(firstDataColumn.columnDef.meta)
+    const text = (
+      meta.searchText ? meta.searchText(row.original, value) : valueToText(value)
+    ).trim()
+    return text === "" ? String(row.index + 1) : text
+  }
+  const selectionContext: SelectionContextValue = {
+    isSelected: (rowId) => selectedSet.has(rowId),
+    setSelected,
+    pageIds: pageRows.map((row) => row.id),
+    rowCheckboxLabel: (rowId) => mergedLabels.selectRow(rowText(rowId)),
+    pageCheckboxLabel: mergedLabels.selectPage,
+  }
 
   // Totals and other footers: `columnDef.footer` of any column.
   const hasFooter = table.getAllFlatColumns().some((column) => column.columnDef.footer != null)
@@ -1238,232 +1340,258 @@ function DataTable<TData>({
         </p>
       ) : null}
 
-      <div className="overflow-hidden rounded-container border border-border-strong bg-card">
-        <Table
-          aria-label={ariaLabelProp}
-          aria-labelledby={ariaLabelledBy}
-          containerStyle={maxHeight != null ? { maxHeight } : undefined}
-          containerRef={scrollRef}
+      {selectable && selection.length > 0 ? (
+        <div
+          data-slot="data-table-selection-bar"
+          className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-container border border-border-strong bg-muted px-3 py-2"
         >
-          {caption != null ? (
-            <caption
-              data-slot="data-table-caption"
-              className="px-3 py-2.5 text-left text-sm text-muted-foreground"
-            >
-              {caption}
-            </caption>
+          <span className="text-sm font-medium">
+            {mergedLabels.selectedCount(selection.length)}
+          </span>
+          {selectionActions ? (
+            <div className="flex flex-wrap items-center gap-2">{selectionActions(selection)}</div>
           ) : null}
-          <TableHeader
-            className={cn(
-              isStickyHeader &&
-                // A collapsed border does not travel with a sticky header: each
-                // th draws the line itself, in the border colour.
-                "sticky top-0 z-10 bg-card [&_tr]:border-b-0 [&_th]:relative [&_th]:after:pointer-events-none [&_th]:after:absolute [&_th]:after:inset-x-0 [&_th]:after:bottom-0 [&_th]:after:h-px [&_th]:after:bg-border",
-            )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
+            onClick={() => setSelected(selection, false)}
           >
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  // Only a leaf header sorts: a group header ("Cliente" over two
-                  // columns) and the empty cell above a plain column do not.
-                  const isLeafHeader = !header.isPlaceholder && header.subHeaders.length === 0
-                  const canSort =
-                    isLeafHeader && (sortableColumns?.includes(header.column.id) ?? false)
-                  const sorted = header.column.getIsSorted()
-                  const ariaSort: "ascending" | "descending" | "none" =
-                    sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"
-                  const headerDef = header.column.columnDef.header
-                  const headerText = typeof headerDef === "string" ? headerDef : header.id
-                  // The button is named by what it shows, so the column header
-                  // reads "Número", not "Ordenar por Número", on every cell;
-                  // the action is its description (a hidden node is still read
-                  // as a description, and stays out of the header's name).
-                  const sortHintId = `${idBase}-sort-${header.id}`
-                  const pin = pinFor(leafIdOf(header), "head")
-                  return (
-                    <TableHead
-                      key={header.id}
-                      data-column-id={isLeafHeader ? header.column.id : undefined}
-                      data-pinned={pin["data-pinned"]}
-                      style={pin.style}
-                      className={cn(
-                        headDensity,
-                        isLeafHeader && alignClass(header.column.id),
-                        pin.className,
-                      )}
-                      colSpan={header.colSpan > 1 ? header.colSpan : undefined}
-                      scope={header.colSpan > 1 ? "colgroup" : "col"}
-                      aria-sort={canSort ? ariaSort : undefined}
-                    >
-                      {header.isPlaceholder ? null : canSort ? (
-                        <button
-                          type="button"
-                          onClick={header.column.getToggleSortingHandler()}
-                          className="-mx-2 inline-flex h-8 items-center gap-2 rounded-element px-2 text-left cursor-pointer transition-colors state-layer focus-visible:focus-outline-inset"
-                          aria-describedby={sortHintId}
-                        >
-                          <span id={sortHintId} hidden>
-                            {mergedLabels.sortBy(headerText)}
-                          </span>
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {sorted === "asc" ? (
-                            <ArrowUp className="size-3.5" aria-hidden />
-                          ) : sorted === "desc" ? (
-                            <ArrowDown className="size-3.5" aria-hidden />
-                          ) : (
-                            <ArrowUpDown className="size-3.5 opacity-50" aria-hidden />
-                          )}
-                        </button>
-                      ) : (
-                        flexRender(header.column.columnDef.header, header.getContext())
-                      )}
-                    </TableHead>
-                  )
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <>
-                {Array.from({ length: skeletonRowCount }).map((_, rowIdx) => (
-                  <TableRow
-                    // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows are positional and identityless
-                    key={`skeleton-${rowIdx}`}
-                    data-slot="data-table-skeleton-row"
-                  >
-                    {orderedLeafColumns.map((column, colIdx) => (
-                      <TableCell
-                        key={`skeleton-${rowIdx}-${column.id}`}
-                        {...pinFor(column.id, "body")}
-                        className={cn(cellDensity, pinFor(column.id, "body").className)}
-                      >
-                        <div
-                          className={cn(
-                            "h-5 animate-pulse rounded-inner bg-primary/10",
-                            SKELETON_CELL_WIDTHS[(rowIdx + colIdx) % SKELETON_CELL_WIDTHS.length],
-                          )}
-                        />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </>
-            ) : hasError ? (
-              <TableRow data-slot="data-table-error-row">
-                <TableCell colSpan={table.getVisibleLeafColumns().length} className="h-24">
-                  <div className="flex flex-col items-center justify-center gap-3 text-center">
-                    <div
-                      role="alert"
-                      data-slot="data-table-error"
-                      className="text-destructive-text"
-                    >
-                      {error === true ? mergedLabels.error : error}
-                    </div>
-                    {onRetry ? (
-                      <Button type="button" variant="outline" onClick={onRetry}>
-                        {mergedLabels.retry}
-                      </Button>
-                    ) : null}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : table.getRowModel().rows.length > 0 ? (
-              table.getRowModel().rows.map((row, index) => {
-                const interactive = onRowClick != null
-                return (
-                  // The row stays a row (a `role="button"` would flatten it and
-                  // its cells into one button). Mouse users click anywhere on
-                  // it; keyboard and assistive tech reach the same action
-                  // through the real button in the first cell.
-                  <TableRow
-                    key={row.id}
-                    className={cn(
-                      pinnedLeftIds.length > 0 && "bg-card",
-                      interactive &&
-                        "cursor-pointer has-[[data-row-action]:focus-visible]:state-hover",
-                      rowClassName?.(row.original, index),
-                    )}
-                    onClick={
-                      interactive
-                        ? (event) => {
-                            if (isOwnRowClick(event)) onRowClick(row.original, event)
-                          }
-                        : undefined
-                    }
-                  >
-                    {row.getVisibleCells().map((cell, cellIndex) => {
-                      const content = flexRender(cell.column.columnDef.cell, cell.getContext())
-                      const pin = pinFor(cell.column.id, "body")
-                      return (
-                        <TableCell
-                          key={cell.id}
-                          data-pinned={pin["data-pinned"]}
-                          style={pin.style}
-                          className={cn(cellDensity, alignClass(cell.column.id), pin.className)}
-                        >
-                          {interactive && cellIndex === 0 ? (
-                            <button
-                              type="button"
-                              data-slot="data-table-row-action"
-                              data-row-action=""
-                              className="-mx-1 cursor-pointer rounded-inner px-1 text-left focus-visible:focus-outline"
-                            >
-                              {content}
-                            </button>
-                          ) : (
-                            content
-                          )}
-                        </TableCell>
-                      )
-                    })}
-                  </TableRow>
-                )
-              })
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={table.getVisibleLeafColumns().length}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  {resolvedEmptyMessage}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-          {hasFooter && !loading && !hasError ? (
-            <TableFooter>
-              {table
-                .getFooterGroups()
-                .filter((group) =>
-                  group.headers.some(
-                    (header) => !header.isPlaceholder && header.column.columnDef.footer != null,
-                  ),
-                )
-                .map((group) => (
-                  <tr key={group.id} data-slot="table-footer-row" className="border-b">
-                    {group.headers.map((header) => (
-                      <TableCell
+            {mergedLabels.clearSelection}
+          </Button>
+        </div>
+      ) : null}
+
+      <SelectionProvider value={selectable ? selectionContext : null}>
+        <div className="overflow-hidden rounded-container border border-border-strong bg-card">
+          <Table
+            aria-label={ariaLabelProp}
+            aria-labelledby={ariaLabelledBy}
+            containerStyle={maxHeight != null ? { maxHeight } : undefined}
+            containerRef={scrollRef}
+          >
+            {caption != null ? (
+              <caption
+                data-slot="data-table-caption"
+                className="px-3 py-2.5 text-left text-sm text-muted-foreground"
+              >
+                {caption}
+              </caption>
+            ) : null}
+            <TableHeader
+              className={cn(
+                isStickyHeader &&
+                  // A collapsed border does not travel with a sticky header: each
+                  // th draws the line itself, in the border colour.
+                  "sticky top-0 z-10 bg-card [&_tr]:border-b-0 [&_th]:relative [&_th]:after:pointer-events-none [&_th]:after:absolute [&_th]:after:inset-x-0 [&_th]:after:bottom-0 [&_th]:after:h-px [&_th]:after:bg-border",
+              )}
+            >
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    // Only a leaf header sorts: a group header ("Cliente" over two
+                    // columns) and the empty cell above a plain column do not.
+                    const isLeafHeader = !header.isPlaceholder && header.subHeaders.length === 0
+                    const canSort =
+                      isLeafHeader && (sortableColumns?.includes(header.column.id) ?? false)
+                    const sorted = header.column.getIsSorted()
+                    const ariaSort: "ascending" | "descending" | "none" =
+                      sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"
+                    const headerDef = header.column.columnDef.header
+                    const headerText = typeof headerDef === "string" ? headerDef : header.id
+                    // The button is named by what it shows, so the column header
+                    // reads "Número", not "Ordenar por Número", on every cell;
+                    // the action is its description (a hidden node is still read
+                    // as a description, and stays out of the header's name).
+                    const sortHintId = `${idBase}-sort-${header.id}`
+                    const pin = pinFor(leafIdOf(header), "head")
+                    return (
+                      <TableHead
                         key={header.id}
-                        {...pinFor(leafIdOf(header), "foot")}
+                        data-column-id={isLeafHeader ? header.column.id : undefined}
+                        data-pinned={pin["data-pinned"]}
+                        style={pin.style}
                         className={cn(
-                          cellDensity,
-                          header.subHeaders.length === 0 && alignClass(header.column.id),
-                          pinFor(leafIdOf(header), "foot").className,
+                          headDensity,
+                          isLeafHeader && alignClass(header.column.id),
+                          pin.className,
                         )}
                         colSpan={header.colSpan > 1 ? header.colSpan : undefined}
+                        scope={header.colSpan > 1 ? "colgroup" : "col"}
+                        aria-sort={canSort ? ariaSort : undefined}
                       >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.footer, header.getContext())}
-                      </TableCell>
-                    ))}
-                  </tr>
-                ))}
-            </TableFooter>
-          ) : null}
-        </Table>
-      </div>
+                        {header.isPlaceholder ? null : canSort ? (
+                          <button
+                            type="button"
+                            onClick={header.column.getToggleSortingHandler()}
+                            className="-mx-2 inline-flex h-8 items-center gap-2 rounded-element px-2 text-left cursor-pointer transition-colors state-layer focus-visible:focus-outline-inset"
+                            aria-describedby={sortHintId}
+                          >
+                            <span id={sortHintId} hidden>
+                              {mergedLabels.sortBy(headerText)}
+                            </span>
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {sorted === "asc" ? (
+                              <ArrowUp className="size-3.5" aria-hidden />
+                            ) : sorted === "desc" ? (
+                              <ArrowDown className="size-3.5" aria-hidden />
+                            ) : (
+                              <ArrowUpDown className="size-3.5 opacity-50" aria-hidden />
+                            )}
+                          </button>
+                        ) : (
+                          flexRender(header.column.columnDef.header, header.getContext())
+                        )}
+                      </TableHead>
+                    )
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <>
+                  {Array.from({ length: skeletonRowCount }).map((_, rowIdx) => (
+                    <TableRow
+                      // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows are positional and identityless
+                      key={`skeleton-${rowIdx}`}
+                      data-slot="data-table-skeleton-row"
+                    >
+                      {orderedLeafColumns.map((column, colIdx) => (
+                        <TableCell
+                          key={`skeleton-${rowIdx}-${column.id}`}
+                          {...pinFor(column.id, "body")}
+                          className={cn(cellDensity, pinFor(column.id, "body").className)}
+                        >
+                          <div
+                            className={cn(
+                              "h-5 animate-pulse rounded-inner bg-primary/10",
+                              SKELETON_CELL_WIDTHS[(rowIdx + colIdx) % SKELETON_CELL_WIDTHS.length],
+                            )}
+                          />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </>
+              ) : hasError ? (
+                <TableRow data-slot="data-table-error-row">
+                  <TableCell colSpan={table.getVisibleLeafColumns().length} className="h-24">
+                    <div className="flex flex-col items-center justify-center gap-3 text-center">
+                      <div
+                        role="alert"
+                        data-slot="data-table-error"
+                        className="text-destructive-text"
+                      >
+                        {error === true ? mergedLabels.error : error}
+                      </div>
+                      {onRetry ? (
+                        <Button type="button" variant="outline" onClick={onRetry}>
+                          {mergedLabels.retry}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows.length > 0 ? (
+                table.getRowModel().rows.map((row, index) => {
+                  const interactive = onRowClick != null
+                  return (
+                    // The row stays a row (a `role="button"` would flatten it and
+                    // its cells into one button). Mouse users click anywhere on
+                    // it; keyboard and assistive tech reach the same action
+                    // through the real button in the first cell.
+                    <TableRow
+                      key={row.id}
+                      data-state={selectable && selectedSet.has(row.id) ? "selected" : undefined}
+                      className={cn(
+                        pinnedLeftIds.length > 0 && "bg-card",
+                        interactive &&
+                          "cursor-pointer has-[[data-row-action]:focus-visible]:state-hover",
+                        rowClassName?.(row.original, index),
+                      )}
+                      onClick={
+                        interactive
+                          ? (event) => {
+                              if (isOwnRowClick(event)) onRowClick(row.original, event)
+                            }
+                          : undefined
+                      }
+                    >
+                      {row.getVisibleCells().map((cell) => {
+                        const content = flexRender(cell.column.columnDef.cell, cell.getContext())
+                        const pin = pinFor(cell.column.id, "body")
+                        return (
+                          <TableCell
+                            key={cell.id}
+                            data-pinned={pin["data-pinned"]}
+                            style={pin.style}
+                            className={cn(cellDensity, alignClass(cell.column.id), pin.className)}
+                          >
+                            {interactive && cell.column.id === rowActionColumnId ? (
+                              <button
+                                type="button"
+                                data-slot="data-table-row-action"
+                                data-row-action=""
+                                className="-mx-1 cursor-pointer rounded-inner px-1 text-left focus-visible:focus-outline"
+                              >
+                                {content}
+                              </button>
+                            ) : (
+                              content
+                            )}
+                          </TableCell>
+                        )
+                      })}
+                    </TableRow>
+                  )
+                })
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={table.getVisibleLeafColumns().length}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    {resolvedEmptyMessage}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+            {hasFooter && !loading && !hasError ? (
+              <TableFooter>
+                {table
+                  .getFooterGroups()
+                  .filter((group) =>
+                    group.headers.some(
+                      (header) => !header.isPlaceholder && header.column.columnDef.footer != null,
+                    ),
+                  )
+                  .map((group) => (
+                    <tr key={group.id} data-slot="table-footer-row" className="border-b">
+                      {group.headers.map((header) => (
+                        <TableCell
+                          key={header.id}
+                          {...pinFor(leafIdOf(header), "foot")}
+                          className={cn(
+                            cellDensity,
+                            header.subHeaders.length === 0 && alignClass(header.column.id),
+                            pinFor(leafIdOf(header), "foot").className,
+                          )}
+                          colSpan={header.colSpan > 1 ? header.colSpan : undefined}
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.footer, header.getContext())}
+                        </TableCell>
+                      ))}
+                    </tr>
+                  ))}
+              </TableFooter>
+            ) : null}
+          </Table>
+        </div>
+      </SelectionProvider>
 
       {paginationEnabled || showRowCount ? (
         // Tight footer: `-mt-1` trims the parent `gap-3` to 8px, plus `pt-1`
