@@ -121,6 +121,9 @@ function Tabs({
             data-slot="tabs-trigger"
             className={cn(
               "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-inner px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer state-layer focus-visible:focus-outline-inset disabled:pointer-events-none disabled:cursor-default disabled:opacity-50 data-[state=active]:bg-card data-[state=active]:text-foreground",
+              // The active tab is a lighter fill; forced colours drop fills,
+              // so it gets a system-coloured border there.
+              "forced-colors:border forced-colors:border-transparent forced-colors:data-[state=active]:border-[Highlight]",
             )}
           >
             {item.label}

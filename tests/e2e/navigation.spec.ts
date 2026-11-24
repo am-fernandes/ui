@@ -45,6 +45,20 @@ test.describe("Tabs", () => {
     await expect(page.getByRole("tabpanel")).toContainText("Resumo da conta")
   })
 
+  test("in forced colours the active tab is still told apart", async ({ page }) => {
+    await page.emulateMedia({ forcedColors: "active" })
+    await page.goto(story("navigation-tabs--without-default"))
+    const active = page.getByRole("tab", { selected: true })
+    await expect(active).toBeVisible({ timeout: 15_000 })
+    const other = page.getByRole("tab", { selected: false }).first()
+    const border = (el: Element) => {
+      const cs = getComputedStyle(el)
+      return `${cs.borderTopStyle} ${cs.borderTopColor}`
+    }
+    expect(await active.evaluate(border)).not.toBe(await other.evaluate(border))
+    await page.emulateMedia({ forcedColors: "none" })
+  })
+
   // `navigation-tabs--default` has a play function that clicks a tab itself;
   // these use a story without one so the two never race.
   test("clicking trigger switches content", async ({ page }) => {
