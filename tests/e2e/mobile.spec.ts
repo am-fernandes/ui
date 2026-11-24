@@ -8,6 +8,7 @@
  *   - Tabs do not break layout when the trigger list is wider than the viewport.
  *   - Select opens and chooses by touch, with the list inside the screen.
  *   - NumberInput uses 16px text on touch (iOS zooms into smaller fields).
+ *   - Slider takes a tap on its track.
  *
  * These specs are scoped to `mobile-chromium` in `playwright.config.ts`.
  */
@@ -179,5 +180,16 @@ test.describe("NumberInput (mobile)", () => {
     await expect(field).toHaveAttribute("inputmode", "numeric")
     await page.getByRole("button", { name: "Aumentar" }).tap()
     await expect(field).toHaveValue("3")
+  })
+})
+
+test.describe("Slider (mobile)", () => {
+  test("a tap on the track moves the thumb there", async ({ page }) => {
+    await page.goto(story("primitives-slider--with-value"))
+    const thumb = page.getByRole("slider", { name: "Área mínima" })
+    await expect(thumb).toBeVisible({ timeout: 15_000 })
+    const track = (await page.locator('[data-slot="slider"]').boundingBox())!
+    await page.touchscreen.tap(track.x + track.width * 0.76, track.y + track.height / 2)
+    await expect(thumb).toHaveAttribute("aria-valuenow", "380")
   })
 })

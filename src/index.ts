@@ -294,6 +294,15 @@ export {
   type NumberInputProps,
 } from "./primitives/number-input"
 export {
+  defaultSliderLabels,
+  Slider,
+  type SliderLabels,
+  type SliderMark,
+  type SliderProps,
+  type SliderRangeProps,
+  type SliderSingleProps,
+} from "./primitives/slider"
+export {
   RadioGroup,
   type RadioGroupItemData,
   type RadioGroupProps,
