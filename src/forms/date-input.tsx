@@ -6,7 +6,11 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { type MaskSpec, applyEdit, applyPaste } from "../domain/_internal/masked-input"
 import { Popover } from "../overlays/popover"
-import { controlHeight, controlPaddingX } from "../primitives/_internal/control-size"
+import {
+  type ControlSize,
+  controlHeight,
+  controlPaddingX,
+} from "../primitives/_internal/control-size"
 import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { assignRef } from "./_internal/assign-ref"
@@ -44,6 +48,14 @@ export const defaultDateInputLabels: DateInputLabels = {
   beforeMin: (min) => `A data deve ser a partir de ${min}.`,
   afterMax: (max) => `A data deve ser até ${max}.`,
   unavailableDate: "Esta data não está disponível.",
+}
+
+// The calendar button sits 4px inside the field's border, and the text stops
+// before it.
+const calendarButtonClasses: Record<ControlSize, { button: string; input: string }> = {
+  sm: { button: "size-6", input: "pr-8" },
+  md: { button: "size-8", input: "pr-11" },
+  lg: { button: "size-9", input: "pr-12" },
 }
 
 const dateSpec: MaskSpec = {
@@ -122,6 +134,12 @@ export interface DateInputProps {
    * not apply.
    */
   readOnly?: boolean
+  /**
+   * Height of the field: `sm` 32px, `md` 40px, `lg` 44px, the same as a
+   * button or input of that size.
+   * @default "md"
+   */
+  size?: ControlSize
   /** Texts of the field. Defaults in `defaultDateInputLabels`. */
   labels?: Partial<DateInputLabels>
   "aria-label"?: string
@@ -155,6 +173,7 @@ function DateInput({
   name,
   onBlur,
   readOnly = false,
+  size = "md",
   "aria-label": ariaLabel,
   ref,
 }: DateInputProps) {
@@ -301,7 +320,10 @@ function DateInput({
       aria-label={l.openCalendar}
       disabled={disabled}
       data-slot="date-input-calendar-button"
-      className="absolute top-1/2 right-1 inline-flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-inner text-muted-foreground state-layer focus-visible:focus-outline disabled:pointer-events-none disabled:cursor-default"
+      className={cn(
+        "absolute top-1/2 right-1 inline-flex -translate-y-1/2 cursor-pointer items-center justify-center rounded-inner text-muted-foreground state-layer focus-visible:focus-outline disabled:pointer-events-none disabled:cursor-default",
+        calendarButtonClasses[size].button,
+      )}
     >
       <CalendarIcon aria-hidden="true" className="size-4" />
     </button>
@@ -378,10 +400,10 @@ function DateInput({
             // 16px on touch screens: iOS zooms the page into a focused field
             // whose text is smaller.
             "flex w-full rounded-element border border-input bg-card text-sm pointer-coarse:text-base tabular-nums field-states disabled:cursor-default",
-            controlHeight.md,
-            controlPaddingX.md,
+            controlHeight[size],
+            controlPaddingX[size],
             // Room for the calendar button.
-            !readOnly && "pr-11",
+            !readOnly && calendarButtonClasses[size].input,
             hasError && "border-destructive-text field-error",
             // Read-only: a muted box that does not answer to hover (important,
             // so it also wins over the hover tint of `field-error`).

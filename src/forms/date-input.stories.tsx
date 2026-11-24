@@ -137,6 +137,24 @@ export const ReadOnly: Story = {
   ),
 }
 
+export const Sizes: Story = {
+  args: { value: "" },
+  parameters: {
+    docs: {
+      description: {
+        story: "`size` dá a altura do campo: `sm` 32 px, `md` 40 px (padrão) e `lg` 44 px.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex w-[280px] flex-col gap-4">
+      {(["sm", "md", "lg"] as const).map((size) => (
+        <DateInput key={size} size={size} label={`Tamanho ${size}`} defaultValue="2025-03-14" />
+      ))}
+    </div>
+  ),
+}
+
 export const MinMax: Story = {
   name: "Min Max",
   args: { value: "" },

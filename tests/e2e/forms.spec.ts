@@ -448,3 +448,24 @@ test.describe("DateInput: somente leitura", () => {
     await expect(page.getByRole("button", { name: "Abrir calendário" })).toHaveCount(0)
   })
 })
+
+test.describe("DateInput: tamanhos", () => {
+  test("sm, md e lg medem 32, 40 e 44 px, com o botão do calendário dentro da caixa", async ({
+    page,
+  }) => {
+    await gotoStory(page, "forms-dateinput--sizes", "Tamanho lg")
+    const heights = { sm: 32, md: 40, lg: 44 }
+    for (const [size, height] of Object.entries(heights)) {
+      const field = page.getByRole("textbox", { name: `Tamanho ${size}` })
+      const box = await field.boundingBox()
+      expect(box?.height, size).toBeCloseTo(height, 0)
+      const button = field.locator("xpath=..").getByRole("button", { name: "Abrir calendário" })
+      const buttonBox = await button.boundingBox()
+      if (!box || !buttonBox) throw new Error("no box")
+      expect(buttonBox.width).toBeGreaterThanOrEqual(24)
+      expect(buttonBox.y).toBeGreaterThan(box.y)
+      expect(buttonBox.y + buttonBox.height).toBeLessThan(box.y + box.height)
+      expect(buttonBox.x + buttonBox.width).toBeLessThan(box.x + box.width)
+    }
+  })
+})

@@ -387,6 +387,15 @@ describe("DateInput", () => {
     )
   })
 
+  it("size sets the field's height from the control sizes (md by default)", () => {
+    const { rerender } = render(<DateInput label="Data" value="" />)
+    expect(input().className).toContain("h-control-md")
+    rerender(<DateInput label="Data" value="" size="sm" />)
+    expect(input().className).toContain("h-control-sm")
+    rerender(<DateInput label="Data" value="" size="lg" />)
+    expect(input().className).toContain("h-control-lg")
+  })
+
   it("forwards the ref to the text field", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<DateInput value="" ref={ref} />)
