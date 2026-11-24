@@ -210,6 +210,9 @@ function Slider(props: SliderProps) {
             <span
               data-slot="slider-value"
               aria-hidden="true"
+              // Text of an inactive control (WCAG 1.4.3 exception), dimmed
+              // with it; this is how axe knows.
+              aria-disabled={disabled ? true : undefined}
               className="text-sm tabular-nums text-foreground"
             >
               {shown}

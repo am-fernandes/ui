@@ -169,12 +169,6 @@ test.describe("Slider — accessibility", () => {
     const thumb = page.getByRole("slider", { name: "Área mínima" })
     await expect(thumb).toHaveAttribute("aria-disabled", "true")
     await expect(thumb).not.toHaveAttribute("tabindex")
-    // The dimmed readout is text of an inactive component (WCAG 1.4.3
-    // exception). axe exempts the label, which names the disabled thumb, but
-    // cannot tie the aria-hidden readout to it.
-    await expectNoA11yViolations(page, {
-      include: [['[data-slot="slider-field"]']],
-      exclude: [['[data-slot="slider-value"]']],
-    })
+    await expectNoA11yViolations(page, '[data-slot="slider-field"]')
   })
 })
