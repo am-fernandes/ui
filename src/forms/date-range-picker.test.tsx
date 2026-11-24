@@ -90,6 +90,14 @@ describe("DateRangePicker", () => {
     expect(grids.length).toBeGreaterThan(0)
   })
 
+  it("opens on the month of the saved range, not on the current month", async () => {
+    render(<Controlled initial={{ from: "2025-01-01", to: "2025-01-31" }} />)
+    const trigger = screen.getByText(/01\/01\/2025/).closest("button")
+    if (!trigger) throw new Error("trigger not found")
+    await userEvent.click(trigger)
+    expect(await screen.findByRole("grid", { name: /janeiro 2025/i })).toBeInTheDocument()
+  })
+
   it("does not open the popover when disabled", async () => {
     render(
       <DateRangePicker label="X" value={{ from: "", to: "" }} onValueChange={() => {}} disabled />,

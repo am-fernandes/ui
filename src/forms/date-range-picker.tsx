@@ -170,6 +170,8 @@ function DateRangePicker({
           selected={pendingRange}
           onSelect={handleSelect}
           numberOfMonths={numberOfMonths}
+          // Open on the saved range, not on the current month.
+          defaultMonth={fromDate ?? toDate}
           // Hide previous/next-month days inside each calendar pane.
           // Otherwise the range_end day (e.g. June 1) renders twice when the
           // range spans two months: once as range_end in its own pane, and

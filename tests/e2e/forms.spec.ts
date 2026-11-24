@@ -469,3 +469,15 @@ test.describe("DateInput: tamanhos", () => {
     }
   })
 })
+
+test.describe("DateRangePicker", () => {
+  test("abre no mês do período salvo", async ({ page }) => {
+    await gotoStory(page, "forms-daterangepicker--controlled", "Janeiro/2025")
+    await page.getByRole("button", { name: "Janeiro/2025" }).click()
+    await page
+      .getByRole("button", { name: /Período/ })
+      .first()
+      .click()
+    await expect(page.getByRole("grid", { name: /janeiro 2025/i })).toBeVisible()
+  })
+})
