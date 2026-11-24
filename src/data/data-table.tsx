@@ -44,6 +44,8 @@ import {
 import { tableStyles } from "./table-styles"
 
 export type { DataTableColumnMeta } from "./_internal/column-meta"
+// The TanStack types the props use, so consumers need no transitive import.
+export type { ColumnDef, PaginationState, SortingState } from "@tanstack/react-table"
 
 // Internal Table primitives, drawn with `tableStyles()` so a raw <table>
 // styled with it looks the same as a DataTable.
@@ -201,6 +203,13 @@ export const defaultDataTableLabels: DataTableLabels = {
   scrollRegion: "Tabela com rolagem",
 }
 
+/**
+ * A column id in `searchableColumns`, `sortableColumns`: the editor suggests
+ * the row's own keys, and any other id (`"cliente.nome"`, an `id` you gave
+ * a column) is accepted.
+ */
+export type DataTableColumnKey<TData> = (keyof TData & string) | (string & {})
+
 export interface DataTableProps<TData>
   extends Omit<
     React.HTMLAttributes<HTMLDivElement>,
@@ -216,8 +225,11 @@ export interface DataTableProps<TData>
    * column's `meta.searchText` (filled by `dateColumn` and `formattedColumn`)
    * or the value as a string. With a controlled `globalFilter` and no list,
    * every visible column is searched.
+   *
+   * Entries are column ids: a column's `id`, or its `accessorKey` (nested
+   * keys as written, `"cliente.nome"`, or as TanStack's id, `"cliente_nome"`).
    */
-  searchableColumns?: string[]
+  searchableColumns?: DataTableColumnKey<TData>[]
   /**
    * Whitelist of column ids (typically `accessorKey`) whose headers are sortable.
    * When omitted, **no** header is sortable. Mirrors the `searchableColumns`
@@ -226,8 +238,10 @@ export interface DataTableProps<TData>
    * Text sorts in Portuguese order (accents and case ignored, "Bloco 2" before
    * "Bloco 10"), numbers by value and dates by time. A column's own
    * `sortingFn` still wins.
+   *
+   * Entries are column ids, as in `searchableColumns`.
    */
-  sortableColumns?: string[]
+  sortableColumns?: DataTableColumnKey<TData>[]
   /** Placeholder for the search input. */
   searchPlaceholder?: string
   /**
@@ -737,9 +751,20 @@ function DataTable<TData>({
 
   // Which columns the search reads: the ones in `searchableColumns`, or every
   // visible column with data when the list is not given.
+  const searchableKey = searchableColumns?.join("\u0000") ?? ""
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the joined names are the change signal for the list.
   const searchableSet = React.useMemo(
-    () => (searchableColumns && searchableColumns.length > 0 ? new Set(searchableColumns) : null),
-    [searchableColumns],
+    () =>
+      searchableColumns && searchableColumns.length > 0
+        ? new Set(resolveColumnIds(columns, searchableColumns))
+        : null,
+    [columns, searchableKey],
+  )
+  const sortableKey = sortableColumns?.join("\u0000") ?? ""
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the joined names are the change signal for the list.
+  const sortableSet = React.useMemo(
+    () => new Set(resolveColumnIds(columns, sortableColumns)),
+    [columns, sortableKey],
   )
   const getColumnCanGlobalFilter = React.useCallback(
     (column: Column<TData, unknown>) =>
@@ -782,6 +807,19 @@ function DataTable<TData>({
     return selectable && ids.length > 0 ? [SELECTION_COLUMN_ID, ...ids] : ids
   }, [columns, pinnedLeftKey, selectable])
 
+  // `meta.exportOnly` columns (inside groups too, nested keys included) are
+  // hidden from the screen but kept for the export.
+  const exportOnlyVisibility = React.useMemo(
+    () =>
+      Object.fromEntries(
+        leafColumnDefs(columns).flatMap((def) => {
+          const id = columnDefId(def)
+          return id && columnMeta(def.meta).exportOnly === true ? [[id, false]] : []
+        }),
+      ),
+    [columns],
+  )
+
   const tableOptions = React.useMemo(
     () => ({
       data,
@@ -795,20 +833,7 @@ function DataTable<TData>({
         // rendered table but kept in `getAllLeafColumns()` so the xlsx
         // export still includes them.
         columnPinning: { left: pinnedLeftIds, right: [] },
-        columnVisibility: Object.fromEntries(
-          columns
-            .filter((col) => {
-              const meta = (col as { meta?: { exportOnly?: boolean } }).meta
-              return meta?.exportOnly === true
-            })
-            .map((col) => [
-              ((col as { id?: string; accessorKey?: string }).id ??
-                (col as { accessorKey?: string }).accessorKey ??
-                "") as string,
-              false,
-            ])
-            .filter(([id]) => id !== ""),
-        ),
+        columnVisibility: exportOnlyVisibility,
       },
       onSortingChange: handleSortingChange,
       manualSorting,
@@ -866,6 +891,7 @@ function DataTable<TData>({
       getColumnCanGlobalFilter,
       getRowId,
       pinnedLeftIds,
+      exportOnlyVisibility,
     ],
   )
 
@@ -1403,8 +1429,7 @@ function DataTable<TData>({
                     // Only a leaf header sorts: a group header ("Cliente" over two
                     // columns) and the empty cell above a plain column do not.
                     const isLeafHeader = !header.isPlaceholder && header.subHeaders.length === 0
-                    const canSort =
-                      isLeafHeader && (sortableColumns?.includes(header.column.id) ?? false)
+                    const canSort = isLeafHeader && sortableSet.has(header.column.id)
                     const sorted = header.column.getIsSorted()
                     const ariaSort: "ascending" | "descending" | "none" =
                       sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"

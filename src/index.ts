@@ -11,11 +11,15 @@ export { Card, type CardProps } from "./data/card"
 export {
   DataTable,
   defaultDataTableLabels,
+  type ColumnDef,
+  type DataTableColumnKey,
   type DataTableColumnMeta,
   type DataTableDownloadable,
   type DataTableLabels,
   type DataTableProps,
   type ExportScope,
+  type PaginationState,
+  type SortingState,
 } from "./data/data-table"
 export {
   dateColumn,

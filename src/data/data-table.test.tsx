@@ -62,6 +62,10 @@ const data: Row[] = [
 ]
 
 describe("DataTable", () => {
+  beforeEach(() => {
+    downloadSheetMock.mockClear()
+  })
+
   it("renders headers and rows", () => {
     render(<DataTable columns={columns} data={data} />)
     expect(screen.getByText("Name")).toBeInTheDocument()
@@ -719,6 +723,52 @@ describe("DataTable", () => {
       for (const token of t.head.split(" ")) {
         expect(screen.getByRole("columnheader", { name: "Name" })).toHaveClass(token)
       }
+    })
+  })
+
+  describe("column ids", () => {
+    interface Venda {
+      cliente: { nome: string; cpf: string }
+      valor: number
+    }
+    const vendaCols: ColumnDef<Venda>[] = [
+      { accessorKey: "cliente.nome", header: "Cliente" },
+      { accessorKey: "cliente.cpf", header: "CPF", meta: { exportOnly: true } },
+      { accessorKey: "valor", header: "Valor" },
+    ]
+    const vendas: Venda[] = [
+      { cliente: { nome: "Zélia", cpf: "111" }, valor: 1 },
+      { cliente: { nome: "Ana", cpf: "222" }, valor: 2 },
+    ]
+
+    it.each([["cliente.nome"], ["cliente_nome"]])(
+      "accepts %s in searchableColumns and sortableColumns",
+      async (key) => {
+        render(
+          <DataTable
+            columns={vendaCols}
+            data={vendas}
+            searchableColumns={[key]}
+            sortableColumns={[key]}
+          />,
+        )
+        await userEvent.click(screen.getByRole("button", { name: "Cliente" }))
+        expect(screen.getAllByRole("row")[1]).toHaveTextContent("Ana")
+        await userEvent.type(screen.getByRole("textbox", { name: "Buscar na tabela" }), "zelia")
+        expect(screen.getByText("Zélia")).toBeInTheDocument()
+        expect(screen.queryByText("Ana")).not.toBeInTheDocument()
+      },
+    )
+
+    it("hides an exportOnly column with a nested key, and still exports it", async () => {
+      render(<DataTable columns={vendaCols} data={vendas} downloadable />)
+      expect(screen.queryByRole("columnheader", { name: "CPF" })).not.toBeInTheDocument()
+      expect(screen.queryByText("111")).not.toBeInTheDocument()
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
+      const [, , , sheet] = exportCall()
+      expect(sheet.headers).toEqual(["Cliente", "CPF", "Valor"])
+      expect(sheet.rows[0]).toEqual(["Zélia", "111", 1])
     })
   })
 

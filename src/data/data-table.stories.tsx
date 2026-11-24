@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import type { ColumnDef, PaginationState } from "@tanstack/react-table"
 import { MoreHorizontal } from "lucide-react"
 import { useState } from "react"
+import type { ColumnDef, PaginationState } from "./data-table"
 
 import { DropdownMenu } from "../overlays/dropdown-menu"
 import { Badge } from "../primitives/badge"
@@ -176,9 +176,9 @@ const meta = {
           "Tabela rica baseada em [`@tanstack/react-table`](https://tanstack.com/table/latest) e nos primitives `Table*` do DS. Suporta busca global escopada (`searchableColumns`), ordenação por coluna, paginação opcional e props controladas para uso server-side.",
           "",
           "**Props:**",
-          "- `columns: ColumnDef<TData>[]` — definição das colunas (tipo do `@tanstack/react-table`).",
+          '- `columns: ColumnDef<TData>[]` — definição das colunas (tipo do `@tanstack/react-table`, reexportado pela lib: `import type { ColumnDef } from "@amfernandesinc/ui"`).',
           "- `data: TData[]` — array de linhas. `TData` é o seu tipo de domínio.",
-          '- `searchableColumns?: string[]` — `accessorKey`s das colunas incluídas na busca global. Sem isso, o campo de busca não aparece. A busca ignora acento e caixa e compara o texto que a célula mostra (`meta.searchText`, preenchido por `dateColumn` e `formattedColumn`): `joao` acha "João", `123.456` acha "123.456.789-01".',
+          '- `searchableColumns?: string[]` — ids das colunas incluídas na busca global (`id` ou `accessorKey`, chave aninhada como `cliente.nome` inclusive). Sem isso, o campo de busca não aparece. A busca ignora acento e caixa e compara o texto que a célula mostra (`meta.searchText`, preenchido por `dateColumn` e `formattedColumn`): `joao` acha "João", `123.456` acha "123.456.789-01".',
           "- `sortableColumns?: string[]` — `accessorKey`s das colunas com header ordenável. Sem isso, **nenhum** header é ordenável — mesma semântica opt-in de `searchableColumns`.",
           "- `searchPlaceholder?: string` — placeholder do input de busca (default `Buscar...`).",
           "- `emptyMessage?: ReactNode` — conteúdo exibido quando `data` filtrado fica vazio (default `Nenhum resultado.`).",
@@ -204,7 +204,7 @@ const meta = {
           "Cada item de `columns` é um `ColumnDef<TData>` do `@tanstack/react-table`. Os campos mais usados:",
           "",
           "```tsx",
-          'import type { ColumnDef } from "@tanstack/react-table"',
+          'import type { ColumnDef } from "@amfernandesinc/ui"',
           "",
           "type Contrato = { numero: string; cliente: string; valor: number; status: string }",
           "",
@@ -234,8 +234,7 @@ const meta = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { DataTable } from "@amfernandesinc/ui"',
-          'import type { ColumnDef } from "@tanstack/react-table"',
+          'import { DataTable, type ColumnDef } from "@amfernandesinc/ui"',
           "",
           "<DataTable",
           "  columns={columns}",
