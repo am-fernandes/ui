@@ -1098,6 +1098,38 @@ export const ExportCsv: Story = {
   },
 }
 
+export const WithError: Story = {
+  render: () => {
+    function Wrapper() {
+      const [state, setState] = useState<"error" | "loading" | "ready">("error")
+      return (
+        <div className="p-6">
+          <DataTable
+            columns={columns}
+            data={state === "ready" ? contratos.slice(0, 5) : []}
+            loading={state === "loading"}
+            error={state === "error" ? "Não foi possível carregar os contratos." : undefined}
+            onRetry={() => {
+              setState("loading")
+              window.setTimeout(() => setState("ready"), 600)
+            }}
+            pagination={{ pageSize: 5 }}
+          />
+        </div>
+      )
+    }
+    return <Wrapper />
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`error` mostra a falha no corpo da tabela (como alerta), no lugar de "Nenhum resultado."; com `onRetry`, um botão "Tentar de novo" (`labels.retry`). `error={true}` usa o texto de `labels.error`.',
+      },
+    },
+  },
+}
+
 export const Loading: Story = {
   render: () => (
     <div className="space-y-6 p-6">
@@ -1138,7 +1170,8 @@ export const Loading: Story = {
         story: [
           "Passe `loading` (boolean) para exibir um estado skeleton enquanto os dados carregam. O componente:",
           "",
-          "- Renderiza `pagination.pageSize ?? 5` linhas skeleton, cada uma com `columns.length` células (larguras variando entre 5 valores pra parecer natural).",
+          "- Renderiza tantas linhas skeleton quanto o tamanho de página atual (5 sem paginação), cada uma com `columns.length` células (larguras variando entre 5 valores pra parecer natural).",
+          '- Anuncia `labels.loading` ("Carregando dados…") pela região de status da tabela, que fica no DOM desde o início.',
           "- Se `searchableColumns` estiver definido, troca o `<Input>` de busca por um skeleton equivalente — sem perda de layout.",
           "- Footer: contagem (`showRowCount`) e indicador de página viram skeletons; botões prev/next ficam disabled.",
           "- Cabeçalho permanece — colunas são conhecidas estaticamente.",

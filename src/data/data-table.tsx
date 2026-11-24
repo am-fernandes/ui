@@ -141,6 +141,10 @@ export interface DataTableLabels {
   clearFilters: string
   /** Message shown when an export fails (a fetcher rejects, the file cannot be written). */
   exportError: string
+  /** Body text for `error={true}`. */
+  error: string
+  /** The button that calls `onRetry`. */
+  retry: string
 }
 
 const numberFormatter = new Intl.NumberFormat("pt-BR")
@@ -175,6 +179,8 @@ export const defaultDataTableLabels: DataTableLabels = {
   exportAll: "Exportar todos os dados",
   clearFilters: "Limpar filtros",
   exportError: "Não foi possível exportar os dados. Tente de novo.",
+  error: "Não foi possível carregar os dados.",
+  retry: "Tentar de novo",
 }
 
 export interface DataTableProps<TData> {
@@ -300,12 +306,21 @@ export interface DataTableProps<TData> {
   /** Per-row className. Receives the row data and index; return undefined to skip. Useful for coloring rows by status. */
   rowClassName?: (row: TData, index: number) => string | undefined
   /**
-   * When `true`, the body renders skeleton rows in place of data. Search input and
-   * footer (count + pagination buttons) also skeleton-ize. Skeleton row count
-   * derives from `pagination.pageSize` (or 5 when pagination is off). `aria-busy`
-   * is set on the wrapper so assistive tech announces the loading state once.
+   * When `true`, the body renders skeleton rows in place of data: as many as
+   * the current page size (5 without pagination). The row count and the
+   * export button skeleton-ize, the pager is unavailable, and `labels.loading`
+   * is announced through the table's status region. `aria-busy` is set on
+   * the wrapper.
    */
   loading?: boolean
+  /**
+   * The data failed to load. Shown in the body (as an alert) instead of the
+   * rows or the empty message, so a failed request does not read as "Nenhum
+   * resultado". `true` shows `labels.error`. Ignored while `loading`.
+   */
+  error?: React.ReactNode
+  /** With `error`, renders a `labels.retry` ("Tentar de novo") button that calls it. */
+  onRetry?: () => void
   /**
    * Render an "Exportar para Excel" ghost button on the right side of the toolbar.
    * Clicking opens a popover with three scopes (filtered, current page, all rows).
@@ -490,6 +505,8 @@ function DataTable<TData>({
   getRowId,
   rowClassName,
   loading = false,
+  error,
+  onRetry,
   downloadable,
   onClearFilters,
   clearFiltersDisabled,
@@ -757,7 +774,14 @@ function DataTable<TData>({
           : { hasMore: data.length >= paginationState.pageSize }
       : { totalItems: table.getPrePaginationRowModel().rows.length }
 
-  const skeletonRowCount = pagination?.pageSize ?? 5
+  // As many skeleton rows as the page the user is about to see.
+  const skeletonRowCount = paginationEnabled ? paginationState.pageSize : 5
+  const hasError = !loading && error != null && error !== false && error !== ""
+  const statusText = loading
+    ? mergedLabels.loading
+    : !hasError && table.getRowModel().rows.length === 0 && typeof resolvedEmptyMessage === "string"
+      ? resolvedEmptyMessage
+      : ""
   // Skip `meta.exportOnly` columns: they're absent from the rendered header,
   // so the skeleton body shouldn't render placeholder cells for them either —
   // otherwise the body row is wider than the header and rows misalign.
@@ -991,6 +1015,15 @@ function DataTable<TData>({
         </div>
       ) : null}
 
+      {/* One live region for the table, in the DOM from the start: it is the
+          change of its text that screen readers announce (loading, or a search
+          that empties the table). A custom ReactNode empty message speaks for
+          itself (see EmptyState's `announce`). */}
+      {/* biome-ignore lint/a11y/useSemanticElements: <output> is for form results; this is a status message. */}
+      <div role="status" data-slot="data-table-status" className="sr-only">
+        {statusText}
+      </div>
+
       {exportFailed ? (
         <p
           data-slot="data-table-export-error"
@@ -1044,18 +1077,6 @@ function DataTable<TData>({
           <TableBody>
             {loading ? (
               <>
-                <TableRow
-                  aria-hidden="true"
-                  className="sr-only"
-                  data-slot="data-table-loading-announcer"
-                >
-                  <TableCell colSpan={table.getVisibleLeafColumns().length}>
-                    {/* biome-ignore lint/a11y/useSemanticElements: <output> targets calculation results inside <form>; this is a generic loading announcement, role="status" is the right ARIA role. */}
-                    <span role="status" className="sr-only">
-                      {mergedLabels.loading}
-                    </span>
-                  </TableCell>
-                </TableRow>
                 {Array.from({ length: skeletonRowCount }).map((_, rowIdx) => (
                   <TableRow
                     // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows are positional and identityless
@@ -1078,6 +1099,25 @@ function DataTable<TData>({
                   </TableRow>
                 ))}
               </>
+            ) : hasError ? (
+              <TableRow data-slot="data-table-error-row">
+                <TableCell colSpan={table.getVisibleLeafColumns().length} className="h-24">
+                  <div className="flex flex-col items-center justify-center gap-3 text-center">
+                    <div
+                      role="alert"
+                      data-slot="data-table-error"
+                      className="text-destructive-text"
+                    >
+                      {error === true ? mergedLabels.error : error}
+                    </div>
+                    {onRetry ? (
+                      <Button type="button" variant="outline" onClick={onRetry}>
+                        {mergedLabels.retry}
+                      </Button>
+                    ) : null}
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row, index) => {
                 const interactive = onRowClick != null
@@ -1129,10 +1169,7 @@ function DataTable<TData>({
                   colSpan={table.getVisibleLeafColumns().length}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  {/* biome-ignore lint/a11y/useSemanticElements: <output> targets form calculation results; this is a generic "no results" announcement, role="status" is the right ARIA role. */}
-                  <span role="status" aria-live="polite">
-                    {resolvedEmptyMessage}
-                  </span>
+                  {resolvedEmptyMessage}
                 </TableCell>
               </TableRow>
             )}

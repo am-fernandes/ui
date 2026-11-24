@@ -129,3 +129,28 @@ test.describe("DataTable: paginação", () => {
     await expect(nav.getByText("1–10 de 15")).toBeVisible()
   })
 })
+
+test.describe("DataTable: estados", () => {
+  test("o carregamento chega à tecnologia assistiva e o esqueleto tem o tamanho da página", async ({
+    page,
+  }) => {
+    await gotoTable(page, "data-datatable--loading")
+    const statuses = page.getByRole("status")
+    await expect(statuses).toHaveCount(2)
+    await expect(statuses.nth(0)).toHaveText("Carregando dados…")
+    await expect(statuses.nth(1)).toHaveText("Carregando dados…")
+    const tables = page.locator('[data-slot="data-table"]')
+    await expect(tables.nth(0).locator('[data-slot="data-table-skeleton-row"]')).toHaveCount(5)
+    await expect(tables.nth(1).locator('[data-slot="data-table-skeleton-row"]')).toHaveCount(8)
+  })
+
+  test("uma falha aparece como erro, com tentar de novo", async ({ page }) => {
+    await gotoTable(page, "data-datatable--with-error")
+    await expect(page.getByRole("alert")).toHaveText("Não foi possível carregar os contratos.")
+    await expect(page.getByText("Nenhum resultado.")).toHaveCount(0)
+    await page.getByRole("button", { name: "Tentar de novo" }).click()
+    await expect(page.getByRole("status")).toHaveText("Carregando dados…")
+    await expect(page.getByRole("cell", { name: "C-2026-001" })).toBeVisible()
+    await expect(page.getByRole("alert")).toHaveCount(0)
+  })
+})

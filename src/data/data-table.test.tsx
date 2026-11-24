@@ -124,7 +124,7 @@ describe("DataTable", () => {
   it("renders empty state with searchable enabled and no matches", async () => {
     render(<DataTable columns={columns} data={data} searchableColumns={["name"]} />)
     await userEvent.type(screen.getByPlaceholderText("Buscar..."), "zzz")
-    expect(screen.getByText("Nenhum resultado.")).toBeInTheDocument()
+    expect(screen.getByRole("cell", { name: "Nenhum resultado." })).toBeInTheDocument()
   })
 
   it("paginates rows and changes page on next click", async () => {
@@ -292,7 +292,7 @@ describe("DataTable", () => {
     expect(screen.getByPlaceholderText("Pesquisar pessoas")).toBeInTheDocument()
     expect(screen.getByText("Mostrando 3/3")).toBeInTheDocument()
     await userEvent.type(screen.getByPlaceholderText("Pesquisar pessoas"), "zzzz")
-    expect(screen.getByText("Nenhum cadastro")).toBeInTheDocument()
+    expect(screen.getByRole("cell", { name: "Nenhum cadastro" })).toBeInTheDocument()
     expect(screen.getByText("Mostrando 0/3")).toBeInTheDocument()
   })
 
@@ -478,6 +478,81 @@ describe("DataTable", () => {
       await userEvent.keyboard("{Enter}")
       expect(pager().current).toBe("3")
       expect(next).toHaveFocus()
+    })
+  })
+
+  describe("states", () => {
+    it("announces loading through a status that is not hidden from assistive tech", () => {
+      const { rerender } = render(<DataTable columns={columns} data={data} />)
+      const status = screen.getByRole("status")
+      expect(status).toHaveTextContent("")
+      rerender(<DataTable columns={columns} data={data} loading />)
+      // Same live region, now with text: a change screen readers announce.
+      expect(screen.getByRole("status")).toBe(status)
+      expect(status).toHaveTextContent("Carregando dados…")
+      expect(status.closest("[aria-hidden='true']")).toBeNull()
+    })
+
+    it("announces an empty search through the same status, not a region born with text", async () => {
+      render(<DataTable columns={columns} data={data} searchableColumns={["name"]} />)
+      const status = screen.getByRole("status")
+      await userEvent.type(screen.getByRole("textbox", { name: "Buscar na tabela" }), "zzz")
+      expect(screen.getAllByRole("status")).toEqual([status])
+      expect(status).toHaveTextContent("Nenhum resultado.")
+      expect(screen.getByRole("cell", { name: "Nenhum resultado." })).toBeInTheDocument()
+    })
+
+    it("draws as many skeleton rows as the current page size", async () => {
+      const many: Row[] = Array.from({ length: 30 }, (_, i) => ({ name: `R${i}`, age: i }))
+      const props = {
+        columns,
+        data: many,
+        pagination: { pageSize: 5, pageSizeOptions: [5, 10] },
+      }
+      const { container, rerender } = render(<DataTable {...props} />)
+      await userEvent.selectOptions(
+        screen.getByRole("combobox", { name: "Linhas por página" }),
+        "10",
+      )
+      rerender(<DataTable {...props} loading />)
+      expect(container.querySelectorAll('[data-slot="data-table-skeleton-row"]')).toHaveLength(10)
+    })
+
+    it("shows an error instead of 'no results', with a retry button", async () => {
+      const onRetry = vi.fn()
+      render(
+        <DataTable
+          columns={columns}
+          data={[]}
+          error="Falha ao carregar contratos."
+          onRetry={onRetry}
+        />,
+      )
+      expect(screen.getByRole("alert")).toHaveTextContent("Falha ao carregar contratos.")
+      expect(screen.queryByText("Nenhum resultado.")).not.toBeInTheDocument()
+      await userEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
+      expect(onRetry).toHaveBeenCalledTimes(1)
+    })
+
+    it("uses the default error text for error={true} and labels for the button", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          error
+          onRetry={() => {}}
+          labels={{ retry: "Recarregar" }}
+        />,
+      )
+      expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar os dados.")
+      expect(screen.getByRole("button", { name: "Recarregar" })).toBeInTheDocument()
+      expect(screen.queryByText("Bravo")).not.toBeInTheDocument()
+    })
+
+    it("shows the skeleton, not the error, while retrying", () => {
+      render(<DataTable columns={columns} data={[]} error="Falhou" loading />)
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+      expect(screen.getByRole("status")).toHaveTextContent("Carregando dados…")
     })
   })
 
@@ -787,7 +862,7 @@ describe("DataTable", () => {
     it("does not match text the user does not see (the T of an ISO date)", async () => {
       render(<DataTable columns={clienteColumns} data={clientes} searchableColumns={searchable} />)
       await search("t")
-      expect(screen.getByText("Nenhum resultado.")).toBeInTheDocument()
+      expect(screen.getByRole("cell", { name: "Nenhum resultado." })).toBeInTheDocument()
     })
 
     it("uses a column's meta.searchText when it gives one", async () => {
