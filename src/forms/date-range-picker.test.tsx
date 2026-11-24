@@ -184,6 +184,32 @@ describe("DateRangePicker", () => {
     expect(screen.getByRole("button")).toHaveAccessibleName("Vigência")
   })
 
+  it("min, max and disabledDays turn days off in the calendar", async () => {
+    render(
+      <DateRangePicker
+        label="Período"
+        numberOfMonths={1}
+        value={{ from: "2025-03-10", to: "2025-03-12" }}
+        onValueChange={() => {}}
+        min="2025-03-05"
+        max="2025-03-25"
+        disabledDays="weekends"
+      />,
+    )
+    await userEvent.click(screen.getByRole("button", { name: /Período/ }))
+    await screen.findByRole("grid")
+    const day = (iso: string) => document.querySelector(`button[data-day="${iso}"]`)
+    expect(day("2025-03-04")).toBeDisabled()
+    expect(day("2025-03-26")).toBeDisabled()
+    // 08/03/2025 is a Saturday.
+    expect(day("2025-03-08")).toBeDisabled()
+    expect(day("2025-03-07")).not.toBeDisabled()
+    expect(screen.getByRole("button", { name: "Ir para o mês anterior" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    )
+  })
+
   it("does not open the popover when disabled", async () => {
     render(
       <DateRangePicker label="X" value={{ from: "", to: "" }} onValueChange={() => {}} disabled />,

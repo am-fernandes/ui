@@ -185,6 +185,34 @@ export const OneMonth: Story = {
   },
 }
 
+export const MinMax: Story = {
+  name: "Min Max",
+  args: { value: { from: "", to: "" } },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`min` e `max` (ISO) desligam os dias fora do intervalo e param a navegação nos limites; `disabledDays` aceita os mesmos presets do `Calendar` (aqui, `"future"` para um período que já aconteceu).',
+      },
+    },
+  },
+  render: () => {
+    const [range, setRange] = useState<DateRangeValue>({ from: "2025-03-03", to: "2025-03-07" })
+    return (
+      <div className="w-[360px]">
+        <DateRangePicker
+          label="Período de apuração"
+          description="A partir de 01/01/2025, sem datas futuras."
+          min="2025-01-01"
+          disabledDays="future"
+          value={range}
+          onValueChange={setRange}
+        />
+      </div>
+    )
+  },
+}
+
 export const Controlled: Story = {
   parameters: {
     docs: {

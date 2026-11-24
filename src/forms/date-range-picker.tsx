@@ -15,6 +15,8 @@ import {
 } from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Button } from "../primitives/button"
+import { isoToDate, toIsoDate } from "./_internal/date-only"
+import { type DisabledDays, resolveDisabledDays } from "./_internal/disabled-days"
 import { Calendar } from "./calendar"
 
 export interface DateRangeValue {
@@ -49,6 +51,16 @@ export interface DateRangePickerProps {
   placeholder?: string
   className?: string
   numberOfMonths?: number
+  /**
+   * Days that cannot be picked: a preset ("past" | "future" | "weekends" |
+   * "weekdays" | "today"), a Date / Date[], or a predicate. For example,
+   * `disabledDays="future"` for a period that already happened.
+   */
+  disabledDays?: DisabledDays
+  /** First day that can be picked (ISO). The calendar does not go before its month. */
+  min?: string
+  /** Last day that can be picked (ISO). The calendar does not go past its month. */
+  max?: string
   id?: string
   /** Texts of the picker. Defaults in `defaultDateRangePickerLabels`. */
   labels?: Partial<DateRangePickerLabels>
@@ -79,6 +91,9 @@ function DateRangePicker({
   placeholder = "Selecione um período",
   className,
   numberOfMonths = 2,
+  disabledDays,
+  min,
+  max,
   labels,
   "aria-label": ariaLabel,
   ref,
@@ -91,6 +106,17 @@ function DateRangePicker({
   const monthsShown = isMobile ? 1 : numberOfMonths
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
+
+  const minDate = isoToDate(toIsoDate(min))
+  const maxDate = isoToDate(toIsoDate(max))
+  const isDayOff = React.useMemo(() => resolveDisabledDays(disabledDays), [disabledDays])
+  const calendarDisabled =
+    minDate || maxDate || isDayOff
+      ? (date: Date) =>
+          (minDate != null && date < minDate) ||
+          (maxDate != null && date > maxDate) ||
+          isDayOff?.(date) === true
+      : undefined
 
   const fromDate = parseIsoDate(value.from)
   const toDate = parseIsoDate(value.to)
@@ -228,6 +254,9 @@ function DateRangePicker({
             // range spans two months: once as range_end in its own pane, and
             // once as the outside-day of the previous month's pane.
             showOutsideDays={false}
+            disabledDays={calendarDisabled}
+            startMonth={minDate}
+            endMonth={maxDate}
           />
         </div>
         <div className="flex shrink-0 justify-end gap-2 border-t p-3">
