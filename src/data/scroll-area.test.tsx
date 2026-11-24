@@ -139,4 +139,37 @@ describe("ScrollArea", () => {
       ),
     ).not.toThrow()
   })
+
+  it("makes the viewport a tab stop, so the keyboard can scroll it", () => {
+    const { container } = render(
+      <ScrollArea className="h-20">
+        <p>texto</p>
+      </ScrollArea>,
+    )
+    const viewport = container.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement
+    expect(viewport).toHaveAttribute("tabindex", "0")
+    // Without a name it is not a landmark: an unnamed region is noise.
+    expect(viewport).not.toHaveAttribute("role")
+  })
+
+  it("becomes a named region when given aria-label or aria-labelledby", () => {
+    const { rerender } = render(
+      <ScrollArea aria-label="Histórico do lead">
+        <p>texto</p>
+      </ScrollArea>,
+    )
+    expect(screen.getByRole("region", { name: "Histórico do lead" })).toHaveAttribute(
+      "data-slot",
+      "scroll-area-viewport",
+    )
+    rerender(
+      <>
+        <h2 id="titulo">Comentários</h2>
+        <ScrollArea aria-labelledby="titulo">
+          <p>texto</p>
+        </ScrollArea>
+      </>,
+    )
+    expect(screen.getByRole("region", { name: "Comentários" })).toBeInTheDocument()
+  })
 })
