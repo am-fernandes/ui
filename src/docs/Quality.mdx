@@ -28,10 +28,10 @@ bun run sync:e2e-stats    # recalcula _e2e-stats.ts
 
 ## Resumo global (vitest)
 
-// Coverage status: 90% or more is the target (plain); 75–90% is shown in
-// bold; below 75% in bold and the error text colour. Text colours only, so
-// every value reads at 4.5:1 in both themes, and weight carries it too.
 export const coverageStyle = (pct) =>
+  // Coverage status: 90% or more is the target (plain); 75–90% in bold;
+  // below 75% in bold and the error text colour. Text colours only, so every
+  // value reads at 4.5:1 in both themes, and weight carries it too.
   pct >= 90
     ? { color: "var(--muted-foreground)" }
     : pct >= 75
