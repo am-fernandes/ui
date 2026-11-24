@@ -37,7 +37,7 @@ export const motionSheet =
  * backdrop on a lower layer it went under every modal already open.
  */
 export const overlayBase =
-  "fixed inset-0 z-[var(--z-modal)] bg-black/80 duration-(--duration-medium-max) ease-(--ease-standard) data-[state=closed]:duration-(--duration-exit) data-[state=closed]:ease-(--ease-exit) data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+  "fixed inset-0 z-[var(--z-modal)] bg-scrim duration-(--duration-medium-max) ease-(--ease-standard) data-[state=closed]:duration-(--duration-exit) data-[state=closed]:ease-(--ease-exit) data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
 
 /**
  * Backdrop of a Sheet: the same layer and fade as `overlayBase`, on the
@@ -45,7 +45,7 @@ export const overlayBase =
  * panel is still sliding out.
  */
 export const sheetOverlayBase =
-  "fixed inset-0 z-[var(--z-modal)] bg-black/80 duration-(--duration-medium) ease-(--ease-standard) data-[state=closed]:ease-(--ease-exit) data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+  "fixed inset-0 z-[var(--z-modal)] bg-scrim duration-(--duration-medium) ease-(--ease-standard) data-[state=closed]:ease-(--ease-exit) data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
 
 /**
  * Animação base do content centrado (Dialog/AlertDialog).

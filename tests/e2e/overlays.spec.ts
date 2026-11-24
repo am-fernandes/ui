@@ -384,6 +384,29 @@ test.describe("AlertDialog", () => {
   // Every backdrop sat at z 40 and every modal at z 50: the backdrop of an
   // AlertDialog opened over a Dialog went under that Dialog, which stayed
   // white and bright next to the question.
+  // The veils were fixed colours (bg-black/80, outline-black/50), out of
+  // reach of the theme.
+  test("the modal veil and the tour spotlight come from tokens", async ({ page }) => {
+    await gotoStory(page, "overlays-alertdialog--over-dialog", "Editar proposta")
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty("--color-scrim", "rgb(10, 20, 30)")
+      document.documentElement.style.setProperty("--color-scrim-light", "rgb(40, 50, 60)")
+    })
+    await page.getByRole("button", { name: "Editar proposta" }).click()
+    const overlay = page.locator('[data-slot="dialog-overlay"]')
+    await expect(overlay).toHaveCSS("background-color", "rgb(10, 20, 30)")
+
+    await gotoStory(page, "overlays-tour--default", "Iniciar tour")
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty("--color-scrim-light", "rgb(40, 50, 60)")
+    })
+    await page.getByRole("button", { name: "Iniciar tour" }).click()
+    await expect(page.locator('[data-slot="tour-spotlight"]')).toHaveCSS(
+      "outline-color",
+      "rgb(40, 50, 60)",
+    )
+  })
+
   test("an AlertDialog over a Dialog dims the Dialog below it", async ({ page }) => {
     await gotoStory(page, "overlays-alertdialog--over-dialog", "Editar proposta")
     await page.getByRole("button", { name: "Editar proposta" }).click()

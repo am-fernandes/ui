@@ -568,6 +568,15 @@
 
 /* ==== Overlays (src/overlays) ================================================ */
 
+/* ---- Veils ------------------------------------------------------------------
+   The backdrop behind a modal (Dialog, AlertDialog, Sheet) and the dimming
+   around a Tour's target. The same in both themes: they darken whatever is
+   behind. As colours of the theme they give `bg-scrim` and `outline-scrim-light`. */
+@theme {
+  --color-scrim: oklch(0 0 0 / 80%);
+  --color-scrim-light: oklch(0 0 0 / 50%);
+}
+
 /* ---- Toaster (Sonner) -------------------------------------------------------
    Sonner injects its own stylesheet at runtime, outside any cascade layer, so
    utility classes (which are layered) lose to it whatever the order. Its
