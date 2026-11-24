@@ -179,8 +179,8 @@ describe("Tabs", () => {
     expect(container.querySelector('[data-testid="panel-c"]')).toBeNull()
   })
 
-  it("non-lazy (default) mounts all panels", () => {
-    const { container } = render(
+  it("by default renders only the active panel's content", async () => {
+    render(
       <Tabs
         defaultValue="a"
         items={[
@@ -189,7 +189,45 @@ describe("Tabs", () => {
         ]}
       />,
     )
-    // Both panels are in the DOM (just one visible).
-    expect(container.querySelectorAll('[data-slot="tabs-content"]')).toHaveLength(2)
+    expect(screen.getByTestId("panel-a")).toBeInTheDocument()
+    expect(screen.queryByTestId("panel-b")).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole("tab", { name: "B" }))
+    expect(screen.queryByTestId("panel-a")).not.toBeInTheDocument()
+  })
+
+  describe("keepMounted", () => {
+    const formItems = [
+      { value: "a", label: "Dados", content: <input aria-label="Nome" /> },
+      { value: "b", label: "Endereço", content: <input aria-label="CEP" /> },
+    ]
+
+    it("keeps every panel in the DOM, hidden while inactive", () => {
+      render(<Tabs keepMounted defaultValue="a" items={formItems} />)
+      expect(screen.getByRole("textbox", { name: "Nome" })).toBeVisible()
+      const cep = screen.getByLabelText("CEP")
+      expect(cep).toBeInTheDocument()
+      expect(cep).not.toBeVisible()
+      expect(cep.closest('[role="tabpanel"]')).toHaveAttribute("hidden")
+    })
+
+    it("keeps what was typed in an uncontrolled field across tab switches", async () => {
+      render(<Tabs keepMounted defaultValue="a" items={formItems} />)
+      await userEvent.type(screen.getByRole("textbox", { name: "Nome" }), "Maria")
+      await userEvent.click(screen.getByRole("tab", { name: "Endereço" }))
+      expect(screen.getByRole("textbox", { name: "CEP" })).toBeVisible()
+      await userEvent.click(screen.getByRole("tab", { name: "Dados" }))
+      expect(screen.getByRole("textbox", { name: "Nome" })).toHaveValue("Maria")
+    })
+
+    it("with lazy, mounts a panel on its first visit and keeps it", async () => {
+      render(<Tabs keepMounted lazy defaultValue="a" items={formItems} />)
+      expect(screen.queryByLabelText("CEP")).not.toBeInTheDocument()
+      await userEvent.click(screen.getByRole("tab", { name: "Endereço" }))
+      await userEvent.type(screen.getByRole("textbox", { name: "CEP" }), "01310")
+      await userEvent.click(screen.getByRole("tab", { name: "Dados" }))
+      expect(screen.getByLabelText("CEP")).not.toBeVisible()
+      await userEvent.click(screen.getByRole("tab", { name: "Endereço" }))
+      expect(screen.getByRole("textbox", { name: "CEP" })).toHaveValue("01310")
+    })
   })
 })

@@ -16,7 +16,19 @@ export interface TabsItemData {
 export interface TabsProps
   extends Omit<React.ComponentPropsWithoutRef<typeof TabsPrimitive.Root>, "children"> {
   items: TabsItemData[]
-  /** When true, only the active panel mounts. */
+  /**
+   * Keep the panels in the DOM, hidden while inactive, so what they hold
+   * survives a tab switch: an uncontrolled form, table filters, an upload in
+   * progress. Without it a panel is unmounted when you leave it.
+   * @default false
+   */
+  keepMounted?: boolean
+  /**
+   * With `keepMounted`, mount each panel on its first visit (and keep it from
+   * then on) instead of all at once. Without `keepMounted` only the active
+   * panel is ever mounted, `lazy` or not.
+   * @default false
+   */
   lazy?: boolean
   ref?: React.Ref<React.ComponentRef<typeof TabsPrimitive.Root>>
 }
@@ -25,6 +37,7 @@ function Tabs({
   items,
   className,
   orientation,
+  keepMounted = false,
   lazy = false,
   value,
   defaultValue,
@@ -37,6 +50,14 @@ function Tabs({
     defaultValue ?? items[0]?.value,
   )
   const activeValue = value ?? internalValue
+
+  // Panels visited so far: with `keepMounted` and `lazy`, they stay mounted.
+  const [visited, setVisited] = React.useState<ReadonlySet<string>>(
+    () => new Set(activeValue === undefined ? [] : [activeValue]),
+  )
+  if (activeValue !== undefined && !visited.has(activeValue)) {
+    setVisited(new Set(visited).add(activeValue))
+  }
 
   const handleValueChange = (v: string) => {
     if (value === undefined) setInternalValue(v)
@@ -77,13 +98,31 @@ function Tabs({
         ))}
       </TabsPrimitive.List>
       {items.map((item) => {
-        if (lazy && item.value !== activeValue) return null
+        const isActive = item.value === activeValue
+        const contentClass = cn("focus-visible:focus-outline", isVertical ? "flex-1" : "mt-2")
+        if (keepMounted) {
+          if (lazy && !visited.has(item.value)) return null
+          return (
+            <TabsPrimitive.Content
+              key={item.value}
+              value={item.value}
+              forceMount
+              hidden={!isActive}
+              data-slot="tabs-content"
+              className={contentClass}
+            >
+              {item.content}
+            </TabsPrimitive.Content>
+          )
+        }
+        // Radix unmounts an inactive panel's content; `lazy` drops its empty shell too.
+        if (lazy && !isActive) return null
         return (
           <TabsPrimitive.Content
             key={item.value}
             value={item.value}
             data-slot="tabs-content"
-            className={cn("focus-visible:focus-outline", isVertical ? "flex-1" : "mt-2")}
+            className={contentClass}
           >
             {item.content}
           </TabsPrimitive.Content>
