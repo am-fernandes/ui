@@ -359,6 +359,30 @@ export const Default: Story = {
   },
 }
 
+export const Compact: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        aria-label="Contratos"
+        columns={columns.slice(0, 4)}
+        data={contratos}
+        density="compact"
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+        pagination={{ pageSize: 10 }}
+        showRowCount
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`density="compact"`: linhas de cerca de 36 px (`py-2`) e paginação de 32 px, para listas densas de back-office. O padrão mantém `py-2.5 px-3` (cerca de 41 px). Conteúdo mais alto que uma linha de texto (um `Badge`, um botão) faz a linha crescer.',
+      },
+    },
+  },
+}
+
 export const FilenameByScope: Story = {
   render: () => (
     <div className="p-6">

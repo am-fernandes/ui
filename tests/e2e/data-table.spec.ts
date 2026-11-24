@@ -217,3 +217,28 @@ test.describe("DataTable: alinhamento", () => {
     for (const gap of edges) expect(Math.abs(gap)).toBeLessThanOrEqual(1)
   })
 })
+
+test.describe("DataTable: densidade", () => {
+  async function bodyRowHeights(page: Page) {
+    return page
+      .locator('[data-slot="table-body"] tr')
+      .evaluateAll((rows) => rows.map((row) => row.getBoundingClientRect().height))
+  }
+
+  test("compacta tem linhas de cerca de 36px; a padrão, de cerca de 41px", async ({ page }) => {
+    await gotoTable(page, "data-datatable--compact")
+    for (const height of await bodyRowHeights(page)) {
+      expect(height).toBeGreaterThanOrEqual(36)
+      expect(height).toBeLessThanOrEqual(37)
+    }
+    const next = page.getByRole("button", { name: "Próxima página" })
+    expect((await next.boundingBox())?.height).toBe(32)
+
+    // Text-only rows in both, so the density is what is measured.
+    await gotoTable(page, "data-datatable--grouped-headers")
+    for (const height of await bodyRowHeights(page)) {
+      expect(height).toBeGreaterThanOrEqual(40)
+      expect(height).toBeLessThanOrEqual(41)
+    }
+  })
+})

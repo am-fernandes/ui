@@ -439,6 +439,29 @@ describe("DataTable", () => {
     })
   })
 
+  describe("density", () => {
+    it("marks the table compact and tightens rows and the pager", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          density="compact"
+          pagination={{ pageSize: 2 }}
+          data-testid="tabela"
+        />,
+      )
+      expect(screen.getByTestId("tabela")).toHaveAttribute("data-density", "compact")
+      expect(screen.getByRole("cell", { name: "Bravo" })).toHaveClass("py-2")
+      expect(screen.getByRole("button", { name: "Próxima página" })).toHaveClass("size-control-sm")
+    })
+
+    it("keeps the default rows otherwise", () => {
+      render(<DataTable columns={columns} data={data} data-testid="tabela" />)
+      expect(screen.getByTestId("tabela")).toHaveAttribute("data-density", "default")
+      expect(screen.getByRole("cell", { name: "Bravo" })).toHaveClass("py-2.5")
+    })
+  })
+
   describe("alignment", () => {
     function alignOf(element: HTMLElement) {
       return ["text-left", "text-center", "text-right"].find((c) => element.classList.contains(c))

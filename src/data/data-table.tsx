@@ -241,6 +241,13 @@ export interface DataTableProps<TData>
   "aria-labelledby"?: string
   /** A `<caption>` that names the table and is shown with it (below the rows). */
   caption?: React.ReactNode
+  /**
+   * Row density. `"compact"` gives rows of about 36px (`py-2`) and a 32px
+   * pager, for dense back-office lists; `"default"` keeps the library's
+   * `py-2.5 px-3` rows (about 41px).
+   * @default "default"
+   */
+  density?: "default" | "compact"
   /** Enable pagination. When set, footer shows previous/next + page indicator. Default: not paginated. */
   pagination?: {
     pageSize?: number
@@ -515,6 +522,7 @@ function DataTable<TData>({
   "aria-label": ariaLabelProp,
   "aria-labelledby": ariaLabelledBy,
   caption,
+  density = "default",
   pagination,
   showRowCount = false,
   globalFilter: globalFilterProp,
@@ -831,6 +839,10 @@ function DataTable<TData>({
     const align = columnAlign.get(columnId)
     return align === "right" ? "text-right" : align === "center" ? "text-center" : undefined
   }
+  const compact = density === "compact"
+  // Compact: 20px line + 16px = 36px rows; headers keep room for the 32px sort button.
+  const cellDensity = compact ? "py-2" : undefined
+  const headDensity = compact ? "py-1" : undefined
 
   // Totals and other footers: `columnDef.footer` of any column.
   const hasFooter = table.getAllFlatColumns().some((column) => column.columnDef.footer != null)
@@ -1000,6 +1012,7 @@ function DataTable<TData>({
       ref={ref}
       className={cn("flex flex-col gap-3", className)}
       data-slot="data-table"
+      data-density={density}
       aria-busy={loading || rootProps["aria-busy"] || undefined}
     >
       {hasSearch || hasDownload || hasClearFilters ? (
@@ -1108,7 +1121,7 @@ function DataTable<TData>({
                   return (
                     <TableHead
                       key={header.id}
-                      className={isLeafHeader ? alignClass(header.column.id) : undefined}
+                      className={cn(headDensity, isLeafHeader && alignClass(header.column.id))}
                       colSpan={header.colSpan > 1 ? header.colSpan : undefined}
                       scope={header.colSpan > 1 ? "colgroup" : "col"}
                       aria-sort={canSort ? ariaSort : undefined}
@@ -1154,6 +1167,7 @@ function DataTable<TData>({
                       <TableCell
                         // biome-ignore lint/suspicious/noArrayIndexKey: skeleton cells are positional
                         key={`skeleton-${rowIdx}-${colIdx}`}
+                        className={cellDensity}
                       >
                         <div
                           className={cn(
@@ -1211,7 +1225,10 @@ function DataTable<TData>({
                     {row.getVisibleCells().map((cell, cellIndex) => {
                       const content = flexRender(cell.column.columnDef.cell, cell.getContext())
                       return (
-                        <TableCell key={cell.id} className={alignClass(cell.column.id)}>
+                        <TableCell
+                          key={cell.id}
+                          className={cn(cellDensity, alignClass(cell.column.id))}
+                        >
                           {interactive && cellIndex === 0 ? (
                             <button
                               type="button"
@@ -1255,9 +1272,10 @@ function DataTable<TData>({
                     {group.headers.map((header) => (
                       <TableCell
                         key={header.id}
-                        className={
-                          header.subHeaders.length === 0 ? alignClass(header.column.id) : undefined
-                        }
+                        className={cn(
+                          cellDensity,
+                          header.subHeaders.length === 0 && alignClass(header.column.id),
+                        )}
                         colSpan={header.colSpan > 1 ? header.colSpan : undefined}
                       >
                         {header.isPlaceholder
@@ -1306,6 +1324,7 @@ function DataTable<TData>({
                 handlePaginationChange({ pageIndex: 0, pageSize: size })
               }}
               disabled={loading}
+              size={compact ? "sm" : "md"}
               labels={{
                 previous: mergedLabels.paginationPrevious,
                 next: mergedLabels.paginationNext,
