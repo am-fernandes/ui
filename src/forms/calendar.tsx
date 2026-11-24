@@ -55,7 +55,7 @@ const STATIC_CLASS_NAMES = {
   caption_label: `text-sm font-medium select-none ${RDP_DEFAULTS.caption_label}`,
   table: "w-full border-collapse",
   weekdays: `flex ${RDP_DEFAULTS.weekdays}`,
-  weekday: `flex-1 rounded-(--cell-radius) text-[0.8rem] font-normal text-muted-foreground select-none ${RDP_DEFAULTS.weekday}`,
+  weekday: `flex-1 rounded-(--cell-radius) text-xs font-normal text-muted-foreground select-none ${RDP_DEFAULTS.weekday}`,
   week: `mt-2 flex w-full ${RDP_DEFAULTS.week}`,
   day: `group/day relative aspect-square h-full w-full rounded-(--cell-radius) p-0 text-center select-none [&:last-child[data-selected=true]_button]:rounded-r-(--cell-radius) [&:first-child[data-selected=true]_button]:rounded-l-(--cell-radius) ${RDP_DEFAULTS.day}`,
   range_start: `relative isolate z-0 rounded-l-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:right-0 after:w-4 after:bg-muted ${RDP_DEFAULTS.range_start}`,

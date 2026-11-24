@@ -123,6 +123,13 @@ test.describe("Calendar", () => {
     expect(await years.evaluate((el) => el.contains(document.activeElement))).toBe(false)
   })
 
+  test("o cabeçalho dos dias da semana usa a escala de tipo (text-xs, 12px)", async ({ page }) => {
+    await gotoStory(page, "forms-calendar--single", "Selecionado:")
+    const headers = page.getByRole("grid").first().locator("thead th")
+    await expect(headers).toHaveCount(7)
+    await expect(headers.first()).toHaveCSS("font-size", "12px")
+  })
+
   test("disabledDays=past disables past dates", async ({ page }) => {
     await page.goto(story("forms-calendar--disabled-past"))
     // At least one button has aria-disabled=true
