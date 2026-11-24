@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -405,6 +405,34 @@ describe("Pagination", () => {
         ),
       )
       expect(window.location.hash).toBe("#p-4")
+    })
+
+    it("leaves a Ctrl/⌘/Shift/middle click to the browser: the current page stays", async () => {
+      const onPageChange = vi.fn()
+      render(
+        <Pagination
+          page={3}
+          totalPages={10}
+          getPageHref={(p) => `#pg-${p}`}
+          onPageChange={onPageChange}
+        />,
+      )
+      const page4 = screen.getByRole("link", { name: "Página 4" })
+      const next = screen.getByRole("link", { name: "Próxima página" })
+      for (const init of [
+        { ctrlKey: true },
+        { metaKey: true },
+        { shiftKey: true },
+        { button: 1 },
+      ]) {
+        fireEvent.click(page4, init)
+        fireEvent.click(next, init)
+      }
+      await new Promise((r) => setTimeout(r, 10))
+      expect(onPageChange).not.toHaveBeenCalled()
+      // A plain click still moves the page.
+      fireEvent.click(page4)
+      await waitFor(() => expect(onPageChange).toHaveBeenCalledWith(4))
     })
 
     it("turns the steps at the ends into disabled links", async () => {

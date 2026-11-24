@@ -93,6 +93,23 @@ test.describe("Pagination", () => {
     await expect(page).toHaveURL(/#pagina-4$/)
   })
 
+  test("link mode: Ctrl/⌘-click opens the page in a new tab and this one stays", async ({
+    page,
+    context,
+  }) => {
+    await gotoPagination(page, "navigation-pagination--links")
+    const opened = context.waitForEvent("page")
+    await page
+      .getByRole("link", { name: "Página 4", exact: true })
+      .click({ modifiers: ["ControlOrMeta"] })
+    const tab = await opened
+    await tab.waitForURL(/#pagina-4$/)
+    // The original tab neither moved nor changed its current page.
+    await page.waitForTimeout(100)
+    expect(page.url()).not.toMatch(/#pagina-4$/)
+    await expect(current(page)).toHaveText("1")
+  })
+
   test("compact variant and cursor mode", async ({ page }) => {
     await gotoPagination(page, "navigation-pagination--compact")
     await expect(page.getByText("Página 3 de 12")).toBeVisible()

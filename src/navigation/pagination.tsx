@@ -7,6 +7,7 @@ import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "../primitives/button"
 import { IconButton } from "../primitives/icon-button"
+import { isModifiedClick } from "./_internal/link-click"
 
 const numberFormatter = new Intl.NumberFormat("pt-BR")
 const fmt = (n: number) => numberFormatter.format(n)
@@ -75,7 +76,9 @@ export interface PaginationProps {
   /**
    * Render real links instead of buttons (`?page=3` URLs, crawlable, open in
    * a new tab). `onPageChange` still fires, right after the browser follows
-   * the link. Unsafe protocols fall back to buttons.
+   * the link, except for a click that opens it elsewhere (Ctrl/⌘, Shift or
+   * the middle button): this page then stays where it is. Unsafe protocols
+   * fall back to buttons.
    */
   getPageHref?: (page: number) => string
   disabled?: boolean
@@ -204,6 +207,8 @@ function Pagination({
               event.preventDefault()
               return
             }
+            // A new tab or window: this page stays where it is.
+            if (isModifiedClick(event)) return
             goAfterNavigation(target)
           }}
           className={cn(
@@ -253,6 +258,8 @@ function Pagination({
               event.preventDefault()
               return
             }
+            // A new tab or window: this page stays where it is.
+            if (isModifiedClick(event)) return
             goAfterNavigation(target)
           }}
           className={cn(className, disabled && "pointer-events-none opacity-50")}
