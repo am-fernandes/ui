@@ -234,6 +234,37 @@ export const Disabled: Story = {
   ),
 }
 
+export const ReadOnly: Story = {
+  args: {
+    label: "Áreas de atuação",
+    readOnly: true,
+    description: "Vem do cadastro do corretor; altere por lá.",
+  },
+  render: (args) => (
+    <div className="w-[420px]">
+      {/* Enter in a read-only field submits its form, as in any text field. */}
+      <form onSubmit={(event) => event.preventDefault()}>
+        <MultiInput
+          type="string"
+          label={args.label}
+          description={args.description}
+          readOnly={args.readOnly}
+          name="areas"
+          defaultValue={["civil", "trabalhista", "tributário"]}
+        />
+      </form>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly`: os itens aparecem sem o ×, nada digitado ou colado entra, o campo continua focável e a lista vai no formulário (ao contrário de `disabled`).",
+      },
+    },
+  },
+}
+
 export const Controlled: Story = {
   render: () => {
     const [value, setValue] = useState<string[]>([])

@@ -742,4 +742,71 @@ describe("MultiInput", () => {
       expect(screen.queryByRole("button", { name: "Remover b" })).not.toBeInTheDocument()
     })
   })
+
+  describe("readOnly", () => {
+    it("shows the items without remove buttons, focusable, with no placeholder", () => {
+      const { container } = render(
+        <MultiInput
+          type="string"
+          label="Áreas"
+          readOnly
+          defaultValue={["civil", "trabalhista"]}
+          placeholder="Digite e Enter"
+        />,
+      )
+      const input = screen.getByRole("textbox", { name: "Áreas" })
+      expect(input).toHaveAttribute("readonly")
+      expect(input).not.toHaveAttribute("placeholder")
+      input.focus()
+      expect(input).toHaveFocus()
+      expect(screen.queryByRole("button", { name: /Remover/ })).toBeNull()
+      expect(container.querySelector('[data-slot="multi-input"]')).toHaveAttribute("data-readonly")
+    })
+
+    it("adds nothing from Enter or a paste, and removes nothing with Backspace", async () => {
+      const onValueChange = vi.fn()
+      render(
+        <MultiInput
+          type="string"
+          label="Áreas"
+          readOnly
+          defaultValue={["civil"]}
+          onValueChange={onValueChange}
+        />,
+      )
+      const input = screen.getByRole("textbox", { name: "Áreas" })
+      input.focus()
+      await userEvent.keyboard("penal{Enter}{Backspace}")
+      fireEvent.paste(input, { clipboardData: { getData: () => "penal, família" } })
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(screen.getAllByText(/civil/)).toHaveLength(1)
+      expect(screen.queryByText("penal")).toBeNull()
+    })
+
+    it("still sends the list with the form", () => {
+      const { container } = render(
+        <form>
+          <MultiInput
+            type="string"
+            label="Áreas"
+            name="areas"
+            readOnly
+            defaultValue={["civil", "penal"]}
+          />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("areas")).toBe("civil,penal")
+    })
+
+    it("disabled wins over readOnly", () => {
+      const { container } = render(
+        <MultiInput type="string" label="Áreas" readOnly disabled defaultValue={["civil"]} />,
+      )
+      expect(screen.getByRole("textbox", { name: "Áreas" })).toBeDisabled()
+      expect(container.querySelector('[data-slot="multi-input"]')).not.toHaveAttribute(
+        "data-readonly",
+      )
+    })
+  })
 })

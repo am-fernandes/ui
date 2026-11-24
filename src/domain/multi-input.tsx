@@ -20,7 +20,11 @@ import {
   controlMinHeight,
   controlPaddingX,
 } from "../primitives/_internal/control-size"
-import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
+import {
+  FieldShell,
+  type LabelPosition,
+  fieldReadOnlyClass,
+} from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Badge } from "../primitives/badge"
 
@@ -61,6 +65,12 @@ interface MultiInputBaseProps {
    */
   size?: ControlSize
   disabled?: boolean
+  /**
+   * Shows the items without letting them change: no remove buttons, nothing
+   * typed or pasted is added. The field still takes focus, its items can be
+   * read and copied, and the list is sent with the form (unlike `disabled`).
+   */
+  readOnly?: boolean
   placeholder?: string
   /** Validation message — when set, the wrapper turns red and the message renders below. */
   error?: string
@@ -170,6 +180,7 @@ function MultiInput(props: MultiInputProps) {
   const {
     size = "md",
     disabled = false,
+    readOnly: readOnlyProp = false,
     placeholder = props.type === "number" ? l.numberPlaceholder : l.placeholder,
     error,
     label,
@@ -188,6 +199,9 @@ function MultiInput(props: MultiInputProps) {
     ref,
   } = props
   const ids = useFieldIds(id)
+  // Disabled wins: a disabled field is dimmed, not filled.
+  const readOnly = readOnlyProp && !disabled
+  const editable = !disabled && !readOnly
   const hasError = error != null && error !== ""
   const hasLabel = label != null && label !== ""
   const [inputValue, setInputValue] = useState("")
@@ -306,6 +320,7 @@ function MultiInput(props: MultiInputProps) {
   }, [tokens])
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (!editable) return
     if (e.key === "Enter") {
       e.preventDefault()
       commitInput()
@@ -316,6 +331,7 @@ function MultiInput(props: MultiInputProps) {
   }
 
   const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    if (!editable) return
     const text = e.clipboardData?.getData("text") ?? ""
     if (!text.includes("\n") && !text.includes(",") && !text.includes(";")) return
     e.preventDefault()
@@ -351,6 +367,7 @@ function MultiInput(props: MultiInputProps) {
         ref={wrapperRef}
         data-slot="multi-input"
         data-type={props.type === "number" ? "number" : "string"}
+        data-readonly={readOnly ? "" : undefined}
         onClick={focusInput}
         onBlur={(e) => {
           // Moving between the text input and a remove button stays inside.
@@ -365,8 +382,9 @@ function MultiInput(props: MultiInputProps) {
           controlMinHeight[size],
           controlPaddingX[size],
           size === "sm" ? "py-1" : "py-1.5",
-          disabled && "cursor-default",
+          (disabled || readOnly) && "cursor-default",
           hasError && "border-destructive-text field-error",
+          fieldReadOnlyClass,
           className,
         )}
         // biome-ignore lint/a11y/useSemanticElements: <fieldset> conflicts with the flex chip layout.
@@ -388,7 +406,7 @@ function MultiInput(props: MultiInputProps) {
             className="gap-1 pr-1"
           >
             {renderToken(token)}
-            {!disabled && (
+            {editable && (
               <button
                 type="button"
                 data-slot="multi-input-remove"
@@ -444,13 +462,15 @@ function MultiInput(props: MultiInputProps) {
           // 16px on touch screens (iOS zooms into a focused field with smaller
           // text), on the same 20px line so the box keeps its height.
           className="flex-1 min-w-[60px] bg-transparent leading-5 outline-none pointer-coarse:text-base pointer-coarse:leading-5 disabled:cursor-default"
-          placeholder={tokens.length === 0 ? placeholder : undefined}
+          // A read-only field shows what it has, not an invitation to type.
+          placeholder={tokens.length === 0 && !readOnly ? placeholder : undefined}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           onBlur={handleBlur}
           disabled={disabled}
+          readOnly={readOnly}
         />
         {name != null && name !== "" ? (
           <input type="hidden" name={name} value={tokens.join(",")} disabled={disabled} />
