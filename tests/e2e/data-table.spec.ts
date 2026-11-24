@@ -264,3 +264,35 @@ test.describe("DataTable: cabeçalho fixo", () => {
     await expect(page.getByRole("cell", { name: "C-2026-001" })).not.toBeInViewport()
   })
 })
+
+test.describe("DataTable: colunas fixas", () => {
+  test("as colunas fixas ficam no lugar quando a tabela rola para o lado", async ({ page }) => {
+    await gotoTable(page, "data-datatable--pinned-columns")
+    const scroller = page.locator('[data-slot="data-table-scroll"]')
+    const box = await scroller.boundingBox()
+    const numero = page.getByRole("cell", { name: "C-2026-001" })
+    const cliente = page.getByRole("cell", { name: "Empresa A" })
+    const vencimento = page.getByRole("cell", { name: "2026-06-15" })
+    const before = await vencimento.boundingBox()
+    const scrolled = await scroller.evaluate((el) => {
+      el.scrollLeft = 200
+      return el.scrollLeft
+    })
+    expect(scrolled).toBeGreaterThan(50)
+    const numeroBox = await numero.boundingBox()
+    const clienteBox = await cliente.boundingBox()
+    // The first sits at the box's left edge, the second right after it.
+    expect(Math.abs((numeroBox?.x ?? 0) - (box?.x ?? 0) - 1)).toBeLessThanOrEqual(1)
+    expect(
+      Math.abs((clienteBox?.x ?? 0) - ((numeroBox?.x ?? 0) + (numeroBox?.width ?? 0))),
+    ).toBeLessThanOrEqual(1)
+    // An unpinned column moved, and went under the pinned ones.
+    const after = await vencimento.boundingBox()
+    expect((before?.x ?? 0) - (after?.x ?? 0)).toBeCloseTo(scrolled, 0)
+    const hit = await page.evaluate(
+      ([x, y]) => document.elementFromPoint(x, y)?.textContent,
+      [(clienteBox?.x ?? 0) + 4, (clienteBox?.y ?? 0) + (clienteBox?.height ?? 0) / 2],
+    )
+    expect(hit).toBe("Empresa A")
+  })
+})

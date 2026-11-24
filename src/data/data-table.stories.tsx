@@ -406,6 +406,28 @@ export const StickyHeader: Story = {
   },
 }
 
+export const PinnedColumns: Story = {
+  render: () => (
+    <div className="max-w-[28rem] p-6">
+      <DataTable
+        aria-label="Contratos"
+        columns={columns}
+        data={contratos.slice(0, 6)}
+        pinnedColumns={{ left: ["numero", "cliente"] }}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`pinnedColumns={{ left: ["numero", "cliente"] }}`: as colunas listadas vão para a esquerda e ficam no lugar quando a tabela rola para o lado, com uma linha depois da última.',
+      },
+    },
+  },
+}
+
 export const FilenameByScope: Story = {
   render: () => (
     <div className="p-6">

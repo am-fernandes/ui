@@ -462,6 +462,40 @@ describe("DataTable", () => {
     })
   })
 
+  describe("pinned columns", () => {
+    interface Pedido {
+      numero: string
+      cliente: { nome: string }
+      valor: number
+    }
+    const cols: ColumnDef<Pedido>[] = [
+      { accessorKey: "valor", header: "Valor" },
+      { accessorKey: "cliente.nome", header: "Cliente" },
+      { accessorKey: "numero", header: "Número" },
+    ]
+    const pedidos = [{ numero: "P-1", cliente: { nome: "Ana" }, valor: 10 }]
+
+    it("moves the pinned columns to the left, in the order given, and keeps them sticky", () => {
+      render(
+        <DataTable
+          columns={cols}
+          data={pedidos}
+          pinnedColumns={{ left: ["numero", "cliente.nome"] }}
+        />,
+      )
+      const headers = screen.getAllByRole("columnheader")
+      expect(headers.map((th) => th.textContent)).toEqual(["Número", "Cliente", "Valor"])
+      const cells = screen.getAllByRole("cell")
+      expect(cells.map((td) => td.textContent)).toEqual(["P-1", "Ana", "10"])
+      for (const element of [headers[0], headers[1], cells[0], cells[1]]) {
+        expect(element).toHaveAttribute("data-pinned", "left")
+        expect((element as HTMLElement).style.left).toMatch(/px$/)
+      }
+      expect(headers[2]).not.toHaveAttribute("data-pinned")
+      expect(cells[2]).not.toHaveAttribute("data-pinned")
+    })
+  })
+
   describe("density", () => {
     it("marks the table compact and tightens rows and the pager", () => {
       render(

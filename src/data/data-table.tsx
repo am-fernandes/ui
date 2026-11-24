@@ -43,12 +43,17 @@ function Table({
   className,
   children,
   containerStyle,
+  containerRef,
   ...props
-}: React.HTMLAttributes<HTMLTableElement> & { containerStyle?: React.CSSProperties }) {
+}: React.HTMLAttributes<HTMLTableElement> & {
+  containerStyle?: React.CSSProperties
+  containerRef?: React.Ref<HTMLDivElement>
+}) {
   return (
     // `isolate`: the sticky header (and pinned columns) stack among themselves,
     // never above the page's overlays.
     <div
+      ref={containerRef}
       data-slot="data-table-scroll"
       className="relative isolate w-full overflow-auto"
       style={containerStyle}
@@ -263,6 +268,12 @@ export interface DataTableProps<TData>
    */
   stickyHeader?: boolean
   /**
+   * Columns that stay in place while the table scrolls sideways, by id or
+   * `accessorKey`: `{ left: ["numero", "cliente.nome"] }`. They move to the
+   * left edge in the order given, with a line after the last one.
+   */
+  pinnedColumns?: { left?: string[] }
+  /**
    * Row density. `"compact"` gives rows of about 36px (`py-2`) and a 32px
    * pager, for dense back-office lists; `"default"` keeps the library's
    * `py-2.5 px-3` rows (about 41px).
@@ -444,6 +455,39 @@ export interface DataTableDownloadable<TData> {
 
 export type ExportScope = "filtered" | "page" | "all"
 
+/** The leaf column definitions, inside groups too. */
+function leafColumnDefs<TData>(columns: ColumnDef<TData>[]): ColumnDef<TData>[] {
+  return columns.flatMap((def) => {
+    const children = (def as { columns?: ColumnDef<TData>[] }).columns
+    return children && children.length > 0 ? leafColumnDefs(children) : [def]
+  })
+}
+
+/**
+ * TanStack's id of a column: its `id`, or its `accessorKey` with dots as
+ * underscores ("cliente.nome" is "cliente_nome"), or a string header.
+ */
+function columnDefId<TData>(def: ColumnDef<TData>): string | undefined {
+  const { id, accessorKey, header } = def as { id?: string; accessorKey?: string; header?: unknown }
+  if (id) return id
+  if (accessorKey) return accessorKey.replace(/\./g, "_")
+  return typeof header === "string" ? header : undefined
+}
+
+/** Leaf column ids for names given by id or by `accessorKey`, in the order given. */
+function resolveColumnIds<TData>(columns: ColumnDef<TData>[], names?: readonly string[]): string[] {
+  if (!names || names.length === 0) return []
+  const leaves = leafColumnDefs(columns)
+  return names.flatMap((name) => {
+    const def = leaves.find(
+      (leaf) =>
+        columnDefId(leaf) === name || (leaf as { accessorKey?: string }).accessorKey === name,
+    )
+    const id = def ? columnDefId(def) : undefined
+    return id ? [id] : []
+  })
+}
+
 /**
  * Controls a cell can hold. A click (or the click a key press makes) that
  * starts in one of them belongs to that control, never to the row.
@@ -546,6 +590,7 @@ function DataTable<TData>({
   density = "default",
   maxHeight,
   stickyHeader,
+  pinnedColumns,
   pagination,
   showRowCount = false,
   globalFilter: globalFilterProp,
@@ -685,6 +730,13 @@ function DataTable<TData>({
     [searchableSet],
   )
 
+  const pinnedLeftKey = pinnedColumns?.left?.join("\u0000") ?? ""
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the joined names are the change signal for the list.
+  const pinnedLeftIds = React.useMemo(
+    () => resolveColumnIds(columns, pinnedColumns?.left),
+    [columns, pinnedLeftKey],
+  )
+
   const tableOptions = React.useMemo(
     () => ({
       data,
@@ -697,6 +749,7 @@ function DataTable<TData>({
         // Columns flagged `meta.exportOnly: true` are removed from the
         // rendered table but kept in `getAllLeafColumns()` so the xlsx
         // export still includes them.
+        columnPinning: { left: pinnedLeftIds, right: [] },
         columnVisibility: Object.fromEntries(
           columns
             .filter((col) => {
@@ -766,6 +819,7 @@ function DataTable<TData>({
       globalFilterFn,
       getColumnCanGlobalFilter,
       getRowId,
+      pinnedLeftIds,
     ],
   )
 
@@ -868,12 +922,83 @@ function DataTable<TData>({
   const cellDensity = compact ? "py-2" : undefined
   const headDensity = compact ? "py-1" : undefined
 
+  // Pinned columns stick at the sum of the widths before them. The widths are
+  // the rendered ones (content decides them), measured after layout and again
+  // whenever the table or a pinned header resizes.
+  const scrollRef = React.useRef<HTMLDivElement>(null)
+  const [pinOffsets, setPinOffsets] = React.useState<Record<string, number>>({})
+  React.useLayoutEffect(() => {
+    const tableElement = scrollRef.current?.querySelector("table")
+    if (!tableElement || pinnedLeftIds.length === 0) {
+      setPinOffsets((prev) => (Object.keys(prev).length === 0 ? prev : {}))
+      return
+    }
+    const headerFor = (id: string) =>
+      tableElement.querySelector<HTMLElement>(
+        `thead tr:last-child th[data-column-id="${CSS.escape(id)}"]`,
+      )
+    const measure = () => {
+      const next: Record<string, number> = {}
+      let left = 0
+      for (const id of pinnedLeftIds) {
+        next[id] = left
+        left += headerFor(id)?.getBoundingClientRect().width ?? 0
+      }
+      setPinOffsets((prev) =>
+        pinnedLeftIds.every((id) => prev[id] === next[id]) &&
+        Object.keys(prev).length === pinnedLeftIds.length
+          ? prev
+          : next,
+      )
+    }
+    measure()
+    if (typeof ResizeObserver === "undefined") return
+    const observer = new ResizeObserver(measure)
+    observer.observe(tableElement)
+    for (const id of pinnedLeftIds) {
+      const header = headerFor(id)
+      if (header) observer.observe(header)
+    }
+    return () => observer.disconnect()
+  }, [pinnedLeftIds])
+  const lastPinnedId = pinnedLeftIds.at(-1)
+  /** Sticky placement of a pinned column's cell; nothing for the others. */
+  const pinFor = (
+    columnId: string,
+    surface: "head" | "body" | "foot",
+  ): { className?: string; style?: React.CSSProperties; "data-pinned"?: "left" } => {
+    if (!pinnedLeftIds.includes(columnId)) return {}
+    return {
+      "data-pinned": "left",
+      style: { left: pinOffsets[columnId] ?? 0 },
+      className: cn(
+        // On one line: a pinned block that wraps grows tall and narrow.
+        "sticky z-[1] whitespace-nowrap",
+        // Opaque, or the scrolled cells would show through. A body cell takes
+        // its row's colour (hover, selected, rowClassName); the row is
+        // `bg-card` underneath so there is always one.
+        surface === "head" && "bg-card",
+        surface === "body" && "bg-inherit [tr:hover>&]:state-hover",
+        surface === "foot" && "bg-card bg-linear-to-r from-muted/50 to-muted/50",
+        // The edge of the pinned block: drawn by the cell, since a collapsed
+        // border would stay behind while scrolling.
+        columnId === lastPinnedId &&
+          "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border",
+      ),
+    }
+  }
+  /** The leaf column a header (or its placeholder) stands for. */
+  const leafIdOf = (header: {
+    column: { id: string }
+    getLeafHeaders: () => { column: { id: string } }[]
+  }) => header.getLeafHeaders()[0]?.column.id ?? header.column.id
+  const orderedLeafColumns = [
+    ...table.getLeftVisibleLeafColumns(),
+    ...table.getCenterVisibleLeafColumns(),
+  ]
+
   // Totals and other footers: `columnDef.footer` of any column.
   const hasFooter = table.getAllFlatColumns().some((column) => column.columnDef.footer != null)
-
-  // One skeleton cell per column on screen: leaf columns (a group counts its
-  // columns), without the hidden `meta.exportOnly` ones.
-  const skeletonColumnCount = table.getVisibleLeafColumns().length
 
   const hasSearch = !!(searchableColumns && searchableColumns.length > 0)
   const hasDownload = !!downloadable
@@ -1118,6 +1243,7 @@ function DataTable<TData>({
           aria-label={ariaLabelProp}
           aria-labelledby={ariaLabelledBy}
           containerStyle={maxHeight != null ? { maxHeight } : undefined}
+          containerRef={scrollRef}
         >
           {caption != null ? (
             <caption
@@ -1153,10 +1279,18 @@ function DataTable<TData>({
                   // the action is its description (a hidden node is still read
                   // as a description, and stays out of the header's name).
                   const sortHintId = `${idBase}-sort-${header.id}`
+                  const pin = pinFor(leafIdOf(header), "head")
                   return (
                     <TableHead
                       key={header.id}
-                      className={cn(headDensity, isLeafHeader && alignClass(header.column.id))}
+                      data-column-id={isLeafHeader ? header.column.id : undefined}
+                      data-pinned={pin["data-pinned"]}
+                      style={pin.style}
+                      className={cn(
+                        headDensity,
+                        isLeafHeader && alignClass(header.column.id),
+                        pin.className,
+                      )}
                       colSpan={header.colSpan > 1 ? header.colSpan : undefined}
                       scope={header.colSpan > 1 ? "colgroup" : "col"}
                       aria-sort={canSort ? ariaSort : undefined}
@@ -1198,11 +1332,11 @@ function DataTable<TData>({
                     key={`skeleton-${rowIdx}`}
                     data-slot="data-table-skeleton-row"
                   >
-                    {Array.from({ length: skeletonColumnCount }).map((__, colIdx) => (
+                    {orderedLeafColumns.map((column, colIdx) => (
                       <TableCell
-                        // biome-ignore lint/suspicious/noArrayIndexKey: skeleton cells are positional
-                        key={`skeleton-${rowIdx}-${colIdx}`}
-                        className={cellDensity}
+                        key={`skeleton-${rowIdx}-${column.id}`}
+                        {...pinFor(column.id, "body")}
+                        className={cn(cellDensity, pinFor(column.id, "body").className)}
                       >
                         <div
                           className={cn(
@@ -1245,6 +1379,7 @@ function DataTable<TData>({
                   <TableRow
                     key={row.id}
                     className={cn(
+                      pinnedLeftIds.length > 0 && "bg-card",
                       interactive &&
                         "cursor-pointer has-[[data-row-action]:focus-visible]:state-hover",
                       rowClassName?.(row.original, index),
@@ -1259,10 +1394,13 @@ function DataTable<TData>({
                   >
                     {row.getVisibleCells().map((cell, cellIndex) => {
                       const content = flexRender(cell.column.columnDef.cell, cell.getContext())
+                      const pin = pinFor(cell.column.id, "body")
                       return (
                         <TableCell
                           key={cell.id}
-                          className={cn(cellDensity, alignClass(cell.column.id))}
+                          data-pinned={pin["data-pinned"]}
+                          style={pin.style}
+                          className={cn(cellDensity, alignClass(cell.column.id), pin.className)}
                         >
                           {interactive && cellIndex === 0 ? (
                             <button
@@ -1307,9 +1445,11 @@ function DataTable<TData>({
                     {group.headers.map((header) => (
                       <TableCell
                         key={header.id}
+                        {...pinFor(leafIdOf(header), "foot")}
                         className={cn(
                           cellDensity,
                           header.subHeaders.length === 0 && alignClass(header.column.id),
+                          pinFor(leafIdOf(header), "foot").className,
                         )}
                         colSpan={header.colSpan > 1 ? header.colSpan : undefined}
                       >
