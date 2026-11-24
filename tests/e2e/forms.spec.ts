@@ -714,3 +714,36 @@ test.describe("Combobox: cores forçadas", () => {
     expect(await outline("Aprovado")).toBe("none")
   })
 })
+
+// iOS zooms the page in when a focused input has text under 16px.
+test.describe("Ponteiro grosso (toque): texto de 16px nos campos de digitação", () => {
+  test.use({ hasTouch: true, isMobile: true })
+
+  test("busca do Combobox, DateInput e TimePicker usam 16px", async ({ page }) => {
+    await gotoStory(page, "forms-dateinput--sizes", "Tamanho lg")
+    expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true)
+    await expect(page.getByRole("textbox", { name: "Tamanho md" })).toHaveCSS("font-size", "16px")
+    const box = await page.getByRole("textbox", { name: "Tamanho md" }).boundingBox()
+    expect(box?.height).toBeCloseTo(40, 0)
+
+    await gotoStory(page, "forms-timepicker--sizes", "Tamanho lg")
+    await expect(page.getByRole("textbox", { name: "Horas" }).first()).toHaveCSS(
+      "font-size",
+      "16px",
+    )
+
+    await gotoStory(page, "forms-combobox--default", "Selecione um status")
+    await page.getByRole("combobox", { name: "Status" }).tap()
+    await expect(page.getByPlaceholder("Buscar...")).toHaveCSS("font-size", "16px")
+  })
+})
+
+test.describe("Ponteiro fino (mouse): texto de 14px nos campos de digitação", () => {
+  test("busca do Combobox e DateInput continuam com 14px", async ({ page }) => {
+    await gotoStory(page, "forms-dateinput--sizes", "Tamanho lg")
+    await expect(page.getByRole("textbox", { name: "Tamanho md" })).toHaveCSS("font-size", "14px")
+    await gotoStory(page, "forms-combobox--default", "Selecione um status")
+    await page.getByRole("combobox", { name: "Status" }).click()
+    await expect(page.getByPlaceholder("Buscar...")).toHaveCSS("font-size", "14px")
+  })
+})

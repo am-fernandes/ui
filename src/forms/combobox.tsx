@@ -583,7 +583,9 @@ export function Combobox(props: ComboboxProps) {
                       el.setSelectionRange(end, end)
                     })
                   }}
-                  className="flex w-full rounded-element bg-transparent py-2.5 text-sm outline-none placeholder:text-placeholder"
+                  // 16px on touch screens: iOS zooms the page into a
+                  // focused field whose text is smaller.
+                  className="flex w-full rounded-element bg-transparent py-2.5 text-sm pointer-coarse:text-base outline-none placeholder:text-placeholder"
                 />
               </div>
               <CommandPrimitive.List
