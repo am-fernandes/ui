@@ -9,6 +9,15 @@
 // Data
 export { Card, type CardProps } from "./data/card"
 export {
+  BarChart,
+  type BarChartProps,
+  type ChartLabels,
+  type ChartSeries,
+  defaultChartLabels,
+} from "./data/bar-chart"
+export { LineChart, type LineChartProps } from "./data/line-chart"
+export { Sparkline, type SparklineProps } from "./data/sparkline"
+export {
   DataTable,
   defaultDataTableLabels,
   type ColumnDef,

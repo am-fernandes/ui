@@ -199,6 +199,18 @@
       "types": "./dist/data/empty-state.d.ts",
       "import": "./dist/data/empty-state.js"
     },
+    "./bar-chart": {
+      "types": "./dist/data/bar-chart.d.ts",
+      "import": "./dist/data/bar-chart.js"
+    },
+    "./line-chart": {
+      "types": "./dist/data/line-chart.d.ts",
+      "import": "./dist/data/line-chart.js"
+    },
+    "./sparkline": {
+      "types": "./dist/data/sparkline.d.ts",
+      "import": "./dist/data/sparkline.js"
+    },
     "./image": {
       "types": "./dist/data/image.d.ts",
       "import": "./dist/data/image.js"
