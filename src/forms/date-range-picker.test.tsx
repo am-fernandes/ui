@@ -294,6 +294,16 @@ describe("DateRangePicker", () => {
     ).toBe("2025-03-12")
   })
 
+  it("size sets the trigger's height from the control sizes (md by default)", () => {
+    const props = { label: "Período", value: { from: "", to: "" } }
+    const { rerender } = render(<DateRangePicker {...props} />)
+    expect(screen.getByRole("button").className).toContain("h-control-md")
+    rerender(<DateRangePicker {...props} size="sm" />)
+    expect(screen.getByRole("button").className).toContain("h-control-sm")
+    rerender(<DateRangePicker {...props} size="lg" />)
+    expect(screen.getByRole("button").className).toContain("h-control-lg")
+  })
+
   it("does not open the popover when disabled", async () => {
     render(
       <DateRangePicker label="X" value={{ from: "", to: "" }} onValueChange={() => {}} disabled />,

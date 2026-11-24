@@ -556,3 +556,15 @@ test.describe("DateRangePicker: somente leitura", () => {
     await expect(page.getByRole("grid")).toHaveCount(0)
   })
 })
+
+test.describe("DateRangePicker: tamanhos", () => {
+  test("sm, md e lg medem 32, 40 e 44 px", async ({ page }) => {
+    await gotoStory(page, "forms-daterangepicker--sizes", "Tamanho lg")
+    for (const [size, height] of Object.entries({ sm: 32, md: 40, lg: 44 })) {
+      const box = await page
+        .getByRole("button", { name: new RegExp(`Tamanho ${size}`) })
+        .boundingBox()
+      expect(box?.height, size).toBeCloseTo(height, 0)
+    }
+  })
+})

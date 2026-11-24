@@ -181,6 +181,29 @@ export const ReadOnly: Story = {
   ),
 }
 
+export const Sizes: Story = {
+  args: { value: { from: "", to: "" } },
+  parameters: {
+    docs: {
+      description: {
+        story: "`size` dá a altura do gatilho: `sm` 32 px, `md` 40 px (padrão) e `lg` 44 px.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex w-[360px] flex-col gap-4">
+      {(["sm", "md", "lg"] as const).map((size) => (
+        <DateRangePicker
+          key={size}
+          size={size}
+          label={`Tamanho ${size}`}
+          defaultValue={{ from: "2025-01-01", to: "2025-01-15" }}
+        />
+      ))}
+    </div>
+  ),
+}
+
 export const OneMonth: Story = {
   args: { value: { from: "", to: "" }, numberOfMonths: 1 },
   parameters: {

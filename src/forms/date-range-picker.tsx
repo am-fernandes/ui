@@ -8,10 +8,11 @@ import type { DateRange } from "react-day-picker"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "../hooks/use-is-mobile"
 import { Popover } from "../overlays/popover"
+import type { ControlSize } from "../primitives/_internal/control-size"
 import {
   FieldShell,
   type LabelPosition,
-  fieldTriggerClass,
+  fieldTriggerSizeClass,
 } from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Button } from "../primitives/button"
@@ -82,6 +83,12 @@ export interface DateRangePickerProps {
    * does not apply.
    */
   readOnly?: boolean
+  /**
+   * Height of the trigger: `sm` 32px, `md` 40px, `lg` 44px, the same as a
+   * button or input of that size.
+   * @default "md"
+   */
+  size?: ControlSize
   /** Texts of the picker. Defaults in `defaultDateRangePickerLabels`. */
   labels?: Partial<DateRangePickerLabels>
   "aria-label"?: string
@@ -108,6 +115,7 @@ function DateRangePicker({
   labels,
   name,
   readOnly = false,
+  size = "md",
   "aria-label": ariaLabel,
   ref,
 }: DateRangePickerProps) {
@@ -236,8 +244,8 @@ function DateRangePicker({
         error: hasError,
       })}
       className={cn(
-        fieldTriggerClass,
-        "w-full justify-start text-left",
+        fieldTriggerSizeClass(size),
+        "justify-start text-left",
         !fromDate && "text-placeholder",
         hasError && "border-destructive-text field-error",
         // Read-only: a muted box that does not answer to hover; the focus
