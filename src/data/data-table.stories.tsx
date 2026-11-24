@@ -189,6 +189,7 @@ const meta = {
           "- `rowClassName?: (row, index) => string | undefined` — classes por linha. Retorne `undefined` para a linha herdar o estilo padrão. Útil para destacar linhas.",
           "- `loading?: boolean` — exibe estado skeleton: linhas (count = `pagination.pageSize ?? 5`, células = `columns.length`), input de busca, contagem e botões de paginação. Wrapper recebe `aria-busy`.",
           "- `downloadable?: boolean | { filename?, sheetName?, rowToRecord? }` — botão `Exportar para Excel` (ghost) à direita; abre popover com 3 escopos: dados filtrados, página atual, todos. Gera `.xlsx` com `write-excel-file`, carregado só no primeiro export (ou `.csv` para o Excel brasileiro, se o nome terminar em `.csv`).",
+          "- `aria-label` / `aria-labelledby` / `caption` — nome acessível da `<table>` (a `caption` também aparece, sob as linhas).",
           "- `className?: string` — classes extras no wrapper externo.",
           "",
           "**Helpers para colunas:**",
@@ -509,6 +510,7 @@ export const Sortable: Story = {
   render: () => (
     <div className="p-6">
       <DataTable
+        aria-label="Contratos"
         columns={columns}
         data={contratos.slice(0, 8)}
         sortableColumns={["numero", "cliente", "vencimento", "valor"]}

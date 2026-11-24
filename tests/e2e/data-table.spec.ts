@@ -154,3 +154,18 @@ test.describe("DataTable: estados", () => {
     await expect(page.getByRole("alert")).toHaveCount(0)
   })
 })
+
+test.describe("DataTable: semântica", () => {
+  test("a tabela tem nome e o cabeçalho ordenável se chama pelo texto", async ({ page }) => {
+    await gotoTable(page, "data-datatable--sortable")
+    const table = page.getByRole("table", { name: "Contratos" })
+    await expect(table).toBeVisible()
+    const header = table.getByRole("columnheader", { name: "Número", exact: true })
+    await expect(header).toHaveAttribute("aria-sort", "none")
+    await expect(header).toHaveAttribute("scope", "col")
+    const sort = header.getByRole("button", { name: "Número", exact: true })
+    await expect(sort).toHaveAccessibleDescription("Ordenar por Número")
+    await sort.click()
+    await expect(header).toHaveAttribute("aria-sort", "ascending")
+  })
+})

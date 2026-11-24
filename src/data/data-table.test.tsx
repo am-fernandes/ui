@@ -73,7 +73,7 @@ describe("DataTable", () => {
 
   it("sorts when the sortable header is toggled", async () => {
     render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
-    const sortBtn = screen.getByRole("button", { name: /Ordenar por Name/i })
+    const sortBtn = screen.getByRole("button", { name: "Name" })
     await userEvent.click(sortBtn)
     const rows = screen.getAllByRole("row")
     // header row + 3 data rows
@@ -84,7 +84,7 @@ describe("DataTable", () => {
 
   it("toggles to descending sort on the second click", async () => {
     render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
-    const sortBtn = screen.getByRole("button", { name: /Ordenar por Name/i })
+    const sortBtn = screen.getByRole("button", { name: "Name" })
     await userEvent.click(sortBtn)
     await userEvent.click(sortBtn)
     const rows = screen.getAllByRole("row")
@@ -94,7 +94,7 @@ describe("DataTable", () => {
 
   it("clears sort after three clicks", async () => {
     render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
-    const sortBtn = screen.getByRole("button", { name: /Ordenar por Name/i })
+    const sortBtn = screen.getByRole("button", { name: "Name" })
     await userEvent.click(sortBtn)
     await userEvent.click(sortBtn)
     await userEvent.click(sortBtn)
@@ -107,9 +107,9 @@ describe("DataTable", () => {
     render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
     const headerCells = screen.getAllByRole("columnheader")
     expect(headerCells[0]?.getAttribute("aria-sort")).toBe("none")
-    await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
+    await userEvent.click(screen.getByRole("button", { name: "Name" }))
     expect(headerCells[0]?.getAttribute("aria-sort")).toBe("ascending")
-    await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
+    await userEvent.click(screen.getByRole("button", { name: "Name" }))
     expect(headerCells[0]?.getAttribute("aria-sort")).toBe("descending")
   })
 
@@ -334,15 +334,15 @@ describe("DataTable", () => {
 
   it("renders no sort button when sortableColumns is omitted", () => {
     render(<DataTable columns={columns} data={data} />)
-    expect(screen.queryByRole("button", { name: /Ordenar por/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button")).not.toBeInTheDocument()
     expect(screen.getByText("Name")).toBeInTheDocument()
     expect(screen.getByText("Age")).toBeInTheDocument()
   })
 
   it("renders sort buttons only for columns listed in sortableColumns", () => {
     render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
-    expect(screen.getByRole("button", { name: /Ordenar por Name/i })).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /Ordenar por Age/i })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Name" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Age" })).not.toBeInTheDocument()
   })
 
   it("renders an element-typed header (non-string header branch)", () => {
@@ -355,11 +355,65 @@ describe("DataTable", () => {
     ]
     render(<DataTable columns={cols} data={data} sortableColumns={["name"]} />)
     expect(screen.getByTestId("hdr-name")).toBeInTheDocument()
-    // Sort button still rendered but its aria-label uses column id, not the JSX.
-    const btn = screen
-      .getAllByRole("button")
-      .find((b) => /Ordenar por name/i.test(b.getAttribute("aria-label") ?? ""))
-    expect(btn).toBeTruthy()
+    // The button is named by what it shows; only the hint falls back to the id.
+    expect(
+      screen.getByRole("button", { name: "Custom", description: "Ordenar por name" }),
+    ).toBeInTheDocument()
+  })
+
+  describe("table semantics", () => {
+    it("names the column header after its text, with the sort action as a description", () => {
+      render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
+      const button = screen.getByRole("button", { name: "Name" })
+      expect(button).toHaveAccessibleDescription("Ordenar por Name")
+      expect(button).not.toHaveAttribute("aria-label")
+      expect(screen.getByRole("columnheader", { name: "Name" })).toHaveAttribute(
+        "aria-sort",
+        "none",
+      )
+    })
+
+    it("uses labels.sortBy for the description", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          sortableColumns={["name"]}
+          labels={{ sortBy: (h) => `Sort by ${h}` }}
+        />,
+      )
+      expect(screen.getByRole("button", { name: "Name" })).toHaveAccessibleDescription(
+        "Sort by Name",
+      )
+    })
+
+    it("marks every header cell as a column header (scope=col)", () => {
+      render(<DataTable columns={columns} data={data} />)
+      for (const header of screen.getAllByRole("columnheader")) {
+        expect(header).toHaveAttribute("scope", "col")
+      }
+    })
+
+    it("takes the table's name from aria-label", () => {
+      render(<DataTable columns={columns} data={data} aria-label="Contratos ativos" />)
+      expect(screen.getByRole("table", { name: "Contratos ativos" })).toBeInTheDocument()
+    })
+
+    it("takes the table's name from aria-labelledby", () => {
+      render(
+        <>
+          <h2 id="titulo-contratos">Contratos</h2>
+          <DataTable columns={columns} data={data} aria-labelledby="titulo-contratos" />
+        </>,
+      )
+      expect(screen.getByRole("table", { name: "Contratos" })).toBeInTheDocument()
+    })
+
+    it("renders a caption that names the table", () => {
+      render(<DataTable columns={columns} data={data} caption="Contratos de maio" />)
+      const table = screen.getByRole("table", { name: "Contratos de maio" })
+      expect(table.querySelector("caption")).toHaveTextContent("Contratos de maio")
+    })
   })
 
   describe("pagination", () => {
@@ -418,7 +472,7 @@ describe("DataTable", () => {
         />,
       )
       await userEvent.click(screen.getByRole("button", { name: "Página 2" }))
-      await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
+      await userEvent.click(screen.getByRole("button", { name: "Name" }))
       expect(pager().current).toBe("1")
       await userEvent.click(screen.getByRole("button", { name: "Página 2" }))
       await userEvent.type(screen.getByRole("textbox", { name: "Buscar na tabela" }), "Row")
@@ -436,7 +490,7 @@ describe("DataTable", () => {
         />,
       )
       await userEvent.click(screen.getByRole("button", { name: "Página 2" }))
-      await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
+      await userEvent.click(screen.getByRole("button", { name: "Name" }))
       expect(pager().current).toBe("2")
     })
 
@@ -1021,7 +1075,7 @@ describe("DataTable", () => {
           downloadable
         />,
       )
-      await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
+      await userEvent.click(screen.getByRole("button", { name: "Name" }))
       await exportScope(/Exportar dados filtrados/i)
       const [, , , sheet] = exportCall()
       expect(sheet.rows.map((row) => row[0])).toEqual(["Alpha", "Bravo", "Charlie"])

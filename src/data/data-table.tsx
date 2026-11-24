@@ -80,6 +80,7 @@ function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCell
   return (
     <th
       data-slot="table-head"
+      scope="col"
       className={cn(
         "px-3 py-2.5 text-left align-middle font-medium text-muted-foreground",
         className,
@@ -127,7 +128,7 @@ export interface DataTableLabels {
    * `paginationNext` and `pageSize` above name its controls.
    */
   pagination: Partial<PaginationLabels>
-  /** Render the column-header sort button aria-label. */
+  /** Description of a sortable column's button ("Ordenar por Número"); its name is the header text. */
   sortBy: (headerText: string) => string
   /** Export-to-Excel trigger button label. */
   exportTrigger: string
@@ -219,6 +220,12 @@ export interface DataTableProps<TData> {
   emptyMessage?: React.ReactNode
   /** Additional class on the outer wrapper. */
   className?: string
+  /** Accessible name of the `<table>` ("Contratos"). Or use `aria-labelledby` / `caption`. */
+  "aria-label"?: string
+  /** Id of a visible heading that names the `<table>`. */
+  "aria-labelledby"?: string
+  /** A `<caption>` that names the table and is shown with it (below the rows). */
+  caption?: React.ReactNode
   /** Enable pagination. When set, footer shows previous/next + page indicator. Default: not paginated. */
   pagination?: {
     pageSize?: number
@@ -490,6 +497,9 @@ function DataTable<TData>({
   searchClassName,
   emptyMessage,
   className,
+  "aria-label": ariaLabelProp,
+  "aria-labelledby": ariaLabelledBy,
+  caption,
   pagination,
   showRowCount = false,
   globalFilter: globalFilterProp,
@@ -517,6 +527,7 @@ function DataTable<TData>({
   manualSorting,
   manualFiltering,
 }: DataTableProps<TData>) {
+  const idBase = React.useId()
   const isGlobalFilterControlled = globalFilterProp !== undefined
   // The page is controlled by `pageIndex` alone: `onPaginationChange` without
   // it is a listener, and the table keeps moving through its own pages.
@@ -1035,7 +1046,15 @@ function DataTable<TData>({
       ) : null}
 
       <div className="overflow-hidden rounded-container border border-border-strong bg-card">
-        <Table>
+        <Table aria-label={ariaLabelProp} aria-labelledby={ariaLabelledBy}>
+          {caption != null ? (
+            <caption
+              data-slot="data-table-caption"
+              className="px-3 py-2.5 text-left text-sm text-muted-foreground"
+            >
+              {caption}
+            </caption>
+          ) : null}
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -1046,16 +1065,23 @@ function DataTable<TData>({
                     sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"
                   const headerDef = header.column.columnDef.header
                   const headerText = typeof headerDef === "string" ? headerDef : header.id
-                  const ariaLabel = mergedLabels.sortBy(headerText)
+                  // The button is named by what it shows, so the column header
+                  // reads "Número", not "Ordenar por Número", on every cell;
+                  // the action is its description (a hidden node is still read
+                  // as a description, and stays out of the header's name).
+                  const sortHintId = `${idBase}-sort-${header.id}`
                   return (
                     <TableHead key={header.id} aria-sort={canSort ? ariaSort : undefined}>
                       {header.isPlaceholder ? null : canSort ? (
                         <button
                           type="button"
                           onClick={header.column.getToggleSortingHandler()}
-                          className="-mx-2 inline-flex h-8 items-center gap-2 rounded-element px-2 text-left cursor-pointer transition-colors state-layer"
-                          aria-label={ariaLabel}
+                          className="-mx-2 inline-flex h-8 items-center gap-2 rounded-element px-2 text-left cursor-pointer transition-colors state-layer focus-visible:focus-outline-inset"
+                          aria-describedby={sortHintId}
                         >
+                          <span id={sortHintId} hidden>
+                            {mergedLabels.sortBy(headerText)}
+                          </span>
                           {flexRender(header.column.columnDef.header, header.getContext())}
                           {sorted === "asc" ? (
                             <ArrowUp className="size-3.5" aria-hidden />
