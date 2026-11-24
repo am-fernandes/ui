@@ -124,6 +124,12 @@ export interface AppShellProps {
   className?: string
   /** Page content, rendered inside `<main id="conteudo">` — the only area that scrolls. */
   children?: React.ReactNode
+  /**
+   * Ref to the `<main>` that scrolls. The page scrolls inside it, not the
+   * window, so give it to your router's scroll restoration (or call
+   * `mainRef.current.scrollTo(0, 0)` on navigation).
+   */
+  mainRef?: React.Ref<HTMLElement>
 }
 
 export interface AppShellState {
@@ -180,11 +186,7 @@ function BrandMark({ brand, onClick, label, className, withTooltip = false }: Br
       data-slot="app-shell-brand-mark"
       aria-label={label}
       onClick={onClick}
-      className={cn(
-        box,
-        "cursor-pointer transition-opacity hover:opacity-70",
-        "focus-visible:focus-outline",
-      )}
+      className={cn(box, "cursor-pointer state-layer", "focus-visible:focus-outline")}
     >
       {brand}
     </button>
@@ -213,6 +215,7 @@ function AppShell({
   defaultCollapsed = true,
   storageKey = STORAGE_KEY,
   labels,
+  mainRef,
   className,
   children,
 }: AppShellProps) {
@@ -297,7 +300,12 @@ function AppShell({
       <div
         data-slot="app-shell"
         data-state={collapsed ? "collapsed" : "expanded"}
-        className={cn("flex h-dvh w-full overflow-hidden bg-background text-foreground", className)}
+        className={cn(
+          "flex h-dvh w-full overflow-hidden bg-background text-foreground",
+          // On paper the page must flow: no viewport-tall box, no inner scroll.
+          "print:block print:h-auto print:overflow-visible",
+          className,
+        )}
       >
         <a
           href={`#${MAIN_ID}`}
@@ -319,7 +327,7 @@ function AppShell({
           className={cn(
             // `overflow-hidden` keeps labels growing from 0 → full width from
             // exposing a horizontal scrollbar while the width animates.
-            "hidden shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:flex",
+            "hidden shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-(--duration-medium) ease-(--ease-standard) md:flex print:hidden",
             collapsed ? "w-16" : "w-64",
           )}
         >
@@ -387,7 +395,7 @@ function AppShell({
           ) : null}
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col print:block">
           {/* One bar for both layouts: on desktop it is the navbar (hidden
               when there is none); below 768px it also carries the menu
               button and the brand. Rendering `navbar` once avoids mounting
@@ -504,8 +512,9 @@ function AppShell({
             id={MAIN_ID}
             tabIndex={-1}
             data-slot="app-shell-main"
+            ref={mainRef}
             className={cn(
-              "min-h-0 flex-1 overflow-y-auto focus:outline-none",
+              "min-h-0 flex-1 overflow-y-auto focus:outline-none print:overflow-visible",
               contentPadding && "p-4 md:p-6",
             )}
           >

@@ -209,6 +209,43 @@ test.describe("CommandPalette", () => {
 })
 
 test.describe("AppShell", () => {
+  test("prints the whole page, not the first screen, and leaves the menu out", async ({ page }) => {
+    await gotoShell(page, "navigation-appshell--default")
+    const main = page.locator('[data-slot="app-shell-main"]')
+    // A page taller than the window, like a long list.
+    await main.evaluate((el) => {
+      const filler = document.createElement("div")
+      filler.style.height = "3000px"
+      filler.textContent = "fim da lista"
+      el.appendChild(filler)
+    })
+    await page.emulateMedia({ media: "print" })
+    await expect(page.locator('[data-slot="app-shell-sidebar"]')).toBeHidden()
+    const sizes = await main.evaluate((el) => ({
+      overflow: getComputedStyle(el).overflowY,
+      height: el.getBoundingClientRect().height,
+      scroll: el.scrollHeight,
+    }))
+    expect(sizes.overflow).toBe("visible")
+    // Nothing is cut: the box is as tall as its content.
+    expect(sizes.height).toBeGreaterThanOrEqual(sizes.scroll - 1)
+    await page.emulateMedia({ media: "screen" })
+  })
+
+  test("the brand button reacts with the state layer, not by fading", async ({ page }) => {
+    await gotoShell(page, "navigation-appshell--brand-as-back-button")
+    const brand = page.locator(
+      '[data-slot="app-shell-sidebar"] button[data-slot="app-shell-brand-mark"]',
+    )
+    await brand.hover()
+    const look = await brand.evaluate((el) => ({
+      opacity: getComputedStyle(el).opacity,
+      layer: getComputedStyle(el).backgroundImage,
+    }))
+    expect(look.opacity).toBe("1")
+    expect(look.layer).toContain("gradient")
+  })
+
   test("menu header and navbar are both 64px and end on the same line", async ({ page }) => {
     await gotoShell(page, "navigation-appshell--default")
     const header = await page.locator('[data-slot="app-shell-brand"]').boundingBox()

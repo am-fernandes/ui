@@ -122,6 +122,19 @@ describe("AppShell", () => {
       expect(main).toHaveClass("min-h-0", "flex-1", "overflow-y-auto")
     })
 
+    it("hands the scrolling <main> to mainRef, for the router's scroll restoration", () => {
+      const mainRef = { current: null as HTMLElement | null }
+      const { main } = renderShell({ mainRef })
+      expect(mainRef.current).toBe(main)
+    })
+
+    it("lets the page flow on paper: no viewport box, no inner scroll, no menu", () => {
+      const { root, aside, main } = renderShell()
+      expect(root).toHaveClass("print:h-auto", "print:overflow-visible")
+      expect(main).toHaveClass("print:overflow-visible")
+      expect(aside).toHaveClass("print:hidden")
+    })
+
     it("lets className replace the viewport height (e.g. under an Electron title bar)", () => {
       const { root } = renderShell({ className: "h-full" })
       expect(root).toHaveClass("h-full")
