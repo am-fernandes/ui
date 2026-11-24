@@ -99,10 +99,60 @@ test.describe("Accordion", () => {
 })
 
 test.describe("Breadcrumb", () => {
+  async function gotoTrail(page: Page, id: string) {
+    await page.goto(story(id))
+    await expect(page.locator('[data-slot="breadcrumb"]')).toBeAttached({ timeout: 15_000 })
+  }
+
   test("last item is marked as current page", async ({ page }) => {
-    await page.goto(story("navigation-breadcrumb--default"))
+    await gotoTrail(page, "navigation-breadcrumb--default")
     const current = page.locator('[aria-current="page"]')
     await expect(current).toHaveCount(1)
+  })
+
+  test("is a valid list for assistive technology, named in Portuguese", async ({ page }) => {
+    await gotoTrail(page, "navigation-breadcrumb--long-trail")
+    await expect(page.getByRole("navigation", { name: "Trilha de navegação" })).toBeVisible()
+    // axe's `list` rule used to fail on the separator <li role="presentation">.
+    await expectNoA11yViolations(page, '[data-slot="breadcrumb"]')
+  })
+
+  test("a collapsed trail opens the hidden steps from the keyboard", async ({ page }) => {
+    await gotoTrail(page, "navigation-breadcrumb--collapsed-trail")
+    const trail = page.getByRole("navigation", { name: "Trilha de navegação" })
+    await expect(trail.getByRole("link")).toHaveText(["Home", "Frontend"])
+
+    const more = trail.getByRole("button", { name: "Mostrar itens ocultos da trilha" })
+    const box = await more.boundingBox()
+    expect(box?.width).toBeGreaterThanOrEqual(24)
+    expect(box?.height).toBeGreaterThanOrEqual(24)
+
+    await more.focus()
+    await page.keyboard.press("Enter")
+    const menu = page.getByRole("menu")
+    await expect(menu.getByRole("menuitem")).toHaveText([
+      "Empresa",
+      "Departamentos",
+      "Engenharia",
+      "Equipes",
+    ])
+    await expect(menu.getByRole("menuitem", { name: "Equipes" })).toHaveAttribute(
+      "href",
+      "/empresa/departamentos/engenharia/equipes",
+    )
+    await page.keyboard.press("Escape")
+    await expect(menu).toHaveCount(0)
+    await expect(more).toBeFocused()
+  })
+
+  test("renderLink receives the click, so a router can navigate without a reload", async ({
+    page,
+  }) => {
+    await gotoTrail(page, "navigation-breadcrumb--with-router-link")
+    const link = page.getByRole("link", { name: "Contratos" })
+    await expect(link).toHaveAttribute("data-router-link", "")
+    await link.click()
+    await expect(page).toHaveURL(/#\/contratos$/)
   })
 })
 

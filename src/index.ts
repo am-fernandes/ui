@@ -114,7 +114,9 @@ export {
 } from "./navigation/app-shell"
 export {
   Breadcrumb,
+  defaultBreadcrumbLabels,
   type BreadcrumbItemData,
+  type BreadcrumbLabels,
   type BreadcrumbProps,
 } from "./navigation/breadcrumb"
 export {
