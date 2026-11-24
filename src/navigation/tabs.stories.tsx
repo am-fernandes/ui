@@ -188,7 +188,7 @@ export const WithBadge: Story = {
         value: "inbox",
         label: "Caixa de entrada",
         badge: (
-          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-medium text-primary-foreground">
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
             12
           </span>
         ),
@@ -198,7 +198,7 @@ export const WithBadge: Story = {
         value: "snoozed",
         label: "Adiados",
         badge: (
-          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
             3
           </span>
         ),

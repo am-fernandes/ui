@@ -24,7 +24,7 @@ const STORAGE_KEY = "amf-ui:sidebar:collapsed"
 
 function CountBadge({ value }: { value: number }) {
   return (
-    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-medium text-destructive-foreground">
+    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-medium text-destructive-foreground">
       {value}
     </span>
   )
@@ -375,7 +375,7 @@ export const UnderTitleBar: Story = {
   },
   render: (args) => (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex h-8 shrink-0 items-center border-b px-2.5 text-[11px] font-medium">
+      <div className="flex h-8 shrink-0 items-center border-b px-2.5 text-xs font-medium">
         Nexus Tickets
       </div>
       <div className="min-h-0 flex-1 overflow-hidden">

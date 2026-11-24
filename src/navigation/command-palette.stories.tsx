@@ -214,8 +214,8 @@ export const WithKeyboardTrigger: Story = {
       <div className="flex flex-col items-center gap-3">
         <Button onClick={() => setOpen(true)}>Abrir paleta</Button>
         <p className="text-xs text-muted-foreground">
-          Pressione <kbd className="rounded border bg-muted px-1.5 text-[10px]">⌘K</kbd> /{" "}
-          <kbd className="rounded border bg-muted px-1.5 text-[10px]">Ctrl+K</kbd> para abrir.
+          Pressione <kbd className="rounded border bg-muted px-1.5 text-xs">⌘K</kbd> /{" "}
+          <kbd className="rounded border bg-muted px-1.5 text-xs">Ctrl+K</kbd> para abrir.
         </p>
         <CommandPalette
           open={open}
