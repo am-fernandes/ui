@@ -118,6 +118,7 @@ interface TimeFieldProps {
   ariaLabel: string
   ariaInvalid?: boolean
   ariaDescribedBy?: string
+  ariaRequired?: boolean
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]
   onChange: (raw: string) => void
   onBlur: () => void
@@ -133,6 +134,7 @@ function TimeField({
   ariaLabel,
   ariaInvalid,
   ariaDescribedBy,
+  ariaRequired,
   inputMode = "numeric",
   onChange,
   onBlur,
@@ -150,6 +152,7 @@ function TimeField({
       aria-label={ariaLabel}
       aria-invalid={ariaInvalid ? true : undefined}
       aria-describedby={ariaDescribedBy}
+      aria-required={ariaRequired ? true : undefined}
       maxLength={2}
       placeholder="--"
       value={value}
@@ -371,6 +374,7 @@ function TimePicker({
           ariaLabel={l.hours}
           ariaInvalid={hasError}
           ariaDescribedBy={describedBy}
+          ariaRequired={required}
           min={MIN_HOUR}
           max={MAX_HOUR}
           onChange={handleHourChange}
@@ -388,6 +392,7 @@ function TimePicker({
           ariaLabel={l.minutes}
           ariaInvalid={hasError}
           ariaDescribedBy={describedBy}
+          ariaRequired={required}
           min={MIN_MINUTE}
           max={MAX_MINUTE}
           onChange={handleMinuteChange}

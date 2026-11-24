@@ -381,6 +381,12 @@ describe("TimePicker", () => {
     expect(hour).toHaveFocus()
   })
 
+  it("required: both fields say so with aria-required", () => {
+    render(<TimePicker value="" label="Início" required />)
+    expect(screen.getByLabelText("Horas")).toHaveAttribute("aria-required", "true")
+    expect(screen.getByLabelText("Minutos")).toHaveAttribute("aria-required", "true")
+  })
+
   it("forwards ref to the hour input", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<TimePicker value="" ref={ref} />)
