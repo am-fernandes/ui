@@ -204,6 +204,14 @@ export {
   type ComboboxProps,
 } from "./forms/combobox"
 export {
+  defaultSelectLabels,
+  Select,
+  type SelectGroup,
+  type SelectLabels,
+  type SelectOption,
+  type SelectProps,
+} from "./forms/select"
+export {
   DateInput,
   defaultDateInputLabels,
   type DateInputLabels,

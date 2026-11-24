@@ -6,6 +6,7 @@
  *   - Dialog content stays usable on a narrow viewport (close to full width).
  *   - DataTable's internal table is wrapped in an overflow-auto container.
  *   - Tabs do not break layout when the trigger list is wider than the viewport.
+ *   - Select opens and chooses by touch, with the list inside the screen.
  *
  * These specs are scoped to `mobile-chromium` in `playwright.config.ts`.
  */
@@ -146,5 +147,24 @@ test.describe("Tabs (mobile)", () => {
     await last.tap()
     await expect(last).toHaveAttribute("aria-selected", "true")
     await expect(page.getByRole("tabpanel")).toContainText("Tarefas do lead.")
+  })
+})
+
+test.describe("Select (mobile)", () => {
+  test("a tap opens the list inside the screen and a tap chooses", async ({ page }) => {
+    await page.goto(story("forms-select--groups"))
+    const trigger = page.getByRole("combobox", { name: "Tipo de imóvel" })
+    await expect(trigger).toBeVisible({ timeout: 15_000 })
+    await trigger.tap()
+    const list = page.locator('[data-slot="select-content"]')
+    await expect(list).toBeVisible()
+    const box = (await list.boundingBox())!
+    const viewport = page.viewportSize()!
+    expect(box.x).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height)
+    await page.getByRole("option", { name: "Cobertura" }).tap()
+    await expect(list).toHaveCount(0)
+    await expect(trigger).toHaveText("Cobertura")
   })
 })
