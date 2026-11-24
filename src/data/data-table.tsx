@@ -656,20 +656,9 @@ function DataTable<TData>({
       for (const col of leafCols) {
         const headerDef = col.columnDef.header
         const label = typeof headerDef === "string" && headerDef.length > 0 ? headerDef : col.id
-        const def = col.columnDef as {
-          accessorKey?: string
-          accessorFn?: (row: TData, rowIndex: number) => unknown
-        }
-        // Resolve in priority order: explicit accessorKey > accessorFn (covers
-        // computed/nested values) > fallback to col.id as a property.
-        let rawValue: unknown
-        if (def.accessorKey != null) {
-          rawValue = (row as Record<string, unknown>)[def.accessorKey]
-        } else if (typeof def.accessorFn === "function") {
-          rawValue = def.accessorFn(row, rowIndex)
-        } else {
-          rawValue = (row as Record<string, unknown>)[col.id]
-        }
+        // The column's own accessor, the one the cell reads: TanStack builds
+        // it for `accessorKey` too, nested keys ("cliente.nome") included.
+        const rawValue = col.accessorFn ? col.accessorFn(row, rowIndex) : undefined
         record[label] = rawValue ?? ""
       }
       return record

@@ -618,6 +618,30 @@ describe("DataTable", () => {
       expect(records).toHaveLength(data.length)
     })
 
+    it("exports nested accessorKey and accessorFn values, as the cells show them", async () => {
+      interface Venda {
+        cliente: { nome: string; cidade: string }
+        valor: number
+      }
+      const cols: ColumnDef<Venda>[] = [
+        { accessorKey: "cliente.nome", header: "Cliente" },
+        { id: "cidade", accessorFn: (row) => row.cliente.cidade.toUpperCase(), header: "Cidade" },
+        { accessorKey: "valor", header: "Valor" },
+      ]
+      render(
+        <DataTable
+          columns={cols}
+          data={[{ cliente: { nome: "João", cidade: "Santos" }, valor: 10 }]}
+          downloadable
+        />,
+      )
+      expect(screen.getByText("João")).toBeInTheDocument()
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
+      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [Record<string, unknown>[]]
+      expect({ ...records[0] }).toEqual({ Cliente: "João", Cidade: "SANTOS", Valor: 10 })
+    })
+
     it("uses custom filename, sheetName and rowToRecord when provided", async () => {
       render(
         <DataTable
