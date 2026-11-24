@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, userEvent, within } from "@storybook/test"
 import { useEffect, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 
@@ -361,6 +362,56 @@ export const OpensOnChosen: Story = {
         />
       </div>
     )
+  },
+}
+
+export const UncontrolledInForm: Story = {
+  name: "Uncontrolled, in a native form",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Sem `value`, o campo guarda a própria escolha a partir de `defaultValue`. Com `name`, um `<input type="hidden">` leva o valor bruto ao formulário nativo (no modo múltiplo, os valores separados por vírgula), e o reset do formulário volta ao padrão.',
+      },
+    },
+  },
+  render: () => {
+    const [sent, setSent] = useState<string | null>(null)
+    return (
+      <form
+        className="flex w-[320px] flex-col gap-3"
+        onSubmit={(event) => {
+          event.preventDefault()
+          const data = new FormData(event.currentTarget)
+          setSent(`status=${data.get("status")}; areas=${data.get("areas")}`)
+        }}
+      >
+        <Combobox name="status" options={plainOptions} label="Status" defaultValue="pendente" />
+        <Combobox
+          multiple
+          name="areas"
+          options={sampleOptions}
+          label="Áreas"
+          defaultValue={["advocacia"]}
+        />
+        <div className="flex gap-2">
+          <Button type="submit">Enviar</Button>
+          <Button type="reset" variant="outline">
+            Restaurar
+          </Button>
+        </div>
+        {sent ? <p className="text-xs text-muted-foreground">Enviado: {sent}</p> : null}
+      </form>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(canvas.getByRole("combobox", { name: "Status" }))
+    await userEvent.click(await body.findByRole("option", { name: "Aprovado" }))
+    await expect(canvas.getByRole("combobox", { name: "Status" })).toHaveTextContent("Aprovado")
+    await userEvent.click(canvas.getByRole("button", { name: "Enviar" }))
+    await expect(canvas.getByText("Enviado: status=aprovado; areas=advocacia")).toBeInTheDocument()
   },
 }
 

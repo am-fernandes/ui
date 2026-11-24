@@ -98,6 +98,12 @@ interface ComboboxBaseProps {
    * @default 100
    */
   maxVisibleOptions?: number
+  /**
+   * Name of the field in a native form. The form receives the raw value
+   * (the option's `value`; in multiple mode, the values joined by commas),
+   * carried by a hidden input.
+   */
+  name?: string
   /** Texts of the list. Defaults in `defaultComboboxLabels`. */
   labels?: Partial<ComboboxLabels>
   ref?: React.Ref<HTMLButtonElement>
@@ -105,13 +111,19 @@ interface ComboboxBaseProps {
 
 interface ComboboxSingleProps extends ComboboxBaseProps {
   multiple?: false
+  /** The chosen value, controlled. Leave it out to let the field keep its own. */
   value?: string
+  /** Initial value of an uncontrolled field. */
+  defaultValue?: string
   onValueChange?: (value: string) => void
 }
 
 interface ComboboxMultipleProps extends ComboboxBaseProps {
   multiple: true
+  /** The chosen values, controlled. Leave it out to let the field keep its own. */
   value?: string[]
+  /** Initial values of an uncontrolled field. */
+  defaultValue?: string[]
   onValueChange?: (value: string[]) => void
   maxBadges?: number
   /**
@@ -152,6 +164,7 @@ export function Combobox(props: ComboboxProps) {
     loading = false,
     shouldFilter = true,
     maxVisibleOptions = 100,
+    name,
     ref,
   } = props
   const l: ComboboxLabels = { ...defaultComboboxLabels, ...props.labels }
@@ -187,7 +200,38 @@ export function Combobox(props: ComboboxProps) {
   const hasDescription = description != null && description !== ""
 
   const isMultiple = props.multiple === true
-  const chosen = React.useMemo(() => toArray(props.value), [props.value])
+  // Controlled with `value`; otherwise the field keeps its own choice,
+  // starting from `defaultValue`. Either way it is a list here: one value or
+  // none in single mode.
+  const isControlled = props.value !== undefined
+  const initialValue = (): string[] => toArray(props.defaultValue).filter((v) => v !== "")
+  const [internalValue, setInternalValue] = React.useState(initialValue)
+  const controlledValue = props.value
+  const chosen = React.useMemo(
+    () => (isControlled ? toArray(controlledValue).filter((v) => v !== "") : internalValue),
+    [isControlled, controlledValue, internalValue],
+  )
+  const singleValue = chosen[0] ?? ""
+
+  const emit = (next: string[]) => {
+    if (!isControlled) setInternalValue(next)
+    if (props.multiple === true) props.onValueChange?.(next)
+    else props.onValueChange?.(next[0] ?? "")
+  }
+
+  // An uncontrolled field goes back to `defaultValue` when its form is reset,
+  // like a native one. Read through a ref, so the listener is attached once.
+  const onFormReset = React.useRef(() => {})
+  onFormReset.current = () => {
+    if (!isControlled) setInternalValue(initialValue())
+  }
+  React.useEffect(() => {
+    const form = triggerRef.current?.form
+    if (form == null) return
+    const reset = () => onFormReset.current()
+    form.addEventListener("reset", reset)
+    return () => form.removeEventListener("reset", reset)
+  }, [])
 
   // Labels of the options seen so far, so a choice keeps its name in the
   // trigger and chips after a server search replaces `options`.
@@ -240,63 +284,44 @@ export function Combobox(props: ComboboxProps) {
   const handleSingleSelect = (currentValue: string) => {
     const byPointer = pickedWithPointer.current
     pickedWithPointer.current = false
-    if (!isMultiple && props.onValueChange) {
-      if (currentValue !== props.value) props.onValueChange(currentValue)
-      // A click on the chosen option of an optional field clears it, as
-      // before. Enter on it (where the list opens) and a required field keep it.
-      else if (byPointer && !required) props.onValueChange("")
-    }
+    if (currentValue !== singleValue) emit([currentValue])
+    // A click on the chosen option of an optional field clears it, as
+    // before. Enter on it (where the list opens) and a required field keep it.
+    else if (byPointer && !required) emit([])
     setOpen(false)
   }
 
   const handleMultipleSelect = (currentValue: string) => {
-    if (isMultiple && props.onValueChange) {
-      const currentValues = toArray(props.value)
-      const newValues = currentValues.includes(currentValue)
-        ? currentValues.filter((v) => v !== currentValue)
-        : [...currentValues, currentValue]
-      props.onValueChange(newValues)
-    }
+    emit(
+      chosen.includes(currentValue)
+        ? chosen.filter((v) => v !== currentValue)
+        : [...chosen, currentValue],
+    )
   }
 
   const handleCreate = (createdValue: string) => {
     const trimmed = createdValue.trim()
     if (!trimmed) return
-    if (isMultiple) {
-      if (props.onValueChange) {
-        const currentValues = toArray(props.value)
-        if (!currentValues.includes(trimmed)) {
-          props.onValueChange([...currentValues, trimmed])
-        }
-      }
-    } else if (props.onValueChange) {
-      props.onValueChange(trimmed)
-    }
+    if (!isMultiple) emit([trimmed])
+    else if (!chosen.includes(trimmed)) emit([...chosen, trimmed])
     setOpen(false)
     changeSearch("")
   }
 
   const handleRemoveValue = (valueToRemove: string, e: React.SyntheticEvent) => {
     e.stopPropagation()
-    if (isMultiple && props.onValueChange) {
-      const currentValues = toArray(props.value)
-      props.onValueChange(currentValues.filter((v) => v !== valueToRemove))
-    }
+    emit(chosen.filter((v) => v !== valueToRemove))
   }
 
   const handleClearAll = () => {
-    if (isMultiple && props.onValueChange) {
-      props.onValueChange([])
-    } else if (!isMultiple && props.onValueChange) {
-      props.onValueChange("")
-    }
+    emit([])
     // The clear button goes away with the value: keep the focus in the field.
     triggerRef.current?.focus()
   }
 
   const renderTriggerContent = () => {
     if (isMultiple) {
-      const values = toArray(props.value)
+      const values = chosen
       if (values.length === 0) {
         return <span className="text-placeholder">{resolvedPlaceholder}</span>
       }
@@ -307,9 +332,9 @@ export function Combobox(props: ComboboxProps) {
         : `${count} ${count === 1 ? "selecionado" : "selecionados"}`
       return <span className="text-foreground">{countText}</span>
     }
-    const selectedLabel = props.value ? labelOf(props.value) : undefined
+    const selectedLabel = singleValue ? labelOf(singleValue) : undefined
     if (selectedLabel != null) return selectedLabel
-    if (creatable && props.value) return props.value
+    if (creatable && singleValue) return singleValue
     return <span className="text-placeholder">{resolvedPlaceholder}</span>
   }
 
@@ -320,12 +345,12 @@ export function Combobox(props: ComboboxProps) {
     !options.some((o) => normalizeText(o.value) === normalizeText(trimmedSearch)) &&
     !options.some((o) => normalizeText(o.label) === normalizeText(trimmedSearch))
 
-  const hasValue = isMultiple ? toArray(props.value).length > 0 : Boolean(props.value)
+  const hasValue = chosen.length > 0
 
   const multiBadges = (() => {
     if (!isMultiple) return null
     if ((props as ComboboxMultipleProps).showBadges === false) return null
-    const values = toArray(props.value)
+    const values = chosen
     if (values.length === 0) return null
     const maxBadges = (props as ComboboxMultipleProps).maxBadges ?? 2
     const visibleValues = values.slice(0, maxBadges)
@@ -530,6 +555,9 @@ export function Combobox(props: ComboboxProps) {
           </Popover>
           {clearButton}
         </div>
+        {name != null && name !== "" ? (
+          <input type="hidden" name={name} value={chosen.join(",")} disabled={disabled} />
+        ) : null}
       </div>
     </FieldShell>
   )

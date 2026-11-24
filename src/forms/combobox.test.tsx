@@ -492,6 +492,81 @@ describe("Combobox: ARIA do gatilho", () => {
   })
 })
 
+describe("Combobox: não controlado e formulário nativo", () => {
+  it("without value, it keeps the choice itself", async () => {
+    const onValueChange = vi.fn()
+    render(<Combobox options={options} onValueChange={onValueChange} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.click(await screen.findByRole("option", { name: "Bravo" }))
+    expect(onValueChange).toHaveBeenCalledWith("b")
+    expect(screen.getByRole("combobox")).toHaveTextContent("Bravo")
+  })
+
+  it("starts from defaultValue and can be cleared", async () => {
+    render(<Combobox options={options} defaultValue="c" placeholder="Pick" />)
+    expect(screen.getByRole("combobox")).toHaveTextContent("Charlie")
+    await userEvent.click(screen.getByRole("button", { name: "Limpar seleção" }))
+    expect(screen.getByRole("combobox")).toHaveTextContent("Pick")
+  })
+
+  it("multiple: starts from defaultValue and toggles options", async () => {
+    render(<Combobox multiple options={options} defaultValue={["a"]} placeholder="Pick" />)
+    expect(screen.getByRole("combobox")).toHaveTextContent("1 selecionado")
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.click(await screen.findByRole("option", { name: "Charlie" }))
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
+    expect(screen.getByRole("combobox")).toHaveTextContent("2 selecionados")
+    await userEvent.click(screen.getByRole("button", { name: "Remover Alpha" }))
+    expect(screen.getByRole("combobox")).toHaveTextContent("1 selecionado")
+  })
+
+  it("name: a native form receives the raw value", () => {
+    const { container } = render(
+      <form>
+        <Combobox name="status" options={options} defaultValue="b" />
+      </form>,
+    )
+    const form = container.querySelector("form") as HTMLFormElement
+    expect(new FormData(form).get("status")).toBe("b")
+  })
+
+  it("name, multiple: the values go comma-joined", () => {
+    const { container } = render(
+      <form>
+        <Combobox multiple name="areas" options={options} value={["a", "c"]} />
+      </form>,
+    )
+    const form = container.querySelector("form") as HTMLFormElement
+    expect(new FormData(form).get("areas")).toBe("a,c")
+  })
+
+  it("name, disabled: nothing is submitted", () => {
+    const { container } = render(
+      <form>
+        <Combobox name="status" options={options} value="b" disabled />
+      </form>,
+    )
+    const form = container.querySelector("form") as HTMLFormElement
+    expect(new FormData(form).has("status")).toBe(false)
+  })
+
+  it("an uncontrolled field goes back to defaultValue when its form is reset", async () => {
+    const { container } = render(
+      <form>
+        <Combobox name="status" options={options} defaultValue="a" />
+      </form>,
+    )
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.click(await screen.findByRole("option", { name: "Charlie" }))
+    expect(screen.getByRole("combobox")).toHaveTextContent("Charlie")
+    const form = container.querySelector("form") as HTMLFormElement
+    form.reset()
+    await waitFor(() => expect(screen.getByRole("combobox")).toHaveTextContent("Alpha"))
+    expect(new FormData(form).get("status")).toBe("a")
+  })
+})
+
 describe("Combobox: listas grandes e busca no servidor", () => {
   const many: ComboboxOption[] = Array.from({ length: 250 }, (_, i) => ({
     value: `o-${i + 1}`,
