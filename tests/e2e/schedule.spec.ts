@@ -267,6 +267,17 @@ test.describe("Schedule — list and mobile", () => {
   })
 })
 
+test.describe("Schedule — keyboard", () => {
+  test("the grid of hours is a named region that scrolls from the keyboard", async ({ page }) => {
+    await gotoSchedule(page, "data-schedule--week")
+    const grid = page.getByRole("region", { name: "Grade de horários" })
+    await grid.focus()
+    const before = await grid.evaluate((el) => el.scrollTop)
+    await page.keyboard.press("PageDown")
+    await expect.poll(() => grid.evaluate((el) => el.scrollTop)).toBeGreaterThan(before)
+  })
+})
+
 test.describe("Schedule — forced colours", () => {
   test("today and every event stay visible when colours are forced", async ({ page }) => {
     await page.emulateMedia({ forcedColors: "active" })

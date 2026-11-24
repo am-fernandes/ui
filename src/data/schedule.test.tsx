@@ -25,7 +25,15 @@ const events: ScheduleEvent[] = [
 ]
 
 function renderSchedule(props: Partial<ScheduleProps> = {}) {
-  return render(<Schedule events={events} today={TODAY} defaultDate={TODAY} {...props} />)
+  return render(
+    <Schedule
+      events={events}
+      today={TODAY}
+      defaultDate={TODAY}
+      onEventClick={() => {}}
+      {...props}
+    />,
+  )
 }
 
 const eventButton = (name: string | RegExp) => screen.getByRole("button", { name })
@@ -569,6 +577,23 @@ describe("Schedule", () => {
       const header = container.querySelector('[data-slot="schedule-day-header"]') as HTMLElement
       expect(header).toHaveTextContent("Sun")
       expect(header).toHaveTextContent("Sunday, November 15")
+    })
+  })
+
+  describe("read-only events", () => {
+    it("are plain content, not tab stops, when nothing handles them", async () => {
+      const { container } = renderSchedule({ onEventClick: undefined })
+      expect(screen.queryByRole("button", { name: /^Revisão/ })).toBeNull()
+      const review = container.querySelector('[data-event-id="review"]') as HTMLElement
+      expect(review.tagName).toBe("DIV")
+      expect(review).toHaveTextContent("Revisão, quarta-feira, 18 de novembro, 09:15 – 10:30")
+      // Tab goes from the header controls straight past the grid of events.
+      expect(container.querySelectorAll('[data-slot="schedule-event"][tabindex]')).toHaveLength(0)
+    })
+
+    it("are buttons as soon as a click does something", () => {
+      renderSchedule({ onEventClick: () => {} })
+      expect(screen.getAllByRole("button", { name: /^Revisão/ }).length).toBeGreaterThan(0)
     })
   })
 })

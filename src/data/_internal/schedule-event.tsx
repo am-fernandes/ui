@@ -212,6 +212,23 @@ export function ScheduleEventButton({
       )
   }
 
+  // Nothing to do with the event: plain content, not a tab stop. The
+  // visible parts are aria-hidden, so the full name is read from here.
+  if (!onEventClick && !renderEventDetails) {
+    return (
+      <div
+        data-slot="schedule-event"
+        data-event-id={event.id}
+        data-variant={variant}
+        style={style}
+        className={cn("text-left", variantClass, className)}
+      >
+        {content}
+        <span className="sr-only">{name}</span>
+      </div>
+    )
+  }
+
   const button = (
     <button
       type="button"

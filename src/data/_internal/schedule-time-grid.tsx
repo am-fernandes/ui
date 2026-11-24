@@ -30,6 +30,8 @@ interface TimeGridViewProps {
   maxColumns: number
   /** Hour the keyboard's "new event" button of a day gives to `onSlotClick`. */
   slotHour: number
+  /** Name of the scrolling grid. */
+  timeGridLabel: string
 }
 
 const GUTTER = "3.5rem"
@@ -49,6 +51,7 @@ export function TimeGridView({
   moreLabel,
   maxColumns,
   slotHour,
+  timeGridLabel,
 }: TimeGridViewProps) {
   const { now, onSlotClick, newEventLabel, locale } = React.useContext(ScheduleContext)
   const at = (day: Date, minutes: number) =>
@@ -169,7 +172,13 @@ export function TimeGridView({
       <div
         ref={scrollRef}
         data-slot="schedule-scroll"
-        className="relative max-h-[36rem] overflow-y-auto [scrollbar-gutter:stable]"
+        // Focusable, so the hours can be scrolled from the keyboard even when
+        // no event in view is a button.
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrolling region must be reachable by keyboard (WCAG 2.1.1).
+        tabIndex={0}
+        role="region"
+        aria-label={timeGridLabel}
+        className="relative max-h-[36rem] overflow-y-auto [scrollbar-gutter:stable] focus-visible:focus-outline-inset"
       >
         <div className="grid" style={{ gridTemplateColumns: columns, height: totalHeight }}>
           <div aria-hidden="true" className="relative">

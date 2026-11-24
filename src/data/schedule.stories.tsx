@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { expect, userEvent, waitFor, within } from "@storybook/test"
+import { expect, fn, userEvent, waitFor, within } from "@storybook/test"
 import * as React from "react"
 
 import { Schedule, type ScheduleEvent } from "./schedule"
@@ -110,6 +110,7 @@ const meta = {
     events,
     today: TODAY,
     defaultDate: TODAY,
+    onEventClick: fn(),
   },
 } satisfies Meta<typeof Schedule>
 export default meta

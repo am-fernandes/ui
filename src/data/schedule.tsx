@@ -57,6 +57,8 @@ export interface ScheduleLabels {
   loading: string
   /** Name of the button on a day that calls `onSlotClick` ("Novo evento em sábado, 21 de novembro"). */
   newEvent: (day: string) => string
+  /** Name of the scrolling grid of hours (week and day views). */
+  timeGrid: string
 }
 
 export const defaultScheduleLabels: ScheduleLabels = {
@@ -80,6 +82,7 @@ export const defaultScheduleLabels: ScheduleLabels = {
   empty: "Nenhum evento neste período",
   loading: "Carregando…",
   newEvent: (day) => `Novo evento em ${day}`,
+  timeGrid: "Grade de horários",
 }
 
 const ALL_VIEWS: ScheduleView[] = ["month", "week", "day", "list"]
@@ -102,6 +105,11 @@ export interface ScheduleProps {
    * deterministic renders (tests, screenshots).
    */
   today?: Date
+  /**
+   * Click on an event. Without it (and without `renderEventDetails`) the
+   * events are plain content, not buttons, so the keyboard does not stop on
+   * each of them.
+   */
   onEventClick?: (event: ScheduleEvent) => void
   /**
    * Click on an empty day (month) or time slot (week, day): receives the
@@ -280,6 +288,7 @@ function Schedule({
         todayLabel={l.today}
         moreLabel={l.more}
         slotHour={scrollToHour}
+        timeGridLabel={l.timeGrid}
         maxColumns={maxColumns ?? (view === "day" ? 6 : 3)}
       />
     )
