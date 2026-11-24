@@ -89,6 +89,15 @@ function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCell
     />
   )
 }
+function TableFooter({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
+  return (
+    <tfoot
+      data-slot="table-footer"
+      className={cn("border-t bg-muted/50 font-medium [&>tr]:last:border-b-0", className)}
+      {...props}
+    />
+  )
+}
 function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td data-slot="table-cell" className={cn("px-3 py-2.5 align-middle", className)} {...props} />
@@ -801,6 +810,9 @@ function DataTable<TData>({
     : !hasError && table.getRowModel().rows.length === 0 && typeof resolvedEmptyMessage === "string"
       ? resolvedEmptyMessage
       : ""
+  // Totals and other footers: `columnDef.footer` of any column.
+  const hasFooter = table.getAllFlatColumns().some((column) => column.columnDef.footer != null)
+
   // One skeleton cell per column on screen: leaf columns (a group counts its
   // columns), without the hidden `meta.exportOnly` ones.
   const skeletonColumnCount = table.getVisibleLeafColumns().length
@@ -1206,6 +1218,31 @@ function DataTable<TData>({
               </TableRow>
             )}
           </TableBody>
+          {hasFooter && !loading && !hasError ? (
+            <TableFooter>
+              {table
+                .getFooterGroups()
+                .filter((group) =>
+                  group.headers.some(
+                    (header) => !header.isPlaceholder && header.column.columnDef.footer != null,
+                  ),
+                )
+                .map((group) => (
+                  <tr key={group.id} data-slot="table-footer-row" className="border-b">
+                    {group.headers.map((header) => (
+                      <TableCell
+                        key={header.id}
+                        colSpan={header.colSpan > 1 ? header.colSpan : undefined}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.footer, header.getContext())}
+                      </TableCell>
+                    ))}
+                  </tr>
+                ))}
+            </TableFooter>
+          ) : null}
         </Table>
       </div>
 

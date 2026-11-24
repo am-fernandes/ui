@@ -439,6 +439,32 @@ describe("DataTable", () => {
     })
   })
 
+  describe("footer", () => {
+    it("renders columnDef.footer in a tfoot, e.g. totals", () => {
+      const cols: ColumnDef<Row>[] = [
+        { accessorKey: "name", header: "Name", footer: "Total" },
+        {
+          accessorKey: "age",
+          header: "Age",
+          footer: ({ table }) =>
+            table
+              .getFilteredRowModel()
+              .rows.reduce((sum, row) => sum + (row.getValue("age") as number), 0),
+        },
+      ]
+      const { container } = render(<DataTable columns={cols} data={data} />)
+      const tfoot = container.querySelector("tfoot")
+      expect(tfoot).not.toBeNull()
+      const cells = within(tfoot as HTMLElement).getAllByRole("cell")
+      expect(cells.map((cell) => cell.textContent)).toEqual(["Total", "75"])
+    })
+
+    it("renders no tfoot when no column has a footer", () => {
+      const { container } = render(<DataTable columns={columns} data={data} />)
+      expect(container.querySelector("tfoot")).toBeNull()
+    })
+  })
+
   describe("grouped headers", () => {
     interface Venda {
       nome: string

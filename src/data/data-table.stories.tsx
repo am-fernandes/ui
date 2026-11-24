@@ -1067,6 +1067,43 @@ export const GroupedHeaders: Story = {
   },
 }
 
+const totalColumns: ColumnDef<Contrato>[] = [
+  { accessorKey: "numero", header: "Número", footer: "Total" },
+  { accessorKey: "cliente", header: "Cliente" },
+  {
+    accessorKey: "valor",
+    header: "Valor",
+    cell: ({ row }) => brl.format(row.original.valor),
+    footer: ({ table }) =>
+      brl.format(
+        table
+          .getFilteredRowModel()
+          .rows.reduce((sum, row) => sum + (row.getValue("valor") as number), 0),
+      ),
+  },
+]
+
+export const WithTotals: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        aria-label="Contratos"
+        columns={totalColumns}
+        data={contratos.slice(0, 5)}
+        searchableColumns={["numero", "cliente"]}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "O `footer` de cada coluna aparece num `<tfoot>`: totais, médias, contagens. Ele recebe o contexto do TanStack (`table`, `column`), então pode somar as linhas filtradas.",
+      },
+    },
+  },
+}
+
 interface Assinatura {
   numero: string
   assinadoEm: Date
