@@ -226,3 +226,24 @@ test.describe("Combobox: opção escolhida", () => {
     await expect(trigger).toHaveText(/Opção 30/)
   })
 })
+
+test.describe("Combobox: popover", () => {
+  test("tem a largura do gatilho e aria-controls aponta para a lista", async ({ page }) => {
+    await gotoStory(page, "forms-combobox--default", "Selecione um status")
+    const trigger = page.getByRole("combobox", { name: "Status" })
+    await trigger.click()
+    const list = page.getByRole("listbox")
+    await expect(list).toBeVisible()
+    const content = page.locator('[data-slot="popover-content"]')
+    await expect
+      .poll(async () => {
+        const a = await content.boundingBox()
+        const b = await trigger.boundingBox()
+        return a && b ? Math.round(Math.abs(a.width - b.width)) : -1
+      })
+      .toBe(0)
+    const controls = await trigger.getAttribute("aria-controls")
+    expect(controls).toBeTruthy()
+    expect(await list.getAttribute("id")).toBe(controls)
+  })
+})

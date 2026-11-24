@@ -169,12 +169,18 @@ export function Combobox(props: ComboboxProps) {
     },
     [ref],
   )
-  const listboxId = `${ids.controlId}-listbox`
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   // The highlighted option (cmdk's value), which Enter would choose.
   const [highlight, setHighlight] = React.useState("")
-  const listRef = React.useRef<HTMLDivElement>(null)
+  const listRef = React.useRef<HTMLDivElement | null>(null)
+  // cmdk gives the list its own id; read it from the element, so the
+  // trigger's aria-controls points to something that exists.
+  const [listId, setListId] = React.useState<string | undefined>()
+  const setListRef = React.useCallback((node: HTMLDivElement | null) => {
+    listRef.current = node
+    setListId(node?.id || undefined)
+  }, [])
   // Whether the option being chosen was clicked, not picked with Enter.
   const pickedWithPointer = React.useRef(false)
   const hasError = error != null && error !== ""
@@ -373,8 +379,9 @@ export function Combobox(props: ComboboxProps) {
       role="combobox"
       aria-expanded={open}
       aria-haspopup="listbox"
-      aria-controls={listboxId}
-      aria-autocomplete="list"
+      // Only while the list is on screen; Radix would point to the popover
+      // content, which does not exist while closed.
+      aria-controls={open ? listId : undefined}
       aria-invalid={hasError ? true : undefined}
       aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
       disabled={disabled}
@@ -432,7 +439,7 @@ export function Combobox(props: ComboboxProps) {
             align="start"
             trigger={trigger}
             aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
-            className={cn("p-0", popoverWidth || "w-[--radix-popover-trigger-width]")}
+            className={cn("p-0", popoverWidth || "w-(--radix-popover-trigger-width)")}
           >
             {/* The list is filtered here, not by cmdk: it only gets what is on screen. */}
             <CommandPrimitive
@@ -454,8 +461,7 @@ export function Combobox(props: ComboboxProps) {
                 />
               </div>
               <CommandPrimitive.List
-                ref={listRef}
-                id={listboxId}
+                ref={setListRef}
                 onTouchMove={(e) => e.stopPropagation()}
                 className="max-h-75 overflow-y-auto overflow-x-hidden overscroll-y-contain p-1"
               >

@@ -467,6 +467,31 @@ describe("Combobox: a opção escolhida", () => {
   })
 })
 
+describe("Combobox: ARIA do gatilho", () => {
+  it("aria-controls points to the list that is on screen, and to nothing while closed", async () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    const trigger = screen.getByRole("combobox")
+    expect(trigger).not.toHaveAttribute("aria-controls")
+    await userEvent.click(trigger)
+    const list = await screen.findByRole("listbox")
+    await waitFor(() => expect(trigger).toHaveAttribute("aria-controls", list.id))
+    expect(document.getElementById(trigger.getAttribute("aria-controls") ?? "")).toBe(list)
+  })
+
+  it("the trigger is a button that opens a list: no aria-autocomplete", () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    expect(screen.getByRole("combobox")).not.toHaveAttribute("aria-autocomplete")
+  })
+
+  it("the popover takes the trigger's width (a class Tailwind 4 understands)", async () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    const list = await screen.findByRole("listbox")
+    const content = list.closest('[data-slot="popover-content"]')
+    expect(content?.className).toContain("w-(--radix-popover-trigger-width)")
+  })
+})
+
 describe("Combobox: listas grandes e busca no servidor", () => {
   const many: ComboboxOption[] = Array.from({ length: 250 }, (_, i) => ({
     value: `o-${i + 1}`,
