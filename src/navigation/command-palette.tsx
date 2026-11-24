@@ -124,6 +124,13 @@ export interface CommandPaletteProps {
   /** Called when the highlighted item changes. See `value`. */
   onValueChange?: (value: string) => void
   /**
+   * Close the palette (`onOpenChange(false)`) once an item is chosen, after
+   * its `onSelect`. Set `false` for a palette that stays open between
+   * commands.
+   * @default true
+   */
+  closeOnSelect?: boolean
+  /**
    * Override individual UI strings. Defaults are pt-BR. The standalone
    * `placeholder` and `emptyMessage` props still win when provided.
    */
@@ -144,6 +151,7 @@ function CommandPalette({
   shouldFilter = true,
   value,
   onValueChange,
+  closeOnSelect = true,
   labels,
 }: CommandPaletteProps) {
   const mergedLabels: CommandPaletteLabels = { ...defaultCommandPaletteLabels, ...labels }
@@ -230,6 +238,7 @@ function CommandPalette({
                     keywords={keywords}
                     onSelect={() => {
                       item.onSelect()
+                      if (closeOnSelect) onOpenChange?.(false)
                     }}
                     className={cn(
                       "relative flex cursor-default select-none items-center gap-2 rounded-element px-2 py-1.5 text-sm outline-none transition-colors",

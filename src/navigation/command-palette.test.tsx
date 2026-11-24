@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { Star } from "lucide-react"
 import { describe, expect, it, vi } from "vitest"
@@ -267,6 +267,57 @@ describe("CommandPalette", () => {
       )
       await userEvent.type(screen.getByRole("combobox"), "{ArrowDown}")
       expect(onValueChange).toHaveBeenLastCalledWith("lead-2")
+    })
+  })
+
+  describe("closing", () => {
+    const groups = (onSelect: () => void) => [{ items: [{ label: "Dashboard", onSelect }] }]
+
+    it("closes on a press outside the palette, even with a command list on the page", async () => {
+      const onOpenChange = vi.fn()
+      render(<CommandPalette open onOpenChange={onOpenChange} title="X" groups={groups(vi.fn())} />)
+      expect(document.querySelector("[cmdk-root]")).not.toBeNull()
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0))
+      })
+      fireEvent.pointerDown(document.querySelector('[data-slot="dialog-overlay"]') as Element)
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+    })
+
+    it("closes after an item is chosen, by click or Enter", async () => {
+      const onOpenChange = vi.fn()
+      const onSelect = vi.fn()
+      const { rerender } = render(
+        <CommandPalette open onOpenChange={onOpenChange} title="X" groups={groups(onSelect)} />,
+      )
+      await userEvent.click(screen.getByRole("option", { name: "Dashboard" }))
+      expect(onSelect).toHaveBeenCalledTimes(1)
+      expect(onOpenChange).toHaveBeenLastCalledWith(false)
+
+      onOpenChange.mockClear()
+      rerender(
+        <CommandPalette open onOpenChange={onOpenChange} title="X" groups={groups(onSelect)} />,
+      )
+      await userEvent.type(screen.getByRole("combobox"), "{Enter}")
+      expect(onSelect).toHaveBeenCalledTimes(2)
+      expect(onOpenChange).toHaveBeenLastCalledWith(false)
+    })
+
+    it("stays open after a choice with closeOnSelect={false}", async () => {
+      const onOpenChange = vi.fn()
+      const onSelect = vi.fn()
+      render(
+        <CommandPalette
+          open
+          onOpenChange={onOpenChange}
+          closeOnSelect={false}
+          title="X"
+          groups={groups(onSelect)}
+        />,
+      )
+      await userEvent.click(screen.getByRole("option", { name: "Dashboard" }))
+      expect(onSelect).toHaveBeenCalledTimes(1)
+      expect(onOpenChange).not.toHaveBeenCalled()
     })
   })
 
