@@ -65,6 +65,11 @@ export interface TimePickerProps {
    * @default "md"
    */
   size?: ControlSize
+  /**
+   * Name of the field in a native form. A hidden input sends `"HH:MM"`, or
+   * `""` while the time is incomplete; the two visible fields have no name.
+   */
+  name?: string
   /** Texts of the picker. Defaults in `defaultTimePickerLabels`. */
   labels?: Partial<TimePickerLabels>
   /** Forwarded to the hour input. */
@@ -99,6 +104,15 @@ function parseTime(text: string): { hour: string; minute: string } | null {
     return null
   }
   return { hour: pad(hour), minute: pad(minute) }
+}
+
+/** `"HH:MM"` when both fields hold a valid time, `""` otherwise. */
+function timeOf(hour: string, minute: string): string {
+  let time = ""
+  emitIfComplete(hour, minute, (value) => {
+    time = value
+  })
+  return time
 }
 
 function normalizeSegment(raw: string, min: number, max: number) {
@@ -190,6 +204,7 @@ function TimePicker({
   required,
   size = "md",
   labels,
+  name,
   ref,
 }: TimePickerProps) {
   const l: TimePickerLabels = { ...defaultTimePickerLabels, ...labels }
@@ -427,6 +442,9 @@ function TimePicker({
           onPaste={handlePaste}
           disabled={disabled}
         />
+        {name != null && name !== "" ? (
+          <input type="hidden" name={name} value={timeOf(hour, minute)} disabled={disabled} />
+        ) : null}
       </div>
     </FieldShell>
   )

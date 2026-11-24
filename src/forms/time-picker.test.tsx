@@ -414,6 +414,22 @@ describe("TimePicker", () => {
     expect(minute).toHaveValue("15")
   })
 
+  it("name: a native form receives HH:MM, or nothing while incomplete", () => {
+    const { container } = render(
+      <form>
+        <TimePicker name="inicio" defaultValue="" />
+      </form>,
+    )
+    const data = () => new FormData(container.querySelector("form") as HTMLFormElement)
+    expect(screen.getByLabelText("Horas")).not.toHaveAttribute("name")
+    expect(data().get("inicio")).toBe("")
+    setInputValue(screen.getByLabelText("Horas") as HTMLInputElement, "9")
+    expect(data().get("inicio")).toBe("")
+    setInputValue(screen.getByLabelText("Horas") as HTMLInputElement, "09")
+    setInputValue(screen.getByLabelText("Minutos") as HTMLInputElement, "05")
+    expect(data().get("inicio")).toBe("09:05")
+  })
+
   it("forwards ref to the hour input", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<TimePicker value="" ref={ref} />)
