@@ -206,6 +206,12 @@ function AppShell({
   const collapsed = stored ?? defaultCollapsed
   const [menuOpen, setMenuOpen] = React.useState(false)
   const [collapseTipOpen, setCollapseTipOpen] = React.useState(false)
+  // Groups the user opened or closed, shared by the desktop menu and the
+  // mobile one (which remounts every time it opens).
+  const [openGroups, setOpenGroups] = React.useState<Readonly<Record<string, boolean>>>({})
+  const onOpenGroupChange = React.useCallback((id: string, open: boolean) => {
+    setOpenGroups((current) => ({ ...current, [id]: open }))
+  }, [])
   const sidebarId = React.useId()
 
   const toggleCollapsed = () => {
@@ -324,6 +330,8 @@ function AppShell({
                 collapsed={collapsed}
                 isActive={isActive}
                 renderLink={renderLink}
+                openGroups={openGroups}
+                onOpenGroupChange={onOpenGroupChange}
               />
             ))}
           </nav>
@@ -435,6 +443,8 @@ function AppShell({
                           touch
                           onNavigate={closeMenu}
                           renderLink={renderLink}
+                          openGroups={openGroups}
+                          onOpenGroupChange={onOpenGroupChange}
                         />
                       ))}
                     </nav>

@@ -521,6 +521,77 @@ describe("AppShell", () => {
       expect(within(aside).getByText("Operacional")).toBeInTheDocument()
     })
 
+    describe("group of the current page", () => {
+      const tree: AppShellItem[] = [
+        {
+          id: "propostas",
+          label: "Propostas",
+          icon: FileText,
+          items: [
+            { id: "pendentes", label: "Pendentes", href: "#pendentes" },
+            { id: "aprovadas", label: "Aprovadas", href: "#aprovadas" },
+          ],
+        },
+        {
+          id: "relatorios",
+          label: "Relatórios",
+          icon: FileText,
+          items: [{ id: "fin", label: "Financeiro", href: "#fin" }],
+        },
+      ]
+      const onAprovadas = (item: AppShellItem) => item.id === "aprovadas"
+
+      it("opens on first render when a child is the current page", () => {
+        const { aside } = renderShell({
+          defaultCollapsed: false,
+          items: tree,
+          isActive: onAprovadas,
+        })
+        expect(within(aside).getByRole("button", { name: "Propostas" })).toHaveAttribute(
+          "aria-expanded",
+          "true",
+        )
+        expect(within(aside).getByRole("link", { name: "Aprovadas" })).toHaveAttribute(
+          "aria-current",
+          "page",
+        )
+        // The other group stays as it was.
+        expect(within(aside).getByRole("button", { name: "Relatórios" })).toHaveAttribute(
+          "aria-expanded",
+          "false",
+        )
+      })
+
+      it("marks the group in the rail, where the child is not shown", () => {
+        const { aside } = renderShell({
+          defaultCollapsed: true,
+          items: tree,
+          isActive: onAprovadas,
+        })
+        const group = within(aside).getByRole("button", { name: "Propostas" })
+        expect(group).toHaveAttribute("data-active", "true")
+        expect(group).toHaveAttribute("aria-current", "true")
+        expect(within(aside).getByRole("button", { name: "Relatórios" })).not.toHaveAttribute(
+          "data-active",
+        )
+      })
+
+      it("opens in the mobile menu and remembers the groups the user opened", async () => {
+        installMatchMedia(true)
+        renderShell({ items: tree, isActive: onAprovadas })
+        let menu = await openMobileMenu()
+        expect(within(menu).getByRole("link", { name: "Aprovadas" })).toBeInTheDocument()
+        await userEvent.click(within(menu).getByRole("button", { name: "Relatórios" }))
+        expect(within(menu).getByRole("link", { name: "Financeiro" })).toBeInTheDocument()
+
+        await userEvent.keyboard("{Escape}")
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+        menu = await openMobileMenu()
+        expect(within(menu).getByRole("link", { name: "Financeiro" })).toBeInTheDocument()
+        expect(within(menu).getByRole("link", { name: "Aprovadas" })).toBeInTheDocument()
+      })
+    })
+
     it("keeps the submenu closed by default and toggles it", async () => {
       const onGroupClick = vi.fn()
       const { aside } = renderShell({

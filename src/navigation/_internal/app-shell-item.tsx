@@ -179,7 +179,10 @@ export interface AppShellItem {
   disabled?: boolean
   /** Nested children — turns the item into an expandable group. */
   items?: AppShellItem[]
-  /** Expand the submenu on mount when this item has children. */
+  /**
+   * Expand the submenu on mount when this item has children. A group also
+   * opens by itself when one of its children is the current page (`isActive`).
+   */
   defaultOpen?: boolean
 }
 
@@ -194,6 +197,21 @@ export interface AppShellNavItemProps {
   onNavigate?: () => void
   /** The app's router link, for items with `href`. */
   renderLink?: RenderLink
+  /**
+   * Groups the user opened or closed, by id. Kept by the shell, so the
+   * desktop menu and the mobile menu (which remounts on every opening) agree.
+   */
+  openGroups?: Readonly<Record<string, boolean>>
+  onOpenGroupChange?: (id: string, open: boolean) => void
+}
+
+/** `true` when an item below this one is the current page. */
+export function hasActiveDescendant(
+  item: AppShellItem,
+  isActive: ((item: AppShellItem) => boolean) | undefined,
+): boolean {
+  if (!isActive || !item.items) return false
+  return item.items.some((child) => isActive(child) || hasActiveDescendant(child, isActive))
 }
 
 // Memoized so a parent re-render with stable props skips the whole subtree —
@@ -207,12 +225,21 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
   touch = false,
   onNavigate,
   renderLink,
+  openGroups,
+  onOpenGroupChange,
 }: AppShellNavItemProps) {
-  const active = isActive?.(item) ?? false
   const Icon = item.icon
   const hasChildren = !!item.items?.length
-  const [expanded, setExpanded] = React.useState<boolean>(item.defaultOpen ?? false)
+  const containsActive = hasChildren && hasActiveDescendant(item, isActive)
+  // A group opens by itself on the current page's branch; what the user
+  // chose (open or closed) wins from then on.
+  const expanded = openGroups?.[item.id] ?? (item.defaultOpen === true || containsActive)
+  const setExpanded = (next: boolean) => onOpenGroupChange?.(item.id, next)
   const showSubmenu = hasChildren && !collapsed && expanded
+  // The current page is out of sight (rail, or a closed group): the group
+  // stands for it, as the current item of its set.
+  const standsForActive = containsActive && (collapsed || !expanded)
+  const active = (isActive?.(item) ?? false) || standsForActive
 
   const baseClass = cn(
     "flex w-full cursor-pointer items-center gap-3 rounded-element px-3 py-2 text-left text-sm font-medium transition-colors",
@@ -221,9 +248,12 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
     touch && "min-h-11",
     // Inactive items recede to the supporting text colour; the active one
     // takes the accent, a heavier weight and a marker in the functional blue.
+    // An open group of the current page keeps the text colour.
     active
       ? "relative bg-accent font-semibold text-accent-foreground before:absolute before:left-0 before:top-1/2 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-inner before:bg-link"
-      : "text-muted-foreground hover:text-foreground",
+      : containsActive
+        ? "font-semibold text-foreground"
+        : "text-muted-foreground hover:text-foreground",
     collapsed && "justify-center",
     item.disabled && "pointer-events-none opacity-50",
     depth > 0 && "pl-9",
@@ -297,7 +327,11 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
   }
 
   // The current page, whatever element the item is (link, action or group).
-  const ariaCurrent = active ? ("page" as const) : undefined
+  const ariaCurrent = isActive?.(item)
+    ? ("page" as const)
+    : standsForActive
+      ? ("true" as const)
+      : undefined
 
   if (hasChildren && collapsed && depth === 0) {
     return (
@@ -335,7 +369,7 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
         aria-expanded={expanded}
         className={baseClass}
         onClick={(event) => {
-          setExpanded((v) => !v)
+          setExpanded(!expanded)
           item.onClick?.(event)
         }}
       >
@@ -421,6 +455,8 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
               touch={touch}
               onNavigate={onNavigate}
               renderLink={renderLink}
+              openGroups={openGroups}
+              onOpenGroupChange={onOpenGroupChange}
             />
           ))}
         </div>
