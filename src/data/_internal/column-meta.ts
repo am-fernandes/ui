@@ -22,12 +22,22 @@ export interface DataTableColumnMeta<TData = unknown> {
    * exports its accessor value and a column without (actions) is left out.
    */
   export?: boolean | ((row: TData, value: unknown) => unknown)
+  /** Alignment of the header, the cells and the footer. Default: left. */
+  align?: "left" | "center" | "right"
+}
+
+/** Keys the library's column helpers set for the table, not for consumers. */
+interface InternalColumnMeta<TData> extends DataTableColumnMeta<TData> {
+  /** Set by `formattedColumn` without `align`: right when the values are numbers. */
+  alignNumbers?: boolean
 }
 
 /** The DataTable part of a column's `meta`. */
-export function columnMeta<TData>(meta: unknown): DataTableColumnMeta<TData> {
-  return (meta ?? {}) as DataTableColumnMeta<TData>
+export function columnMeta<TData>(meta: unknown): InternalColumnMeta<TData> {
+  return (meta ?? {}) as InternalColumnMeta<TData>
 }
+
+export type { InternalColumnMeta }
 
 /** A cell value as plain text: empty for nothing, `String()` for the rest. */
 export function valueToText(value: unknown): string {

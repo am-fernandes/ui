@@ -439,6 +439,44 @@ describe("DataTable", () => {
     })
   })
 
+  describe("alignment", () => {
+    function alignOf(element: HTMLElement) {
+      return ["text-left", "text-center", "text-right"].find((c) => element.classList.contains(c))
+    }
+
+    it("applies meta.align to the header, the cells and the footer", () => {
+      const cols: ColumnDef<Row>[] = [
+        { accessorKey: "name", header: "Name" },
+        { accessorKey: "age", header: "Age", footer: "75", meta: { align: "right" } },
+      ]
+      render(<DataTable columns={cols} data={data} sortableColumns={["age"]} />)
+      expect(alignOf(screen.getByRole("columnheader", { name: "Age" }))).toBe("text-right")
+      expect(alignOf(screen.getByRole("cell", { name: "30" }))).toBe("text-right")
+      expect(alignOf(screen.getByRole("cell", { name: "75" }))).toBe("text-right")
+      expect(alignOf(screen.getByRole("columnheader", { name: "Name" }))).toBe("text-left")
+    })
+
+    it("aligns a formattedColumn of numbers (money) to the right, and one of text to the left", () => {
+      const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+      const cols: ColumnDef<Row>[] = [
+        formattedColumn<Row, string>({ accessorKey: "name", header: "Name", format: (v) => v }),
+        formattedColumn<Row, number>({ accessorKey: "age", header: "Valor", format: brl.format }),
+      ]
+      render(<DataTable columns={cols} data={data} />)
+      expect(alignOf(screen.getByRole("columnheader", { name: "Valor" }))).toBe("text-right")
+      expect(alignOf(screen.getByRole("cell", { name: brl.format(30) }))).toBe("text-right")
+      expect(alignOf(screen.getByRole("columnheader", { name: "Name" }))).toBe("text-left")
+    })
+
+    it("lets formattedColumn's align option win", () => {
+      const cols: ColumnDef<Row>[] = [
+        formattedColumn<Row, number>({ accessorKey: "age", header: "Age", align: "center" }),
+      ]
+      render(<DataTable columns={cols} data={data} />)
+      expect(alignOf(screen.getByRole("columnheader", { name: "Age" }))).toBe("text-center")
+    })
+  })
+
   describe("footer", () => {
     it("renders columnDef.footer in a tfoot, e.g. totals", () => {
       const cols: ColumnDef<Row>[] = [

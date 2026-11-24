@@ -810,6 +810,28 @@ function DataTable<TData>({
     : !hasError && table.getRowModel().rows.length === 0 && typeof resolvedEmptyMessage === "string"
       ? resolvedEmptyMessage
       : ""
+  // Alignment per leaf column: `meta.align`, or right for a formattedColumn
+  // whose values are numbers (looked up in the first row that has one).
+  const columnAlign = new Map<string, "left" | "center" | "right">()
+  for (const column of table.getAllLeafColumns()) {
+    const meta = columnMeta<TData>(column.columnDef.meta)
+    if (meta.align) {
+      columnAlign.set(column.id, meta.align)
+    } else if (meta.alignNumbers) {
+      const sample = table
+        .getCoreRowModel()
+        .rows.find((row) => row.getValue(column.id) != null)
+        ?.getValue(column.id)
+      if (typeof sample === "number" || typeof sample === "bigint") {
+        columnAlign.set(column.id, "right")
+      }
+    }
+  }
+  const alignClass = (columnId: string) => {
+    const align = columnAlign.get(columnId)
+    return align === "right" ? "text-right" : align === "center" ? "text-center" : undefined
+  }
+
   // Totals and other footers: `columnDef.footer` of any column.
   const hasFooter = table.getAllFlatColumns().some((column) => column.columnDef.footer != null)
 
@@ -1086,6 +1108,7 @@ function DataTable<TData>({
                   return (
                     <TableHead
                       key={header.id}
+                      className={isLeafHeader ? alignClass(header.column.id) : undefined}
                       colSpan={header.colSpan > 1 ? header.colSpan : undefined}
                       scope={header.colSpan > 1 ? "colgroup" : "col"}
                       aria-sort={canSort ? ariaSort : undefined}
@@ -1188,7 +1211,7 @@ function DataTable<TData>({
                     {row.getVisibleCells().map((cell, cellIndex) => {
                       const content = flexRender(cell.column.columnDef.cell, cell.getContext())
                       return (
-                        <TableCell key={cell.id}>
+                        <TableCell key={cell.id} className={alignClass(cell.column.id)}>
                           {interactive && cellIndex === 0 ? (
                             <button
                               type="button"
@@ -1232,6 +1255,9 @@ function DataTable<TData>({
                     {group.headers.map((header) => (
                       <TableCell
                         key={header.id}
+                        className={
+                          header.subHeaders.length === 0 ? alignClass(header.column.id) : undefined
+                        }
                         colSpan={header.colSpan > 1 ? header.colSpan : undefined}
                       >
                         {header.isPlaceholder

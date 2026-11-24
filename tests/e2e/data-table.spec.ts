@@ -187,3 +187,33 @@ test.describe("DataTable: cabeçalho agrupado", () => {
     )
   })
 })
+
+test.describe("DataTable: alinhamento", () => {
+  test("a coluna de dinheiro alinha cabeçalho e valores pela direita", async ({ page }) => {
+    await gotoTable(page, "data-datatable--default")
+    const edges = await page.evaluate(() => {
+      const table = document.querySelector('[data-slot="table"]') as HTMLTableElement
+      const headers = [...table.querySelectorAll("thead th")]
+      const index = headers.findIndex((th) => th.textContent?.includes("Valor"))
+      // Where the drawn content ends: the sort icon in a header (the button
+      // itself reaches into the padding), the text in a cell.
+      const textRight = (cell: Element) => {
+        const icon = cell.querySelector("svg")
+        if (icon) return icon.getBoundingClientRect().right
+        const range = document.createRange()
+        range.selectNodeContents(cell)
+        return range.getBoundingClientRect().right
+      }
+      const contentRight = (cell: Element) =>
+        cell.getBoundingClientRect().right - Number.parseFloat(getComputedStyle(cell).paddingRight)
+      const cells = [...table.querySelectorAll("tbody tr")].map(
+        (row) => row.children[index] as Element,
+      )
+      return [headers[index] as Element, ...cells].map(
+        (cell) => contentRight(cell) - textRight(cell),
+      )
+    })
+    // Every text ends at the cell's right padding (the header's sort icon too).
+    for (const gap of edges) expect(Math.abs(gap)).toBeLessThanOrEqual(1)
+  })
+})

@@ -4,7 +4,7 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Tooltip, type TooltipProps } from "../overlays/tooltip"
-import { type DataTableColumnMeta, valueToText } from "./_internal/column-meta"
+import { type InternalColumnMeta, valueToText } from "./_internal/column-meta"
 
 export type DateColumnShowTime = boolean | "auto"
 
@@ -90,7 +90,7 @@ export function dateColumn<TData>(opts: DateColumnOptions<TData>): ColumnDef<TDa
     const withTime = inferShowTime(raw, showTime)
     return format(parsed, withTime ? "dd/MM/yyyy HH:mm" : "dd/MM/yyyy")
   }
-  const meta: DataTableColumnMeta<TData> = {
+  const meta: InternalColumnMeta<TData> = {
     // Search what the cell shows ("19/05/2026"), not the ISO value.
     searchText: (_row, value) => formatValue(value) ?? "",
     // Export a real date (the day and time the cell shows), not the ISO text.
@@ -169,6 +169,11 @@ export type FormattedColumnOptions<TData, TValue = unknown> = FormattedColumnAcc
   /** Custom sort. Defaults to TanStack's automatic comparator on the raw value. */
   sortingFn?: ColumnDef<TData>["sortingFn"]
   /**
+   * Alignment of the header, cells and footer. Default: right when the column
+   * holds numbers (money, quantities, percentages), left otherwise.
+   */
+  align?: "left" | "center" | "right"
+  /**
    * Cap the displayed text length and show the full string in a tooltip
    * on hover. Only kicks in when the formatted value is a string longer
    * than `truncate.max`.
@@ -204,7 +209,9 @@ export function formattedColumn<TData, TValue = unknown>(
     opts.accessorKey != null
       ? { accessorKey: opts.accessorKey, ...(opts.id ? { id: opts.id } : {}) }
       : { accessorFn: opts.accessorFn, id: opts.id }
-  const meta: DataTableColumnMeta<TData> = {
+  const meta: InternalColumnMeta<TData> = {
+    // Numbers and money read down the right edge; text stays left.
+    ...(opts.align ? { align: opts.align } : { alignNumbers: true }),
     // Search what the cell shows ("123.456.789-01", "R$ 1.234,50") when the
     // format gives text; the raw value otherwise.
     searchText: (row, value) => {

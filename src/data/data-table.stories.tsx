@@ -135,6 +135,8 @@ const columns: ColumnDef<Contrato>[] = [
     accessorKey: "valor",
     header: "Valor",
     cell: ({ row }) => brl.format(row.original.valor),
+    // Money reads down the right edge.
+    meta: { align: "right" },
   },
   {
     accessorKey: "status",
@@ -190,6 +192,7 @@ const meta = {
           "- `loading?: boolean` — exibe estado skeleton: linhas (count = `pagination.pageSize ?? 5`, células = `columns.length`), input de busca, contagem e botões de paginação. Wrapper recebe `aria-busy`.",
           "- `downloadable?: boolean | { filename?, sheetName?, rowToRecord? }` — botão `Exportar para Excel` (ghost) à direita; abre um menu (`DropdownMenu`, com setas e Escape) com os escopos: dados filtrados, página atual, todos. Gera `.xlsx` com `write-excel-file`, carregado só no primeiro export (ou `.csv` para o Excel brasileiro, se o nome terminar em `.csv`).",
           "- `aria-label` / `aria-labelledby` / `caption` — nome acessível da `<table>` (a `caption` também aparece, sob as linhas).",
+          '- Alinhamento: `meta: { align: "right" }` numa coluna alinha cabeçalho, células e rodapé; `formattedColumn` com números (dinheiro, quantidade) já alinha à direita.',
           "- `className?: string` — classes extras no wrapper externo.",
           "",
           "**Helpers para colunas:**",
