@@ -137,6 +137,53 @@ describe("DateRangePicker", () => {
     expect(screen.getByRole("button", { name: "Aplicar" })).toBeInTheDocument()
   })
 
+  it("the trigger's name is the label plus the period, not the label alone", () => {
+    render(
+      <DateRangePicker
+        label={
+          <span>
+            Período <em>de vigência</em>
+          </span>
+        }
+        required
+        value={{ from: "2025-01-01", to: "2025-01-31" }}
+        onValueChange={() => {}}
+      />,
+    )
+    const trigger = screen.getByRole("button", { name: /01\/01\/2025.*31\/01\/2025/ })
+    expect(trigger).toHaveAccessibleName(/Período de vigência.*obrigatório.*01\/01\/2025/)
+    expect(trigger).not.toHaveAttribute("aria-label")
+  })
+
+  it("without a period, the name is the label and leaves the placeholder out", () => {
+    render(
+      <DateRangePicker label="Período" value={{ from: "", to: "" }} onValueChange={() => {}} />,
+    )
+    expect(screen.getByRole("button")).toHaveAccessibleName("Período")
+  })
+
+  it("a consumer aria-label or the fallback names the trigger, with the period", () => {
+    const { rerender } = render(
+      <DateRangePicker
+        aria-label="Vigência"
+        value={{ from: "2025-01-01", to: "2025-01-31" }}
+        onValueChange={() => {}}
+      />,
+    )
+    expect(screen.getByRole("button")).toHaveAccessibleName(/^Vigência 01\/01\/2025/)
+    rerender(<DateRangePicker value={{ from: "", to: "" }} onValueChange={() => {}} />)
+    expect(screen.getByRole("button")).toHaveAccessibleName("Período")
+    rerender(
+      <DateRangePicker
+        label="Outro rótulo"
+        aria-label="Vigência"
+        value={{ from: "", to: "" }}
+        onValueChange={() => {}}
+      />,
+    )
+    expect(screen.getByRole("button")).toHaveAccessibleName("Vigência")
+  })
+
   it("does not open the popover when disabled", async () => {
     render(
       <DateRangePicker label="X" value={{ from: "", to: "" }} onValueChange={() => {}} disabled />,

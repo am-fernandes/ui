@@ -27,11 +27,14 @@ export interface DateRangePickerLabels {
   clear: string
   /** The button that keeps the days picked. */
   confirm: string
+  /** Name of the trigger when it has neither `label` nor `aria-label`. */
+  field: string
 }
 
 export const defaultDateRangePickerLabels: DateRangePickerLabels = {
   clear: "Limpar",
   confirm: "Confirmar",
+  field: "Período",
 }
 
 export interface DateRangePickerProps {
@@ -125,12 +128,26 @@ function DateRangePicker({
     setOpen(false)
   }
 
+  const hasPeriod = fromDate != null
   const display =
     fromDate && toDate
       ? `${format(fromDate, "dd/MM/yyyy")} — ${format(toDate, "dd/MM/yyyy")}`
       : fromDate
         ? `${format(fromDate, "dd/MM/yyyy")} — ...`
         : placeholder
+
+  // The name is the label (or aria-label) and then the period, so a screen
+  // reader says what the field is and what it holds. An aria-label made of the
+  // label alone hid the period, the "obrigatório" of the label, and any label
+  // that is not plain text. The placeholder is left out.
+  const hasLabel = label != null && label !== ""
+  const nameId = `${ids.controlId}-name`
+  const valueId = `${ids.controlId}-value`
+  // A consumer aria-label still wins over the label, as before.
+  const ownName = ariaLabel != null || !hasLabel
+  const labelledBy = [ownName ? nameId : ids.labelId, hasPeriod ? valueId : null]
+    .filter(Boolean)
+    .join(" ")
 
   const trigger = (
     <button
@@ -139,7 +156,7 @@ function DateRangePicker({
       id={ids.controlId}
       disabled={disabled}
       aria-invalid={hasError ? true : undefined}
-      aria-label={ariaLabel ?? (typeof label === "string" ? label : "Selecionar período")}
+      aria-labelledby={labelledBy}
       aria-describedby={ids.describedBy({
         description: hasDescription,
         error: hasError,
@@ -153,7 +170,14 @@ function DateRangePicker({
       )}
     >
       <CalendarIcon className="size-4" aria-hidden="true" />
-      {display}
+      <span id={valueId} className="truncate">
+        {display}
+      </span>
+      {ownName ? (
+        <span id={nameId} hidden>
+          {ariaLabel ?? l.field}
+        </span>
+      ) : null}
     </button>
   )
 
