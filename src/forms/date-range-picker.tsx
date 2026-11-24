@@ -89,6 +89,11 @@ export interface DateRangePickerProps {
    * @default "md"
    */
   size?: ControlSize
+  /**
+   * Called when the focus leaves the picker as a whole. Moving into the open
+   * calendar and its buttons does not count.
+   */
+  onBlur?: (event: React.FocusEvent<HTMLElement>) => void
   /** Texts of the picker. Defaults in `defaultDateRangePickerLabels`. */
   labels?: Partial<DateRangePickerLabels>
   "aria-label"?: string
@@ -116,6 +121,7 @@ function DateRangePicker({
   name,
   readOnly = false,
   size = "md",
+  onBlur,
   "aria-label": ariaLabel,
   ref,
 }: DateRangePickerProps) {
@@ -152,6 +158,8 @@ function DateRangePicker({
     onValueChange?.(next)
   }
 
+  const fieldRef = React.useRef<HTMLDivElement>(null)
+  const popoverBodyRef = React.useRef<HTMLDivElement>(null)
   const triggerRef = React.useRef<HTMLButtonElement | null>(null)
   const setTriggerRef = React.useCallback(
     (node: HTMLButtonElement | null) => {
@@ -279,73 +287,88 @@ function DateRangePicker({
       required={required}
       disabled={disabled}
     >
-      {/* Read-only: the trigger alone, with no popup to announce or open. */}
-      {readOnly ? (
-        trigger
-      ) : (
-        <Popover
-          open={open}
-          onOpenChange={(next) => !disabled && setOpen(next)}
-          align="start"
-          trigger={trigger}
-          aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
-          // Never taller than the room the popover has on its side of the
-          // trigger: the calendar scrolls inside it, the actions stay in view.
-          collisionPadding={8}
-          className="flex max-h-(--radix-popover-content-available-height) w-auto max-w-(--radix-popover-content-available-width) flex-col p-0"
-          onPointerDownOutside={(event) => {
-            const target = event.target as HTMLElement | null
-            if (target?.closest('[role="grid"], .rdp, .rdp-root')) {
-              event.preventDefault()
-            }
-          }}
-          onFocusOutside={(event) => event.preventDefault()}
-        >
-          <div
-            data-slot="date-range-picker-calendar"
-            className="min-h-0 overflow-y-auto overscroll-contain"
+      <div
+        ref={fieldRef}
+        data-slot="date-range-picker"
+        // React brings the focus events of the calendar's portal here too.
+        onBlur={(e) => {
+          const next = e.relatedTarget as Node | null
+          const inside =
+            next != null &&
+            (fieldRef.current?.contains(next) || popoverBodyRef.current?.contains(next))
+          if (!inside) onBlur?.(e)
+        }}
+      >
+        {/* Read-only: the trigger alone, with no popup to announce or open. */}
+        {readOnly ? (
+          trigger
+        ) : (
+          <Popover
+            open={open}
+            onOpenChange={(next) => !disabled && setOpen(next)}
+            align="start"
+            trigger={trigger}
+            aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
+            // Never taller than the room the popover has on its side of the
+            // trigger: the calendar scrolls inside it, the actions stay in view.
+            collisionPadding={8}
+            className="flex max-h-(--radix-popover-content-available-height) w-auto max-w-(--radix-popover-content-available-width) flex-col p-0"
+            onPointerDownOutside={(event) => {
+              const target = event.target as HTMLElement | null
+              if (target?.closest('[role="grid"], .rdp, .rdp-root')) {
+                event.preventDefault()
+              }
+            }}
+            onFocusOutside={(event) => event.preventDefault()}
           >
-            <Calendar
-              mode="range"
-              selected={pendingRange}
-              onSelect={handleSelect}
-              numberOfMonths={monthsShown}
-              // Open on the saved range, not on the current month.
-              defaultMonth={fromDate ?? toDate}
-              // Hide previous/next-month days inside each calendar pane.
-              // Otherwise the range_end day (e.g. June 1) renders twice when the
-              // range spans two months: once as range_end in its own pane, and
-              // once as the outside-day of the previous month's pane.
-              showOutsideDays={false}
-              disabledDays={calendarDisabled}
-              startMonth={minDate}
-              endMonth={maxDate}
+            <div ref={popoverBodyRef} className="flex min-h-0 flex-col">
+              <div
+                data-slot="date-range-picker-calendar"
+                className="min-h-0 overflow-y-auto overscroll-contain"
+              >
+                <Calendar
+                  mode="range"
+                  selected={pendingRange}
+                  onSelect={handleSelect}
+                  numberOfMonths={monthsShown}
+                  // Open on the saved range, not on the current month.
+                  defaultMonth={fromDate ?? toDate}
+                  // Hide previous/next-month days inside each calendar pane.
+                  // Otherwise the range_end day (e.g. June 1) renders twice when
+                  // the range spans two months: once as range_end in its own
+                  // pane, and once as the outside-day of the previous month's.
+                  showOutsideDays={false}
+                  disabledDays={calendarDisabled}
+                  startMonth={minDate}
+                  endMonth={maxDate}
+                />
+              </div>
+              <div className="flex shrink-0 justify-end gap-2 border-t p-3">
+                <Button variant="ghost" onClick={handleClear}>
+                  {l.clear}
+                </Button>
+                <Button onClick={handleConfirm}>{l.confirm}</Button>
+              </div>
+            </div>
+          </Popover>
+        )}
+        {name != null && name !== "" ? (
+          <>
+            <input
+              type="hidden"
+              name={`${name}-from`}
+              value={toIsoDate(current.from)}
+              disabled={disabled}
             />
-          </div>
-          <div className="flex shrink-0 justify-end gap-2 border-t p-3">
-            <Button variant="ghost" onClick={handleClear}>
-              {l.clear}
-            </Button>
-            <Button onClick={handleConfirm}>{l.confirm}</Button>
-          </div>
-        </Popover>
-      )}
-      {name != null && name !== "" ? (
-        <>
-          <input
-            type="hidden"
-            name={`${name}-from`}
-            value={toIsoDate(current.from)}
-            disabled={disabled}
-          />
-          <input
-            type="hidden"
-            name={`${name}-to`}
-            value={toIsoDate(current.to)}
-            disabled={disabled}
-          />
-        </>
-      ) : null}
+            <input
+              type="hidden"
+              name={`${name}-to`}
+              value={toIsoDate(current.to)}
+              disabled={disabled}
+            />
+          </>
+        ) : null}
+      </div>
     </FieldShell>
   )
 }

@@ -304,6 +304,26 @@ describe("DateRangePicker", () => {
     expect(screen.getByRole("button").className).toContain("h-control-lg")
   })
 
+  it("onBlur: when the focus leaves the field, not when it goes into the calendar", async () => {
+    const onBlur = vi.fn()
+    render(
+      <>
+        <DateRangePicker label="Período" onBlur={onBlur} numberOfMonths={1} />
+        <button type="button">Fora</button>
+      </>,
+    )
+    const trigger = screen.getByRole("button", { name: /Período/ })
+    await userEvent.click(trigger)
+    await screen.findByRole("grid")
+    // Into the calendar and its buttons.
+    await userEvent.click(screen.getByRole("button", { name: "Ir para o próximo mês" }))
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+    await waitFor(() => expect(trigger).toHaveFocus())
+    expect(onBlur).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(onBlur).toHaveBeenCalledTimes(1)
+  })
+
   it("does not open the popover when disabled", async () => {
     render(
       <DateRangePicker label="X" value={{ from: "", to: "" }} onValueChange={() => {}} disabled />,
