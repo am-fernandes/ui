@@ -53,6 +53,16 @@ describe("DateInput", () => {
     expect(input()).toHaveValue("14/03/2025")
   })
 
+  it("a value with a time part shows its date part", async () => {
+    render(<DateInput label="Data" value="2025-03-14T00:00:00Z" />)
+    expect(input()).toHaveValue("14/03/2025")
+    await userEvent.click(screen.getByRole("button", { name: "Abrir calendário" }))
+    expect(await screen.findByRole("grid", { name: /março 2025/i })).toBeInTheDocument()
+    expect(
+      document.querySelector('button[data-day="2025-03-14"]')?.closest('[role="gridcell"]'),
+    ).toHaveAttribute("aria-selected", "true")
+  })
+
   it("shows an empty field for a value that is not a date", () => {
     render(<DateInput label="Data" value="not-a-date" />)
     expect(input()).toHaveValue("")
