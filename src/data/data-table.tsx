@@ -872,7 +872,6 @@ function DataTable<TData>({
     }),
     [
       data,
-      columns,
       tableColumns,
       sorting,
       columnFilters,
