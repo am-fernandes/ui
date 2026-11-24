@@ -801,12 +801,9 @@ function DataTable<TData>({
     : !hasError && table.getRowModel().rows.length === 0 && typeof resolvedEmptyMessage === "string"
       ? resolvedEmptyMessage
       : ""
-  // Skip `meta.exportOnly` columns: they're absent from the rendered header,
-  // so the skeleton body shouldn't render placeholder cells for them either —
-  // otherwise the body row is wider than the header and rows misalign.
-  const skeletonColumnCount = columns.filter(
-    (col) => !(col as { meta?: { exportOnly?: boolean } }).meta?.exportOnly,
-  ).length
+  // One skeleton cell per column on screen: leaf columns (a group counts its
+  // columns), without the hidden `meta.exportOnly` ones.
+  const skeletonColumnCount = table.getVisibleLeafColumns().length
 
   const hasSearch = !!(searchableColumns && searchableColumns.length > 0)
   const hasDownload = !!downloadable
@@ -1059,7 +1056,11 @@ function DataTable<TData>({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const canSort = sortableColumns?.includes(header.column.id) ?? false
+                  // Only a leaf header sorts: a group header ("Cliente" over two
+                  // columns) and the empty cell above a plain column do not.
+                  const isLeafHeader = !header.isPlaceholder && header.subHeaders.length === 0
+                  const canSort =
+                    isLeafHeader && (sortableColumns?.includes(header.column.id) ?? false)
                   const sorted = header.column.getIsSorted()
                   const ariaSort: "ascending" | "descending" | "none" =
                     sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"
@@ -1071,7 +1072,12 @@ function DataTable<TData>({
                   // as a description, and stays out of the header's name).
                   const sortHintId = `${idBase}-sort-${header.id}`
                   return (
-                    <TableHead key={header.id} aria-sort={canSort ? ariaSort : undefined}>
+                    <TableHead
+                      key={header.id}
+                      colSpan={header.colSpan > 1 ? header.colSpan : undefined}
+                      scope={header.colSpan > 1 ? "colgroup" : "col"}
+                      aria-sort={canSort ? ariaSort : undefined}
+                    >
                       {header.isPlaceholder ? null : canSort ? (
                         <button
                           type="button"

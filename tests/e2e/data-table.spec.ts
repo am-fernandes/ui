@@ -172,3 +172,18 @@ test.describe("DataTable: semântica", () => {
     await expect(header).toHaveAttribute("aria-sort", "ascending")
   })
 })
+
+test.describe("DataTable: cabeçalho agrupado", () => {
+  test("o grupo cobre exatamente as suas colunas", async ({ page }) => {
+    await gotoTable(page, "data-datatable--grouped-headers")
+    const group = await page.getByRole("columnheader", { name: "Contrato" }).boundingBox()
+    const cliente = await page.getByRole("columnheader", { name: "Cliente" }).boundingBox()
+    const vencimento = await page.getByRole("columnheader", { name: "Vencimento" }).boundingBox()
+    expect(group && cliente && vencimento).toBeTruthy()
+    if (!group || !cliente || !vencimento) return
+    expect(Math.abs(group.x - cliente.x)).toBeLessThanOrEqual(1)
+    expect(Math.abs(group.x + group.width - (vencimento.x + vencimento.width))).toBeLessThanOrEqual(
+      1,
+    )
+  })
+})

@@ -439,6 +439,49 @@ describe("DataTable", () => {
     })
   })
 
+  describe("grouped headers", () => {
+    interface Venda {
+      nome: string
+      cidade: string
+      valor: number
+    }
+    const grouped: ColumnDef<Venda>[] = [
+      {
+        id: "cliente",
+        header: "Cliente",
+        columns: [
+          { accessorKey: "nome", header: "Nome" },
+          { accessorKey: "cidade", header: "Cidade" },
+        ],
+      },
+      { accessorKey: "valor", header: "Valor" },
+    ]
+    const vendas = [{ nome: "Ana", cidade: "Santos", valor: 10 }]
+
+    it("spans a group header over its columns", () => {
+      render(<DataTable columns={grouped} data={vendas} sortableColumns={["valor"]} />)
+      const [groupRow, leafRow] = screen.getAllByRole("row")
+      const groupCells = within(groupRow as HTMLElement).getAllByRole("columnheader")
+      expect(groupCells).toHaveLength(2)
+      expect(groupCells[0]).toHaveTextContent("Cliente")
+      expect(groupCells[0]).toHaveAttribute("colspan", "2")
+      expect(groupCells[0]).toHaveAttribute("scope", "colgroup")
+      // The empty cell above "Valor" is not the sortable header.
+      expect(groupCells[1]).not.toHaveAttribute("aria-sort")
+      expect(within(leafRow as HTMLElement).getAllByRole("columnheader")).toHaveLength(3)
+      expect(screen.getByRole("columnheader", { name: "Valor" })).toHaveAttribute(
+        "aria-sort",
+        "none",
+      )
+    })
+
+    it("draws one skeleton cell per leaf column", () => {
+      const { container } = render(<DataTable columns={grouped} data={[]} loading />)
+      const row = container.querySelector('[data-slot="data-table-skeleton-row"]')
+      expect(row?.querySelectorAll("td")).toHaveLength(3)
+    })
+  })
+
   describe("pagination", () => {
     const many: Row[] = Array.from({ length: 12 }, (_, i) => ({
       name: `Row ${String(i + 1).padStart(2, "0")}`,

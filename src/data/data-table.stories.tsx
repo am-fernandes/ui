@@ -1029,6 +1029,44 @@ export const WithDownload: Story = {
   },
 }
 
+const groupedColumns: ColumnDef<Contrato>[] = [
+  { accessorKey: "numero", header: "Número" },
+  {
+    id: "contrato",
+    header: "Contrato",
+    columns: [
+      { accessorKey: "cliente", header: "Cliente" },
+      { accessorKey: "vencimento", header: "Vencimento" },
+    ],
+  },
+  {
+    accessorKey: "valor",
+    header: "Valor",
+    cell: ({ row }) => brl.format(row.original.valor),
+  },
+]
+
+export const GroupedHeaders: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        aria-label="Contratos"
+        columns={groupedColumns}
+        data={contratos.slice(0, 5)}
+        sortableColumns={["numero", "cliente", "valor"]}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Uma coluna com `columns` vira um cabeçalho de grupo que ocupa as suas colunas (`colSpan`, `scope="colgroup"`). Só os cabeçalhos das colunas finais ordenam.',
+      },
+    },
+  },
+}
+
 interface Assinatura {
   numero: string
   assinadoEm: Date
