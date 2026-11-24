@@ -7,6 +7,8 @@ import { readFileSync } from "node:fs"
 import { type Page, expect, test } from "@playwright/test"
 import { unzipSync } from "fflate"
 
+import { expectFocusRing } from "./a11y"
+
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
 async function gotoTable(page: Page, id: string) {
@@ -373,5 +375,28 @@ test.describe("DataTable: telefone", () => {
     expect(search?.width ?? 0).toBeGreaterThanOrEqual(190)
     const next = await page.getByRole("button", { name: "Próxima página" }).boundingBox()
     expect(next?.width).toBe(40)
+  })
+})
+
+test.describe("DataTable: caixa de rolagem", () => {
+  test("a caixa que rola é alcançável pelo teclado e rola com as setas", async ({ page }) => {
+    await gotoTable(page, "data-datatable--pinned-columns")
+    const region = page.getByRole("region", { name: "Contratos" })
+    await expect(region).toHaveAttribute("tabindex", "0")
+    await region.focus()
+    await page.keyboard.press("ArrowRight")
+    await page.keyboard.press("ArrowRight")
+    await expect.poll(() => region.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0)
+    // Focus from the keyboard shows the ring, drawn inside the frame.
+    await page.keyboard.press("Shift+Tab")
+    await page.keyboard.press("Tab")
+    await expectFocusRing(region, { inset: true })
+  })
+
+  test("sem rolagem, não há parada de Tab a mais", async ({ page }) => {
+    await gotoTable(page, "data-datatable--grouped-headers")
+    const scroller = page.locator('[data-slot="data-table-scroll"]')
+    await expect(scroller).not.toHaveAttribute("tabindex", "0")
+    await expect(page.getByRole("region")).toHaveCount(0)
   })
 })

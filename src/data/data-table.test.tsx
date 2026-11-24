@@ -439,6 +439,77 @@ describe("DataTable", () => {
     })
   })
 
+  describe("scroll region", () => {
+    function mockSizes(
+      sizes: Partial<
+        Record<"scrollWidth" | "clientWidth" | "scrollHeight" | "clientHeight", number>
+      >,
+    ) {
+      const originals = Object.keys(sizes).map((key) => [
+        key,
+        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
+      ])
+      for (const [key, value] of Object.entries(sizes)) {
+        Object.defineProperty(HTMLElement.prototype, key, { configurable: true, get: () => value })
+      }
+      return () => {
+        for (const [key, descriptor] of originals) {
+          if (descriptor)
+            Object.defineProperty(
+              HTMLElement.prototype,
+              key as string,
+              descriptor as PropertyDescriptor,
+            )
+          else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key as string]
+        }
+      }
+    }
+
+    it("is a focusable, named region when it scrolls", () => {
+      const restore = mockSizes({
+        scrollWidth: 900,
+        clientWidth: 300,
+        scrollHeight: 100,
+        clientHeight: 100,
+      })
+      try {
+        render(<DataTable columns={columns} data={data} aria-label="Contratos" />)
+        const region = screen.getByRole("region", { name: "Contratos" })
+        expect(region).toHaveAttribute("tabindex", "0")
+        expect(region).toHaveAttribute("data-slot", "data-table-scroll")
+      } finally {
+        restore()
+      }
+    })
+
+    it("uses labels.scrollRegion when the table has no name", () => {
+      const restore = mockSizes({
+        scrollWidth: 900,
+        clientWidth: 300,
+        scrollHeight: 100,
+        clientHeight: 100,
+      })
+      try {
+        render(<DataTable columns={columns} data={data} />)
+        expect(screen.getByRole("region", { name: "Tabela com rolagem" })).toHaveAttribute(
+          "tabindex",
+          "0",
+        )
+      } finally {
+        restore()
+      }
+    })
+
+    it("adds no tab stop when nothing scrolls", () => {
+      const { container } = render(
+        <DataTable columns={columns} data={data} aria-label="Contratos" />,
+      )
+      const scroller = container.querySelector('[data-slot="data-table-scroll"]')
+      expect(scroller).not.toHaveAttribute("tabindex")
+      expect(scroller).not.toHaveAttribute("role")
+    })
+  })
+
   describe("sticky header", () => {
     it("caps the body at maxHeight and keeps the header in place", () => {
       const { container } = render(

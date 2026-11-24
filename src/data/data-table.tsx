@@ -50,18 +50,22 @@ function Table({
   children,
   containerStyle,
   containerRef,
+  containerProps,
   ...props
 }: React.HTMLAttributes<HTMLTableElement> & {
   containerStyle?: React.CSSProperties
   containerRef?: React.Ref<HTMLDivElement>
+  containerProps?: React.HTMLAttributes<HTMLDivElement>
 }) {
   return (
     // `isolate`: the sticky header (and pinned columns) stack among themselves,
     // never above the page's overlays.
     <div
+      {...containerProps}
       ref={containerRef}
       data-slot="data-table-scroll"
-      className="relative isolate w-full overflow-auto"
+      // Drawn inside: the rounded frame around it would clip an outer ring.
+      className="relative isolate w-full overflow-auto focus-visible:focus-outline-inset"
       style={containerStyle}
     >
       <table
@@ -187,6 +191,8 @@ export interface DataTableLabels {
   selectedCount: (count: number) => string
   /** The selection bar's button that clears the selection. */
   clearSelection: string
+  /** Name of the scrolling box when the table has no `aria-label` / `aria-labelledby`. */
+  scrollRegion: string
 }
 
 const numberFormatter = new Intl.NumberFormat("pt-BR")
@@ -228,6 +234,7 @@ export const defaultDataTableLabels: DataTableLabels = {
   selectedCount: (count) =>
     count === 1 ? "1 selecionado" : `${numberFormatter.format(count)} selecionados`,
   clearSelection: "Limpar seleção",
+  scrollRegion: "Tabela com rolagem",
 }
 
 export interface DataTableProps<TData>
@@ -1037,6 +1044,23 @@ function DataTable<TData>({
     return () => observer.disconnect()
   }, [pinnedLeftIds])
   const lastPinnedId = pinnedLeftIds.at(-1)
+
+  // Whether the box scrolls (wide columns, `maxHeight`): measured on layout
+  // and on every resize of the box or the table.
+  const [scrolls, setScrolls] = React.useState(false)
+  React.useLayoutEffect(() => {
+    const box = scrollRef.current
+    if (!box) return
+    const measure = () =>
+      setScrolls(box.scrollWidth > box.clientWidth + 1 || box.scrollHeight > box.clientHeight + 1)
+    measure()
+    if (typeof ResizeObserver === "undefined") return
+    const observer = new ResizeObserver(measure)
+    observer.observe(box)
+    const tableElement = box.querySelector("table")
+    if (tableElement) observer.observe(tableElement)
+    return () => observer.disconnect()
+  }, [])
   /** Sticky placement of a pinned column's cell; nothing for the others. */
   const pinFor = (
     columnId: string,
@@ -1378,6 +1402,20 @@ function DataTable<TData>({
             aria-labelledby={ariaLabelledBy}
             containerStyle={maxHeight != null ? { maxHeight } : undefined}
             containerRef={scrollRef}
+            containerProps={
+              scrolls
+                ? {
+                    // A box that scrolls must be reachable by keyboard (arrows,
+                    // Page Down) even when it holds no control; then it is a named
+                    // region. No tab stop while it does not scroll.
+                    tabIndex: 0,
+                    role: "region",
+                    ...(ariaLabelledBy
+                      ? { "aria-labelledby": ariaLabelledBy }
+                      : { "aria-label": ariaLabelProp ?? mergedLabels.scrollRegion }),
+                  }
+                : undefined
+            }
           >
             {caption != null ? (
               <caption
