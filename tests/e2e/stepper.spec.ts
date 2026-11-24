@@ -107,6 +107,20 @@ test.describe("Stepper", () => {
     await expect(compact).toContainText("Etapa 2 de 4")
   })
 
+  test("compact summary writes out the status and keeps the description", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 })
+    await gotoStepper(page, "navigation-stepper--with-status")
+    const compact = page.getByRole("group", { name: "Progresso" })
+    await expect(compact).toBeVisible()
+    const status = compact.locator('[data-slot="stepper-compact-status"]')
+    await expect(status).toBeVisible()
+    await expect(status).toHaveText("com alerta: RG vencido")
+    // Capitalised on screen, from the same label.
+    expect(await status.locator("span").first().innerText()).toBe("Com alerta: RG vencido")
+    const icon = (await status.locator("svg").boundingBox())!
+    expect(icon.width).toBeGreaterThanOrEqual(12)
+  })
+
   test("compact summary has no WCAG 2.1 AA violations", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 })
     await gotoStepper(page, "navigation-stepper--with-status")

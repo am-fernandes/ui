@@ -117,12 +117,19 @@ function StatusText({
   step,
   state,
   labels,
-}: { step: StepperStep; state: StepState; labels: StepperLabels }) {
+  withStatus = true,
+}: {
+  step: StepperStep
+  state: StepState
+  labels: StepperLabels
+  /** `false` when the error or warning is already written out next to it. */
+  withStatus?: boolean
+}) {
   const parts: string[] = []
   if (state === "completed") parts.push(labels.completed)
   if (state === "current") parts.push(labels.current)
-  if (step.status === "error") parts.push(labels.error)
-  if (step.status === "warning") parts.push(labels.warning)
+  if (withStatus && step.status === "error") parts.push(labels.error)
+  if (withStatus && step.status === "warning") parts.push(labels.warning)
   if (parts.length === 0) return null
   return <span className="sr-only">{`, ${parts.join(", ")}`}</span>
 }
@@ -312,7 +319,7 @@ function Stepper({
               </span>
               <span className="sr-only">: </span>
               <span className="font-medium text-foreground">{currentStep.label}</span>
-              <StatusText step={currentStep} state={currentState} labels={l} />
+              <StatusText step={currentStep} state={currentState} labels={l} withStatus={false} />
             </p>
             {onStepClick ? (
               <IconButton
@@ -325,6 +332,40 @@ function Stepper({
               />
             ) : null}
           </div>
+          {currentStep.status ? (
+            // Written out with an icon: on a phone the coloured track alone
+            // would be the only sign of an error (WCAG 1.4.1).
+            <p
+              data-slot="stepper-compact-status"
+              data-status={currentStep.status}
+              className={cn(
+                "flex items-start gap-1.5 text-xs",
+                currentStep.status === "error" ? "text-destructive-text" : "text-foreground",
+              )}
+            >
+              {currentStep.status === "error" ? (
+                <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+              ) : (
+                <TriangleAlert
+                  className="mt-px size-3.5 shrink-0 text-warning"
+                  aria-hidden="true"
+                />
+              )}
+              <span className="min-w-0 first-letter:uppercase">
+                <span>{currentStep.status === "error" ? l.error : l.warning}</span>
+                {currentStep.description ? (
+                  <>
+                    {": "}
+                    <span>{currentStep.description}</span>
+                  </>
+                ) : null}
+              </span>
+            </p>
+          ) : currentStep.description ? (
+            <p data-slot="stepper-compact-description" className="text-xs text-muted-foreground">
+              {currentStep.description}
+            </p>
+          ) : null}
           <div aria-hidden="true" className="flex gap-1">
             {steps.map((step, index) => (
               <span

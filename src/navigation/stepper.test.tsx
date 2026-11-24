@@ -116,7 +116,11 @@ describe("Stepper", () => {
       expect(list()).toHaveClass("hidden", "@lg:flex")
       const compact = container.querySelector('[data-slot="stepper-compact"]') as HTMLElement
       expect(compact).toHaveClass("@lg:hidden")
-      expect(compact).toHaveTextContent(/^Etapa 2 de 4 · : Endereço, etapa atual$/)
+      expect(compact).toHaveTextContent(
+        /^Etapa 2 de 4 · : Endereço, etapa atualOnde o cliente mora$/,
+      )
+      // The description stays visible under the summary.
+      expect(within(compact).getByText("Onde o cliente mora")).not.toHaveClass("sr-only")
       const separator = within(compact).getByText("·")
       expect(separator).toHaveAttribute("aria-hidden", "true")
       const segments = compact.querySelectorAll('[data-slot="stepper-track-segment"]')
@@ -140,6 +144,42 @@ describe("Stepper", () => {
       const { container } = render(<Stepper steps={many} activeStep={0} />)
       expect(list()).toHaveClass(listClass)
       expect(container.querySelector('[data-slot="stepper-compact"]')).toHaveClass(compactClass)
+    })
+
+    it("shows the current step's status with an icon and text, not colour alone", () => {
+      const { container } = renderStepper({
+        activeStep: 1,
+        steps: [
+          { label: "Dados" },
+          { label: "Endereço", status: "error", description: "CEP inválido" },
+          { label: "Documentos", status: "warning", description: "RG vencido" },
+        ],
+      })
+      const compact = container.querySelector('[data-slot="stepper-compact"]') as HTMLElement
+      const status = compact.querySelector('[data-slot="stepper-compact-status"]') as HTMLElement
+      expect(status).toHaveAttribute("data-status", "error")
+      expect(status.querySelector("svg")).not.toBeNull()
+      // Visible text, not only for screen readers.
+      expect(within(status).getByText("com erro")).not.toHaveClass("sr-only")
+      expect(within(status).getByText("CEP inválido")).toBeInTheDocument()
+      // Said once: not repeated in the hidden status of the summary line.
+      expect(compact).toHaveTextContent(
+        /^Etapa 2 de 3 · : Endereço, etapa atualcom erro: CEP inválido$/,
+      )
+    })
+
+    it("shows a warning the same way", () => {
+      const { container } = renderStepper({
+        activeStep: 0,
+        steps: [
+          { label: "Documentos", status: "warning", description: "RG vencido" },
+          { label: "B" },
+        ],
+      })
+      const status = container.querySelector('[data-slot="stepper-compact-status"]') as HTMLElement
+      expect(status).toHaveAttribute("data-status", "warning")
+      expect(within(status).getByText("com alerta")).toBeInTheDocument()
+      expect(within(status).getByText("RG vencido")).toBeInTheDocument()
     })
 
     it("colours error and warning segments in the compact track", () => {
@@ -288,7 +328,7 @@ describe("Stepper", () => {
       const ol = screen.getByRole("list", { name: "Cadastro" })
       expect(within(ol).getAllByRole("listitem")[0]).toHaveTextContent("Dados pessoais, feito")
       expect(screen.getByRole("group", { name: "Cadastro" })).toHaveTextContent(
-        /^2\/4 · : Endereço, agora$/,
+        /^2\/4 · : Endereço, agoraOnde o cliente mora$/,
       )
     })
   })
