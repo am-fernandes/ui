@@ -162,6 +162,31 @@ describe("TimePicker", () => {
     expect(spy).toHaveBeenLastCalledWith("")
   })
 
+  it("pasting a whole time (14:30, 9h30, 1430) fills both fields, in either field", () => {
+    const spy = vi.fn()
+    render(<Controlled onChangeSpy={spy} />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
+    const paste = (el: HTMLInputElement, text: string) => {
+      el.focus()
+      fireEvent.paste(el, { clipboardData: { getData: () => text } })
+    }
+    paste(hour, "14:30")
+    expect(hour).toHaveValue("14")
+    expect(minute).toHaveValue("30")
+    expect(spy).toHaveBeenLastCalledWith("14:30")
+    paste(minute, "Início às 9h05")
+    expect(hour).toHaveValue("09")
+    expect(minute).toHaveValue("05")
+    expect(spy).toHaveBeenLastCalledWith("09:05")
+    paste(hour, "1745")
+    expect(spy).toHaveBeenLastCalledWith("17:45")
+    // Not a time: nothing changes.
+    paste(hour, "25:99")
+    expect(hour).toHaveValue("17")
+    expect(spy).toHaveBeenLastCalledWith("17:45")
+  })
+
   it("hour ArrowUp wraps modular: 23 -> 0", async () => {
     const spy = vi.fn()
     render(<Controlled initial="23:00" onChangeSpy={spy} />)

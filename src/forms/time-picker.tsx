@@ -47,6 +47,22 @@ function parseValue(value: string | undefined): { hour: string; minute: string }
   return { hour: h.slice(0, 2), minute: m.slice(0, 2) }
 }
 
+/**
+ * A whole time inside a pasted text: "14:30", "9h05", "Início às 9:05" or
+ * "1430". `null` when there is none, or it is not a time of day.
+ */
+function parseTime(text: string): { hour: string; minute: string } | null {
+  const match =
+    /(?:^|\D)(\d{1,2})\s*[:hH]\s*(\d{2})(?!\d)/.exec(text) ?? /^\s*(\d{2})(\d{2})\s*$/.exec(text)
+  if (!match) return null
+  const hour = Number.parseInt(match[1] ?? "", 10)
+  const minute = Number.parseInt(match[2] ?? "", 10)
+  if (!isInRange(hour, MIN_HOUR, MAX_HOUR) || !isInRange(minute, MIN_MINUTE, MAX_MINUTE)) {
+    return null
+  }
+  return { hour: pad(hour), minute: pad(minute) }
+}
+
 function normalizeSegment(raw: string, min: number, max: number) {
   if (raw === "") return ""
   const n = Number.parseInt(raw, 10)
@@ -74,6 +90,7 @@ interface TimeFieldProps {
   onChange: (raw: string) => void
   onBlur: () => void
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  onPaste: (e: React.ClipboardEvent<HTMLInputElement>) => void
   disabled?: boolean
   ref?: React.Ref<HTMLInputElement>
 }
@@ -88,6 +105,7 @@ function TimeField({
   onChange,
   onBlur,
   onKeyDown,
+  onPaste,
   disabled,
   ref,
 }: TimeFieldProps) {
@@ -106,6 +124,7 @@ function TimeField({
       onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 2))}
       onBlur={onBlur}
       onKeyDown={onKeyDown}
+      onPaste={onPaste}
       onFocus={(e) => e.target.select()}
       disabled={disabled}
       className={fieldClasses}
@@ -197,6 +216,22 @@ function TimePicker({
       return
     }
     emitIfComplete(hour, nextMinute, report)
+  }
+
+  // A pasted time fills both fields, whichever has the focus. A pasted text
+  // with a separator that is not a time changes nothing; digits alone go in
+  // as typed.
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const text = e.clipboardData?.getData("text") ?? ""
+    const time = parseTime(text)
+    if (time) {
+      e.preventDefault()
+      setHour(time.hour)
+      setMinute(time.minute)
+      report(`${time.hour}:${time.minute}`)
+    } else if (/[:hH]/.test(text)) {
+      e.preventDefault()
+    }
   }
 
   const handleHourKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -295,6 +330,7 @@ function TimePicker({
           onChange={handleHourChange}
           onBlur={handleHourBlur}
           onKeyDown={handleHourKeyDown}
+          onPaste={handlePaste}
           disabled={disabled}
         />
         <span aria-hidden className="text-muted-foreground">
@@ -311,6 +347,7 @@ function TimePicker({
           onChange={handleMinuteChange}
           onBlur={handleMinuteBlur}
           onKeyDown={handleMinuteKeyDown}
+          onPaste={handlePaste}
           disabled={disabled}
         />
       </div>

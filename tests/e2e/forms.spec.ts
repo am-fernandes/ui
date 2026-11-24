@@ -585,6 +585,18 @@ test.describe("TimePicker: digitar", () => {
     await expect(page.getByText("Valor: 09:30")).toBeVisible()
   })
 
+  test("colar 14:30 preenche hora e minutos", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"])
+    await gotoStory(page, "forms-timepicker--empty", "Valor: (vazio)")
+    const hour = page.getByRole("textbox", { name: "Horas" })
+    await hour.click()
+    await page.evaluate(() => navigator.clipboard.writeText("Reunião às 14:30"))
+    await page.keyboard.press("ControlOrMeta+V")
+    await expect(hour).toHaveValue("14")
+    await expect(page.getByRole("textbox", { name: "Minutos" })).toHaveValue("30")
+    await expect(page.getByText("Valor: 14:30")).toBeVisible()
+  })
+
   test("uma hora inválida é limpa ao sair, sem levar os minutos", async ({ page }) => {
     await gotoStory(page, "forms-timepicker--default", "Valor: 09:30")
     const hour = page.getByRole("textbox", { name: "Horas" })
