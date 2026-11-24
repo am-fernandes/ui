@@ -4,6 +4,7 @@ import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Tooltip, type TooltipProps } from "../overlays/tooltip"
+import { type DataTableColumnMeta, valueToText } from "./_internal/column-meta"
 
 export type DateColumnShowTime = boolean | "auto"
 
@@ -83,16 +84,23 @@ function inferShowTime(rawValue: unknown, mode: DateColumnShowTime): boolean {
  */
 export function dateColumn<TData>(opts: DateColumnOptions<TData>): ColumnDef<TData> {
   const { accessorKey, header, showTime = "auto", className, emptyText = "" } = opts
+  const formatValue = (raw: unknown): string | null => {
+    const parsed = parseDateValue(raw)
+    if (!parsed) return null
+    const withTime = inferShowTime(raw, showTime)
+    return format(parsed, withTime ? "dd/MM/yyyy HH:mm" : "dd/MM/yyyy")
+  }
+  const meta: DataTableColumnMeta<TData> = {
+    // Search what the cell shows ("19/05/2026"), not the ISO value.
+    searchText: (_row, value) => formatValue(value) ?? "",
+  }
   return {
     accessorKey,
     header,
+    meta,
     cell: ({ getValue }) => {
-      const raw = getValue()
-      const parsed = parseDateValue(raw)
-      if (!parsed) return emptyText
-      const withTime = inferShowTime(raw, showTime)
-      const fmt = withTime ? "dd/MM/yyyy HH:mm" : "dd/MM/yyyy"
-      const text = format(parsed, fmt)
+      const text = formatValue(getValue())
+      if (text === null) return emptyText
       return className ? <span className={className}>{text}</span> : text
     },
     sortingFn: (rowA, rowB, columnId) => {
@@ -141,8 +149,9 @@ export type FormattedColumnOptions<TData, TValue = unknown> = FormattedColumnAcc
    * you can synthesize labels from sibling fields (e.g. `formatPhone(value)`,
    * `formatBRL(value)`, `\`${row.firstName} ${row.lastName}\``).
    *
-   * The xlsx export and the column's sort/filter use the raw value — only the
-   * UI display goes through `format`. Optional; omit to render the raw value.
+   * The search compares this output when it is text (so "123.456" finds
+   * "123.456.789-01"); the xlsx export and the sort use the raw value.
+   * Optional; omit to render the raw value.
    */
   format?: (value: TValue, row: TData) => React.ReactNode
   /** Extra class on the wrapping `<span>`. Omit and we render the value bare. */
@@ -188,9 +197,21 @@ export function formattedColumn<TData, TValue = unknown>(
     opts.accessorKey != null
       ? { accessorKey: opts.accessorKey, ...(opts.id ? { id: opts.id } : {}) }
       : { accessorFn: opts.accessorFn, id: opts.id }
+  const meta: DataTableColumnMeta<TData> = {
+    // Search what the cell shows ("123.456.789-01", "R$ 1.234,50") when the
+    // format gives text; the raw value otherwise.
+    searchText: (row, value) => {
+      if (value == null || value === "") return emptyText
+      const node = formatter ? formatter(value as TValue, row) : value
+      return typeof node === "string" || typeof node === "number"
+        ? String(node)
+        : valueToText(value)
+    },
+  }
   return {
     ...access,
     header,
+    meta,
     // Only emit these keys when set: TanStack merges `{ ...defaults, ...columnDef }`,
     // so an own `sortingFn: undefined` would clobber the `"auto"` default and crash
     // `getSortingFn()` with "sortingFn is not a function".

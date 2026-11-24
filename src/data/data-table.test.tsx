@@ -12,6 +12,7 @@ vi.mock("./_xlsx-export", () => ({
   downloadXlsx: downloadXlsxMock,
 }))
 
+import { dateColumn, formattedColumn } from "./columns"
 import { DataTable } from "./data-table"
 
 interface Row {
@@ -166,9 +167,9 @@ describe("DataTable", () => {
     expect(screen.queryByText("Alpha")).not.toBeInTheDocument()
   })
 
-  it("uses TanStack's default `includesString` when no searchableColumns are given", () => {
-    // Controlled globalFilter without `searchableColumns` exercises the default
-    // matcher branch (no global filter input rendered, but filter still applies).
+  it("searches every visible column when no searchableColumns are given", () => {
+    // Controlled globalFilter without `searchableColumns`: no search input is
+    // rendered, but the filter still applies to every visible column.
     render(<DataTable columns={columns} data={data} globalFilter="alp" />)
     expect(screen.getByText("Alpha")).toBeInTheDocument()
     expect(screen.queryByText("Bravo")).not.toBeInTheDocument()
@@ -329,6 +330,77 @@ describe("DataTable", () => {
       .getAllByRole("button")
       .find((b) => /Ordenar por name/i.test(b.getAttribute("aria-label") ?? ""))
     expect(btn).toBeTruthy()
+  })
+
+  describe("search", () => {
+    interface Cliente {
+      nome: string
+      cpf: string
+      valor: number
+      criadoEm: string
+    }
+    const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+    const formatCpf = (cpf: string) => cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+    const clienteColumns: ColumnDef<Cliente>[] = [
+      { accessorKey: "nome", header: "Nome" },
+      formattedColumn<Cliente, string>({ accessorKey: "cpf", header: "CPF", format: formatCpf }),
+      formattedColumn<Cliente, number>({
+        accessorKey: "valor",
+        header: "Valor",
+        format: (v) => brl.format(v),
+      }),
+      dateColumn<Cliente>({ accessorKey: "criadoEm", header: "Criado em" }),
+    ]
+    const clientes: Cliente[] = [
+      { nome: "João Álvares", cpf: "12345678901", valor: 1234.5, criadoEm: "2026-05-19T14:30:00" },
+      { nome: "Maria Souza", cpf: "98765432100", valor: 99, criadoEm: "2026-02-01T09:00:00" },
+    ]
+    const searchable = ["nome", "cpf", "valor", "criadoEm"]
+
+    async function search(term: string) {
+      const input = screen.getByRole("textbox", { name: "Buscar na tabela" })
+      await userEvent.clear(input)
+      await userEvent.type(input, term)
+    }
+
+    it.each([
+      ["joao", "accent and case"],
+      ["ALVARES", "accent and case"],
+      ["123.456", "formatted CPF"],
+      ["1.234,50", "formatted money"],
+      ["19/05/2026", "formatted date"],
+    ])("finds the row by %s (%s)", async (term) => {
+      render(<DataTable columns={clienteColumns} data={clientes} searchableColumns={searchable} />)
+      await search(term)
+      expect(screen.getByText("João Álvares")).toBeInTheDocument()
+      expect(screen.queryByText("Maria Souza")).not.toBeInTheDocument()
+    })
+
+    it("does not match text the user does not see (the T of an ISO date)", async () => {
+      render(<DataTable columns={clienteColumns} data={clientes} searchableColumns={searchable} />)
+      await search("t")
+      expect(screen.getByText("Nenhum resultado.")).toBeInTheDocument()
+    })
+
+    it("uses a column's meta.searchText when it gives one", async () => {
+      const cols: ColumnDef<Cliente>[] = [
+        {
+          accessorKey: "nome",
+          header: "Nome",
+          meta: { searchText: (row: Cliente) => `${row.nome} cliente-vip` },
+        },
+      ]
+      render(<DataTable columns={cols} data={clientes} searchableColumns={["nome"]} />)
+      await search("vip")
+      expect(screen.getByText("João Álvares")).toBeInTheDocument()
+      expect(screen.getByText("Maria Souza")).toBeInTheDocument()
+    })
+
+    it("searches every visible column when searchableColumns is omitted", () => {
+      render(<DataTable columns={clienteColumns} data={clientes} globalFilter="alvares" />)
+      expect(screen.getByText("João Álvares")).toBeInTheDocument()
+      expect(screen.queryByText("Maria Souza")).not.toBeInTheDocument()
+    })
   })
 
   describe("downloadable", () => {

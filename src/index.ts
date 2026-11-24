@@ -11,6 +11,7 @@ export { Card, type CardProps } from "./data/card"
 export {
   DataTable,
   defaultDataTableLabels,
+  type DataTableColumnMeta,
   type DataTableDownloadable,
   type DataTableLabels,
   type DataTableProps,

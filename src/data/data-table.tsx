@@ -1,11 +1,14 @@
 "use client"
 
 import {
+  type Column,
   type ColumnDef,
   type ColumnFiltersState,
+  type FilterFn,
   type OnChangeFn,
   type PaginationState,
   type SortingState,
+  type Table as TanstackTable,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -25,11 +28,15 @@ import {
 } from "lucide-react"
 import * as React from "react"
 
+import { matchesSearch } from "@/lib/text"
 import { cn } from "@/lib/utils"
 import { Popover } from "../overlays/popover"
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
+import { columnMeta, valueToText } from "./_internal/column-meta"
 import { downloadXlsx } from "./_xlsx-export"
+
+export type { DataTableColumnMeta } from "./_internal/column-meta"
 
 // Internal Table primitives — inlined here (was src/data/table.tsx).
 function Table({ className, children, ...props }: React.HTMLAttributes<HTMLTableElement>) {
@@ -159,7 +166,13 @@ export const defaultDataTableLabels: DataTableLabels = {
 export interface DataTableProps<TData> {
   columns: ColumnDef<TData>[]
   data: TData[]
-  /** Enable global text search; the columns listed are the only ones searched. */
+  /**
+   * Shows the search box; the columns listed are the only ones searched. The
+   * search ignores accents and case and compares the text the cell shows: a
+   * column's `meta.searchText` (filled by `dateColumn` and `formattedColumn`)
+   * or the value as a string. With a controlled `globalFilter` and no list,
+   * every visible column is searched.
+   */
   searchableColumns?: string[]
   /**
    * Whitelist of column ids (typically `accessorKey`) whose headers are sortable.
@@ -481,17 +494,28 @@ function DataTable<TData>({
     [isSortingControlled, onSortingChangeProp, sorting],
   )
 
-  const globalFilterFn = React.useCallback(
-    (row: { getValue: (id: string) => unknown }, _columnId: string, filterValue: unknown) => {
-      if (!filterValue) return true
-      if (!searchableColumns || searchableColumns.length === 0) return true
-      const needle = String(filterValue).toLowerCase()
-      return searchableColumns.some((col) => {
-        const value = row.getValue(col)
-        return value != null && String(value).toLowerCase().includes(needle)
-      })
-    },
+  // The search compares what the user sees, without accents or case: a
+  // column's `meta.searchText` (dateColumn and formattedColumn fill it with
+  // their formatted output) or the cell value as a string. TanStack calls the
+  // filter once per searchable column and keeps the row if any column matches.
+  const tableRef = React.useRef<TanstackTable<TData> | null>(null)
+  const globalFilterFn = React.useCallback<FilterFn<TData>>((row, columnId, filterValue) => {
+    const value = row.getValue(columnId)
+    const meta = columnMeta<TData>(tableRef.current?.getColumn(columnId)?.columnDef.meta)
+    const text = meta.searchText ? meta.searchText(row.original, value) : valueToText(value)
+    return matchesSearch(text, String(filterValue ?? ""))
+  }, [])
+
+  // Which columns the search reads: the ones in `searchableColumns`, or every
+  // visible column with data when the list is not given.
+  const searchableSet = React.useMemo(
+    () => (searchableColumns && searchableColumns.length > 0 ? new Set(searchableColumns) : null),
     [searchableColumns],
+  )
+  const getColumnCanGlobalFilter = React.useCallback(
+    (column: Column<TData, unknown>) =>
+      searchableSet ? searchableSet.has(column.id) : column.getIsVisible(),
+    [searchableSet],
   )
 
   const tableOptions = React.useMemo(
@@ -539,11 +563,8 @@ function DataTable<TData>({
         ? { getPaginationRowModel: getPaginationRowModel() }
         : {}),
       ...(manualPagination ? { manualPagination: true, pageCount: pageCount ?? -1 } : {}),
-      // When `searchableColumns` is provided, scope global filter to those columns;
-      // otherwise fall back to TanStack's built-in `includesString` matcher.
-      ...(searchableColumns && searchableColumns.length > 0
-        ? { globalFilterFn }
-        : { globalFilterFn: "includesString" as const }),
+      globalFilterFn,
+      getColumnCanGlobalFilter,
     }),
     [
       data,
@@ -560,12 +581,13 @@ function DataTable<TData>({
       manualSorting,
       manualFiltering,
       pageCount,
-      searchableColumns,
       globalFilterFn,
+      getColumnCanGlobalFilter,
     ],
   )
 
   const table = useReactTable(tableOptions)
+  tableRef.current = table
 
   const mergedLabels: DataTableLabels = { ...defaultDataTableLabels, ...labels }
   const resolvedSearchPlaceholder = searchPlaceholder ?? mergedLabels.search
