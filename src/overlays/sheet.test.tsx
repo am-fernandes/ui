@@ -344,7 +344,7 @@ describe("Sheet close button", () => {
   it("is an icon button with the state layer and a 32px box", () => {
     render(<Sheet open title="X" />)
     const close = screen.getByRole("button", { name: "Fechar" })
-    expect(close).toHaveClass("size-8", "state-layer")
+    expect(close).toHaveClass("size-control-sm", "state-layer")
     expect(close).not.toHaveClass("opacity-70")
   })
 
