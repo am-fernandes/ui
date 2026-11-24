@@ -274,3 +274,62 @@ describe("Popover anchor", () => {
     warn.mockRestore()
   })
 })
+
+// The content is a role="dialog", and a dialog needs a name; nothing asked
+// for one.
+describe("Popover name", () => {
+  it("without a name of its own, it is named by its trigger", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    render(
+      <Popover open trigger={<button type="button">Filtros</button>}>
+        conteúdo
+      </Popover>,
+    )
+    expect(screen.getByRole("dialog", { name: "Filtros" })).toBeInTheDocument()
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it("keeps a trigger's own id", () => {
+    render(
+      <Popover
+        open
+        trigger={
+          <button type="button" id="meu-gatilho">
+            Filtros
+          </button>
+        }
+      >
+        conteúdo
+      </Popover>,
+    )
+    expect(screen.getByRole("button", { name: "Filtros" })).toHaveAttribute("id", "meu-gatilho")
+    expect(screen.getByRole("dialog")).toHaveAttribute("aria-labelledby", "meu-gatilho")
+  })
+
+  it.each([
+    [{ "aria-label": "Cidades" }, "Cidades"],
+    [{ "aria-labelledby": "titulo" }, "Título"],
+  ])("its own name wins (%o)", (name, expected) => {
+    render(
+      <>
+        <h2 id="titulo">Título</h2>
+        <Popover open trigger={<button type="button">Abrir</button>} {...name}>
+          conteúdo
+        </Popover>
+      </>,
+    )
+    expect(screen.getByRole("dialog", { name: expected })).toBeInTheDocument()
+  })
+
+  it("warns in development when there is neither a name nor a trigger", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    render(
+      <Popover open anchor={<span>Unidade 101</span>}>
+        conteúdo
+      </Popover>,
+    )
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("aria-label"))
+    warn.mockRestore()
+  })
+})

@@ -30,7 +30,13 @@ export interface PopoverProps {
   collisionPadding?: PopoverContentProps["collisionPadding"]
   modal?: boolean
   className?: string
+  /**
+   * Name of the popover, which is a `role="dialog"`: "Filtros", "Cidades".
+   * Without this or `aria-labelledby` it is named by its trigger; with
+   * neither a name nor a trigger, a warning in development.
+   */
   "aria-label"?: string
+  /** Id of the element that names the popover (its title). */
   "aria-labelledby"?: string
   onInteractOutside?: PopoverContentProps["onInteractOutside"]
   onPointerDownOutside?: PopoverContentProps["onPointerDownOutside"]
@@ -72,6 +78,24 @@ function Popover({
     }
   }, [placed])
 
+  // The content is a role="dialog": it needs a name, read when focus enters.
+  // Without one of its own it is named by its trigger, as a menu is by its
+  // button. (The trigger keeps an id it already has.)
+  const generatedTriggerId = React.useId()
+  const triggerId =
+    React.isValidElement<{ id?: string }>(trigger) && trigger.props.id
+      ? trigger.props.id
+      : generatedTriggerId
+  const labelledBy = ariaLabelledby ?? (ariaLabel || !trigger ? undefined : triggerId)
+  const named = Boolean(ariaLabel || labelledBy)
+  React.useEffect(() => {
+    if (process.env.NODE_ENV !== "production" && !named) {
+      console.warn(
+        '[Popover] O conteúdo é um role="dialog" sem nome: passe `aria-label` (ex.: "Filtros") ou `aria-labelledby` com o id do título.',
+      )
+    }
+  }, [named])
+
   return (
     <PopoverPrimitive.Root
       open={open}
@@ -80,7 +104,7 @@ function Popover({
       modal={modal}
     >
       {trigger ? (
-        <PopoverPrimitive.Trigger asChild data-slot="popover-trigger">
+        <PopoverPrimitive.Trigger asChild data-slot="popover-trigger" id={triggerId}>
           {trigger}
         </PopoverPrimitive.Trigger>
       ) : null}
@@ -98,7 +122,7 @@ function Popover({
             sideOffset={sideOffset}
             collisionPadding={collisionPadding}
             aria-label={ariaLabel}
-            aria-labelledby={ariaLabelledby}
+            aria-labelledby={labelledBy}
             onInteractOutside={onInteractOutside}
             onPointerDownOutside={onPointerDownOutside}
             onFocusOutside={onFocusOutside}
