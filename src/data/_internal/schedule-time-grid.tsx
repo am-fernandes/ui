@@ -50,7 +50,7 @@ export function TimeGridView({
   maxColumns,
   slotHour,
 }: TimeGridViewProps) {
-  const { now, onSlotClick, newEventLabel } = React.useContext(ScheduleContext)
+  const { now, onSlotClick, newEventLabel, locale } = React.useContext(ScheduleContext)
   const at = (day: Date, minutes: number) =>
     new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, minutes)
   const scrollRef = React.useRef<HTMLDivElement>(null)
@@ -92,13 +92,13 @@ export function TimeGridView({
               className="flex min-w-0 flex-col items-center justify-center gap-0.5 border-l px-0.5 py-1 text-xs sm:flex-row sm:gap-1 sm:px-1 sm:py-1.5"
             >
               <span aria-hidden="true" className="truncate text-muted-foreground">
-                {weekdayShort(day)}
+                {weekdayShort(day, locale)}
               </span>
               {onSlotClick ? (
                 <button
                   type="button"
                   data-slot="schedule-new-event"
-                  aria-label={newEventLabel(formatDayLong(day))}
+                  aria-label={newEventLabel(formatDayLong(day, locale))}
                   onClick={() => onSlotClick(at(day, slotHour * 60))}
                   className={cn(
                     "inline-flex size-6 cursor-pointer items-center justify-center rounded-full tabular-nums state-layer focus-visible:focus-outline",
@@ -119,7 +119,7 @@ export function TimeGridView({
                 </span>
               )}
               <span className="sr-only">
-                {formatDayLong(day)}
+                {formatDayLong(day, locale)}
                 {isToday ? `, ${todayLabel.toLowerCase()}` : ""}
               </span>
             </div>
@@ -265,8 +265,9 @@ function ColumnMore({
   overflow: ColumnOverflow<ScheduleEventData>
   moreLabel: (count: number) => string
 }) {
+  const { locale } = React.useContext(ScheduleContext)
   const label = moreLabel(overflow.events.length)
-  const dayLabel = formatDayLong(day)
+  const dayLabel = formatDayLong(day, locale)
   return (
     <Popover
       trigger={

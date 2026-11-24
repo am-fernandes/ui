@@ -27,12 +27,15 @@ export interface ScheduleContextValue {
   onSlotClick?: (date: Date) => void
   /** Name of the button that creates an event on a day ("Novo evento em …"). */
   newEventLabel: (day: string) => string
+  /** Language of day and month names and of the date formats. */
+  locale: string
 }
 
 export const ScheduleContext = React.createContext<ScheduleContextValue>({
   allDayLabel: "Dia inteiro",
   now: new Date(0),
   newEventLabel: (day) => `Novo evento em ${day}`,
+  locale: "pt-BR",
 })
 
 export const DEFAULT_EVENT_COLOR: ScheduleColor = "blue"
@@ -124,9 +127,10 @@ export function ScheduleEventButton({
   style,
   className,
 }: ScheduleEventButtonProps) {
-  const { allDayLabel, onEventClick, renderEventDetails } = React.useContext(ScheduleContext)
+  const { allDayLabel, onEventClick, renderEventDetails, locale } =
+    React.useContext(ScheduleContext)
   const colors = eventColors(event)
-  const name = eventAccessibleName(event, allDayLabel)
+  const name = eventAccessibleName(event, allDayLabel, locale)
 
   let content: React.ReactNode
   let variantClass: string
@@ -142,7 +146,7 @@ export function ScheduleEventButton({
             aria-hidden="true"
             className="hidden shrink-0 tabular-nums text-muted-foreground sm:inline"
           >
-            {formatTime(event.start)}
+            {formatTime(event.start, locale)}
           </span>
           <span aria-hidden="true" className="min-w-0 truncate">
             {event.title}
@@ -177,7 +181,7 @@ export function ScheduleEventButton({
           </span>
           {showTime ? (
             <span aria-hidden="true" className="truncate tabular-nums">
-              {formatEventTime(event, allDayLabel)}
+              {formatEventTime(event, allDayLabel, locale)}
             </span>
           ) : null}
         </>
@@ -189,7 +193,7 @@ export function ScheduleEventButton({
       content = (
         <>
           <span aria-hidden="true" className="w-28 shrink-0 tabular-nums text-muted-foreground">
-            {formatRowTime(event, day ?? event.start, allDayLabel)}
+            {formatRowTime(event, day ?? event.start, allDayLabel, locale)}
           </span>
           <span aria-hidden="true" className={cn("size-2.5 shrink-0 rounded-full", colors.dot)} />
           <span aria-hidden="true" className="min-w-0 flex-1 truncate font-medium">

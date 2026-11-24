@@ -138,6 +138,12 @@ export interface ScheduleProps {
   listDays?: number
   /** Shows a spinner with "Carregando…" in the header and marks the body `aria-busy`. */
   loading?: boolean
+  /**
+   * Language of the day and month names and of the date formats, as a BCP 47
+   * tag ("pt-BR", "en-US", "es"). The fixed texts come from `labels`.
+   * @default "pt-BR"
+   */
+  locale?: string
   /** Heading tag of the period title. @default 2 */
   headingLevel?: 2 | 3 | 4 | 5 | 6
   labels?: Partial<ScheduleLabels>
@@ -182,6 +188,7 @@ function Schedule({
   maxColumns,
   listDays = 7,
   loading = false,
+  locale = "pt-BR",
   headingLevel = 2,
   labels,
   className,
@@ -222,7 +229,7 @@ function Schedule({
   const visible = events
     .filter((e) => eventOverlapsRange(e, range.start, range.end))
     .sort(compareEvents)
-  const title = formatPeriodTitle(view, date, weekStartsOn, listDays)
+  const title = formatPeriodTitle(view, date, weekStartsOn, listDays, locale)
   const Heading = `h${headingLevel}` as const
   const subHeading = Math.min(headingLevel + 1, 6) as 3 | 4 | 5 | 6
 
@@ -234,8 +241,9 @@ function Schedule({
       now,
       onSlotClick,
       newEventLabel: l.newEvent,
+      locale,
     }),
-    [l.allDay, onEventClick, renderEventDetails, now, onSlotClick, l.newEvent],
+    [l.allDay, onEventClick, renderEventDetails, now, onSlotClick, l.newEvent, locale],
   )
 
   let body: React.ReactNode

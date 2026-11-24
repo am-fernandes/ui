@@ -18,7 +18,7 @@ interface ListViewProps {
 }
 
 export function ListView({ days, events, headingLevel, emptyLabel, todayLabel }: ListViewProps) {
-  const { now } = React.useContext(ScheduleContext)
+  const { now, locale } = React.useContext(ScheduleContext)
   const Heading = `h${headingLevel}` as const
   const idPrefix = React.useId()
   const groups = days
@@ -46,7 +46,7 @@ export function ListView({ days, events, headingLevel, emptyLabel, todayLabel }:
               aria-current={isToday ? "date" : undefined}
               className="flex items-center gap-2 px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
             >
-              {formatDayLong(day)}
+              {formatDayLong(day, locale)}
               {isToday ? (
                 <span className="rounded-inner bg-primary px-1.5 py-0.5 text-xs text-primary-foreground normal-case tracking-normal">
                   {todayLabel}

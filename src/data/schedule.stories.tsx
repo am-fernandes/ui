@@ -190,6 +190,38 @@ export const NewEventOnSlot: Story = {
   },
 }
 
+export const English: Story = {
+  args: {
+    defaultView: "week",
+    locale: "en-US",
+    labels: {
+      today: "Today",
+      allDay: "All day",
+      viewSwitcher: "View",
+      views: { month: "Month", week: "Week", day: "Day", list: "List" },
+      previous: {
+        month: "Previous month",
+        week: "Previous week",
+        day: "Previous day",
+        list: "Previous period",
+      },
+      next: { month: "Next month", week: "Next week", day: "Next day", list: "Next period" },
+      more: (count) => `+${count} more`,
+      empty: "No events in this period",
+      loading: "Loading…",
+      newEvent: (day) => `New event on ${day}`,
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`locale` muda os nomes de dias e meses e a ordem das datas; os textos fixos vêm de `labels`.",
+      },
+    },
+  },
+}
+
 export const WithEventDetails: Story = {
   args: {
     defaultView: "week",

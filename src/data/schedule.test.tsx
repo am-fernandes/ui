@@ -552,4 +552,23 @@ describe("Schedule", () => {
       })
     })
   })
+
+  describe("locale", () => {
+    it("writes day and month names in Portuguese by default", () => {
+      renderSchedule({ defaultView: "week" })
+      expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("15 – 21 de nov. de 2026")
+    })
+
+    it("follows the locale for names and date formats", () => {
+      const { container } = renderSchedule({
+        locale: "en-US",
+        defaultView: "week",
+        labels: { allDay: "All day" },
+      })
+      expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Nov 15 – 21, 2026")
+      const header = container.querySelector('[data-slot="schedule-day-header"]') as HTMLElement
+      expect(header).toHaveTextContent("Sun")
+      expect(header).toHaveTextContent("Sunday, November 15")
+    })
+  })
 })

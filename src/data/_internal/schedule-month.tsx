@@ -34,7 +34,7 @@ interface MonthViewProps {
 const ROW_TEMPLATE = `1.75rem repeat(${MONTH_MAX_LANES}, 1.625rem) 1.625rem`
 
 export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthViewProps) {
-  const { now, onSlotClick, newEventLabel } = React.useContext(ScheduleContext)
+  const { now, onSlotClick, newEventLabel, locale } = React.useContext(ScheduleContext)
   const weeks: Date[][] = []
   for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7))
 
@@ -43,7 +43,7 @@ export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthVi
       <div aria-hidden="true" className="grid grid-cols-7 border-b bg-muted/50">
         {days.slice(0, 7).map((day) => (
           <div key={day.getDay()} className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-            {weekdayShort(day)}
+            {weekdayShort(day, locale)}
           </div>
         ))}
       </div>
@@ -92,7 +92,7 @@ export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthVi
                     <button
                       type="button"
                       data-slot="schedule-new-event"
-                      aria-label={newEventLabel(formatDayLong(day))}
+                      aria-label={newEventLabel(formatDayLong(day, locale))}
                       onClick={() => onSlotClick(startOfDay(day))}
                       className={cn(
                         "inline-flex size-6 cursor-pointer items-center justify-center rounded-full text-xs tabular-nums state-layer focus-visible:focus-outline",
@@ -115,7 +115,7 @@ export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthVi
                     </span>
                   )}
                   <span className="sr-only">
-                    {formatDayLong(day)}
+                    {formatDayLong(day, locale)}
                     {isToday ? `, ${todayLabel.toLowerCase()}` : ""}
                   </span>
                 </div>
@@ -171,7 +171,8 @@ function MoreEvents({
   events: ScheduleEventData[]
   moreLabel: (count: number) => string
 }) {
-  const dayLabel = formatDayLong(day)
+  const { locale } = React.useContext(ScheduleContext)
+  const dayLabel = formatDayLong(day, locale)
   const dayEvents = events.filter((e) => eventOverlapsDay(e, day)).sort(compareEvents)
   return (
     <Popover

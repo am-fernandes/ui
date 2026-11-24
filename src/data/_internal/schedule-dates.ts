@@ -7,13 +7,10 @@ import {
   endOfWeek,
   format,
   isSameDay,
-  isSameMonth,
-  isSameYear,
   startOfDay,
   startOfMonth,
   startOfWeek,
 } from "date-fns"
-import { ptBR } from "date-fns/locale"
 
 export type ScheduleView = "month" | "week" | "day" | "list"
 
@@ -39,40 +36,53 @@ export interface ScheduleEventInput {
 
 export type WeekStart = 0 | 1
 
-// date-fns' ptBR short names drop the accent ("sab") and the period ("nov"),
-// so the abbreviations are spelled out here.
-const WEEKDAYS_SHORT = ["dom.", "seg.", "ter.", "qua.", "qui.", "sex.", "sáb."] as const
-const MONTHS_SHORT = [
-  "jan.",
-  "fev.",
-  "mar.",
-  "abr.",
-  "mai.",
-  "jun.",
-  "jul.",
-  "ago.",
-  "set.",
-  "out.",
-  "nov.",
-  "dez.",
-] as const
+/**
+ * Names and formats come from `Intl.DateTimeFormat` in the schedule's
+ * `locale` ("pt-BR" by default): "dom.", "nov.", "sábado, 21 de novembro",
+ * "15 – 21 de nov. de 2026". Another locale gets its own words and order.
+ */
+export const DEFAULT_LOCALE = "pt-BR"
 
-export function weekdayShort(date: Date): string {
-  return WEEKDAYS_SHORT[date.getDay()] as string
+interface Formatter {
+  format: (date: Date) => string
+  formatRange: (start: Date, end: Date) => string
 }
 
-export function monthShort(date: Date): string {
-  return MONTHS_SHORT[date.getMonth()] as string
+// Intl puts thin and no-break spaces around the dash of a range ("15 – 21");
+// plain spaces keep the text the same to copy, search and test.
+const plainSpaces = (text: string) => text.replace(/[\u2009\u202f\u00a0]/g, " ")
+
+const formatters = new Map<string, Formatter>()
+function formatter(locale: string, options: Intl.DateTimeFormatOptions): Formatter {
+  const key = `${locale}|${JSON.stringify(options)}`
+  let f = formatters.get(key)
+  if (!f) {
+    const intl = new Intl.DateTimeFormat(locale, options)
+    f = {
+      format: (date) => plainSpaces(intl.format(date)),
+      formatRange: (start, end) => plainSpaces(intl.formatRange(start, end)),
+    }
+    formatters.set(key, f)
+  }
+  return f
+}
+
+export function weekdayShort(date: Date, locale = DEFAULT_LOCALE): string {
+  return formatter(locale, { weekday: "short" }).format(date)
+}
+
+export function monthShort(date: Date, locale = DEFAULT_LOCALE): string {
+  return formatter(locale, { month: "short" }).format(date)
 }
 
 /** "sábado, 21 de novembro" */
-export function formatDayLong(date: Date): string {
-  return format(date, "EEEE, d 'de' MMMM", { locale: ptBR })
+export function formatDayLong(date: Date, locale = DEFAULT_LOCALE): string {
+  return formatter(locale, { weekday: "long", day: "numeric", month: "long" }).format(date)
 }
 
 /** "09:30" */
-export function formatTime(date: Date): string {
-  return format(date, "HH:mm")
+export function formatTime(date: Date, locale = DEFAULT_LOCALE): string {
+  return formatter(locale, { hour: "2-digit", minute: "2-digit" }).format(date)
 }
 
 /** "2026-11-21" — for `<time dateTime>` and stable keys. */
@@ -81,18 +91,10 @@ export function isoDay(date: Date): string {
 }
 
 /** "15 – 21 de nov. de 2026", "29 de nov. – 5 de dez. de 2026", "28 de dez. de 2026 – 3 de jan. de 2027" */
-export function formatDayRange(first: Date, last: Date): string {
-  const y2 = last.getFullYear()
-  if (!isSameYear(first, last)) {
-    return `${first.getDate()} de ${monthShort(first)} de ${first.getFullYear()} – ${last.getDate()} de ${monthShort(last)} de ${y2}`
-  }
-  if (!isSameMonth(first, last)) {
-    return `${first.getDate()} de ${monthShort(first)} – ${last.getDate()} de ${monthShort(last)} de ${y2}`
-  }
-  if (isSameDay(first, last)) {
-    return `${first.getDate()} de ${monthShort(first)} de ${y2}`
-  }
-  return `${first.getDate()} – ${last.getDate()} de ${monthShort(last)} de ${y2}`
+export function formatDayRange(first: Date, last: Date, locale = DEFAULT_LOCALE): string {
+  const f = formatter(locale, { day: "numeric", month: "short", year: "numeric" })
+  if (isSameDay(first, last)) return f.format(first)
+  return f.formatRange(first, last)
 }
 
 export interface ViewRange {
@@ -160,11 +162,12 @@ export function formatPeriodTitle(
   date: Date,
   weekStartsOn: WeekStart,
   listDays: number,
+  locale = DEFAULT_LOCALE,
 ): string {
-  if (view === "month") return format(date, "MMMM 'de' yyyy", { locale: ptBR })
-  if (view === "day") return formatDayLong(date)
+  if (view === "month") return formatter(locale, { month: "long", year: "numeric" }).format(date)
+  if (view === "day") return formatDayLong(date, locale)
   const { days } = getViewRange(view, date, weekStartsOn, listDays)
-  return formatDayRange(days[0] as Date, days[days.length - 1] as Date)
+  return formatDayRange(days[0] as Date, days[days.length - 1] as Date, locale)
 }
 
 /** First and last calendar day an event covers. */
@@ -220,26 +223,39 @@ export function compareEvents(a: ScheduleEventInput, b: ScheduleEventInput): num
 }
 
 /** "09:00 – 10:30", or with dates when the event crosses midnight. */
-export function formatEventTime(event: ScheduleEventInput, allDayLabel: string): string {
+export function formatEventTime(
+  event: ScheduleEventInput,
+  allDayLabel: string,
+  locale = DEFAULT_LOCALE,
+): string {
   const { first, last } = eventDays(event)
   const multi = last.getTime() !== first.getTime()
   if (event.allDay) {
-    return multi ? `${allDayLabel}, ${formatDayRange(first, last)}` : allDayLabel
+    return multi ? `${allDayLabel}, ${formatDayRange(first, last, locale)}` : allDayLabel
   }
   if (multi) {
-    return `${event.start.getDate()} de ${monthShort(event.start)}, ${formatTime(event.start)} – ${event.end.getDate()} de ${monthShort(event.end)}, ${formatTime(event.end)}`
+    return formatter(locale, {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).formatRange(event.start, event.end)
   }
-  return `${formatTime(event.start)} – ${formatTime(event.end)}`
+  return `${formatTime(event.start, locale)} – ${formatTime(event.end, locale)}`
 }
 
 /** Full accessible name: "Reunião, sábado, 21 de novembro, 09:00 – 10:30". */
-export function eventAccessibleName(event: ScheduleEventInput, allDayLabel: string): string {
+export function eventAccessibleName(
+  event: ScheduleEventInput,
+  allDayLabel: string,
+  locale = DEFAULT_LOCALE,
+): string {
   const { first, last } = eventDays(event)
   const multi = last.getTime() !== first.getTime()
-  if (multi) return `${event.title}, ${formatEventTime(event, allDayLabel.toLowerCase())}`
-  const day = formatDayLong(first)
+  if (multi) return `${event.title}, ${formatEventTime(event, allDayLabel.toLowerCase(), locale)}`
+  const day = formatDayLong(first, locale)
   if (event.allDay) return `${event.title}, ${day}, ${allDayLabel.toLowerCase()}`
-  return `${event.title}, ${day}, ${formatEventTime(event, allDayLabel)}`
+  return `${event.title}, ${day}, ${formatEventTime(event, allDayLabel, locale)}`
 }
 
 /**
@@ -247,14 +263,20 @@ export function eventAccessibleName(event: ScheduleEventInput, allDayLabel: stri
  * "22:00 – …" on the first day of an event crossing midnight, "… – 04:00" on
  * its last day, and the all-day label otherwise.
  */
-export function formatRowTime(event: ScheduleEventInput, day: Date, allDayLabel: string): string {
+export function formatRowTime(
+  event: ScheduleEventInput,
+  day: Date,
+  allDayLabel: string,
+  locale = DEFAULT_LOCALE,
+): string {
   if (event.allDay) return allDayLabel
   const { first, last } = eventDays(event)
   const d = startOfDay(day).getTime()
   const startsToday = first.getTime() === d
   const endsToday = last.getTime() === d
-  if (startsToday && endsToday) return `${formatTime(event.start)} – ${formatTime(event.end)}`
-  if (startsToday) return `${formatTime(event.start)} – …`
-  if (endsToday) return `… – ${formatTime(event.end)}`
+  const time = (date: Date) => formatTime(date, locale)
+  if (startsToday && endsToday) return `${time(event.start)} – ${time(event.end)}`
+  if (startsToday) return `${time(event.start)} – …`
+  if (endsToday) return `… – ${time(event.end)}`
   return allDayLabel
 }
