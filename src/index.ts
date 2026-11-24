@@ -175,11 +175,18 @@ export {
 } from "./forms/calendar"
 export {
   Combobox,
+  defaultComboboxLabels,
   useComboboxOptions,
+  type ComboboxLabels,
   type ComboboxOption,
   type ComboboxProps,
 } from "./forms/combobox"
-export { DateInput, type DateInputProps } from "./forms/date-input"
+export {
+  DateInput,
+  defaultDateInputLabels,
+  type DateInputLabels,
+  type DateInputProps,
+} from "./forms/date-input"
 export {
   DateRangePicker,
   defaultDateRangePickerLabels,
