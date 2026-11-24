@@ -295,6 +295,13 @@ test.describe("Schedule — forced colours", () => {
   })
 })
 
+// The popover fades in; axe measuring contrast mid-fade sees faded text.
+async function settled(page: Page) {
+  await page
+    .locator('[data-slot="popover-content"]')
+    .evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)))
+}
+
 test.describe("Schedule — accessibility", () => {
   for (const id of ["month", "week", "day", "list"]) {
     test(`${id}: every event is a 24px target and no text is under 12px`, async ({ page }) => {
@@ -336,11 +343,13 @@ test.describe("Schedule — accessibility", () => {
     await gotoSchedule(page, "data-schedule--month")
     await page.getByRole("button", { name: /^\+2 mais, quarta-feira/ }).click()
     await expect(page.getByRole("dialog")).toBeVisible()
+    await settled(page)
     await expectNoA11yViolations(page, '[data-slot="popover-content"]')
 
     await gotoSchedule(page, "data-schedule--with-event-details")
     await page.getByRole("button", { name: /^Revisão de proposta/ }).click()
     await expect(page.getByRole("dialog")).toBeVisible()
+    await settled(page)
     await expectNoA11yViolations(page, '[data-slot="popover-content"]')
   })
 })
