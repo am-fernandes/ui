@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 import { motionMenu } from "../../overlays/_internal/animations"
 import { useOverlayContainer } from "../../overlays/_internal/overlay-container"
 import { Tooltip } from "../../overlays/tooltip"
+import { ignoreActivation } from "../../primitives/_internal/soft-disabled"
 import { isModifiedClick } from "./link-click"
 
 function isSafeHref(href: string | undefined): href is string {
@@ -151,14 +152,22 @@ function RailGroup({
  * - `items` (children) turns the entry into an expandable group: clicking
  *   toggles a submenu of links indented below it. Only one nesting level is
  *   supported by design.
+ * - `type: "section"` with `items` is a titled section instead: the title is
+ *   not clickable and the items are always shown below it.
  * - `href` makes it a navigation anchor; `onClick` makes it a button-style
  *   item. Mutually exclusive in practice.
- * - `badge` renders as a chip on the right when expanded; hidden in the
- *   collapsed (icon-only) state.
+ * - `badge` renders as a chip on the right when expanded and as a dot in the
+ *   collapsed (icon-only) rail.
  */
 export interface AppShellItem {
   /** Stable identity (React key + `isActive` lookups). */
   id: string
+  /**
+   * `"section"`: a title over its `items` ("Vendas", "Cadastros"), announced
+   * as the name of their list. In the rail it becomes a divider.
+   * @default "item"
+   */
+  type?: "item" | "section"
   label: string
   icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>
   /**
@@ -175,8 +184,16 @@ export interface AppShellItem {
    * the link elsewhere and the current page stays as it is).
    */
   onClick?: (event: React.MouseEvent<HTMLElement>) => void
+  /** Link target. `"_blank"` also sets `rel="noopener noreferrer"`. */
+  target?: React.HTMLAttributeAnchorTarget
   badge?: React.ReactNode
   disabled?: boolean
+  /**
+   * Why a `disabled` item is unavailable ("Disponível para o perfil
+   * Gestor"). Shown as a tooltip and read as the item's description; the
+   * item then stays reachable by keyboard, so the reason can be found.
+   */
+  disabledReason?: string
   /** Nested children — turns the item into an expandable group. */
   items?: AppShellItem[]
   /**
@@ -228,8 +245,60 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
   openGroups,
   onOpenGroupChange,
 }: AppShellNavItemProps) {
+  const reasonId = React.useId()
+  const sectionTitleId = React.useId()
+
+  if (item.type === "section") {
+    return (
+      <li data-slot="app-shell-section" className={cn(collapsed ? "pt-1" : "pt-3")}>
+        {collapsed ? (
+          <div
+            data-slot="app-shell-section-divider"
+            aria-hidden="true"
+            className="mx-2 mb-2 border-t border-sidebar-border"
+          />
+        ) : null}
+        <span
+          id={sectionTitleId}
+          data-slot="app-shell-section-title"
+          className={
+            collapsed ? "sr-only" : "block px-3 pb-1 text-xs font-medium text-muted-foreground"
+          }
+        >
+          {item.label}
+        </span>
+        <ul aria-labelledby={sectionTitleId} className="space-y-1">
+          {item.items?.map((child) => (
+            <AppShellNavItem
+              key={child.id}
+              item={child}
+              collapsed={collapsed}
+              isActive={isActive}
+              depth={depth}
+              touch={touch}
+              onNavigate={onNavigate}
+              renderLink={renderLink}
+              openGroups={openGroups}
+              onOpenGroupChange={onOpenGroupChange}
+            />
+          ))}
+        </ul>
+      </li>
+    )
+  }
+
   const Icon = item.icon
   const hasChildren = !!item.items?.length
+  // A disabled item with a reason stays focusable (`aria-disabled`) so the
+  // reason can be reached by keyboard and hover; without one it is plainly
+  // disabled, out of the tab order.
+  const reason = item.disabled && item.disabledReason ? item.disabledReason : undefined
+  const softDisabled = reason !== undefined
+  const disabledProps = {
+    disabled: item.disabled && !softDisabled ? true : undefined,
+    "aria-disabled": softDisabled ? ("true" as const) : undefined,
+    "aria-describedby": softDisabled ? reasonId : undefined,
+  }
   const containsActive = hasChildren && hasActiveDescendant(item, isActive)
   // A group opens by itself on the current page's branch; what the user
   // chose (open or closed) wins from then on.
@@ -253,9 +322,10 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
       ? "relative bg-accent font-semibold text-accent-foreground before:absolute before:left-0 before:top-1/2 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-inner before:bg-link"
       : containsActive
         ? "font-semibold text-foreground"
-        : "text-muted-foreground hover:text-foreground",
+        : cn("text-muted-foreground", !item.disabled && "hover:text-foreground"),
     collapsed && "justify-center",
-    item.disabled && "pointer-events-none opacity-50",
+    item.disabled &&
+      (softDisabled ? "cursor-default opacity-50" : "pointer-events-none opacity-50"),
     depth > 0 && "pl-9",
   )
 
@@ -333,26 +403,28 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
       ? ("true" as const)
       : undefined
 
-  if (hasChildren && collapsed && depth === 0) {
+  if (hasChildren && collapsed && depth === 0 && !item.disabled) {
     return (
-      <RailGroup
-        item={item}
-        isActive={isActive}
-        renderLink={renderLink}
-        trigger={
-          <button
-            type="button"
-            data-slot="app-shell-item"
-            data-active={active ? "true" : undefined}
-            disabled={item.disabled}
-            aria-current={ariaCurrent}
-            className={baseClass}
-            onClick={(event) => item.onClick?.(event)}
-          >
-            {inner}
-          </button>
-        }
-      />
+      <li>
+        <RailGroup
+          item={item}
+          isActive={isActive}
+          renderLink={renderLink}
+          trigger={
+            <button
+              type="button"
+              data-slot="app-shell-item"
+              data-active={active ? "true" : undefined}
+              disabled={item.disabled}
+              aria-current={ariaCurrent}
+              className={baseClass}
+              onClick={(event) => item.onClick?.(event)}
+            >
+              {inner}
+            </button>
+          }
+        />
+      </li>
     )
   }
 
@@ -364,14 +436,18 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
         data-slot="app-shell-item"
         data-active={active ? "true" : undefined}
         data-state={expanded ? "open" : "closed"}
-        disabled={item.disabled}
+        {...disabledProps}
         aria-current={ariaCurrent}
         aria-expanded={expanded}
         className={baseClass}
-        onClick={(event) => {
-          setExpanded(!expanded)
-          item.onClick?.(event)
-        }}
+        onClick={
+          softDisabled
+            ? ignoreActivation
+            : (event) => {
+                setExpanded(!expanded)
+                item.onClick?.(event)
+              }
+        }
       >
         {inner}
       </button>
@@ -386,11 +462,12 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
         // biome-ignore lint/a11y/useSemanticElements: without an href an <a> has no role of its own.
         role="link"
         aria-disabled="true"
+        aria-describedby={disabledProps["aria-describedby"]}
         aria-current={ariaCurrent}
-        tabIndex={-1}
+        tabIndex={softDisabled ? 0 : -1}
         className={baseClass}
         // biome-ignore lint/a11y/useValidAnchor: a disabled link has no href; the click only stops here.
-        onClick={(event) => event.preventDefault()}
+        onClick={ignoreActivation}
       >
         {inner}
       </a>
@@ -401,12 +478,14 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
       "data-slot": "app-shell-item",
       "data-active": active ? "true" : undefined,
       "aria-current": ariaCurrent,
+      target: item.target,
+      rel: item.target === "_blank" ? "noopener noreferrer" : undefined,
       className: baseClass,
       onClick: (event) => {
         // Opening the link elsewhere leaves this page (and the menu) alone.
         if (isModifiedClick(event)) return
         item.onClick?.(event)
-        onNavigate?.()
+        if (item.target !== "_blank") onNavigate?.()
       },
       children: inner,
     }
@@ -417,34 +496,55 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
         type="button"
         data-slot="app-shell-item"
         data-active={active ? "true" : undefined}
-        disabled={item.disabled}
+        {...disabledProps}
         aria-current={ariaCurrent}
         className={baseClass}
-        onClick={(event) => {
-          item.onClick?.(event)
-          onNavigate?.()
-        }}
+        onClick={
+          softDisabled
+            ? ignoreActivation
+            : (event) => {
+                item.onClick?.(event)
+                onNavigate?.()
+              }
+        }
       >
         {inner}
       </button>
     )
   }
 
+  // Read as the item's description; shown in the tooltip.
+  const reasonText = reason ? (
+    <span id={reasonId} className="sr-only">
+      {reason}
+    </span>
+  ) : null
+
   // In the collapsed rail, top-level items show their label via tooltip on
   // hover (children stay hidden until the rail is expanded).
   if (collapsed && depth === 0) {
     return (
-      <Tooltip content={item.label} side="right">
-        <div>{trigger}</div>
-      </Tooltip>
+      <li>
+        <Tooltip content={reason ? `${item.label}: ${reason}` : item.label} side="right">
+          <div>{trigger}</div>
+        </Tooltip>
+        {reasonText}
+      </li>
     )
   }
 
   return (
-    <>
-      {trigger}
+    <li>
+      {reason ? (
+        <Tooltip content={reason} side="right">
+          {trigger}
+        </Tooltip>
+      ) : (
+        trigger
+      )}
+      {reasonText}
       {showSubmenu && item.items ? (
-        <div className="mt-1 space-y-1">
+        <ul className="mt-1 space-y-1">
           {item.items.map((child) => (
             <AppShellNavItem
               key={child.id}
@@ -459,8 +559,8 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
               onOpenGroupChange={onOpenGroupChange}
             />
           ))}
-        </div>
+        </ul>
       ) : null}
-    </>
+    </li>
   )
 })

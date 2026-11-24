@@ -238,6 +238,63 @@ export const Collapsed: Story = {
   },
 }
 
+export const WithSections: Story = {
+  args: {
+    brand,
+    brandText: "Dash",
+    defaultCollapsed: false,
+    items: [
+      { id: "inicio", label: "Início", icon: Monitor, href: "#inicio" },
+      {
+        id: "vendas",
+        type: "section",
+        label: "Vendas",
+        items: [
+          {
+            id: "leads",
+            label: "Leads",
+            icon: Users,
+            href: "#leads",
+            badge: <CountBadge value={3} />,
+          },
+          { id: "calculadora", label: "Calculadora", icon: Calculator, href: "#calculadora" },
+        ],
+      },
+      {
+        id: "gestao",
+        type: "section",
+        label: "Gestão",
+        items: [
+          {
+            id: "financeiro",
+            label: "Financeiro",
+            icon: Table2,
+            href: "#financeiro",
+            disabled: true,
+            disabledReason: "Disponível para o perfil Gestor",
+          },
+          {
+            id: "manual",
+            label: "Manual do corretor",
+            icon: FileText,
+            href: "https://example.com/manual",
+            target: "_blank",
+          },
+        ],
+      },
+    ],
+    isActive: (item) => item.id === "leads",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Um item `type: "section"` dá título a um grupo de itens (o leitor ouve o título como nome da lista; no trilho vira um divisor). `disabledReason` explica por que um item está desabilitado, num tooltip que também abre pelo teclado. `target: "_blank"` abre o link em outra aba.',
+      },
+    },
+  },
+}
+
 export const RailWithoutIcons: Story = {
   args: {
     defaultCollapsed: true,

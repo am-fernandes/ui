@@ -586,6 +586,95 @@ describe("AppShell", () => {
       expect(within(aside).getByText("Operacional")).toBeInTheDocument()
     })
 
+    describe("structure", () => {
+      const tree: AppShellItem[] = [
+        { id: "dash", label: "Dashboard", icon: LayoutDashboard, href: "#dash" },
+        {
+          id: "vendas",
+          type: "section",
+          label: "Vendas",
+          items: [
+            { id: "leads", label: "Leads", icon: Users, href: "#leads" },
+            {
+              id: "propostas",
+              label: "Propostas",
+              icon: FileText,
+              defaultOpen: true,
+              items: [{ id: "pend", label: "Pendentes", href: "#pend" }],
+            },
+          ],
+        },
+      ]
+
+      it("lays the items out as lists, a nested list per open group", () => {
+        const { aside } = renderShell({ defaultCollapsed: false, items: tree })
+        const nav = within(aside).getByRole("navigation")
+        const top = within(nav).getAllByRole("list")[0]!
+        expect(top.parentElement).toBe(nav)
+        // Dashboard and the section.
+        expect([...top.children].map((child) => child.tagName)).toEqual(["LI", "LI"])
+        const group = within(nav).getByRole("button", { name: "Propostas" }).closest("li")!
+        expect(within(group).getByRole("list")).toContainElement(
+          within(group).getByRole("link", { name: "Pendentes" }),
+        )
+      })
+
+      it("titles a section and names its list after it", () => {
+        const { aside } = renderShell({ defaultCollapsed: false, items: tree })
+        const section = within(aside).getByRole("list", { name: "Vendas" })
+        expect(within(section).getByRole("link", { name: "Leads" })).toBeInTheDocument()
+        expect(within(aside).getByText("Vendas")).toBeVisible()
+        // A title is not something to click.
+        expect(within(aside).queryByRole("button", { name: "Vendas" })).not.toBeInTheDocument()
+        expect(within(aside).queryByRole("link", { name: "Vendas" })).not.toBeInTheDocument()
+      })
+
+      it("keeps the section title for screen readers in the rail and draws a divider", () => {
+        const { aside } = renderShell({ defaultCollapsed: true, items: tree })
+        expect(within(aside).getByRole("list", { name: "Vendas" })).toBeInTheDocument()
+        expect(within(aside).getByText("Vendas")).toHaveClass("sr-only")
+        expect(aside.querySelector('[data-slot="app-shell-section-divider"]')).not.toBeNull()
+      })
+
+      it("opens a link in another tab with target", () => {
+        const { aside } = renderShell({
+          defaultCollapsed: false,
+          items: [{ id: "help", label: "Ajuda", href: "https://ajuda.example", target: "_blank" }],
+        })
+        const link = within(aside).getByRole("link", { name: "Ajuda" })
+        expect(link).toHaveAttribute("target", "_blank")
+        expect(link).toHaveAttribute("rel", "noopener noreferrer")
+      })
+
+      it("says why an item is disabled, reachable by keyboard and hover", async () => {
+        const onClick = vi.fn()
+        const { aside } = renderShell({
+          defaultCollapsed: false,
+          items: [
+            {
+              id: "fin",
+              label: "Financeiro",
+              href: "#fin",
+              onClick,
+              disabled: true,
+              disabledReason: "Disponível para o perfil Gestor",
+            },
+          ],
+        })
+        const item = within(aside).getByRole("link", { name: "Financeiro" })
+        expect(item).toHaveAttribute("aria-disabled", "true")
+        expect(item).toHaveAccessibleDescription("Disponível para o perfil Gestor")
+        await userEvent.tab()
+        await userEvent.tab()
+        expect(item).toHaveFocus()
+        expect(await screen.findByRole("tooltip")).toHaveTextContent(
+          "Disponível para o perfil Gestor",
+        )
+        await userEvent.click(item)
+        expect(onClick).not.toHaveBeenCalled()
+      })
+    })
+
     describe("group of the current page", () => {
       const tree: AppShellItem[] = [
         {

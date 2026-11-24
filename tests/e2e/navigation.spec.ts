@@ -1,4 +1,5 @@
 import { type Page, expect, test } from "@playwright/test"
+import { expectNoA11yViolations } from "./a11y"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
@@ -138,6 +139,18 @@ test.describe("AppShell", () => {
     const box = (await initial.boundingBox())!
     // Centred in the item, where the icons are.
     expect(Math.abs(box.x + box.width / 2 - (link.x + link.width / 2))).toBeLessThanOrEqual(1)
+  })
+
+  test("sections title their lists and a disabled item tells why", async ({ page }) => {
+    await gotoShell(page, "navigation-appshell--with-sections")
+    const aside = page.locator('aside[data-slot="app-shell-sidebar"]')
+    await expect(aside.getByRole("list", { name: "Vendas" })).toBeVisible()
+    const financeiro = aside.getByRole("link", { name: "Financeiro" })
+    await financeiro.hover()
+    await expect(
+      page.getByRole("tooltip", { name: "Disponível para o perfil Gestor" }),
+    ).toBeVisible()
+    await expectNoA11yViolations(page, 'aside[data-slot="app-shell-sidebar"]')
   })
 
   test("collapsed rail shows the item label as a tooltip", async ({ page }) => {

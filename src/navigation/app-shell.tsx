@@ -349,19 +349,21 @@ function AppShell({
 
           <nav
             aria-label={l.navigation}
-            className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden px-3 py-4"
+            className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4"
           >
-            {items.map((item) => (
-              <AppShellNavItem
-                key={item.id}
-                item={item}
-                collapsed={collapsed}
-                isActive={isActive}
-                renderLink={renderLink}
-                openGroups={openGroups}
-                onOpenGroupChange={onOpenGroupChange}
-              />
-            ))}
+            <ul className="space-y-1">
+              {items.map((item) => (
+                <AppShellNavItem
+                  key={item.id}
+                  item={item}
+                  collapsed={collapsed}
+                  isActive={isActive}
+                  renderLink={renderLink}
+                  openGroups={openGroups}
+                  onOpenGroupChange={onOpenGroupChange}
+                />
+              ))}
+            </ul>
           </nav>
 
           <div className="border-t px-3 py-2">
@@ -460,21 +462,23 @@ function AppShell({
                   <AppShellContext.Provider value={menuShell}>
                     <nav
                       aria-label={l.navigation}
-                      className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4"
+                      className="min-h-0 flex-1 overflow-y-auto px-3 py-4"
                     >
-                      {items.map((item) => (
-                        <AppShellNavItem
-                          key={item.id}
-                          item={item}
-                          collapsed={false}
-                          isActive={isActive}
-                          touch
-                          onNavigate={closeMenu}
-                          renderLink={renderLink}
-                          openGroups={openGroups}
-                          onOpenGroupChange={onOpenGroupChange}
-                        />
-                      ))}
+                      <ul className="space-y-1">
+                        {items.map((item) => (
+                          <AppShellNavItem
+                            key={item.id}
+                            item={item}
+                            collapsed={false}
+                            isActive={isActive}
+                            touch
+                            onNavigate={closeMenu}
+                            renderLink={renderLink}
+                            openGroups={openGroups}
+                            onOpenGroupChange={onOpenGroupChange}
+                          />
+                        ))}
+                      </ul>
                     </nav>
                     {footer ? (
                       <div data-slot="app-shell-footer" className="border-t p-3">
