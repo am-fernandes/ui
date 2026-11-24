@@ -369,6 +369,18 @@ describe("TimePicker", () => {
     expect(box().className).toContain("h-control-lg")
   })
 
+  it("the field names come from labels, and Backspace still goes back to the hour", () => {
+    render(
+      <TimePicker value="14:30" labels={{ hours: "Hora", minutes: "Minuto", group: "Hora" }} />,
+    )
+    const hour = screen.getByRole("textbox", { name: "Hora" })
+    const minute = screen.getByRole("textbox", { name: "Minuto" }) as HTMLInputElement
+    expect(screen.getByRole("group", { name: "Hora" })).toBeInTheDocument()
+    setInputValue(minute, "")
+    fireEvent.keyDown(minute, { key: "Backspace" })
+    expect(hour).toHaveFocus()
+  })
+
   it("forwards ref to the hour input", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<TimePicker value="" ref={ref} />)

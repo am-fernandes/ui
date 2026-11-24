@@ -10,6 +10,7 @@ import {
 } from "../primitives/_internal/control-size"
 import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
+import { assignRef } from "./_internal/assign-ref"
 
 const MIN_HOUR = 0
 const MAX_HOUR = 23
@@ -24,6 +25,21 @@ const containerClasses =
 
 const fieldClasses =
   "w-7 bg-transparent text-center tabular-nums outline-none placeholder:text-placeholder disabled:cursor-default"
+
+export interface TimePickerLabels {
+  /** Accessible name of the hour field. */
+  hours: string
+  /** Accessible name of the minute field. */
+  minutes: string
+  /** Name of the group when it has neither a text `label` nor `aria-label`. */
+  group: string
+}
+
+export const defaultTimePickerLabels: TimePickerLabels = {
+  hours: "Horas",
+  minutes: "Minutos",
+  group: "Horário",
+}
 
 export interface TimePickerProps {
   value?: string
@@ -43,6 +59,8 @@ export interface TimePickerProps {
    * @default "md"
    */
   size?: ControlSize
+  /** Texts of the picker. Defaults in `defaultTimePickerLabels`. */
+  labels?: Partial<TimePickerLabels>
   /** Forwarded to the hour input. */
   ref?: React.Ref<HTMLInputElement>
 }
@@ -160,10 +178,20 @@ function TimePicker({
   labelPosition,
   required,
   size = "md",
+  labels,
   ref,
 }: TimePickerProps) {
+  const l: TimePickerLabels = { ...defaultTimePickerLabels, ...labels }
   const ids = useFieldIds(id)
   const minuteRef = React.useRef<HTMLInputElement>(null)
+  const hourRef = React.useRef<HTMLInputElement | null>(null)
+  const setHourRef = React.useCallback(
+    (node: HTMLInputElement | null) => {
+      hourRef.current = node
+      assignRef(ref, node)
+    },
+    [ref],
+  )
   const skipHourBlurRef = React.useRef(false)
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
@@ -304,11 +332,8 @@ function TimePicker({
     }
     if (e.key === "Backspace" && minute === "") {
       e.preventDefault()
-      const hourInput = e.currentTarget.parentElement?.querySelector<HTMLInputElement>(
-        'input[aria-label="Horas"]',
-      )
-      hourInput?.focus()
-      hourInput?.select()
+      hourRef.current?.focus()
+      hourRef.current?.select()
     }
   }
 
@@ -328,7 +353,7 @@ function TimePicker({
       <div
         // biome-ignore lint/a11y/useSemanticElements: a <fieldset> would force a <legend>, breaking the inline flex layout intended.
         role="group"
-        aria-label={ariaLabel ?? (typeof label === "string" ? label : "Horário")}
+        aria-label={ariaLabel ?? (typeof label === "string" ? label : l.group)}
         data-slot="time-picker"
         data-disabled={disabled ? "true" : undefined}
         className={cn(
@@ -340,10 +365,10 @@ function TimePicker({
         )}
       >
         <TimeField
-          ref={ref}
+          ref={setHourRef}
           id={ids.controlId}
           value={hour}
-          ariaLabel="Horas"
+          ariaLabel={l.hours}
           ariaInvalid={hasError}
           ariaDescribedBy={describedBy}
           min={MIN_HOUR}
@@ -360,7 +385,7 @@ function TimePicker({
         <TimeField
           ref={minuteRef}
           value={minute}
-          ariaLabel="Minutos"
+          ariaLabel={l.minutes}
           ariaInvalid={hasError}
           ariaDescribedBy={describedBy}
           min={MIN_MINUTE}

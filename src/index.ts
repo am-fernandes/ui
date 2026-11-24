@@ -194,7 +194,12 @@ export {
   type DateRangePickerProps,
   type DateRangeValue,
 } from "./forms/date-range-picker"
-export { TimePicker, type TimePickerProps } from "./forms/time-picker"
+export {
+  TimePicker,
+  defaultTimePickerLabels,
+  type TimePickerLabels,
+  type TimePickerProps,
+} from "./forms/time-picker"
 
 // Overlays
 export { Alert, alertVariants, type AlertProps } from "./overlays/alert"
