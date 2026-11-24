@@ -336,6 +336,71 @@ describe("AppShell", () => {
       expect(document.activeElement).toBe(toggle)
     })
 
+    describe("control", () => {
+      it("follows a controlled `collapsed` and reports the toggle", async () => {
+        window.localStorage.setItem(STORAGE_KEY, "true")
+        const onCollapsedChange = vi.fn()
+        const { aside, rerender } = renderShell({ collapsed: false, onCollapsedChange })
+        expect(aside).toHaveAttribute("data-state", "expanded")
+        await userEvent.click(within(aside).getByRole("button", { name: "Recolher menu" }))
+        expect(onCollapsedChange).toHaveBeenCalledWith(true)
+        // The owner decides: nothing changes until the prop does.
+        expect(aside).toHaveAttribute("data-state", "expanded")
+        // And the owner persists it, not the shell.
+        expect(window.localStorage.getItem(STORAGE_KEY)).toBe("true")
+        rerender(
+          <AppShell items={items} collapsed onCollapsedChange={onCollapsedChange}>
+            <p>Conteúdo da página</p>
+          </AppShell>,
+        )
+        expect(aside).toHaveAttribute("data-state", "collapsed")
+      })
+
+      it("reports the toggle when uncontrolled too", async () => {
+        const onCollapsedChange = vi.fn()
+        const { aside } = renderShell({ onCollapsedChange })
+        await userEvent.click(within(aside).getByRole("button", { name: "Expandir menu" }))
+        expect(onCollapsedChange).toHaveBeenCalledWith(false)
+        expect(aside).toHaveAttribute("data-state", "expanded")
+      })
+
+      it("saves the choice under storageKey (one per user, per screen…)", async () => {
+        window.localStorage.setItem("crm:menu:ana", "false")
+        const { aside } = renderShell({ storageKey: "crm:menu:ana" })
+        expect(aside).toHaveAttribute("data-state", "expanded")
+        await userEvent.click(within(aside).getByRole("button", { name: "Recolher menu" }))
+        expect(window.localStorage.getItem("crm:menu:ana")).toBe("true")
+        expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull()
+      })
+
+      it("neither reads nor writes storage with storageKey={false}", async () => {
+        window.localStorage.setItem(STORAGE_KEY, "false")
+        const { aside } = renderShell({ storageKey: false })
+        expect(aside).toHaveAttribute("data-state", "collapsed")
+        await userEvent.click(within(aside).getByRole("button", { name: "Expandir menu" }))
+        expect(aside).toHaveAttribute("data-state", "expanded")
+        expect(window.localStorage.getItem(STORAGE_KEY)).toBe("false")
+        await userEvent.click(within(aside).getByRole("button", { name: "Recolher menu" }))
+        expect(window.localStorage.getItem(STORAGE_KEY)).toBe("false")
+      })
+
+      it("toggles through useAppShell().toggle (for a keyboard shortcut)", async () => {
+        function ShortcutButton() {
+          const { toggle } = useAppShell()
+          return (
+            <button type="button" onClick={toggle}>
+              Atalho
+            </button>
+          )
+        }
+        const { aside } = renderShell({ navbar: <ShortcutButton /> })
+        await userEvent.click(screen.getByRole("button", { name: "Atalho" }))
+        expect(aside).toHaveAttribute("data-state", "expanded")
+        await userEvent.click(screen.getByRole("button", { name: "Atalho" }))
+        expect(aside).toHaveAttribute("data-state", "collapsed")
+      })
+    })
+
     it("points the collapse button at the menu it controls", () => {
       const { aside } = renderShell()
       const button = within(aside).getByRole("button", { name: "Expandir menu" })

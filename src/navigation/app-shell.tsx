@@ -96,11 +96,25 @@ export interface AppShellProps {
    */
   contentPadding?: boolean
   /**
+   * The desktop menu is the 64px icon rail (controlled). Pair it with
+   * `onCollapsedChange`; you then own the persistence (per user, in your
+   * backend…) and `storageKey` is not used.
+   */
+  collapsed?: boolean
+  /** Called when the menu is collapsed or expanded (button or `useAppShell().toggle`). */
+  onCollapsedChange?: (collapsed: boolean) => void
+  /**
    * Initial collapsed state when the user never toggled the menu (the choice
-   * is persisted in localStorage).
+   * is persisted in localStorage, see `storageKey`).
    * @default true
    */
   defaultCollapsed?: boolean
+  /**
+   * localStorage key for the user's choice. Give each app (or user, or
+   * screen) its own; `false` keeps the choice only while the page is open.
+   * @default "amf-ui:sidebar:collapsed"
+   */
+  storageKey?: string | false
   /** Override any of the default pt-BR strings. */
   labels?: Partial<AppShellLabels>
   /**
@@ -119,6 +133,8 @@ export interface AppShellState {
   isMobile: boolean
   /** Closes the mobile menu. No-op when it is already closed. */
   closeMenu: () => void
+  /** Collapses or expands the desktop menu, e.g. from a keyboard shortcut. */
+  toggle: () => void
 }
 
 const AppShellContext = React.createContext<AppShellState | null>(null)
@@ -192,7 +208,10 @@ function AppShell({
   navbar,
   footer,
   contentPadding = true,
+  collapsed: collapsedProp,
+  onCollapsedChange,
   defaultCollapsed = true,
+  storageKey = STORAGE_KEY,
   labels,
   className,
   children,
@@ -202,8 +221,12 @@ function AppShell({
   // The saved choice comes through an external store: the server and the
   // hydrating render both see "nothing saved", so they agree; the saved value
   // is applied right after hydration.
-  const stored = useStoredBoolean(STORAGE_KEY)
-  const collapsed = stored ?? defaultCollapsed
+  const controlled = collapsedProp !== undefined
+  const persistKey = storageKey === false || controlled ? null : storageKey
+  const stored = useStoredBoolean(persistKey)
+  // Without storage the choice lives here, for the page's lifetime.
+  const [unsaved, setUnsaved] = React.useState<boolean | null>(null)
+  const collapsed = collapsedProp ?? (persistKey ? stored : unsaved) ?? defaultCollapsed
   const [menuOpen, setMenuOpen] = React.useState(false)
   const [collapseTipOpen, setCollapseTipOpen] = React.useState(false)
   // Groups the user opened or closed, shared by the desktop menu and the
@@ -214,9 +237,14 @@ function AppShell({
   }, [])
   const sidebarId = React.useId()
 
-  const toggleCollapsed = () => {
-    writeStoredBoolean(STORAGE_KEY, !collapsed)
-  }
+  const toggleCollapsed = React.useCallback(() => {
+    const next = !collapsed
+    if (!controlled) {
+      if (persistKey) writeStoredBoolean(persistKey, next)
+      else setUnsaved(next)
+    }
+    onCollapsedChange?.(next)
+  }, [collapsed, controlled, persistKey, onCollapsedChange])
 
   const closeMenu = React.useCallback(() => setMenuOpen(false), [])
 
@@ -227,8 +255,8 @@ function AppShell({
   }, [isMobile])
 
   const shell = React.useMemo<AppShellState>(
-    () => ({ collapsed, isMobile, closeMenu }),
-    [collapsed, isMobile, closeMenu],
+    () => ({ collapsed, isMobile, closeMenu, toggle: toggleCollapsed }),
+    [collapsed, isMobile, closeMenu, toggleCollapsed],
   )
   // The mobile menu is always the expanded layout.
   const menuShell = React.useMemo<AppShellState>(() => ({ ...shell, collapsed: false }), [shell])
