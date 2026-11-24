@@ -245,6 +245,32 @@ describe("DateRangePicker", () => {
     await waitFor(() => expect(trigger).toHaveTextContent("10/03/2025 — 12/03/2025"))
   })
 
+  it("name: a native form receives <name>-from and <name>-to", () => {
+    const { container, rerender } = render(
+      <form>
+        <DateRangePicker
+          label="Período"
+          name="vigencia"
+          value={{ from: "2025-03-10", to: "2025-03-12" }}
+        />
+      </form>,
+    )
+    const data = () => new FormData(container.querySelector("form") as HTMLFormElement)
+    expect(data().get("vigencia-from")).toBe("2025-03-10")
+    expect(data().get("vigencia-to")).toBe("2025-03-12")
+    rerender(
+      <form>
+        <DateRangePicker
+          label="Período"
+          name="vigencia"
+          value={{ from: "2025-03-10", to: "2025-03-12" }}
+          disabled
+        />
+      </form>,
+    )
+    expect(data().has("vigencia-from")).toBe(false)
+  })
+
   it("does not open the popover when disabled", async () => {
     render(
       <DateRangePicker label="X" value={{ from: "", to: "" }} onValueChange={() => {}} disabled />,

@@ -70,6 +70,11 @@ export interface DateRangePickerProps {
   /** Last day that can be picked (ISO). The calendar does not go past its month. */
   max?: string
   id?: string
+  /**
+   * Name of the field in a native form: it sends two values, `<name>-from`
+   * and `<name>-to`, with the ISO dates (`""` for an open end).
+   */
+  name?: string
   /** Texts of the picker. Defaults in `defaultDateRangePickerLabels`. */
   labels?: Partial<DateRangePickerLabels>
   "aria-label"?: string
@@ -94,6 +99,7 @@ function DateRangePicker({
   min,
   max,
   labels,
+  name,
   "aria-label": ariaLabel,
   ref,
 }: DateRangePickerProps) {
@@ -300,6 +306,22 @@ function DateRangePicker({
           <Button onClick={handleConfirm}>{l.confirm}</Button>
         </div>
       </Popover>
+      {name != null && name !== "" ? (
+        <>
+          <input
+            type="hidden"
+            name={`${name}-from`}
+            value={toIsoDate(current.from)}
+            disabled={disabled}
+          />
+          <input
+            type="hidden"
+            name={`${name}-to`}
+            value={toIsoDate(current.to)}
+            disabled={disabled}
+          />
+        </>
+      ) : null}
     </FieldShell>
   )
 }
