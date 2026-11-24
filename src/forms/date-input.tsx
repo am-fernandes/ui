@@ -115,6 +115,13 @@ export interface DateInputProps {
    * the open calendar does not count.
    */
   onBlur?: (event: React.FocusEvent<HTMLElement>) => void
+  /**
+   * Shows the date without letting it be edited: it stays readable, takes
+   * focus, can be copied and is submitted with the form; the calendar button
+   * goes away. For a view-only screen; `disabled` is for a field that does
+   * not apply.
+   */
+  readOnly?: boolean
   /** Texts of the field. Defaults in `defaultDateInputLabels`. */
   labels?: Partial<DateInputLabels>
   "aria-label"?: string
@@ -147,6 +154,7 @@ function DateInput({
   labels,
   name,
   onBlur,
+  readOnly = false,
   "aria-label": ariaLabel,
   ref,
 }: DateInputProps) {
@@ -336,6 +344,7 @@ function DateInput({
           required={required}
           aria-required={required ? true : undefined}
           disabled={disabled}
+          readOnly={readOnly}
           value={display}
           onChange={(e) => {
             const el = e.target
@@ -350,6 +359,8 @@ function DateInput({
             )
           }}
           onPaste={(e) => {
+            // A read-only field takes no paste; the browser already ignores it.
+            if (readOnly) return
             e.preventDefault()
             const el = e.currentTarget
             const start = el.selectionStart ?? el.value.length
@@ -358,7 +369,7 @@ function DateInput({
           }}
           onKeyDown={(e) => {
             // Alt + ↓ opens the calendar, as in a native date field.
-            if (e.altKey && e.key === "ArrowDown" && !disabled) {
+            if (e.altKey && e.key === "ArrowDown" && !disabled && !readOnly) {
               e.preventDefault()
               setOpen(true)
             }
@@ -370,45 +381,50 @@ function DateInput({
             controlHeight.md,
             controlPaddingX.md,
             // Room for the calendar button.
-            "pr-11",
+            !readOnly && "pr-11",
             hasError && "border-destructive-text field-error",
+            // Read-only: a muted box that does not answer to hover (important,
+            // so it also wins over the hover tint of `field-error`).
+            readOnly && "bg-muted [--field-hover-ring:transparent]!",
             className,
           )}
         />
-        <Popover
-          open={open}
-          onOpenChange={(next) => !disabled && setOpen(next)}
-          align="end"
-          trigger={calendarButton}
-          aria-labelledby={hasLabel ? ids.labelId : undefined}
-          aria-label={hasLabel ? undefined : (ariaLabel ?? l.field)}
-          className="w-auto p-0"
-        >
-          <div ref={popoverBodyRef}>
-            <Calendar
-              mode="single"
-              // The chosen day stays chosen when picked again: emptying the
-              // field is how a date is removed. Otherwise Enter on the day the
-              // calendar opens on would erase the date.
-              required
-              selected={selected}
-              onSelect={(date: Date | undefined) => {
-                if (!date) return
-                const iso = dateToIso(date)
-                setDigits(isoToDigits(iso))
-                setOwnError(null)
-                report(iso)
-                setOpen(false)
-              }}
-              defaultMonth={selected}
-              // The chosen day (or today) takes the focus when the calendar opens.
-              autoFocus
-              disabledDays={calendarDisabled}
-              startMonth={minDate}
-              endMonth={maxDate}
-            />
-          </div>
-        </Popover>
+        {readOnly ? null : (
+          <Popover
+            open={open}
+            onOpenChange={(next) => !disabled && setOpen(next)}
+            align="end"
+            trigger={calendarButton}
+            aria-labelledby={hasLabel ? ids.labelId : undefined}
+            aria-label={hasLabel ? undefined : (ariaLabel ?? l.field)}
+            className="w-auto p-0"
+          >
+            <div ref={popoverBodyRef}>
+              <Calendar
+                mode="single"
+                // The chosen day stays chosen when picked again: emptying the
+                // field is how a date is removed. Otherwise Enter on the day the
+                // calendar opens on would erase the date.
+                required
+                selected={selected}
+                onSelect={(date: Date | undefined) => {
+                  if (!date) return
+                  const iso = dateToIso(date)
+                  setDigits(isoToDigits(iso))
+                  setOwnError(null)
+                  report(iso)
+                  setOpen(false)
+                }}
+                defaultMonth={selected}
+                // The chosen day (or today) takes the focus when the calendar opens.
+                autoFocus
+                disabledDays={calendarDisabled}
+                startMonth={minDate}
+                endMonth={maxDate}
+              />
+            </div>
+          </Popover>
+        )}
         {name != null && name !== "" ? (
           <input type="hidden" name={name} value={toIsoDate(current)} disabled={disabled} />
         ) : null}

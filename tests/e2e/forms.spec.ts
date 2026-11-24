@@ -421,3 +421,30 @@ test.describe("DateInput: onBlur", () => {
     await expect(page.getByText('Enviado: {"nascimento":"1990-03-15"}')).toBeVisible()
   })
 })
+
+test.describe("DateInput: somente leitura", () => {
+  test("fundo esmaecido, sem anel de hover nem botão de calendário, e não aceita digitação", async ({
+    page,
+  }) => {
+    await gotoStory(page, "forms-dateinput--default", "ISO: (vazio)")
+    const editableBg = await page
+      .getByRole("textbox", { name: "Data de nascimento" })
+      .evaluate((el) => getComputedStyle(el).backgroundColor)
+
+    await gotoStory(page, "forms-dateinput--read-only")
+    const field = page.getByRole("textbox", { name: "Data de nascimento" })
+    await expect(field).toHaveValue("15/03/1990")
+    expect(await field.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(editableBg)
+    await field.hover()
+    await page.waitForTimeout(250)
+    expect(await field.evaluate((el) => getComputedStyle(el).boxShadow)).toMatch(
+      /^(none|rgba\(0, 0, 0, 0\) .*)$/,
+    )
+    await field.click()
+    await expect(field).toBeFocused()
+    await page.keyboard.press("Backspace")
+    await page.keyboard.type("1")
+    await expect(field).toHaveValue("15/03/1990")
+    await expect(page.getByRole("button", { name: "Abrir calendário" })).toHaveCount(0)
+  })
+})

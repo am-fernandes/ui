@@ -364,6 +364,29 @@ describe("DateInput", () => {
     expect(spy).toHaveBeenLastCalledWith("2025-03-14")
   })
 
+  it("readOnly: readable and focusable, but typing, pasting and the calendar do nothing", async () => {
+    const spy = vi.fn()
+    const { container } = render(
+      <form>
+        <DateInput label="Data" name="data" value="2025-03-14" readOnly onValueChange={spy} />
+      </form>,
+    )
+    const field = input()
+    expect(field).toHaveAttribute("readonly")
+    expect(field).not.toBeDisabled()
+    await userEvent.click(field)
+    expect(field).toHaveFocus()
+    await userEvent.keyboard("{Backspace}1{Alt>}{ArrowDown}{/Alt}")
+    fireEvent.paste(field, { clipboardData: { getData: () => "01/01/2000" } })
+    expect(field).toHaveValue("14/03/2025")
+    expect(spy).not.toHaveBeenCalled()
+    expect(screen.queryByRole("button", { name: "Abrir calendário" })).toBeNull()
+    expect(screen.queryByRole("grid")).toBeNull()
+    expect(new FormData(container.querySelector("form") as HTMLFormElement).get("data")).toBe(
+      "2025-03-14",
+    )
+  })
+
   it("forwards the ref to the text field", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<DateInput value="" ref={ref} />)

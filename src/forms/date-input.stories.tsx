@@ -119,6 +119,24 @@ export const Default: Story = {
   },
 }
 
+export const ReadOnly: Story = {
+  name: "Read Only",
+  args: { value: "" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` mostra a data num fundo esmaecido, sem reação ao hover e sem o botão do calendário: o campo recebe foco, pode ser copiado e vai junto no envio do formulário, mas não aceita digitação nem colagem.",
+      },
+    },
+  },
+  render: () => (
+    <div className="w-[280px]">
+      <DateInput label="Data de nascimento" value="1990-03-15" readOnly />
+    </div>
+  ),
+}
+
 export const MinMax: Story = {
   name: "Min Max",
   args: { value: "" },
