@@ -44,6 +44,8 @@ export const defaultTimePickerLabels: TimePickerLabels = {
 export interface TimePickerProps {
   /** The time as `"HH:MM"`, or `""` while it is incomplete. */
   value?: string
+  /** Initial time (`"HH:MM"`) of an uncontrolled picker, used without `value`. */
+  defaultValue?: string
   /** Called with `"HH:MM"` once both fields hold a valid time, and with `""` otherwise. */
   onValueChange?: (value: string) => void
   /** @deprecated Use `onValueChange`; it receives the same value. */
@@ -174,6 +176,7 @@ TimeField.displayName = "TimeField"
 
 function TimePicker({
   value,
+  defaultValue,
   onValueChange,
   onChange,
   disabled,
@@ -205,8 +208,25 @@ function TimePicker({
   const hasDescription = description != null && description !== ""
   const describedBy = ids.describedBy({ description: hasDescription, error: hasError })
 
-  const [hour, setHour] = React.useState(() => parseValue(value).hour)
-  const [minute, setMinute] = React.useState(() => parseValue(value).minute)
+  const [hour, setHour] = React.useState(() => parseValue(value ?? defaultValue).hour)
+  const [minute, setMinute] = React.useState(() => parseValue(value ?? defaultValue).minute)
+
+  // An uncontrolled picker goes back to `defaultValue` when its form is
+  // reset. Read through a ref, so the listener is attached once.
+  const onFormReset = React.useRef(() => {})
+  onFormReset.current = () => {
+    if (value !== undefined) return
+    const initial = parseValue(defaultValue)
+    setHour(initial.hour)
+    setMinute(initial.minute)
+  }
+  React.useEffect(() => {
+    const form = hourRef.current?.form
+    if (form == null) return
+    const reset = () => onFormReset.current()
+    form.addEventListener("reset", reset)
+    return () => form.removeEventListener("reset", reset)
+  }, [])
 
   // The fields follow `value` when it changes from outside, but not when it
   // changes because this picker reported it: an invalid hour reported as ""

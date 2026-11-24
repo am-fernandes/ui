@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
@@ -394,6 +394,24 @@ describe("TimePicker", () => {
     setInputValue(screen.getByLabelText("Minutos") as HTMLInputElement, "45")
     expect(onValueChange).toHaveBeenLastCalledWith("10:45")
     expect(onChange).toHaveBeenLastCalledWith("10:45")
+  })
+
+  it("without value, starts from defaultValue and goes back to it when its form is reset", async () => {
+    const onValueChange = vi.fn()
+    const { container } = render(
+      <form>
+        <TimePicker defaultValue="08:15" onValueChange={onValueChange} />
+      </form>,
+    )
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
+    expect(hour).toHaveValue("08")
+    expect(minute).toHaveValue("15")
+    setInputValue(hour, "11")
+    expect(onValueChange).toHaveBeenLastCalledWith("11:15")
+    ;(container.querySelector("form") as HTMLFormElement).reset()
+    await waitFor(() => expect(hour).toHaveValue("08"))
+    expect(minute).toHaveValue("15")
   })
 
   it("forwards ref to the hour input", () => {
