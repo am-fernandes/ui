@@ -5,6 +5,7 @@ import { Menu, PanelLeftClose, PanelLeftOpen, XIcon } from "lucide-react"
 import * as React from "react"
 
 import { useIsMobile } from "@/hooks/use-is-mobile"
+import type { RenderLink } from "@/lib/render-link"
 import { cn } from "@/lib/utils"
 import { motionSheet, overlayBase } from "../overlays/_internal/animations"
 import { Tooltip } from "../overlays/tooltip"
@@ -52,8 +53,16 @@ export const defaultAppShellLabels: AppShellLabels = {
 export interface AppShellProps {
   /** Menu entries. The only required prop. */
   items: AppShellItem[]
-  /** Mark the matching item as active (background accent + `aria-current`). */
+  /** Mark the matching item as active (background accent + `aria-current="page"`). */
   isActive?: (item: AppShellItem) => boolean
+  /**
+   * Renders the items that have `href` with your router's `<Link>`, so a
+   * click navigates without reloading the page:
+   * `renderLink={({ href, ...props }) => <Link to={href} {...props} />}`.
+   * Pass every prop on: they carry the classes, `aria-current` and the click
+   * handler that closes the mobile menu.
+   */
+  renderLink?: RenderLink
   /**
    * Logo shown in the menu header (32px box) and in the mobile bar (28px box).
    * When `brandText` is present, give images an empty `alt` so the name is
@@ -176,6 +185,7 @@ function BrandMark({ brand, onClick, label, className, withTooltip = false }: Br
 function AppShell({
   items,
   isActive,
+  renderLink,
   brand,
   brandText,
   onBrandClick,
@@ -312,6 +322,7 @@ function AppShell({
                 item={item}
                 collapsed={collapsed}
                 isActive={isActive}
+                renderLink={renderLink}
               />
             ))}
           </nav>
@@ -418,6 +429,7 @@ function AppShell({
                           isActive={isActive}
                           touch
                           onNavigate={closeMenu}
+                          renderLink={renderLink}
                         />
                       ))}
                     </nav>

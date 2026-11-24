@@ -1,8 +1,10 @@
-import { act, render, renderHook, screen, within } from "@testing-library/react"
+import { act, fireEvent, render, renderHook, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { FileText, LayoutDashboard, Users } from "lucide-react"
+import type * as React from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import type { RenderLinkProps } from "@/lib/render-link"
 import {
   AppShell,
   type AppShellItem,
@@ -639,6 +641,71 @@ describe("AppShell", () => {
         })
         expect(console.warn).not.toHaveBeenCalled()
       })
+    })
+  })
+
+  describe("router links", () => {
+    it("renders link items through renderLink with everything the link needs", () => {
+      const renderLink = vi.fn(({ href, ...props }: RenderLinkProps) => (
+        <a data-router-link={href} href={href} {...props} />
+      ))
+      const { aside } = renderShell({
+        defaultCollapsed: false,
+        renderLink,
+        isActive: (item) => item.id === "dash",
+      })
+      const dash = within(aside).getByRole("link", { name: "Dashboard" })
+      expect(dash).toHaveAttribute("data-router-link", "#dash")
+      expect(dash).toHaveAttribute("aria-current", "page")
+      expect(dash).toHaveAttribute("data-slot", "app-shell-item")
+      const props = renderLink.mock.calls[0]![0]
+      expect(props.className).toContain("rounded-element")
+      expect(typeof props.onClick).toBe("function")
+    })
+
+    it("marks the active item with aria-current whatever element it is", () => {
+      const { aside } = renderShell({
+        defaultCollapsed: false,
+        isActive: (item) => item.id === "cfg" || item.id === "group",
+        items: [
+          { id: "group", label: "Propostas", items: [{ id: "p", label: "Pendentes" }] },
+          { id: "cfg", label: "Configurações", onClick: () => {} },
+        ],
+      })
+      expect(within(aside).getByRole("button", { name: "Configurações" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      )
+      expect(within(aside).getByRole("button", { name: "Propostas" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      )
+    })
+
+    it("passes the click event to onClick so the app can stop the link", async () => {
+      const onClick = vi.fn((event: React.MouseEvent<HTMLElement>) => event.preventDefault())
+      const { aside } = renderShell({
+        defaultCollapsed: false,
+        items: [{ id: "dash", label: "Dashboard", href: "#dash", onClick }],
+      })
+      await userEvent.click(within(aside).getByRole("link", { name: "Dashboard" }))
+      expect(onClick).toHaveBeenCalledTimes(1)
+      const event = onClick.mock.calls[0]![0]
+      expect(event.type).toBe("click")
+      expect(event.defaultPrevented).toBe(true)
+    })
+
+    it("leaves a Ctrl/⌘-click to the browser: the menu stays open and onClick is not called", async () => {
+      installMatchMedia(true)
+      const onClick = vi.fn()
+      renderShell({ items: [{ id: "dash", label: "Dashboard", href: "#dash", onClick }] })
+      const menu = await openMobileMenu()
+      const link = within(menu).getByRole("link", { name: "Dashboard" })
+      for (const modifier of [{ ctrlKey: true }, { metaKey: true }, { shiftKey: true }]) {
+        fireEvent.click(link, modifier)
+      }
+      expect(onClick).not.toHaveBeenCalled()
+      expect(screen.getByRole("dialog", { name: "Menu" })).toBeInTheDocument()
     })
   })
 

@@ -3,9 +3,11 @@
 import { ChevronDown } from "lucide-react"
 import * as React from "react"
 
+import { type RenderLink, type RenderLinkProps, renderLinkElement } from "@/lib/render-link"
 import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
 import { Tooltip } from "../../overlays/tooltip"
+import { isModifiedClick } from "./link-click"
 
 /**
  * Single shape for an AppShell menu entry.
@@ -30,7 +32,13 @@ export interface AppShellItem {
    * if provided.
    */
   href?: string
-  onClick?: () => void
+  /**
+   * Runs on activation and receives the click event: on a link,
+   * `event.preventDefault()` stops the navigation. Not called for a click the
+   * browser handles by itself (Ctrl/⌘, Shift, Alt or the middle button open
+   * the link elsewhere and the current page stays as it is).
+   */
+  onClick?: (event: React.MouseEvent<HTMLElement>) => void
   badge?: React.ReactNode
   disabled?: boolean
   /** Nested children — turns the item into an expandable group. */
@@ -48,6 +56,8 @@ export interface AppShellNavItemProps {
   touch?: boolean
   /** Called after a leaf item (link or action) is activated. Groups don't call it. */
   onNavigate?: () => void
+  /** The app's router link, for items with `href`. */
+  renderLink?: RenderLink
 }
 
 // Memoized so a parent re-render with stable props skips the whole subtree —
@@ -60,6 +70,7 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
   depth = 0,
   touch = false,
   onNavigate,
+  renderLink,
 }: AppShellNavItemProps) {
   const active = isActive?.(item) ?? false
   const Icon = item.icon
@@ -114,6 +125,8 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
   // In the collapsed rail the label is not rendered, so the control needs an
   // explicit accessible name (the tooltip is only a visual hint).
   const collapsedLabel = collapsed ? item.label : undefined
+  // The current page, whatever element the item is (link, action or group).
+  const ariaCurrent = active ? ("page" as const) : undefined
 
   let trigger: React.ReactNode
   if (hasChildren) {
@@ -125,39 +138,54 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
         data-state={expanded ? "open" : "closed"}
         disabled={item.disabled}
         aria-label={collapsedLabel}
+        aria-current={ariaCurrent}
         aria-expanded={expanded}
         className={baseClass}
-        onClick={() => {
+        onClick={(event) => {
           setExpanded((v) => !v)
-          item.onClick?.()
+          item.onClick?.(event)
         }}
       >
         {inner}
       </button>
     )
-  } else if (hrefIsSafe) {
+  } else if (hrefIsSafe && item.disabled) {
+    // Nowhere to go: a link with no href, still announced as a link. Never
+    // through `renderLink`: a router link needs an href.
     trigger = (
       <a
-        href={item.disabled ? undefined : item.href}
         data-slot="app-shell-item"
         data-active={active ? "true" : undefined}
+        // biome-ignore lint/a11y/useSemanticElements: without an href an <a> has no role of its own.
+        role="link"
         aria-label={collapsedLabel}
-        aria-disabled={item.disabled ? "true" : undefined}
-        aria-current={active ? "page" : undefined}
-        tabIndex={item.disabled ? -1 : undefined}
+        aria-disabled="true"
+        aria-current={ariaCurrent}
+        tabIndex={-1}
         className={baseClass}
-        onClick={(e) => {
-          if (item.disabled) {
-            e.preventDefault()
-            return
-          }
-          item.onClick?.()
-          onNavigate?.()
-        }}
+        // biome-ignore lint/a11y/useValidAnchor: a disabled link has no href; the click only stops here.
+        onClick={(event) => event.preventDefault()}
       >
         {inner}
       </a>
     )
+  } else if (hrefIsSafe) {
+    const linkProps: RenderLinkProps & { "data-slot": string; "data-active"?: string } = {
+      href: item.href as string,
+      "data-slot": "app-shell-item",
+      "data-active": active ? "true" : undefined,
+      "aria-label": collapsedLabel,
+      "aria-current": ariaCurrent,
+      className: baseClass,
+      onClick: (event) => {
+        // Opening the link elsewhere leaves this page (and the menu) alone.
+        if (isModifiedClick(event)) return
+        item.onClick?.(event)
+        onNavigate?.()
+      },
+      children: inner,
+    }
+    trigger = renderLinkElement(renderLink, linkProps)
   } else {
     trigger = (
       <button
@@ -166,9 +194,10 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
         data-active={active ? "true" : undefined}
         disabled={item.disabled}
         aria-label={collapsedLabel}
+        aria-current={ariaCurrent}
         className={baseClass}
-        onClick={() => {
-          item.onClick?.()
+        onClick={(event) => {
+          item.onClick?.(event)
           onNavigate?.()
         }}
       >
@@ -201,6 +230,7 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
               depth={depth + 1}
               touch={touch}
               onNavigate={onNavigate}
+              renderLink={renderLink}
             />
           ))}
         </div>
