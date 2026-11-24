@@ -35,8 +35,9 @@ export interface CalendarQuickNavProps {
   onCancel: () => void
 }
 
+// The outline keeps the selection visible in forced colours, which drop fills.
 const SELECTED_CLASS =
-  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground forced-colors:outline-2 forced-colors:outline-solid forced-colors:-outline-offset-2"
 
 /**
  * Year / month picker panels rendered in place of the day grid when the user

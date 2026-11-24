@@ -64,6 +64,42 @@ test.describe("Calendar", () => {
     await expect(page.getByRole("button", { name: /Go to/ })).toHaveCount(0)
   })
 
+  test("em cores forçadas, selecionado, intervalo e hoje continuam distinguíveis", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ forcedColors: "active" })
+    const outline = (iso: string) =>
+      page.locator(`button[data-day="${iso}"]`).evaluate((el) => {
+        const style = getComputedStyle(el)
+        return { style: style.outlineStyle, width: Number.parseFloat(style.outlineWidth) }
+      })
+
+    await gotoStory(page, "forms-calendar--range", "22/06/2025")
+    // Range of the story: 15/06 to 22/06/2025.
+    expect((await outline("2025-06-15")).style).toBe("solid")
+    expect((await outline("2025-06-15")).width).toBeGreaterThanOrEqual(2)
+    expect((await outline("2025-06-22")).style).toBe("solid")
+    expect((await outline("2025-06-18")).style).toBe("dashed")
+    expect((await outline("2025-06-25")).style).toBe("none")
+
+    await gotoStory(page, "forms-calendar--quick-nav-year-month")
+    const today = new Date()
+    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+    await page.getByRole("button", { name: "Ir para o próximo mês" }).waitFor()
+    // Walk to the current month, where "today" is.
+    for (
+      let i = 0;
+      i < 240 && (await page.locator(`button[data-day="${iso}"]`).count()) === 0;
+      i++
+    ) {
+      await page.getByRole("button", { name: "Ir para o próximo mês" }).click()
+    }
+    const decoration = await page
+      .locator(`button[data-day="${iso}"]`)
+      .evaluate((el) => getComputedStyle(el).textDecorationLine)
+    expect(decoration).toContain("underline")
+  })
+
   test("disabledDays=past disables past dates", async ({ page }) => {
     await page.goto(story("forms-calendar--disabled-past"))
     // At least one button has aria-disabled=true

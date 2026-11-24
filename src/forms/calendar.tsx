@@ -116,7 +116,8 @@ const STATIC_CLASS_NAMES = {
   range_start: `relative isolate z-0 rounded-l-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:right-0 after:w-4 after:bg-muted ${RDP_DEFAULTS.range_start}`,
   range_middle: `rounded-none ${RDP_DEFAULTS.range_middle}`,
   range_end: `relative isolate z-0 rounded-r-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:left-0 after:w-4 after:bg-muted ${RDP_DEFAULTS.range_end}`,
-  today: `rounded-(--cell-radius) bg-muted text-foreground data-[selected=true]:rounded-none ${RDP_DEFAULTS.today}`,
+  // In forced colours the fill is gone; today keeps a thick underline.
+  today: `rounded-(--cell-radius) bg-muted text-foreground data-[selected=true]:rounded-none forced-colors:[&>button]:underline forced-colors:[&>button]:decoration-2 forced-colors:[&>button]:underline-offset-4 ${RDP_DEFAULTS.today}`,
   outside: `text-muted-foreground aria-selected:text-muted-foreground ${RDP_DEFAULTS.outside}`,
   disabled: `text-muted-foreground opacity-50 ${RDP_DEFAULTS.disabled}`,
   hidden: `invisible ${RDP_DEFAULTS.hidden}`,
@@ -343,6 +344,12 @@ const DAY_BUTTON_BASE_CLASS = [
   "data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-muted data-[range-middle=true]:text-foreground",
   "data-[range-start=true]:rounded-(--cell-radius) data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground",
   "data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground",
+  // Forced colours (Windows high contrast) drop every fill: the chosen days
+  // get a solid outline, the days between the ends of a range a dashed one.
+  "forced-colors:data-[selected-single=true]:outline-2 forced-colors:data-[selected-single=true]:outline-solid forced-colors:data-[selected-single=true]:-outline-offset-2",
+  "forced-colors:data-[range-start=true]:outline-2 forced-colors:data-[range-start=true]:outline-solid forced-colors:data-[range-start=true]:-outline-offset-2",
+  "forced-colors:data-[range-end=true]:outline-2 forced-colors:data-[range-end=true]:outline-solid forced-colors:data-[range-end=true]:-outline-offset-2",
+  "forced-colors:data-[range-middle=true]:outline-1 forced-colors:data-[range-middle=true]:outline-dashed forced-colors:data-[range-middle=true]:-outline-offset-2",
   DAY_BUTTON_DEFAULTS.day,
 ]
   .filter(Boolean)
