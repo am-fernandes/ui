@@ -52,7 +52,7 @@ Estas decisões são deliberadas. Não as questione num PR sem antes abrir issue
 - **Raio por papel, três níveis.** `inner` 4px (peças dentro de um controle e peças baixas, como Badge e Token), `element` 8px (o controle), `container` 12px (superfícies que agrupam ou flutuam). Use `rounded-inner`, `rounded-element` e `rounded-container`; a escala do Tailwind cai nos três. Peça dentro de peça segue a conta do concêntrico (raio de dentro = raio de fora − espaço). `rounded-full` só para círculo. Detalhes e a lista por componente em Foundations/Radius.
 - **Densidade enterprise.**
   - Body: `text-sm`.
-  - Inputs: `py-3` vertical, `px-3` horizontal (altura sai do padding, sem `h-*` fixo).
+  - Controles (botões, campos, gatilhos): altura fixa pelo `size` — `sm` 32px, `md` 40px (padrão), `lg` 44px, borda incluída — com `controlHeight`/`controlPaddingX` de `src/primitives/_internal/control-size.ts` (`h-control-*`). A altura não sai do padding: um campo e um botão do mesmo tamanho se alinham.
   - Linhas de tabela: `py-2.5 px-3`.
   - Menus / tabs / tree: `py-1.5`.
 - **Cursor pointer em tudo clicável.** Botões, triggers de Radix, ícones interativos.
@@ -62,7 +62,7 @@ Estas decisões são deliberadas. Não as questione num PR sem antes abrir issue
 - **Motion tokens (do Astryx).** `--duration-fast` (175ms), `--duration-medium-min/medium/medium-max` (310/410/550ms) e `--duration-exit` para toda saída, com `--ease-standard` na entrada e `--ease-exit` na saída. Overlays usam as combinações de `src/overlays/_internal/animations.ts`.
 - **Z-index tokens.** `--z-overlay` (40), `--z-modal` (50), `--z-popover` (60), `--z-tooltip` (70), `--z-toast` (80). Nunca use `z-[999...]`.
 - **WCAG AA** é o mínimo, nos dois temas. Contraste dos tokens em `bun run audit:contrast` (`scripts/contrast-audit.ts`); o test-runner do Storybook roda o axe em cada story no claro e no escuro.
-- **pt-BR nas strings.** Mensagens default ("obrigatório", "Carregando dados…", etc.) em pt-BR. A médio prazo serão extraídas via prop `labels`.
+- **pt-BR nas strings, trocáveis.** Todo texto visível ou lido pelo leitor de tela sai de `labels` (com `defaultXLabels` exportado) ou de uma prop de texto, com padrão pt-BR. Nada de texto fixo no JSX. Ver Foundations/i18n.
 
 ---
 
@@ -146,7 +146,7 @@ Se for um **field** (label, description, error, required), embrulhe em `FieldShe
 
 ### Passo 5. Story
 
-Variantes obrigatórias: `Default`, `WithError` (ou `Error`), `Disabled`, `Required`. Para fields, inclua também `WithDescription`. Use `play` functions quando faz sentido validar interações.
+Variantes obrigatórias: `Default`, `WithError` (ou `Error`), `Disabled`, `Required`. Para fields, inclua também `WithDescription` e `ReadOnly`. Use `play` functions quando faz sentido validar interações — mas os testes de navegador (Passo 6) não abrem stories com `play`: crie uma story sem `play` para eles.
 
 ### Passo 6. Teste
 
@@ -158,6 +158,9 @@ Cobertura mínima:
 5. `required` mostra o asterisco (ou `aria-required`).
 6. Keyboard (Tab/Enter/Space conforme aplicável).
 7. `ref` é encaminhado para o elemento DOM correto.
+8. `readOnly` (fields): mostra o valor, recebe foco, não muda e vai no formulário.
+
+E um teste de navegador em `tests/e2e/<nome>.spec.ts` (Playwright, contra o Storybook em `localhost:6006`): teclado de verdade, axe (WCAG 2.1 AA) nas stories, 360px de largura sem rolagem lateral, e cores forçadas quando uma cor carrega informação. O que só o navegador vê — altura medida, foco, `FormData`, contraste calculado — fica aqui, não no jsdom. Rode com `bun run test:e2e`.
 
 ### Passo 7. Expor no barrel + subpath
 
@@ -180,6 +183,7 @@ Adicione em `package.json` `exports`:
 
 ```bash
 bun run typecheck && bun run test && bun run build
+bun run test:e2e   # com o Storybook rodando
 ```
 
 Build deve sair sem warnings. Se aparecer warning de tsup, investigue antes de commitar.
@@ -196,12 +200,14 @@ Cole no corpo do PR e marque conforme avança:
 - [ ] `displayName` setado
 - [ ] Story com variantes `Default`, `Error`, `Disabled`, `Required` (`Description` quando aplicável)
 - [ ] Teste cobrindo smoke + state + keyboard + ARIA wiring
+- [ ] Teste de navegador em `tests/e2e/` com axe, teclado e 360px
 - [ ] Cobertura local ≥95% (`bun run sync:coverage`)
 - [ ] `bun run typecheck` limpo
 - [ ] `bun run test` 100% pass
 - [ ] `bun run build` sem warnings
-- [ ] Strings em pt-BR (futuro: extrair via prop `labels`)
-- [ ] Sem shadow, sem dark mode (filosofia)
+- [ ] Textos em `labels` (ou prop de texto) com padrão pt-BR, `defaultXLabels` exportado
+- [ ] Sem shadow; cores só por tokens (claro e escuro), sem `dark:` no componente
+- [ ] `readOnly` e `disabled` em todo field
 - [ ] Subpath export adicionado em `package.json` `exports`
 - [ ] Adicionado em `src/index.ts` (barrel)
 - [ ] Commits no padrão Conventional (`feat:`, `fix:`, etc.) — um por mudança lógica
