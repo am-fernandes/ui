@@ -391,6 +391,7 @@ export const English: Story = {
             placeholder: "Type a command or search...",
             emptyMessage: "No results found.",
             loading: "Loading…",
+            list: "Results",
           }}
           groups={[
             {

@@ -270,6 +270,51 @@ describe("CommandPalette", () => {
     })
   })
 
+  describe("names for assistive technology", () => {
+    const groups = [{ heading: "Geral", items: [{ label: "Dashboard", onSelect: () => {} }] }]
+
+    it("names the field after the title and the list in Portuguese", () => {
+      render(<CommandPalette open title="Comandos" groups={groups} />)
+      expect(screen.getByRole("combobox", { name: "Comandos" })).toBeInTheDocument()
+      expect(screen.getByRole("listbox", { name: "Resultados" })).toBeInTheDocument()
+    })
+
+    it("names the loading state in Portuguese", () => {
+      render(<CommandPalette open loading title="Comandos" groups={groups} />)
+      expect(screen.getByRole("progressbar", { name: "Carregando…" })).toBeInTheDocument()
+    })
+
+    it("takes the list name and the loading text from labels", () => {
+      render(
+        <CommandPalette
+          open
+          loading
+          title="Commands"
+          labels={{ list: "Results", loading: "Loading…" }}
+          groups={groups}
+        />,
+      )
+      expect(screen.getByRole("listbox", { name: "Results" })).toBeInTheDocument()
+      expect(screen.getByRole("progressbar", { name: "Loading…" })).toBeInTheDocument()
+    })
+
+    it("renders a heading that is not plain text", () => {
+      render(
+        <CommandPalette
+          open
+          title="Comandos"
+          groups={[
+            {
+              heading: <span data-testid="rich-heading">Clientes recentes</span>,
+              items: [{ label: "João", onSelect: () => {} }],
+            },
+          ]}
+        />,
+      )
+      expect(screen.getByTestId("rich-heading")).toHaveTextContent("Clientes recentes")
+    })
+  })
+
   describe("closing", () => {
     const groups = (onSelect: () => void) => [{ items: [{ label: "Dashboard", onSelect }] }]
 

@@ -80,15 +80,23 @@ export interface CommandPaletteLabels {
   placeholder: string
   /** Empty-state message shown when no item matches the search. */
   emptyMessage: React.ReactNode
-  /** Loader text rendered when `loading={true}`. */
+  /**
+   * Loader text rendered when `loading={true}`. When it is a string it also
+   * names the progress bar for screen readers.
+   */
   loading: React.ReactNode
+  /** Accessible name of the list of results (screen readers only). */
+  list: string
 }
 
 export const defaultCommandPaletteLabels: CommandPaletteLabels = {
   placeholder: "Buscar...",
   emptyMessage: "Nenhum resultado",
   loading: "Carregando…",
+  list: "Resultados",
 }
+
+const DEFAULT_LOADING_NAME = "Carregando…"
 
 export interface CommandPaletteProps {
   open: boolean
@@ -180,6 +188,8 @@ function CommandPalette({
     >
       <CommandPrimitive
         data-slot="command-palette"
+        // Names the search field (cmdk renders a hidden <label> for it).
+        label={title}
         value={value ?? highlighted}
         onValueChange={handleValueChange}
         shouldFilter={shouldFilter}
@@ -201,10 +211,18 @@ function CommandPalette({
         </div>
         <CommandPrimitive.List
           data-slot="command-list"
+          label={mergedLabels.list}
           className="max-h-[300px] overflow-y-auto overflow-x-hidden"
         >
           {loading ? (
-            <CommandPrimitive.Loading className="py-6 text-center text-sm text-muted-foreground">
+            <CommandPrimitive.Loading
+              label={
+                typeof mergedLabels.loading === "string"
+                  ? mergedLabels.loading
+                  : DEFAULT_LOADING_NAME
+              }
+              className="py-6 text-center text-sm text-muted-foreground"
+            >
               {mergedLabels.loading}
             </CommandPrimitive.Loading>
           ) : (
@@ -216,7 +234,7 @@ function CommandPalette({
             <CommandPrimitive.Group
               // biome-ignore lint/suspicious/noArrayIndexKey: groups are positional in the prop array
               key={`g-${gi}`}
-              heading={typeof group.heading === "string" ? group.heading : undefined}
+              heading={group.heading}
               className={cn(
                 "overflow-hidden p-1 text-foreground",
                 "[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground",
