@@ -210,6 +210,41 @@ describe("DateRangePicker", () => {
     )
   })
 
+  it("without value, it keeps its own period, starting from defaultValue", async () => {
+    const onValueChange = vi.fn()
+    render(
+      <DateRangePicker
+        label="Período"
+        numberOfMonths={1}
+        defaultValue={{ from: "2025-03-10", to: "2025-03-12" }}
+        onValueChange={onValueChange}
+      />,
+    )
+    const trigger = screen.getByRole("button", { name: /Período/ })
+    expect(trigger).toHaveTextContent("10/03/2025 — 12/03/2025")
+    await userEvent.click(trigger)
+    await screen.findByRole("grid")
+    const day = (iso: string) => document.querySelector(`button[data-day="${iso}"]`) as HTMLElement
+    await userEvent.click(day("2025-03-20"))
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+    expect(onValueChange).toHaveBeenLastCalledWith({ from: "2025-03-10", to: "2025-03-20" })
+    expect(trigger).toHaveTextContent("10/03/2025 — 20/03/2025")
+  })
+
+  it("an uncontrolled picker goes back to defaultValue when its form is reset", async () => {
+    const { container } = render(
+      <form>
+        <DateRangePicker label="Período" defaultValue={{ from: "2025-03-10", to: "2025-03-12" }} />
+      </form>,
+    )
+    const trigger = screen.getByRole("button", { name: /Período/ })
+    await userEvent.click(trigger)
+    await userEvent.click(await screen.findByRole("button", { name: "Limpar" }))
+    expect(trigger).toHaveTextContent("Selecione um período")
+    ;(container.querySelector("form") as HTMLFormElement).reset()
+    await waitFor(() => expect(trigger).toHaveTextContent("10/03/2025 — 12/03/2025"))
+  })
+
   it("does not open the popover when disabled", async () => {
     render(
       <DateRangePicker label="X" value={{ from: "", to: "" }} onValueChange={() => {}} disabled />,

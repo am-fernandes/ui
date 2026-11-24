@@ -92,7 +92,7 @@ export const Playground: Story = {
     disabled: false,
   },
   render: (args) => {
-    const [range, setRange] = useState<DateRangeValue>(args.value)
+    const [range, setRange] = useState<DateRangeValue>(args.value ?? { from: "", to: "" })
     return (
       <div className="flex w-[360px] flex-col gap-2">
         <DateRangePicker

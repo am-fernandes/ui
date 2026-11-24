@@ -1,6 +1,6 @@
 "use client"
 
-import { format, isValid, parse } from "date-fns"
+import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import * as React from "react"
 import type { DateRange } from "react-day-picker"
@@ -15,7 +15,8 @@ import {
 } from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Button } from "../primitives/button"
-import { isoToDate, toIsoDate } from "./_internal/date-only"
+import { assignRef } from "./_internal/assign-ref"
+import { dateToIso, isoToDate, toIsoDate } from "./_internal/date-only"
 import { type DisabledDays, resolveDisabledDays } from "./_internal/disabled-days"
 import { Calendar } from "./calendar"
 
@@ -46,8 +47,15 @@ export interface DateRangePickerProps {
   labelPosition?: LabelPosition
   required?: boolean
   disabled?: boolean
-  value: DateRangeValue
-  onValueChange: (value: DateRangeValue) => void
+  /**
+   * The period, controlled: ISO dates (`"yyyy-MM-dd"`), `""` for an open end.
+   * Leave it out to let the picker keep its own, starting from `defaultValue`.
+   */
+  value?: DateRangeValue
+  /** Initial period of an uncontrolled picker. */
+  defaultValue?: DateRangeValue
+  /** Called when the period is confirmed or cleared. */
+  onValueChange?: (value: DateRangeValue) => void
   placeholder?: string
   className?: string
   numberOfMonths?: number
@@ -68,16 +76,6 @@ export interface DateRangePickerProps {
   ref?: React.Ref<HTMLButtonElement>
 }
 
-function parseIsoDate(value: string): Date | undefined {
-  if (!value) return undefined
-  const parsed = parse(value, "yyyy-MM-dd", new Date())
-  return isValid(parsed) ? parsed : undefined
-}
-
-function toIsoString(d: Date | undefined): string {
-  return d ? format(d, "yyyy-MM-dd") : ""
-}
-
 function DateRangePicker({
   id,
   label,
@@ -87,6 +85,7 @@ function DateRangePicker({
   required,
   disabled,
   value,
+  defaultValue,
   onValueChange,
   placeholder = "Selecione um período",
   className,
@@ -118,8 +117,43 @@ function DateRangePicker({
           isDayOff?.(date) === true
       : undefined
 
-  const fromDate = parseIsoDate(value.from)
-  const toDate = parseIsoDate(value.to)
+  // Controlled with `value`; otherwise the picker keeps its own period.
+  const isControlled = value !== undefined
+  const initialValue = (): DateRangeValue => ({
+    from: defaultValue?.from ?? "",
+    to: defaultValue?.to ?? "",
+  })
+  const [internalValue, setInternalValue] = React.useState(initialValue)
+  const current = isControlled ? value : internalValue
+  const emit = (next: DateRangeValue) => {
+    if (!isControlled) setInternalValue(next)
+    onValueChange?.(next)
+  }
+
+  const triggerRef = React.useRef<HTMLButtonElement | null>(null)
+  const setTriggerRef = React.useCallback(
+    (node: HTMLButtonElement | null) => {
+      triggerRef.current = node
+      assignRef(ref, node)
+    },
+    [ref],
+  )
+  // An uncontrolled picker goes back to `defaultValue` when its form is
+  // reset. Read through a ref, so the listener is attached once.
+  const onFormReset = React.useRef(() => {})
+  onFormReset.current = () => {
+    if (!isControlled) setInternalValue(initialValue())
+  }
+  React.useEffect(() => {
+    const form = triggerRef.current?.form
+    if (form == null) return
+    const reset = () => onFormReset.current()
+    form.addEventListener("reset", reset)
+    return () => form.removeEventListener("reset", reset)
+  }, [])
+
+  const fromDate = isoToDate(current.from)
+  const toDate = isoToDate(current.to)
   const committedRange: DateRange | undefined =
     fromDate || toDate ? { from: fromDate, to: toDate } : undefined
 
@@ -141,16 +175,16 @@ function DateRangePicker({
   }
 
   const handleConfirm = () => {
-    onValueChange({
-      from: toIsoString(pendingRange?.from),
-      to: toIsoString(pendingRange?.to),
+    emit({
+      from: dateToIso(pendingRange?.from),
+      to: dateToIso(pendingRange?.to),
     })
     setOpen(false)
   }
 
   const handleClear = () => {
     setPendingRange(undefined)
-    onValueChange({ from: "", to: "" })
+    emit({ from: "", to: "" })
     setOpen(false)
   }
 
@@ -178,7 +212,7 @@ function DateRangePicker({
   const trigger = (
     <button
       type="button"
-      ref={ref}
+      ref={setTriggerRef}
       id={ids.controlId}
       disabled={disabled}
       aria-invalid={hasError ? true : undefined}
