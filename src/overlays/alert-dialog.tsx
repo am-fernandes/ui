@@ -31,6 +31,7 @@ export interface AlertDialogProps {
    * stays open when it rejects, so the consumer can show the error inside it
    * (in `children`) or in a toast and the user can try again.
    */
+  // biome-ignore lint/suspicious/noConfusingVoidType: a handler that returns nothing (any function the consumer already has), or a Promise to wait for
   onConfirm: () => void | Promise<unknown>
   /** Called on "Cancelar" and on Escape. */
   onCancel?: () => void
