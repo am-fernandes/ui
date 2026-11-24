@@ -119,6 +119,53 @@ export const Default: Story = {
   },
 }
 
+export const WithError: Story = {
+  name: "With Error",
+  args: { value: "" },
+  render: () => {
+    const [value, setValue] = useState("")
+    return (
+      <div className="w-[280px]">
+        <DateInput
+          label="Data de assinatura"
+          error="Informe a data de assinatura do contrato."
+          value={value}
+          onValueChange={setValue}
+        />
+      </div>
+    )
+  },
+}
+
+export const Disabled: Story = {
+  args: { value: "" },
+  render: () => (
+    <div className="w-[280px]">
+      <DateInput label="Data de entrega" value="2025-03-14" disabled />
+    </div>
+  ),
+}
+
+export const Required: Story = {
+  args: { value: "" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`required` marca o rótulo, põe `aria-required` no campo e não deixa desmarcar o dia no calendário.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState("")
+    return (
+      <div className="w-[280px]">
+        <DateInput label="Data de nascimento" required value={value} onValueChange={setValue} />
+      </div>
+    )
+  },
+}
+
 export const ReadOnly: Story = {
   name: "Read Only",
   args: { value: "" },
