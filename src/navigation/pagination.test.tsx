@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
+import type { RenderLinkProps } from "@/lib/render-link"
 import {
   Pagination,
   type PaginationProps,
@@ -433,6 +434,35 @@ describe("Pagination", () => {
       // A plain click still moves the page.
       fireEvent.click(page4)
       await waitFor(() => expect(onPageChange).toHaveBeenCalledWith(4))
+    })
+
+    it("renders the links through renderLink (the app's router)", async () => {
+      const onPageChange = vi.fn()
+      const renderLink = vi.fn(({ href, ...props }: RenderLinkProps) => (
+        <a data-router-link={href} href={href} {...props} />
+      ))
+      render(
+        <Pagination
+          page={1}
+          totalPages={5}
+          getPageHref={(p) => `#rl-${p}`}
+          renderLink={renderLink}
+          onPageChange={onPageChange}
+        />,
+      )
+      expect(screen.getByRole("link", { name: "Página 1" })).toHaveAttribute(
+        "data-router-link",
+        "#rl-1",
+      )
+      expect(screen.getByRole("link", { name: "Página 1" })).toHaveAttribute("aria-current", "page")
+      const next = screen.getByRole("link", { name: "Próxima página" })
+      expect(next).toHaveAttribute("data-router-link", "#rl-2")
+      // The disabled step has no href: it is not a router link.
+      expect(screen.getByRole("link", { name: "Página anterior" })).not.toHaveAttribute(
+        "data-router-link",
+      )
+      fireEvent.click(next)
+      await waitFor(() => expect(onPageChange).toHaveBeenCalledWith(2))
     })
 
     it("turns the steps at the ends into disabled links", async () => {

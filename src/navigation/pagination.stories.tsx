@@ -24,7 +24,7 @@ const meta = {
           "- **Cursor** — sem total, use `hasMore`: só anterior/próxima.",
           '- `variant="pages"` (padrão) mostra números com reticências, sempre com o mesmo número de posições (o controle não muda de largura ao paginar). `variant="compact"` mostra “Página 3 de 10”.',
           "- `pageSizeOptions` + `onPageSizeChange` mostram o seletor de itens por página (o mesmo da `DataTable`); trocar o tamanho volta para a página 1.",
-          "- `getPageHref` gera links de verdade (`?page=3`), que dá para abrir em nova aba; `onPageChange` continua sendo chamado.",
+          "- `getPageHref` gera links de verdade (`?page=3`), que dá para abrir em nova aba; `onPageChange` continua sendo chamado. Com `renderLink`, os links usam o `<Link>` do seu roteador.",
           "",
           "A página é 1-based e controlada: guarde-a no estado (ou na URL) e atualize em `onPageChange`.",
         ].join("\n"),

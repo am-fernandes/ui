@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import type * as React from "react"
 
+import { type RenderLink, type RenderLinkProps, renderLinkElement } from "@/lib/render-link"
 import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "../primitives/button"
@@ -81,6 +82,14 @@ export interface PaginationProps {
    * fall back to buttons.
    */
   getPageHref?: (page: number) => string
+  /**
+   * With `getPageHref`, renders the links with your router's `<Link>`, so a
+   * page change does not reload the page:
+   * `renderLink={({ href, ...props }) => <Link to={href} {...props} />}`.
+   * Pass every prop on: they carry the classes, `aria-current` and the click
+   * handler that reports the page.
+   */
+  renderLink?: RenderLink
   disabled?: boolean
   /** `md` = 40px controls (the `Button` height), `sm` = 32px. @default "md" */
   size?: "sm" | "md"
@@ -141,6 +150,7 @@ function Pagination({
   siblingCount = 1,
   showFirstLast = false,
   getPageHref,
+  renderLink,
   disabled = false,
   size = "md",
   labels,
@@ -193,34 +203,43 @@ function Pagination({
   ) => {
     const href = hrefFor(target)
     if (href !== undefined) {
-      // Links can't be disabled: at the ends they lose their href and are
-      // announced as disabled instead.
-      return (
-        <a
-          data-slot={slot}
-          href={enabled ? href : undefined}
-          role={enabled ? undefined : "link"}
-          aria-disabled={enabled ? undefined : "true"}
-          aria-label={label}
-          onClick={(event) => {
-            if (!enabled) {
-              event.preventDefault()
-              return
-            }
-            // A new tab or window: this page stays where it is.
-            if (isModifiedClick(event)) return
-            goAfterNavigation(target)
-          }}
-          className={cn(
-            buttonVariants({ variant: "outline" }),
-            "p-0",
-            size === "sm" ? "size-8" : "size-10",
-            !enabled && "pointer-events-none opacity-50",
-          )}
-        >
-          {icon}
-        </a>
+      const className = cn(
+        buttonVariants({ variant: "outline" }),
+        "p-0",
+        size === "sm" ? "size-8" : "size-10",
+        !enabled && "pointer-events-none opacity-50",
       )
+      if (!enabled) {
+        // Links can't be disabled: at the ends they lose their href and are
+        // announced as disabled instead. Never through `renderLink`: a router
+        // link needs an href.
+        return (
+          <a
+            data-slot={slot}
+            // biome-ignore lint/a11y/useSemanticElements: without an href an <a> has no role of its own.
+            role="link"
+            aria-disabled="true"
+            aria-label={label}
+            // biome-ignore lint/a11y/useValidAnchor: a disabled link has no href; the click only stops here.
+            onClick={(event) => event.preventDefault()}
+            className={className}
+          >
+            {icon}
+          </a>
+        )
+      }
+      return renderLinkElement(renderLink, {
+        "data-slot": slot,
+        href,
+        "aria-label": label,
+        onClick: (event) => {
+          // A new tab or window: this page stays where it is.
+          if (isModifiedClick(event)) return
+          goAfterNavigation(target)
+        },
+        className,
+        children: icon,
+      } as RenderLinkProps)
     }
     return (
       <IconButton
@@ -244,29 +263,37 @@ function Pagination({
       size === "sm" && "text-xs",
     )
     const href = hrefFor(target)
-    if (href !== undefined) {
+    if (href !== undefined && disabled) {
       return (
         <a
           data-slot="pagination-page"
-          href={disabled ? undefined : href}
-          role={disabled ? "link" : undefined}
+          // biome-ignore lint/a11y/useSemanticElements: without an href an <a> has no role of its own.
+          role="link"
           aria-label={l.page(target)}
           aria-current={isCurrent ? "page" : undefined}
-          aria-disabled={disabled ? "true" : undefined}
-          onClick={(event) => {
-            if (disabled) {
-              event.preventDefault()
-              return
-            }
-            // A new tab or window: this page stays where it is.
-            if (isModifiedClick(event)) return
-            goAfterNavigation(target)
-          }}
-          className={cn(className, disabled && "pointer-events-none opacity-50")}
+          aria-disabled="true"
+          // biome-ignore lint/a11y/useValidAnchor: a disabled link has no href; the click only stops here.
+          onClick={(event) => event.preventDefault()}
+          className={cn(className, "pointer-events-none opacity-50")}
         >
           {fmt(target)}
         </a>
       )
+    }
+    if (href !== undefined) {
+      return renderLinkElement(renderLink, {
+        "data-slot": "pagination-page",
+        href,
+        "aria-label": l.page(target),
+        "aria-current": isCurrent ? "page" : undefined,
+        onClick: (event) => {
+          // A new tab or window: this page stays where it is.
+          if (isModifiedClick(event)) return
+          goAfterNavigation(target)
+        },
+        className,
+        children: fmt(target),
+      } as RenderLinkProps)
     }
     return (
       <button
