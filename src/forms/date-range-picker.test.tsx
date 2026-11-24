@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
+import { MOBILE_QUERY } from "../hooks/use-is-mobile"
 import { DateRangePicker, type DateRangeValue } from "./date-range-picker"
 
 function Controlled({
@@ -101,7 +102,7 @@ describe("DateRangePicker", () => {
   it("shows one month below the md breakpoint", async () => {
     const original = window.matchMedia
     window.matchMedia = ((query: string) => ({
-      matches: query.includes("max-width: 767px"),
+      matches: query === MOBILE_QUERY,
       media: query,
       onchange: null,
       addEventListener: () => {},
