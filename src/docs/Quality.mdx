@@ -28,13 +28,22 @@ bun run sync:e2e-stats    # recalcula _e2e-stats.ts
 
 ## Resumo global (vitest)
 
+// Coverage status: 90% or more is the target (plain); 75–90% is shown in
+// bold; below 75% in bold and the error text colour. Text colours only, so
+// every value reads at 4.5:1 in both themes, and weight carries it too.
+export const coverageStyle = (pct) =>
+  pct >= 90
+    ? { color: "var(--muted-foreground)" }
+    : pct >= 75
+      ? { color: "var(--foreground)", fontWeight: 600 }
+      : { color: "var(--destructive-text)", fontWeight: 600 }
+
 export const Stat = ({ label, pct, covered, total }) => {
-  const color = pct >= 90 ? "#16a34a" : pct >= 75 ? "#d97706" : "#dc2626"
   return (
-    <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "1rem" }}>
-      <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#6b7280" }}>{label}</div>
-      <div style={{ fontSize: "1.75rem", fontWeight: 600, color }}>{pct.toFixed(2)}%</div>
-      <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>{covered}/{total}</div>
+    <div style={{ border: "1px solid var(--border-strong)", borderRadius: 8, padding: "1rem" }}>
+      <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--muted-foreground)" }}>{label}</div>
+      <div style={{ fontSize: "1.75rem", fontWeight: 600, color: coverageStyle(pct).color }}>{pct.toFixed(2)}%</div>
+      <div style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>{covered}/{total}</div>
     </div>
   )
 }
@@ -51,10 +60,10 @@ export const Stat = ({ label, pct, covered, total }) => {
 ## Resumo Playwright
 
 export const PlaywrightStat = ({ label, value, sub }) => (
-  <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "1rem" }}>
-    <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#6b7280" }}>{label}</div>
-    <div style={{ fontSize: "1.75rem", fontWeight: 600, color: "#0f172a" }}>{value}</div>
-    <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>{sub}</div>
+  <div style={{ border: "1px solid var(--border-strong)", borderRadius: 8, padding: "1rem" }}>
+    <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--muted-foreground)" }}>{label}</div>
+    <div style={{ fontSize: "1.75rem", fontWeight: 600, color: "var(--foreground)" }}>{value}</div>
+    <div style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>{sub}</div>
   </div>
 )
 
@@ -70,7 +79,7 @@ export const PlaywrightStat = ({ label, value, sub }) => (
 export const SpecsTable = () => (
   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem", marginTop: "1rem" }}>
     <thead>
-      <tr style={{ borderBottom: "1px solid #e5e7eb", color: "#6b7280" }}>
+      <tr style={{ borderBottom: "1px solid var(--border-strong)", color: "var(--muted-foreground)" }}>
         <th style={{ padding: "0.4rem 0.6rem", textAlign: "left" }}>Spec</th>
         <th style={{ padding: "0.4rem 0.6rem", textAlign: "right" }}>describe</th>
         <th style={{ padding: "0.4rem 0.6rem", textAlign: "right" }}>tests</th>
@@ -78,7 +87,7 @@ export const SpecsTable = () => (
     </thead>
     <tbody>
       {E2E_SPECS.map((s) => (
-        <tr key={s.file} style={{ borderBottom: "1px solid #f3f4f6" }}>
+        <tr key={s.file} style={{ borderBottom: "1px solid var(--border)" }}>
           <td style={{ padding: "0.4rem 0.6rem", fontFamily: "ui-monospace, Menlo, monospace", fontSize: "0.8rem" }}>{s.file}</td>
           <td style={{ padding: "0.4rem 0.6rem", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{s.describes}</td>
           <td style={{ padding: "0.4rem 0.6rem", textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{s.tests}</td>
@@ -103,10 +112,11 @@ export const CoverageTable = () => {
     acc[row.group].push(row)
     return acc
   }, {})
-  const cell = (pct) => {
-    const color = pct >= 90 ? "#16a34a" : pct >= 75 ? "#d97706" : "#dc2626"
-    return <td style={{ padding: "0.4rem 0.6rem", textAlign: "right", color, fontVariantNumeric: "tabular-nums" }}>{pct.toFixed(0)}%</td>
-  }
+  const cell = (pct) => (
+    <td style={{ padding: "0.4rem 0.6rem", textAlign: "right", fontVariantNumeric: "tabular-nums", ...coverageStyle(pct) }}>
+      {pct.toFixed(0)}%
+    </td>
+  )
   return (
     <>
       {Object.entries(grouped).map(([group, rows]) => (
@@ -114,7 +124,7 @@ export const CoverageTable = () => {
           <h4 style={{ margin: 0, marginBottom: "0.5rem" }}>{group}</h4>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid #e5e7eb", color: "#6b7280" }}>
+              <tr style={{ borderBottom: "1px solid var(--border-strong)", color: "var(--muted-foreground)" }}>
                 <th style={{ padding: "0.4rem 0.6rem", textAlign: "left" }}>Arquivo</th>
                 <th style={{ padding: "0.4rem 0.6rem", textAlign: "right" }}>Lines</th>
                 <th style={{ padding: "0.4rem 0.6rem", textAlign: "right" }}>Stmts</th>
@@ -124,7 +134,7 @@ export const CoverageTable = () => {
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.file} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                <tr key={row.file} style={{ borderBottom: "1px solid var(--border)" }}>
                   <td style={{ padding: "0.4rem 0.6rem", fontFamily: "ui-monospace, Menlo, monospace", fontSize: "0.8rem" }}>{row.file}</td>
                   {cell(row.lines)}
                   {cell(row.statements)}
@@ -304,19 +314,14 @@ A maioria dos componentes da lib **não tem media queries internas** — eles s�
 
 ## Próximos focos
 
-A tabela acima destaca onde investir esforço próximo. Os mais urgentes:
+Os arquivos abaixo de 90% na tabela acima (em negrito; abaixo de 75%, também na cor de erro) são os próximos focos de teste. A meta da CI é 95% no total (`scripts/coverage-gate.ts`).
 
-- **Combobox** (`forms/combobox.tsx`) — ~72 % de linhas; faltam testes para `creatable`, multi-select remove via X click, e empty state.
-- **TimePicker** (`forms/time-picker.tsx`) — ~72 %; arrow keys, blur clamp e wrap modular ainda não cobertos.
-- **FileUpload** (`domain/file-upload.tsx`) — ~79 %; o fluxo da câmera (`getUserMedia`) e o lightbox não são exercitados.
+### As camadas Playwright
 
-### Roadmap das camadas Playwright
+Os números de specs, testes, stories e `play` functions estão no resumo acima, gerados por `bun run sync:e2e-stats`.
 
-| Item | Status |
+| Camada | Onde roda |
 |---|---|
-| Storybook test runner smoke de todas as stories | ✅ 289 stories passam em Chromium |
-| `play` functions com asserções de interação | ✅ 21 play fns em 19 stories |
-| E2E specs por grupo | ✅ 8 specs / 96 tests (desktop + mobile + tablet + visual) |
-| Visual regression com `toHaveScreenshot` | ✅ 95 baselines em `tests/e2e/visual.spec.ts-snapshots/` (Google Fonts blocked para determinismo) |
-| Multi-viewport (mobile + tablet) em E2E | ✅ projects `mobile-chromium` (Pixel 5) + `tablet-chromium` (iPad gen 7) |
-| Axe a11y assertions no test-runner | ✅ `injectAxe` + `checkA11y` wcag2aa no `postVisit` — 289/289 stories passam (0 violations serious/critical) |
+| Storybook test runner: renderiza cada story em Chromium, roda as `play` functions e o axe (WCAG 2.1 AA) no claro e no escuro | CI, job "Storybook tests" |
+| Specs E2E por componente em `tests/e2e/`: teclado, foco, medidas, `FormData`, 360px, cores forçadas, axe | CI, job "E2E" (desktop, Pixel 5 e iPad) |
+| Regressão visual com `toHaveScreenshot` em `tests/e2e/visual.spec.ts` | CI, job "Visual regression" |
