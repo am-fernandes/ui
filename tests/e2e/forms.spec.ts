@@ -481,3 +481,55 @@ test.describe("DateRangePicker", () => {
     await expect(page.getByRole("grid", { name: /janeiro 2025/i })).toBeVisible()
   })
 })
+
+test.describe("DateRangePicker: cabe na tela", () => {
+  for (const viewport of [
+    { width: 360, height: 740, months: 1 },
+    { width: 1280, height: 800, months: 2 },
+  ]) {
+    test(`em ${viewport.width}×${viewport.height}, o popover fica inteiro na tela com ${viewport.months} mês(es)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height })
+      await gotoStory(page, "forms-daterangepicker--default", "Selecione um período")
+      await page.getByRole("button", { name: /Período/ }).click()
+      await expect(page.getByRole("grid")).toHaveCount(viewport.months)
+      const content = page.locator('[data-slot="popover-content"]')
+      await expect
+        .poll(async () => {
+          const box = await content.boundingBox()
+          return (
+            !!box &&
+            box.y >= 0 &&
+            box.x >= 0 &&
+            box.y + box.height <= viewport.height &&
+            box.x + box.width <= viewport.width
+          )
+        })
+        .toBe(true)
+      // The actions are on screen without scrolling the page.
+      const confirm = page.getByRole("button", { name: "Confirmar" })
+      const confirmBox = await confirm.boundingBox()
+      expect((confirmBox?.y ?? 9999) + (confirmBox?.height ?? 0)).toBeLessThanOrEqual(
+        viewport.height,
+      )
+    })
+  }
+
+  test("numa tela baixa, o calendário rola dentro do popover", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 480 })
+    await gotoStory(page, "forms-daterangepicker--default", "Selecione um período")
+    await page.getByRole("button", { name: /Período/ }).click()
+    const content = page.locator('[data-slot="popover-content"]')
+    await expect
+      .poll(async () => {
+        const box = await content.boundingBox()
+        return !!box && box.y >= 0 && box.y + box.height <= 480
+      })
+      .toBe(true)
+    const confirm = page.getByRole("button", { name: "Confirmar" })
+    await expect(confirm).toBeInViewport()
+    const scroller = page.locator('[data-slot="date-range-picker-calendar"]')
+    expect(await scroller.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
+  })
+})

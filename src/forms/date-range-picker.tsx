@@ -6,6 +6,7 @@ import * as React from "react"
 import type { DateRange } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
+import { useIsMobile } from "../hooks/use-is-mobile"
 import { Popover } from "../overlays/popover"
 import {
   FieldShell,
@@ -66,6 +67,9 @@ function DateRangePicker({
 }: DateRangePickerProps) {
   const ids = useFieldIds(id)
   const [open, setOpen] = React.useState(false)
+  // Two months side by side do not fit a phone: one month below `md`.
+  const isMobile = useIsMobile()
+  const monthsShown = isMobile ? 1 : numberOfMonths
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
 
@@ -156,7 +160,10 @@ function DateRangePicker({
         align="start"
         trigger={trigger}
         aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
-        className="w-auto p-0"
+        // Never taller than the room the popover has on its side of the
+        // trigger: the calendar scrolls inside it, the actions stay in view.
+        collisionPadding={8}
+        className="flex max-h-(--radix-popover-content-available-height) w-auto max-w-(--radix-popover-content-available-width) flex-col p-0"
         onPointerDownOutside={(event) => {
           const target = event.target as HTMLElement | null
           if (target?.closest('[role="grid"], .rdp, .rdp-root')) {
@@ -165,20 +172,25 @@ function DateRangePicker({
         }}
         onFocusOutside={(event) => event.preventDefault()}
       >
-        <Calendar
-          mode="range"
-          selected={pendingRange}
-          onSelect={handleSelect}
-          numberOfMonths={numberOfMonths}
-          // Open on the saved range, not on the current month.
-          defaultMonth={fromDate ?? toDate}
-          // Hide previous/next-month days inside each calendar pane.
-          // Otherwise the range_end day (e.g. June 1) renders twice when the
-          // range spans two months: once as range_end in its own pane, and
-          // once as the outside-day of the previous month's pane.
-          showOutsideDays={false}
-        />
-        <div className="flex justify-end gap-2 border-t p-3">
+        <div
+          data-slot="date-range-picker-calendar"
+          className="min-h-0 overflow-y-auto overscroll-contain"
+        >
+          <Calendar
+            mode="range"
+            selected={pendingRange}
+            onSelect={handleSelect}
+            numberOfMonths={monthsShown}
+            // Open on the saved range, not on the current month.
+            defaultMonth={fromDate ?? toDate}
+            // Hide previous/next-month days inside each calendar pane.
+            // Otherwise the range_end day (e.g. June 1) renders twice when the
+            // range spans two months: once as range_end in its own pane, and
+            // once as the outside-day of the previous month's pane.
+            showOutsideDays={false}
+          />
+        </div>
+        <div className="flex shrink-0 justify-end gap-2 border-t p-3">
           <Button variant="ghost" onClick={handleClear}>
             Limpar
           </Button>

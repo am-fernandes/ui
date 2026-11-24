@@ -98,6 +98,29 @@ describe("DateRangePicker", () => {
     expect(await screen.findByRole("grid", { name: /janeiro 2025/i })).toBeInTheDocument()
   })
 
+  it("shows one month below the md breakpoint", async () => {
+    const original = window.matchMedia
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes("max-width: 767px"),
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia
+    try {
+      render(<Controlled />)
+      const trigger = screen.getByText("Selecione um período").closest("button")
+      if (!trigger) throw new Error("trigger not found")
+      await userEvent.click(trigger)
+      expect(await screen.findAllByRole("grid")).toHaveLength(1)
+    } finally {
+      window.matchMedia = original
+    }
+  })
+
   it("does not open the popover when disabled", async () => {
     render(
       <DateRangePicker label="X" value={{ from: "", to: "" }} onValueChange={() => {}} disabled />,
