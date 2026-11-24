@@ -416,6 +416,7 @@ export function Combobox(props: ComboboxProps) {
       // content, which does not exist while closed.
       aria-controls={open ? listId : undefined}
       aria-invalid={hasError ? true : undefined}
+      aria-required={required ? true : undefined}
       aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
       disabled={disabled}
       className={cn(

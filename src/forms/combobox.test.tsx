@@ -478,6 +478,16 @@ describe("Combobox: ARIA do gatilho", () => {
     expect(document.getElementById(trigger.getAttribute("aria-controls") ?? "")).toBe(list)
   })
 
+  it("required: the trigger says so with aria-required", () => {
+    const { rerender } = render(<Combobox options={options} label="Status" required />)
+    expect(screen.getByRole("combobox", { name: /Status/ })).toHaveAttribute(
+      "aria-required",
+      "true",
+    )
+    rerender(<Combobox options={options} label="Status" />)
+    expect(screen.getByRole("combobox", { name: /Status/ })).not.toHaveAttribute("aria-required")
+  })
+
   it("the trigger is a button that opens a list: no aria-autocomplete", () => {
     render(<Combobox options={options} placeholder="Pick" />)
     expect(screen.getByRole("combobox")).not.toHaveAttribute("aria-autocomplete")
