@@ -58,13 +58,14 @@ function renderItems(items: AccordionItemData[]) {
         value={item.value}
         disabled={item.disabled}
         data-slot="accordion-item"
-        className="border-b last:border-b-0"
+        // Disabled: dimmed once, on the whole item (title and action).
+        className="border-b last:border-b-0 data-[disabled]:opacity-50"
       >
         <AccordionPrimitive.Header data-slot="accordion-header" className="flex items-center">
           <AccordionPrimitive.Trigger
             data-slot="accordion-trigger"
             className={cn(
-              "flex flex-1 items-center justify-between py-4 text-sm font-medium transition-colors hover:underline text-left cursor-pointer [&[data-state=open]>svg]:rotate-180",
+              "flex flex-1 cursor-pointer items-center justify-between py-4 text-left text-sm font-medium transition-colors enabled:hover:underline disabled:cursor-default [&[data-state=open]>svg]:rotate-180",
             )}
           >
             {item.title}

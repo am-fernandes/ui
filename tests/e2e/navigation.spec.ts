@@ -31,6 +31,22 @@ test.describe("Tabs", () => {
 })
 
 test.describe("Accordion", () => {
+  test("a disabled item looks and behaves disabled", async ({ page }) => {
+    await page.goto(story("navigation-accordion--disabled"))
+    const trigger = page.getByRole("button", { name: "Bloqueado" })
+    await expect(trigger).toBeDisabled()
+    const item = page.locator('[data-slot="accordion-item"]').filter({ has: trigger })
+    expect(await item.evaluate((el) => getComputedStyle(el).opacity)).toBe("0.5")
+    // Only once: the trigger inside is not dimmed again.
+    expect(await trigger.evaluate((el) => getComputedStyle(el).opacity)).toBe("1")
+    expect(await trigger.evaluate((el) => getComputedStyle(el).cursor)).toBe("default")
+    await trigger.hover({ force: true })
+    expect(await trigger.evaluate((el) => getComputedStyle(el).textDecorationLine)).toBe("none")
+    // An enabled one still reacts.
+    const enabled = page.getByRole("button", { name: "Habilitado" })
+    expect(await enabled.evaluate((el) => getComputedStyle(el).cursor)).toBe("pointer")
+  })
+
   test("clicking trigger expands content", async ({ page }) => {
     await page.goto(story("navigation-accordion--single"))
     const trigger = page.getByRole("button").first()

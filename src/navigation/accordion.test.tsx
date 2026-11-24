@@ -79,6 +79,27 @@ describe("Accordion", () => {
     expect(disabledTrigger.getAttribute("data-state")).toBe("closed")
   })
 
+  it("disabled item looks disabled: dimmed once, default cursor, no hover underline", () => {
+    const { container } = render(
+      <Accordion
+        type="single"
+        collapsible
+        items={[
+          { value: "a", title: "Enabled", content: "EC" },
+          { value: "b", title: "Disabled", content: "DC", disabled: true },
+        ]}
+      />,
+    )
+    const [enabledItem, disabledItem] = container.querySelectorAll('[data-slot="accordion-item"]')
+    expect(disabledItem).toHaveAttribute("data-disabled")
+    expect(disabledItem).toHaveClass("data-[disabled]:opacity-50")
+    const trigger = screen.getByRole("button", { name: "Disabled" })
+    expect(trigger).toHaveClass("disabled:cursor-default")
+    expect(trigger).not.toHaveClass("hover:underline")
+    expect(trigger.className).toContain("enabled:hover:underline")
+    expect(enabledItem).not.toHaveAttribute("data-disabled")
+  })
+
   it("disabled item does not expand on click", async () => {
     render(
       <Accordion
