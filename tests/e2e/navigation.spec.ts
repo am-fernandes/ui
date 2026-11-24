@@ -45,26 +45,63 @@ test.describe("Tabs", () => {
     await expect(page.getByRole("tabpanel")).toContainText("Resumo da conta")
   })
 
+  // `navigation-tabs--default` has a play function that clicks a tab itself;
+  // these use a story without one so the two never race.
   test("clicking trigger switches content", async ({ page }) => {
-    await page.goto(story("navigation-tabs--default"))
+    await page.goto(story("navigation-tabs--without-default"))
     const tabs = page.getByRole("tab")
-    const count = await tabs.count()
-    expect(count).toBeGreaterThan(1)
+    await expect(tabs.first()).toBeVisible({ timeout: 15_000 })
+    expect(await tabs.count()).toBeGreaterThan(1)
     await tabs.nth(1).click()
     await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true")
+    await expect(tabs.first()).toHaveAttribute("aria-selected", "false")
   })
 
   test("keyboard arrow navigates between tabs", async ({ page }) => {
-    await page.goto(story("navigation-tabs--default"))
+    await page.goto(story("navigation-tabs--without-default"))
     const first = page.getByRole("tab").first()
+    await expect(first).toBeVisible({ timeout: 15_000 })
     await first.focus()
     await page.keyboard.press("ArrowRight")
     const second = page.getByRole("tab").nth(1)
     await expect(second).toBeFocused()
+    await expect(second).toHaveAttribute("aria-selected", "true")
   })
 })
 
 test.describe("Accordion", () => {
+  test("a focus ring inside an open panel is not clipped", async ({ page }) => {
+    await page.goto(story("navigation-accordion--default-value-open"))
+    const panel = page.locator('[data-slot="accordion-content"][data-state="open"]').first()
+    await expect(panel).toBeVisible({ timeout: 15_000 })
+    // A full-width control at the top of the panel: the worst case for a
+    // ring drawn 3px outside the box.
+    await panel.evaluate((el) => {
+      const button = document.createElement("button")
+      button.type = "button"
+      button.textContent = "Salvar seção"
+      button.style.display = "block"
+      button.style.width = "100%"
+      el.firstElementChild?.prepend(button)
+    })
+    const button = panel.getByRole("button", { name: "Salvar seção" })
+    await button.focus()
+    const room = await page.evaluate(
+      ([p, b]) => {
+        const clip = (p as HTMLElement).getBoundingClientRect()
+        const box = (b as HTMLElement).getBoundingClientRect()
+        return {
+          left: box.left - clip.left,
+          right: clip.right - box.right,
+          top: box.top - clip.top,
+        }
+      },
+      [await panel.elementHandle(), await button.elementHandle()],
+    )
+    // The library ring: 2px wide, 3px away from the edge.
+    for (const side of [room.left, room.right, room.top]) expect(side).toBeGreaterThanOrEqual(5)
+  })
+
   test("a disabled item looks and behaves disabled", async ({ page }) => {
     await page.goto(story("navigation-accordion--disabled"))
     const trigger = page.getByRole("button", { name: "Bloqueado" })
@@ -77,24 +114,32 @@ test.describe("Accordion", () => {
     await trigger.hover({ force: true })
     expect(await trigger.evaluate((el) => getComputedStyle(el).textDecorationLine)).toBe("none")
     // An enabled one still reacts.
-    const enabled = page.getByRole("button", { name: "Habilitado" })
+    const enabled = page.getByRole("button", { name: "Habilitado", exact: true })
     expect(await enabled.evaluate((el) => getComputedStyle(el).cursor)).toBe("pointer")
   })
 
   test("clicking trigger expands content", async ({ page }) => {
-    await page.goto(story("navigation-accordion--single"))
-    const trigger = page.getByRole("button").first()
-    await trigger.click()
-    await expect(trigger).toHaveAttribute("aria-expanded", "true")
+    await page.goto(story("navigation-accordion--multiple"))
+    const closed = page.locator('[data-slot="accordion-trigger"][aria-expanded="false"]').first()
+    await expect(closed).toBeVisible({ timeout: 15_000 })
+    const name = (await closed.textContent()) ?? ""
+    await closed.click()
+    await expect(page.getByRole("button", { name, exact: true })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    )
   })
 
   test("clicking expanded trigger collapses it (collapsible=true)", async ({ page }) => {
-    await page.goto(story("navigation-accordion--single"))
-    const trigger = page.getByRole("button").first()
+    await page.goto(story("navigation-accordion--default-value-open"))
+    const trigger = page.locator('[data-slot="accordion-trigger"][aria-expanded="true"]')
+    await expect(trigger).toHaveCount(1, { timeout: 15_000 })
+    const name = (await trigger.textContent()) ?? ""
     await trigger.click()
-    await expect(trigger).toHaveAttribute("aria-expanded", "true")
-    await trigger.click()
-    await expect(trigger).toHaveAttribute("aria-expanded", "false")
+    await expect(page.getByRole("button", { name, exact: true })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    )
   })
 })
 
