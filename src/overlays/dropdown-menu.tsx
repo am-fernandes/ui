@@ -119,7 +119,13 @@ export interface DropdownMenuProps {
   sideOffset?: number
   /**
    * When `true` (default) the rest of the page is inert while the menu is
-   * open. Set `false` for a menu inside a toolbar that must keep scrolling.
+   * open: a click outside only closes it.
+   *
+   * Set `false` for the "…" menu of a table row: with one row's menu open, a
+   * click on another row's "…" closes it and opens that one at once (with
+   * `modal`, it takes two clicks). Also for a menu inside a toolbar that must
+   * keep scrolling.
+   * @default true
    */
   modal?: boolean
   /** Classes for the menu panel (e.g. a fixed width). */

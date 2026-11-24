@@ -65,23 +65,37 @@ export const Default: Story = {}
 
 export const RowActions: Story = {
   render: (args) => (
-    <div className="flex w-96 max-w-full items-center justify-between gap-3 rounded-md border px-3 py-2">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium">Proposta #1042</p>
-        <p className="truncate text-xs text-muted-foreground">Ana Souza · R$ 412.000,00</p>
-      </div>
-      <DropdownMenu
-        {...args}
-        trigger={<IconButton icon={<MoreHorizontal />} label="Ações da proposta" size="sm" />}
-        align="end"
-      />
+    <div className="flex w-96 max-w-full flex-col divide-y rounded-md border">
+      {[
+        { id: "1042", buyer: "Ana Souza · R$ 412.000,00" },
+        { id: "1043", buyer: "Bruno Lima · R$ 389.500,00" },
+      ].map((row) => (
+        <div key={row.id} className="flex items-center justify-between gap-3 px-3 py-2">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">Proposta #{row.id}</p>
+            <p className="truncate text-xs text-muted-foreground">{row.buyer}</p>
+          </div>
+          <DropdownMenu
+            {...args}
+            trigger={
+              <IconButton
+                icon={<MoreHorizontal />}
+                label={`Ações da proposta #${row.id}`}
+                size="sm"
+              />
+            }
+            align="end"
+            modal={false}
+          />
+        </div>
+      ))}
     </div>
   ),
   parameters: {
     docs: {
       description: {
         story:
-          'O caso mais comum: o “…” no fim de uma linha, com um `IconButton` de gatilho e o menu alinhado pela direita (`align="end"`).',
+          'O caso mais comum: o “…” no fim de uma linha, com um `IconButton` de gatilho e o menu alinhado pela direita (`align="end"`). Em linhas de tabela use `modal={false}`: com o menu de uma linha aberto, um clique no “…” de outra já abre o dela (com o padrão `modal`, o primeiro clique só fecha o menu aberto).',
       },
     },
   },

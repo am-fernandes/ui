@@ -1139,6 +1139,28 @@ test.describe("DropdownMenu", () => {
     })
   }
 
+  // A modal menu makes the page inert: going from one row's "…" to the
+  // next took two clicks. The documented pattern for rows is modal={false}.
+  test("row menus with modal={false}: one click goes from one row's menu to the next", async ({
+    page,
+  }) => {
+    await gotoStory(page, "overlays-dropdownmenu--row-actions", "Ações da proposta #1043")
+    // From the lower row to the upper one: a menu opens downwards and covers
+    // the rows below it, as it does in a table.
+    const lower = page.getByRole("button", { name: "Ações da proposta #1043" })
+    const upper = page.getByRole("button", { name: "Ações da proposta #1042" })
+    await lower.click()
+    await expect(page.getByRole("menu")).toBeVisible()
+    await expect(lower).toHaveAttribute("aria-expanded", "true")
+
+    // One click.
+    await upper.click()
+    await expect(upper).toHaveAttribute("aria-expanded", "true")
+    await expect(lower).toHaveAttribute("aria-expanded", "false")
+    await expect(page.getByRole("menu")).toHaveCount(1)
+    await expect(page.getByRole("menu")).toBeVisible()
+  })
+
   test("keyboard: arrows skip disabled items, typeahead jumps, Enter selects", async ({ page }) => {
     await gotoStory(page, "overlays-dropdownmenu--default", "Ações")
     await page.getByRole("button", { name: "Ações" }).focus()
@@ -1620,11 +1642,11 @@ test.describe("IconButton", () => {
   })
 
   test("opens a DropdownMenu as its trigger", async ({ page }) => {
-    await gotoStory(page, "overlays-dropdownmenu--row-actions", "Ações da proposta")
-    const trigger = page.getByRole("button", { name: "Ações da proposta" })
+    await gotoStory(page, "overlays-dropdownmenu--row-actions", "Ações da proposta #1042")
+    const trigger = page.getByRole("button", { name: "Ações da proposta #1042" })
     const t = await trigger.boundingBox()
     await trigger.click()
-    const menu = page.getByRole("menu", { name: "Ações da proposta" })
+    const menu = page.getByRole("menu", { name: "Ações da proposta #1042" })
     await expect(menu).toBeVisible()
     // align="end": the menu's right edge lines up with the trigger's (poll:
     // the open animation scales the panel for a few frames).
