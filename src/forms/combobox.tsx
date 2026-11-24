@@ -105,6 +105,13 @@ interface ComboboxBaseProps {
    */
   name?: string
   /**
+   * Shows the choice without letting it change: the trigger stays readable
+   * and focusable, the list does not open, there is no clear button and the
+   * value is submitted with the form. For a view-only screen; `disabled` is
+   * for a field that does not apply.
+   */
+  readOnly?: boolean
+  /**
    * Called when the focus leaves the field as a whole. Moving between the
    * trigger, the clear and remove buttons and the open list does not count.
    */
@@ -171,6 +178,7 @@ export function Combobox(props: ComboboxProps) {
     maxVisibleOptions = 100,
     name,
     onBlur,
+    readOnly = false,
     ref,
   } = props
   const l: ComboboxLabels = { ...defaultComboboxLabels, ...props.labels }
@@ -375,14 +383,16 @@ export function Combobox(props: ComboboxProps) {
               aria-label={labelText}
             >
               {labelText}
-              <button
-                type="button"
-                aria-label={`Remover ${labelText}`}
-                className="rounded-inner cursor-pointer state-layer focus-visible:focus-outline"
-                onClick={(e) => handleRemoveValue(val, e)}
-              >
-                <X className="h-3 w-3 text-muted-foreground" />
-              </button>
+              {readOnly ? null : (
+                <button
+                  type="button"
+                  aria-label={`Remover ${labelText}`}
+                  className="rounded-inner cursor-pointer state-layer focus-visible:focus-outline"
+                  onClick={(e) => handleRemoveValue(val, e)}
+                >
+                  <X className="h-3 w-3 text-muted-foreground" />
+                </button>
+              )}
             </Badge>
           )
         })}
@@ -401,7 +411,7 @@ export function Combobox(props: ComboboxProps) {
   // Clearing is a separate button next to the trigger, never inside it: a
   // control nested in a <button> is unreachable for some screen readers and
   // stays focusable while the trigger is disabled.
-  const showClear = hasValue && !disabled
+  const showClear = hasValue && !disabled && !readOnly
 
   const trigger = (
     <button
@@ -417,6 +427,7 @@ export function Combobox(props: ComboboxProps) {
       aria-controls={open ? listId : undefined}
       aria-invalid={hasError ? true : undefined}
       aria-required={required ? true : undefined}
+      aria-readonly={readOnly ? true : undefined}
       aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
       disabled={disabled}
       className={cn(
@@ -424,6 +435,9 @@ export function Combobox(props: ComboboxProps) {
         "w-full justify-between min-h-10 h-auto overflow-hidden",
         !hasValue && "text-placeholder",
         hasError && "border-destructive-text field-error",
+        // Read-only: a muted box that does not answer to hover; the focus
+        // look stays, because the trigger still takes focus.
+        readOnly && "cursor-default bg-muted [--field-hover-ring:transparent]!",
         className,
       )}
     >
@@ -477,7 +491,7 @@ export function Combobox(props: ComboboxProps) {
           <Popover
             open={open}
             onOpenChange={(isOpen) => {
-              if (disabled) return
+              if (disabled || readOnly) return
               if (isOpen) openList()
               else setOpen(false)
               if (!isOpen && search !== "") changeSearch("")

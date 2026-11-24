@@ -276,3 +276,32 @@ test.describe("Combobox: onBlur", () => {
     await expect(error).toHaveCount(0)
   })
 })
+
+test.describe("Combobox: somente leitura", () => {
+  test("fundo esmaecido, sem anel de hover, recebe foco e não abre", async ({ page }) => {
+    await gotoStory(page, "forms-combobox--default", "Selecione um status")
+    const editable = page.getByRole("combobox", { name: "Status" })
+    const editableBg = await editable.evaluate((el) => getComputedStyle(el).backgroundColor)
+
+    await gotoStory(page, "forms-combobox--read-only", "Aprovado")
+    const trigger = page.getByRole("combobox", { name: "Status" })
+    const look = () =>
+      trigger.evaluate((el) => {
+        const style = getComputedStyle(el)
+        return { bg: style.backgroundColor, shadow: style.boxShadow }
+      })
+    const before = await look()
+    expect(before.bg).not.toBe(editableBg)
+    await trigger.hover()
+    await page.waitForTimeout(250)
+    // No visible ring: none, or one drawn in a fully transparent colour.
+    expect((await look()).shadow).toMatch(/^(none|rgba\(0, 0, 0, 0\) .*)$/)
+
+    await trigger.click()
+    await expect(trigger).toBeFocused()
+    await page.keyboard.press("ArrowDown")
+    await page.keyboard.press("Enter")
+    await expect(page.getByRole("listbox")).toHaveCount(0)
+    await expect(page.getByRole("button", { name: /Limpar|Remover/ })).toHaveCount(0)
+  })
+})

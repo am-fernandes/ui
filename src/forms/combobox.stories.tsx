@@ -296,6 +296,29 @@ export const Disabled: Story = {
   ),
 }
 
+export const ReadOnly: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` mostra a escolha num fundo esmaecido, sem reação ao hover: o gatilho recebe foco e é lido, mas a lista não abre, não há botão de limpar nem × nos itens, e o valor vai junto no envio do formulário. Para tela de consulta; `disabled` é para campo que não se aplica.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex w-[320px] flex-col gap-4">
+      <Combobox options={plainOptions} label="Status" value="aprovado" readOnly />
+      <Combobox
+        multiple
+        options={sampleOptions}
+        label="Áreas"
+        value={["advocacia", "consultoria"]}
+        readOnly
+      />
+    </div>
+  ),
+}
+
 export const EmptyOptions: Story = {
   render: () => {
     const [value, setValue] = useState<string | undefined>()

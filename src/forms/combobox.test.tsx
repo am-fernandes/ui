@@ -611,6 +611,47 @@ describe("Combobox: onBlur", () => {
   })
 })
 
+describe("Combobox: somente leitura", () => {
+  it("shows the value, takes focus, does not open and offers no clear", async () => {
+    const onValueChange = vi.fn()
+    render(
+      <Combobox
+        options={options}
+        label="Status"
+        value="b"
+        readOnly
+        onValueChange={onValueChange}
+      />,
+    )
+    const trigger = screen.getByRole("combobox", { name: "Status" })
+    expect(trigger).toHaveTextContent("Bravo")
+    expect(trigger).toHaveAttribute("aria-readonly", "true")
+    expect(trigger).not.toBeDisabled()
+    expect(screen.queryByRole("button", { name: "Limpar seleção" })).toBeNull()
+    await userEvent.click(trigger)
+    expect(trigger).toHaveFocus()
+    await userEvent.keyboard("{Enter}{ArrowDown} ")
+    expect(screen.queryByRole("listbox")).toBeNull()
+    expect(onValueChange).not.toHaveBeenCalled()
+  })
+
+  it("multiple: the chips have no remove button", () => {
+    render(<Combobox multiple options={options} value={["a", "b"]} readOnly />)
+    expect(screen.getByText("Alpha")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Remover/ })).toBeNull()
+  })
+
+  it("is submitted with the form", () => {
+    const { container } = render(
+      <form>
+        <Combobox name="status" options={options} value="b" readOnly />
+      </form>,
+    )
+    const form = container.querySelector("form") as HTMLFormElement
+    expect(new FormData(form).get("status")).toBe("b")
+  })
+})
+
 describe("Combobox: listas grandes e busca no servidor", () => {
   const many: ComboboxOption[] = Array.from({ length: 250 }, (_, i) => ({
     value: `o-${i + 1}`,
