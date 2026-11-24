@@ -228,7 +228,15 @@ export interface DataTableProps<TData> {
   manualSorting?: boolean
   /** Overridable copy. All keys optional — defaults are pt-BR. */
   labels?: Partial<DataTableLabels>
-  /** Callback fired when a body row is clicked. Adds button-like a11y (role, tabIndex, keydown). */
+  /**
+   * Makes every body row clickable. A click anywhere on the row calls it; the
+   * keyboard and screen readers reach it through a real `<button>` that wraps
+   * the first cell's content (named by that content), so Tab, Enter and Space
+   * work and the row is still a row. A click or key press that starts in a
+   * control inside the row (button, link, field, menu) belongs to that control
+   * and never calls `onRowClick`. Keep the first cell free of controls: a
+   * button cannot hold another one.
+   */
   onRowClick?: (row: TData, event: React.MouseEvent<HTMLTableRowElement>) => void
   /** Per-row className. Receives the row data and index; return undefined to skip. Useful for coloring rows by status. */
   rowClassName?: (row: TData, index: number) => string | undefined
@@ -299,6 +307,66 @@ export interface DataTableDownloadable<TData> {
 }
 
 export type ExportScope = "filtered" | "page" | "all"
+
+/**
+ * Controls a cell can hold. A click (or the click a key press makes) that
+ * starts in one of them belongs to that control, never to the row.
+ */
+const INTERACTIVE_IN_ROW = [
+  "a[href]",
+  "button",
+  "input",
+  "select",
+  "textarea",
+  "label",
+  "summary",
+  "[contenteditable]:not([contenteditable='false'])",
+  ...[
+    "button",
+    "link",
+    "checkbox",
+    "radio",
+    "switch",
+    "slider",
+    "spinbutton",
+    "combobox",
+    "textbox",
+    "searchbox",
+    "option",
+    "tab",
+    "menu",
+    "menuitem",
+    "menuitemcheckbox",
+    "menuitemradio",
+    "dialog",
+    "listbox",
+  ].map((role) => `[role='${role}']`),
+].join(",")
+
+/**
+ * Whether a click on a clickable row is the row's own: it lands in the row's
+ * DOM (React also bubbles clicks from portals, such as a row's menu) and does
+ * not start in a control inside the row, other than the row's action button.
+ * A click that ends a text selection is not one either.
+ */
+function isOwnRowClick(event: React.MouseEvent<HTMLTableRowElement>): boolean {
+  const row = event.currentTarget
+  const target = event.target
+  if (!(target instanceof Element) || !row.contains(target)) return false
+  const control = target.closest(INTERACTIVE_IN_ROW)
+  if (control && row.contains(control) && !control.hasAttribute("data-row-action")) return false
+  const selection = typeof window !== "undefined" ? window.getSelection() : null
+  if (
+    selection &&
+    !selection.isCollapsed &&
+    selection.toString().trim() !== "" &&
+    selection.anchorNode &&
+    row.contains(selection.anchorNode)
+  ) {
+    return false
+  }
+  return true
+}
 
 /** Width classes used to vary skeleton cell widths so rows don't look uniform. */
 const SKELETON_CELL_WIDTHS = ["w-3/4", "w-1/2", "w-2/3", "w-5/6", "w-3/5"] as const
@@ -804,35 +872,44 @@ function DataTable<TData>({
               table.getRowModel().rows.map((row, index) => {
                 const interactive = onRowClick != null
                 return (
+                  // The row stays a row (a `role="button"` would flatten it and
+                  // its cells into one button). Mouse users click anywhere on
+                  // it; keyboard and assistive tech reach the same action
+                  // through the real button in the first cell.
                   <TableRow
                     key={row.id}
                     className={cn(
                       interactive &&
-                        "cursor-pointer focus-visible:focus-outline-inset focus-visible:bg-muted/60",
+                        "cursor-pointer has-[[data-row-action]:focus-visible]:state-hover",
                       rowClassName?.(row.original, index),
                     )}
-                    role={interactive ? "button" : undefined}
-                    tabIndex={interactive ? 0 : undefined}
-                    onClick={interactive ? (e) => onRowClick?.(row.original, e) : undefined}
-                    onKeyDown={
+                    onClick={
                       interactive
-                        ? (e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault()
-                              onRowClick?.(
-                                row.original,
-                                e as unknown as React.MouseEvent<HTMLTableRowElement>,
-                              )
-                            }
+                        ? (event) => {
+                            if (isOwnRowClick(event)) onRowClick(row.original, event)
                           }
                         : undefined
                     }
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
+                    {row.getVisibleCells().map((cell, cellIndex) => {
+                      const content = flexRender(cell.column.columnDef.cell, cell.getContext())
+                      return (
+                        <TableCell key={cell.id}>
+                          {interactive && cellIndex === 0 ? (
+                            <button
+                              type="button"
+                              data-slot="data-table-row-action"
+                              data-row-action=""
+                              className="-mx-1 cursor-pointer rounded-inner px-1 text-left focus-visible:focus-outline"
+                            >
+                              {content}
+                            </button>
+                          ) : (
+                            content
+                          )}
+                        </TableCell>
+                      )
+                    })}
                   </TableRow>
                 )
               })

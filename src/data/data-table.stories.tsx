@@ -1,8 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import type { ColumnDef, PaginationState } from "@tanstack/react-table"
+import { MoreHorizontal } from "lucide-react"
 import { useState } from "react"
 
+import { DropdownMenu } from "../overlays/dropdown-menu"
 import { Badge } from "../primitives/badge"
+import { IconButton } from "../primitives/icon-button"
 import { dateColumn } from "./columns"
 import { DataTable } from "./data-table"
 
@@ -181,7 +184,7 @@ const meta = {
           "- `globalFilter` / `onGlobalFilterChange` — filtro de busca controlado.",
           "- `pageIndex` / `onPaginationChange` / `pageCount` / `manualPagination` — paginação server-side.",
           "- `labels?: { search?, empty?, rowCount?(filtered, total) => string }` — sobrescreve os textos default.",
-          '- `onRowClick?: (row, event) => void` — torna cada linha clicável. Adiciona `role="button"`, `tabIndex=0` e suporte a Enter/Espaço automaticamente.',
+          "- `onRowClick?: (row, event) => void` — torna cada linha clicável. A linha continua linha; o teclado chega à ação por um `<button>` que envolve o conteúdo da primeira célula. Clique ou tecla em controle dentro da linha (botão, link, campo, menu) não dispara `onRowClick`.",
           "- `rowClassName?: (row, index) => string | undefined` — classes por linha. Retorne `undefined` para a linha herdar o estilo padrão. Útil para destacar linhas.",
           "- `loading?: boolean` — exibe estado skeleton: linhas (count = `pagination.pageSize ?? 5`, células = `columns.length`), input de busca, contagem e botões de paginação. Wrapper recebe `aria-busy`.",
           "- `downloadable?: boolean | { filename?, sheetName?, rowToRecord? }` — botão `Exportar para Excel` (ghost) à direita; abre popover com 3 escopos: dados filtrados, página atual, todos. Gera `.xlsx` via `xlsx` (SheetJS) lazy-loaded.",
@@ -312,7 +315,7 @@ const meta = {
     onRowClick: {
       control: false,
       description:
-        "Disparado quando a linha é clicada (ou ativada via Enter/Espaço). Recebe `(row, event)`.",
+        "Disparado no clique na linha ou no botão da primeira célula (Enter/Espaço). Recebe `(row, event)`. Controles dentro da linha não o disparam.",
       table: { type: { summary: "(row: TData, event: MouseEvent) => void" } },
     },
     rowClassName: {
@@ -788,7 +791,7 @@ export const WithRowClick: Story = {
       return (
         <div className="space-y-2 p-6">
           <p className="text-muted-foreground text-xs">
-            Clique em uma linha (ou use Tab + Enter) para selecionar o contrato.
+            Clique em uma linha (ou Tab até o número + Enter) para selecionar o contrato.
             {selected ? (
               <>
                 {" "}
@@ -816,7 +819,65 @@ export const WithRowClick: Story = {
     docs: {
       description: {
         story:
-          'Passe `onRowClick={(row) => ...}` para tornar a linha inteira clicável. O componente cuida da a11y (`role="button"`, `tabIndex=0`, Enter/Espaço) e adiciona `cursor-pointer`.',
+          "Passe `onRowClick={(row) => ...}` para tornar a linha inteira clicável com o mouse. Para o teclado e o leitor de tela, o conteúdo da primeira célula vira um `<button>` com o mesmo nome (Tab, Enter, Espaço); a linha e as células continuam sendo linha e células da tabela.",
+      },
+    },
+  },
+}
+
+export const WithRowClickAndActions: Story = {
+  render: () => {
+    function Wrapper() {
+      const [opened, setOpened] = useState<string | null>(null)
+      const [action, setAction] = useState<string | null>(null)
+      const actionColumns: ColumnDef<Contrato>[] = [
+        ...columns.slice(0, 2),
+        {
+          id: "acoes",
+          header: "Ações",
+          cell: ({ row }) => (
+            <DropdownMenu
+              align="end"
+              trigger={
+                <IconButton
+                  icon={<MoreHorizontal />}
+                  label={`Ações de ${row.original.numero}`}
+                  size="sm"
+                  tooltip={false}
+                />
+              }
+              items={[
+                { label: "Editar", onSelect: () => setAction(`Editar ${row.original.numero}`) },
+                {
+                  label: "Arquivar",
+                  onSelect: () => setAction(`Arquivar ${row.original.numero}`),
+                },
+              ]}
+            />
+          ),
+        },
+      ]
+      return (
+        <div className="space-y-2 p-6">
+          <p className="text-muted-foreground text-xs" data-testid="row-click-state">
+            Linha aberta: <strong className="text-foreground">{opened ?? "nenhuma"}</strong>. Ação:{" "}
+            <strong className="text-foreground">{action ?? "nenhuma"}</strong>.
+          </p>
+          <DataTable
+            columns={actionColumns}
+            data={contratos.slice(0, 4)}
+            onRowClick={(row) => setOpened(row.numero)}
+          />
+        </div>
+      )
+    }
+    return <Wrapper />
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Linha clicável com um menu de ações por linha. Abrir o menu e escolher um item, com o mouse ou o teclado, não abre a linha: o clique e as teclas que começam num controle da linha são do controle.",
       },
     },
   },

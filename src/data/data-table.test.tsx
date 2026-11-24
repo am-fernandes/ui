@@ -512,27 +512,93 @@ describe("DataTable", () => {
       expect(eventArg.type).toBe("click")
     })
 
-    it("fires onRowClick when Enter or Space is pressed on a focused interactive row", async () => {
+    it("keeps every row a table row with its cells", () => {
+      render(<DataTable columns={columns} data={data} onRowClick={vi.fn()} />)
+      // header row + 3 body rows, each with its two cells
+      expect(screen.getAllByRole("row")).toHaveLength(4)
+      expect(screen.getAllByRole("cell")).toHaveLength(6)
+      const row = screen.getByText("Bravo").closest("tr") as HTMLTableRowElement
+      expect(row.getAttribute("role")).toBeNull()
+      expect(row.getAttribute("tabindex")).toBeNull()
+    })
+
+    it("reaches the row action through a button in the first cell, named by its content", async () => {
       const onRowClick = vi.fn()
       render(<DataTable columns={columns} data={data} onRowClick={onRowClick} />)
-      const alphaRow = screen.getByText("Alpha").closest("tr") as HTMLTableRowElement
-      expect(alphaRow).toBeTruthy()
-      expect(alphaRow.getAttribute("role")).toBe("button")
-      expect(alphaRow.getAttribute("tabindex")).toBe("0")
+      const action = screen.getByRole("button", { name: "Alpha" })
+      expect(action.closest("td")).toBe(screen.getAllByRole("cell")[2])
 
-      alphaRow.focus()
+      await userEvent.tab()
+      await userEvent.tab()
+      expect(action).toHaveFocus()
       await userEvent.keyboard("{Enter}")
       expect(onRowClick).toHaveBeenCalledTimes(1)
       expect(onRowClick.mock.calls[0]?.[0]).toEqual({ name: "Alpha", age: 20 })
 
-      alphaRow.focus()
       await userEvent.keyboard(" ")
       expect(onRowClick).toHaveBeenCalledTimes(2)
       expect(onRowClick.mock.calls[1]?.[0]).toEqual({ name: "Alpha", age: 20 })
     })
 
-    it("does not attach interactive role/handlers when onRowClick is omitted", async () => {
+    it("never calls onRowClick from a control inside the row, and the control still works", async () => {
+      const onRowClick = vi.fn()
+      const onEdit = vi.fn()
+      const cols: ColumnDef<Row>[] = [
+        ...columns,
+        {
+          id: "acoes",
+          header: "Ações",
+          cell: ({ row }) => (
+            <>
+              <button type="button" onClick={() => onEdit(row.original.name)}>
+                Editar {row.original.name}
+              </button>
+              <a href={`#detalhe-${row.original.name}`}>Ver {row.original.name}</a>
+              <input aria-label={`Nota ${row.original.name}`} />
+            </>
+          ),
+        },
+      ]
+      render(<DataTable columns={cols} data={data} onRowClick={onRowClick} />)
+
+      const edit = screen.getByRole("button", { name: "Editar Bravo" })
+      await userEvent.click(edit)
+      edit.focus()
+      await userEvent.keyboard("{Enter}")
+      await userEvent.keyboard(" ")
+      expect(onEdit).toHaveBeenCalledTimes(3)
+
+      await userEvent.click(screen.getByRole("link", { name: "Ver Bravo" }))
+      expect(window.location.hash).toBe("#detalhe-Bravo")
+      window.location.hash = ""
+
+      const note = screen.getByRole("textbox", { name: "Nota Bravo" })
+      await userEvent.click(note)
+      await userEvent.keyboard("ok {Enter}")
+      expect(note).toHaveValue("ok ")
+
+      expect(onRowClick).not.toHaveBeenCalled()
+    })
+
+    it("ignores clicks that come from a portal rendered by a cell (menus, popovers)", async () => {
+      const onRowClick = vi.fn()
+      const { createPortal } = await import("react-dom")
+      const cols: ColumnDef<Row>[] = [
+        ...columns,
+        {
+          id: "menu",
+          header: "Menu",
+          cell: ({ row }) => createPortal(<span>Item de {row.original.name}</span>, document.body),
+        },
+      ]
+      render(<DataTable columns={cols} data={data} onRowClick={onRowClick} />)
+      await userEvent.click(screen.getByText("Item de Bravo"))
+      expect(onRowClick).not.toHaveBeenCalled()
+    })
+
+    it("does not add a row button when onRowClick is omitted", () => {
       render(<DataTable columns={columns} data={data} />)
+      expect(screen.queryByRole("button", { name: "Bravo" })).not.toBeInTheDocument()
       const row = screen.getByText("Bravo").closest("tr") as HTMLTableRowElement
       expect(row.getAttribute("role")).toBeNull()
       expect(row.getAttribute("tabindex")).toBeNull()
