@@ -209,6 +209,28 @@ describe("Calendar quick nav", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   })
 
+  it("its texts come from the Calendar's labels, next to react-day-picker's", async () => {
+    const user = userEvent.setup({ delay: null })
+    render(
+      <Calendar
+        mode="single"
+        defaultMonth={JUNE_2025}
+        labels={{
+          chooseYear: "Ano",
+          chooseMonth: "Mês",
+          backToYears: (year) => `Voltar aos anos (${year})`,
+          labelNext: () => "Próximo",
+        }}
+      />,
+    )
+    expect(screen.getByRole("button", { name: "Próximo" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /junho 2025/i }))
+    expect(screen.getByRole("group", { name: "Ano" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "2025" }))
+    expect(screen.getByRole("group", { name: "Mês" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Voltar aos anos (2025)" })).toBeInTheDocument()
+  })
+
   it("does not activate when captionLayout is not 'label'", () => {
     render(<Calendar mode="single" defaultMonth={JUNE_2025} captionLayout="dropdown" />)
     expect(screen.queryByRole("button", { name: /junho 2025/i })).not.toBeInTheDocument()

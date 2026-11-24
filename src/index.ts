@@ -169,6 +169,8 @@ export { PhoneInput, type PhoneInputProps } from "./domain/phone-input"
 // Forms
 export {
   Calendar,
+  defaultCalendarLabels,
+  type CalendarLabels,
   type CalendarProps,
   type DisabledDayPreset,
   type DisabledDays,

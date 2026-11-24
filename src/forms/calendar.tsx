@@ -3,7 +3,7 @@
 import { format } from "date-fns"
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import * as React from "react"
-import { type DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
+import { type DayButton, DayPicker, type Labels, getDefaultClassNames } from "react-day-picker"
 // The locale of react-day-picker, not date-fns': besides the month and day
 // names, it translates the accessible names (navigation buttons, "selecionado",
 // "Hoje"), which date-fns' locale leaves in English.
@@ -13,9 +13,15 @@ import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "../primitives/button"
 import { CALENDAR_ROOT_CLASS } from "./_internal/calendar-root"
 import { type DisabledDays, resolveDisabledDays } from "./_internal/disabled-days"
-import { CalendarQuickNav, type CalendarQuickNavView } from "./calendar-quick-nav"
+import {
+  type CalendarLabels,
+  CalendarQuickNav,
+  type CalendarQuickNavView,
+  defaultCalendarLabels,
+} from "./calendar-quick-nav"
 
 export type { DisabledDayPreset, DisabledDays } from "./_internal/disabled-days"
+export { type CalendarLabels, defaultCalendarLabels }
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
@@ -24,6 +30,13 @@ export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
    * Takes precedence over `disabled` if both are provided.
    */
   disabledDays?: DisabledDays
+  /**
+   * Texts read by screen readers: react-day-picker's (`labelNext`,
+   * `labelDayButton`…, Portuguese by default) and the quick navigation's
+   * (`chooseYear`, `chooseMonth`, `backToYears`, defaults in
+   * `defaultCalendarLabels`).
+   */
+  labels?: Partial<Labels> & Partial<CalendarLabels>
   ref?: React.Ref<HTMLDivElement>
 }
 
@@ -82,9 +95,16 @@ function Calendar({
   month,
   defaultMonth,
   onMonthChange,
+  labels,
   ref,
   ...props
 }: CalendarProps) {
+  const { chooseYear, chooseMonth, backToYears, ...dayPickerLabels } = labels ?? {}
+  const quickNavLabels: CalendarLabels = {
+    chooseYear: chooseYear ?? defaultCalendarLabels.chooseYear,
+    chooseMonth: chooseMonth ?? defaultCalendarLabels.chooseMonth,
+    backToYears: backToYears ?? defaultCalendarLabels.backToYears,
+  }
   const disabledFn = resolveDisabledDays(disabledDays)
   const resolvedDisabled = disabledFn ?? disabled
 
@@ -233,6 +253,7 @@ function Calendar({
         startMonth={props.startMonth}
         endMonth={props.endMonth}
         numberOfMonths={props.numberOfMonths}
+        labels={quickNavLabels}
         className={className}
         onSelectYear={(year) => {
           setPendingYear(year)
@@ -256,6 +277,7 @@ function Calendar({
       className={cn(CALENDAR_ROOT_CLASS, className)}
       captionLayout={captionLayout}
       locale={ptBR}
+      labels={labels ? dayPickerLabels : undefined}
       formatters={finalFormatters}
       classNames={finalClassNames}
       components={finalComponents}

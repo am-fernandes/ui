@@ -21,6 +21,22 @@ const MONTH_LABELS = Array.from({ length: 12 }, (_, i) =>
 
 export type CalendarQuickNavView = "years" | "months"
 
+/** Texts of the Calendar's quick navigation (years and months). */
+export interface CalendarLabels {
+  /** Name of the grid of years. */
+  chooseYear: string
+  /** Name of the grid of months. */
+  chooseMonth: string
+  /** The button that goes back from the months to the years. */
+  backToYears: (year: number) => string
+}
+
+export const defaultCalendarLabels: CalendarLabels = {
+  chooseYear: "Escolher ano",
+  chooseMonth: "Escolher mês",
+  backToYears: (year) => `${year} — voltar para a seleção de ano`,
+}
+
 const COLUMNS = 3
 
 /**
@@ -83,6 +99,7 @@ export interface CalendarQuickNavProps {
    * (they are stacked below `md`), so the popover does not change size.
    */
   numberOfMonths?: number
+  labels?: CalendarLabels
   className?: string
   onSelectYear: (year: number) => void
   onSelectMonth: (monthIndex: number) => void
@@ -106,6 +123,7 @@ export function CalendarQuickNav({
   startMonth,
   endMonth,
   numberOfMonths = 1,
+  labels = defaultCalendarLabels,
   className,
   onSelectYear,
   onSelectMonth,
@@ -223,7 +241,7 @@ export function CalendarQuickNav({
         // biome-ignore lint/a11y/useSemanticElements: grid de botões; <fieldset> tem quirks históricos com display:grid.
         <div
           role="group"
-          aria-label="Escolher ano"
+          aria-label={labels.chooseYear}
           className="grid max-h-[calc(var(--cell-size)*4+0.75rem)] w-(--quick-nav-width) grid-cols-3 content-start gap-1 overflow-y-auto"
         >
           {years.map((year, index) => {
@@ -258,12 +276,12 @@ export function CalendarQuickNav({
         </div>
       ) : (
         // biome-ignore lint/a11y/useSemanticElements: grid de botões; <fieldset> tem quirks históricos com display:grid.
-        <div role="group" aria-label="Escolher mês" className="w-(--quick-nav-width)">
+        <div role="group" aria-label={labels.chooseMonth} className="w-(--quick-nav-width)">
           <div className="flex h-(--cell-size) items-center justify-center">
             <Button
               type="button"
               variant="ghost"
-              aria-label={`${pendingYear} — voltar para a seleção de ano`}
+              aria-label={labels.backToYears(pendingYear)}
               className="h-(--cell-size) gap-1 px-2 text-sm font-medium"
               onClick={onBackToYears}
             >
