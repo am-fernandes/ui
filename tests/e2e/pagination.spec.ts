@@ -22,7 +22,12 @@ const current = (page: Page) => page.locator('[aria-current="page"]')
 test.describe("Pagination", () => {
   test("keyboard: Tab reaches every control and Enter/Space change the page", async ({ page }) => {
     await gotoPagination(page, "navigation-pagination--default")
-    await page.keyboard.press("Tab") // previous is disabled on page 1 → skipped
+    // Previous is unavailable on page 1 but stays in the tab order (aria-disabled).
+    await page.keyboard.press("Tab")
+    const previous = page.getByRole("button", { name: "Página anterior" })
+    await expect(previous).toBeFocused()
+    await expect(previous).toHaveAttribute("aria-disabled", "true")
+    await page.keyboard.press("Tab")
     await expect(page.getByRole("button", { name: "Página 1", exact: true })).toBeFocused()
     await page.keyboard.press("Tab")
     await expect(page.getByRole("button", { name: "Página 2", exact: true })).toBeFocused()
@@ -36,9 +41,38 @@ test.describe("Pagination", () => {
   test("focused controls show the focus ring", async ({ page }) => {
     await gotoPagination(page, "navigation-pagination--default")
     await page.keyboard.press("Tab")
+    await page.keyboard.press("Tab")
     const focused = page.getByRole("button", { name: "Página 1", exact: true })
     await expect(focused).toBeFocused()
     await expectFocusRing(focused)
+  })
+
+  test("focus stays on 'next' when it reaches the last page (buttons and links)", async ({
+    page,
+  }) => {
+    await gotoPagination(page, "navigation-pagination--cursor")
+    const next = page.getByRole("button", { name: "Próxima página" })
+    await next.focus()
+    for (let i = 0; i < 3; i++) await page.keyboard.press("Enter")
+    await expect(page.getByText("Página 4", { exact: true })).toBeVisible()
+    await expect(next).toHaveAttribute("aria-disabled", "true")
+    await expect(next).toBeFocused()
+
+    await gotoPagination(page, "navigation-pagination--links")
+    // 1 2 3 4 5 … 8 → 1 … 4 5 6 7 8
+    await page.getByRole("link", { name: "Página 5", exact: true }).click()
+    await expect(page).toHaveURL(/#pagina-5$/)
+    await page.getByRole("link", { name: "Página 7", exact: true }).click()
+    await expect(page).toHaveURL(/#pagina-7$/)
+    const nextLink = page.getByRole("link", { name: "Próxima página" })
+    await nextLink.focus()
+    await page.keyboard.press("Enter")
+    await expect(page).toHaveURL(/#pagina-8$/)
+    await expect(nextLink).toHaveAttribute("aria-disabled", "true")
+    await expect(nextLink).toBeFocused()
+    // Tab goes on to the next control, not back to the top of the page.
+    await page.keyboard.press("Shift+Tab")
+    await expect(page.getByRole("link", { name: "Página 8", exact: true })).toBeFocused()
   })
 
   test("ellipses keep 7 slots at the start, middle and end", async ({ page }) => {

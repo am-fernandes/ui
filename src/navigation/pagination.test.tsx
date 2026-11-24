@@ -181,6 +181,25 @@ describe("Pagination", () => {
       )
     })
 
+    it("keeps focus on 'next' when it reaches the last page", async () => {
+      function Pager() {
+        const [page, setPage] = React.useState(2)
+        return <Pagination page={page} onPageChange={setPage} totalPages={3} />
+      }
+      render(<Pager />)
+      const next = screen.getByRole("button", { name: "Próxima página" })
+      next.focus()
+      await userEvent.keyboard("{Enter}")
+      expect(next).toHaveAttribute("aria-disabled", "true")
+      expect(next).toHaveFocus()
+      // Unavailable, not gone: Enter does nothing more.
+      await userEvent.keyboard("{Enter}")
+      expect(screen.getByRole("button", { name: "Página 3" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      )
+    })
+
     it("is fully keyboard operable", async () => {
       const { onPageChange } = renderPagination({ page: 2, totalPages: 3 })
       await userEvent.tab()
@@ -463,6 +482,50 @@ describe("Pagination", () => {
       )
       fireEvent.click(next)
       await waitFor(() => expect(onPageChange).toHaveBeenCalledWith(2))
+    })
+
+    it("keeps focus on 'next' when it reaches the last page (router link swapped)", async () => {
+      function RouterPager() {
+        const [page, setPage] = React.useState(2)
+        return (
+          <Pagination
+            page={page}
+            onPageChange={setPage}
+            totalPages={3}
+            getPageHref={(p) => `#fk-${p}`}
+            renderLink={(props) => <RouterLink {...props} />}
+          />
+        )
+      }
+      // A router's Link is a component of its own: swapping it for the plain
+      // disabled <a> at the last page remounts the node that has the focus.
+      function RouterLink(props: RenderLinkProps) {
+        return (
+          <a
+            {...props}
+            href={props.href}
+            onClick={(event) => {
+              event.preventDefault()
+              props.onClick?.(event)
+            }}
+          />
+        )
+      }
+      render(<RouterPager />)
+      screen.getByRole("link", { name: "Próxima página" }).focus()
+      await userEvent.keyboard("{Enter}")
+      await waitFor(() =>
+        expect(screen.getByRole("link", { name: "Próxima página" })).toHaveAttribute(
+          "aria-disabled",
+          "true",
+        ),
+      )
+      expect(screen.getByRole("link", { name: "Próxima página" })).toHaveFocus()
+    })
+
+    it("keeps the disabled steps focusable, so focus has somewhere to stay", () => {
+      render(<Pagination page={1} totalPages={3} getPageHref={href} onPageChange={() => {}} />)
+      expect(screen.getByRole("link", { name: "Página anterior" })).toHaveAttribute("tabindex", "0")
     })
 
     it("turns the steps at the ends into disabled links", async () => {

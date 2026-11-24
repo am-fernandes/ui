@@ -1,7 +1,7 @@
 "use client"
 
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
-import type * as React from "react"
+import * as React from "react"
 
 import { type RenderLink, type RenderLinkProps, renderLinkElement } from "@/lib/render-link"
 import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
@@ -168,6 +168,20 @@ function Pagination({
 
   const lastPage = total ?? current
 
+  // At the ends a step link becomes the plain disabled <a> (a router's Link
+  // needs an href): a different element, mounted anew. When the focused step
+  // is swapped like that, focus goes back to the same step.
+  const navRef = React.useRef<HTMLElement>(null)
+  const refocusSlot = React.useRef<string | null>(null)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the page changes.
+  React.useLayoutEffect(() => {
+    const slot = refocusSlot.current
+    refocusSlot.current = null
+    const nav = navRef.current
+    if (!slot || !nav || nav.contains(document.activeElement)) return
+    nav.querySelector<HTMLElement>(`[data-slot="${slot}"]`)?.focus()
+  }, [current])
+
   const go = (target: number) => {
     if (target === current) return
     onPageChange(target)
@@ -220,6 +234,10 @@ function Pagination({
             role="link"
             aria-disabled="true"
             aria-label={label}
+            // Reached the end while focused: it stays in the tab order, so
+            // focus is not thrown to the page body (unless the whole pager
+            // is disabled, unavailable from the start).
+            tabIndex={disabled ? undefined : 0}
             // biome-ignore lint/a11y/useValidAnchor: a disabled link has no href; the click only stops here.
             onClick={(event) => event.preventDefault()}
             className={className}
@@ -235,6 +253,7 @@ function Pagination({
         onClick: (event) => {
           // A new tab or window: this page stays where it is.
           if (isModifiedClick(event)) return
+          if (event.currentTarget === document.activeElement) refocusSlot.current = slot
           goAfterNavigation(target)
         },
         className,
@@ -367,6 +386,7 @@ function Pagination({
 
   return (
     <nav
+      ref={navRef}
       aria-label={l.navigation}
       data-slot="pagination"
       className={cn("flex flex-wrap items-center justify-between gap-x-4 gap-y-2", className)}
