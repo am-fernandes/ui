@@ -207,23 +207,62 @@ export const ContentOnly: Story = {
   },
 }
 
+export const WithTable: Story = {
+  name: "With Table (padding none)",
+  render: () => (
+    <div className="w-[480px]">
+      <Card title="Propostas em análise" padding="none">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-t bg-muted text-left text-xs text-muted-foreground">
+              <th scope="col" className="px-6 py-2 font-medium">
+                Lead
+              </th>
+              <th scope="col" className="px-6 py-2 text-right font-medium">
+                Valor
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ["Ana Souza", "R$ 1.284.930,00"],
+              ["Bruno Lima", "R$ 947.500,00"],
+            ].map(([lead, valor]) => (
+              <tr key={lead} className="border-t">
+                <td className="px-6 py-2.5">{lead}</td>
+                <td className="px-6 py-2.5 text-right tabular-nums">{valor}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`padding="none"` deixa a tabela encostar na borda do Card, sem margem dupla. `"compact"` reduz o respiro para painéis densos.',
+      },
+    },
+  },
+}
+
 export const MetricCard: Story = {
   render: () => (
     <div className="w-[280px]">
       <Card
         title={<span className="text-sm font-medium text-muted-foreground">Receita do mês</span>}
-        headerAction={<TrendingUpIcon className="size-4 text-emerald-500" aria-hidden />}
+        headerAction={<TrendingUpIcon className="size-4 text-success" aria-hidden />}
       >
         <div className="flex flex-col gap-1">
           <span className="font-bold text-3xl tabular-nums">R$ 248.320</span>
-          <span className="text-emerald-600 text-xs">+12,4% vs. mês anterior</span>
+          <span className="text-muted-foreground text-xs">+12,4% vs. mês anterior</span>
         </div>
       </Card>
     </div>
   ),
   parameters: {
-    // Title uses muted-foreground (decorative pattern); fails 4.5:1. Tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story:
