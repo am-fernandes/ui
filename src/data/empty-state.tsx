@@ -25,6 +25,11 @@ export interface EmptyStateProps extends Omit<React.HTMLAttributes<HTMLDivElemen
    * Announce the title and description to screen readers when the empty state
    * appears. Use it when it results from a user action (a search or a filter
    * with no results) — not for content that is empty on page load.
+   *
+   * As a DataTable's `emptyMessage`: the table's status region speaks only
+   * text messages, so an EmptyState there is silent unless it has
+   * `announce`. Tie it to the search or filter
+   * (`announce={query !== ""}`), so a table that loads empty is not read out.
    */
   announce?: boolean
   ref?: React.Ref<HTMLDivElement>

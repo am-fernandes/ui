@@ -22,6 +22,7 @@ const meta = {
           "- `headingLevel` muda só a tag do título (h1–h6), para encaixar na hierarquia da página.",
           "- `compact` para cards, popovers e colunas estreitas (ações empilhadas).",
           "- `announce` lê o estado vazio no leitor de tela quando ele aparece por uma ação do usuário (busca, filtro). Não use em conteúdo que já carrega vazio.",
+          '- Dentro do `emptyMessage` de uma DataTable: a região de status da tabela só lê mensagens de texto, então o EmptyState fica mudo sem `announce`. Ligue-o à busca ou ao filtro (`announce={busca !== ""}`) para não ler uma tabela que já carrega vazia; assim o anúncio sai uma vez só.',
         ].join("\n"),
       },
     },

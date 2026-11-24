@@ -1,8 +1,10 @@
-import { act, render, screen } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { Inbox } from "lucide-react"
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
+import { DataTable } from "./data-table"
 import { EmptyState } from "./empty-state"
 
 describe("EmptyState", () => {
@@ -103,5 +105,32 @@ describe("EmptyState", () => {
     render(<EmptyState ref={ref} title="Vazio" className="border" data-testid="es" />)
     expect(ref.current).toBe(screen.getByTestId("es"))
     expect(ref.current).toHaveClass("border", "text-center")
+  })
+
+  it("inside a DataTable, announce gives the one announcement of an empty search", async () => {
+    // The table's status speaks only text messages; an element passed as
+    // emptyMessage speaks for itself, so the two never say it twice.
+    const leads = [{ nome: "Ana Souza" }, { nome: "Bruno Lima" }]
+    render(
+      <DataTable
+        columns={[{ accessorKey: "nome", header: "Nome" }]}
+        data={leads}
+        searchableColumns={["nome"]}
+        emptyMessage={
+          <EmptyState title="Nenhum lead encontrado" description="Tente outro nome." announce />
+        }
+      />,
+    )
+    await userEvent.type(screen.getByRole("textbox", { name: "Buscar na tabela" }), "zzz")
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").filter((el) => (el.textContent ?? "").trim() !== ""),
+      ).toHaveLength(1),
+    )
+    const [speaking] = screen
+      .getAllByRole("status")
+      .filter((el) => (el.textContent ?? "").trim() !== "")
+    expect(speaking).toHaveTextContent("Nenhum lead encontrado. Tente outro nome.")
+    expect(speaking).toHaveAttribute("data-slot", "empty-state-announcer")
   })
 })
