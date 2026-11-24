@@ -118,6 +118,20 @@ export interface TimedPlacement<E extends ScheduleEventInput> {
  * short event still occupies `minHeight` px, and that visual height counts for
  * collisions so blocks never cover each other.
  */
+/**
+ * Minutes from the local midnight of `day` to `time`, read from the wall
+ * clock (hours and minutes), so a 10:00 event sits on the 10:00 line on a day
+ * when daylight saving time starts or ends. Before the day is -Infinity,
+ * after it +Infinity (clipped by the caller).
+ */
+function minutesInto(day: Date, time: Date): number {
+  const dayStart = startOfDay(day).getTime()
+  const timeDay = startOfDay(time).getTime()
+  if (timeDay < dayStart) return Number.NEGATIVE_INFINITY
+  if (timeDay > dayStart) return Number.POSITIVE_INFINITY
+  return time.getHours() * 60 + time.getMinutes() + time.getSeconds() / 60
+}
+
 export function layoutDayColumn<E extends ScheduleEventInput>(
   events: E[],
   day: Date,
@@ -128,17 +142,25 @@ export function layoutDayColumn<E extends ScheduleEventInput>(
   // target (WCAG 2.2, 2.5.8).
   minHeight = 26,
 ): TimedPlacement<E>[] {
-  const rangeStart = startOfDay(day).getTime() + minHour * 3_600_000
-  const rangeEnd = startOfDay(day).getTime() + maxHour * 3_600_000
-  const pxPerMs = hourHeight / 3_600_000
-  const minMs = minHeight / pxPerMs
+  // Everything in minutes of the wall clock, not milliseconds: see minutesInto.
+  const rangeStart = minHour * 60
+  const rangeEnd = maxHour * 60
+  const pxPerMin = hourHeight / 60
+  const minMinutes = minHeight / pxPerMin
 
   const items = events
-    .filter((e) => e.start.getTime() < rangeEnd && e.end.getTime() > rangeStart)
-    .map((event) => {
-      const start = Math.max(event.start.getTime(), rangeStart)
-      const end = Math.max(Math.min(event.end.getTime(), rangeEnd), start)
-      return { event, start, end, visualEnd: Math.max(end, start + minMs) }
+    .map((event) => ({
+      event,
+      from: minutesInto(day, event.start),
+      to: minutesInto(day, event.end),
+    }))
+    .filter(
+      ({ from, to }) => from < rangeEnd && (to > rangeStart || (from === to && from >= rangeStart)),
+    )
+    .map(({ event, from, to }) => {
+      const start = Math.max(from, rangeStart)
+      const end = Math.max(Math.min(to, rangeEnd), start)
+      return { event, start, end, visualEnd: Math.max(end, start + minMinutes) }
     })
     .sort((a, b) => a.start - b.start || b.end - a.end)
 
@@ -151,8 +173,8 @@ export function layoutDayColumn<E extends ScheduleEventInput>(
     for (const item of cluster) {
       result.push({
         event: item.event,
-        top: (item.start - rangeStart) * pxPerMs,
-        height: Math.max((item.end - item.start) * pxPerMs, minHeight),
+        top: (item.start - rangeStart) * pxPerMin,
+        height: Math.max((item.end - item.start) * pxPerMin, minHeight),
         column: item.column,
         columns: columnEnds.length,
       })

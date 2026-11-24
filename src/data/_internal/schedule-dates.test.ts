@@ -13,6 +13,7 @@ import {
   formatRowTime,
   formatTime,
   getViewRange,
+  isAllDayRowEvent,
   isBarEvent,
   isoDay,
   monthShort,
@@ -149,6 +150,13 @@ describe("schedule-dates", () => {
     expect(isBarEvent(ev(d(11, 18), d(11, 18), { allDay: true }))).toBe(true)
     expect(isBarEvent(ev(d(11, 18, 22), d(11, 19, 2)))).toBe(true)
     expect(isBarEvent(ev(d(11, 18, 9), d(11, 18, 10)))).toBe(false)
+  })
+
+  it("sends only all-day events and events of 24 hours or more to the all-day row", () => {
+    expect(isAllDayRowEvent(ev(d(11, 18), d(11, 18), { allDay: true }))).toBe(true)
+    expect(isAllDayRowEvent(ev(d(11, 18, 9), d(11, 20, 18)))).toBe(true)
+    expect(isAllDayRowEvent(ev(d(11, 18, 22), d(11, 19, 2)))).toBe(false)
+    expect(isAllDayRowEvent(ev(d(11, 18, 9), d(11, 18, 10)))).toBe(false)
   })
 
   it("checks overlap with days and ranges", () => {

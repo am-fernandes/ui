@@ -8,7 +8,7 @@ import {
   eventOverlapsDay,
   eventOverlapsRange,
   formatDayLong,
-  isBarEvent,
+  isAllDayRowEvent,
   isoDay,
   weekdayShort,
 } from "./schedule-dates"
@@ -49,7 +49,7 @@ export function TimeGridView({
   const first = days[0] as Date
   const rangeEnd = addDays(first, days.length)
 
-  const bars = events.filter((e) => isBarEvent(e) && eventOverlapsRange(e, first, rangeEnd))
+  const bars = events.filter((e) => isAllDayRowEvent(e) && eventOverlapsRange(e, first, rangeEnd))
   const barSegments = layoutRow(bars, days)
   const barLanes = barSegments.reduce((max, s) => Math.max(max, s.lane + 1), 0)
 
@@ -156,7 +156,8 @@ export function TimeGridView({
             )}
           </div>
           {days.map((day) => {
-            const timed = events.filter((e) => !isBarEvent(e) && eventOverlapsDay(e, day))
+            // A shift from 22:00 to 01:00 is drawn on both days, clipped to each.
+            const timed = events.filter((e) => !isAllDayRowEvent(e) && eventOverlapsDay(e, day))
             const placements = layoutDayColumn(timed, day, minHour, maxHour, hourHeight)
             const isToday = isSameDay(day, now)
             return (

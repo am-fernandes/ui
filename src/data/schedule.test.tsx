@@ -276,7 +276,19 @@ describe("Schedule", () => {
         within(allDay)
           .getAllByRole("button")
           .map((b) => b.getAttribute("data-variant")),
-      ).toEqual(["bar", "bar", "bar"])
+      ).toEqual(["bar", "bar"])
+
+      // A 22:00–04:00 shift is under 24h: it stays in the time grid, drawn on
+      // both days (until midnight, then from midnight), not in "Dia inteiro".
+      const night = [...container.querySelectorAll('[data-event-id="night"]')] as HTMLElement[]
+      expect(night.map((b) => b.getAttribute("data-variant"))).toEqual(["block", "block"])
+      expect(
+        night.map((b) => b.closest('[data-slot="schedule-day-column"]')?.getAttribute("data-date")),
+      ).toEqual(["2026-11-19", "2026-11-20"])
+      expect(night[0]?.style.top).toBe(`${22 * 48 + 1}px`)
+      expect(night[0]?.style.height).toBe(`${2 * 48 - 2}px`)
+      expect(night[1]?.style.top).toBe("1px")
+      expect(night[1]?.style.height).toBe(`${4 * 48 - 2}px`)
 
       const review = eventButton(/^Revisão/)
       expect(review).toHaveAttribute("data-variant", "block")

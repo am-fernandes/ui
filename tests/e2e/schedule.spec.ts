@@ -124,12 +124,36 @@ test.describe("Schedule — week and day", () => {
 
   test("all-day row spans multi-day bars across their columns", async ({ page }) => {
     await gotoSchedule(page, "data-schedule--week")
-    const bar = await page.getByRole("button", { name: /^Concretagem/ }).boundingBox()
-    const thu = await box(page, '[data-slot="schedule-day-header"][data-date="2026-11-19"]')
-    const fri = await box(page, '[data-slot="schedule-day-header"][data-date="2026-11-20"]')
-    expect(bar?.x).toBeGreaterThanOrEqual(thu.x)
-    expect((bar?.x ?? 0) + (bar?.width ?? 0)).toBeLessThanOrEqual(fri.x + fri.width)
-    expect((bar?.x ?? 0) + (bar?.width ?? 0)).toBeGreaterThan(fri.x + fri.width - 6)
+    await page.getByRole("button", { name: "Próxima semana" }).click()
+    const bar = await page.getByRole("button", { name: /^Treinamento NR-35/ }).boundingBox()
+    const mon = await box(page, '[data-slot="schedule-day-header"][data-date="2026-11-23"]')
+    const wed = await box(page, '[data-slot="schedule-day-header"][data-date="2026-11-25"]')
+    expect(bar?.x).toBeGreaterThanOrEqual(mon.x)
+    expect((bar?.x ?? 0) + (bar?.width ?? 0)).toBeLessThanOrEqual(wed.x + wed.width)
+    expect((bar?.x ?? 0) + (bar?.width ?? 0)).toBeGreaterThan(wed.x + wed.width - 6)
+  })
+
+  test("an overnight shift stays in the time grid, drawn on both days", async ({ page }) => {
+    await gotoSchedule(page, "data-schedule--week")
+    const blocks = page.locator('[data-slot="schedule-event"][data-event-id="concretagem"]')
+    await expect(blocks).toHaveCount(2)
+    expect(
+      await blocks.evaluateAll((els) => els.map((el) => el.getAttribute("data-variant"))),
+    ).toEqual(["block", "block"])
+    const allDay = page.locator('[data-slot="schedule-all-day"]')
+    await expect(allDay.getByRole("button", { name: /^Concretagem/ })).toHaveCount(0)
+    const placed = await blocks.evaluateAll((els) =>
+      els.map((el) => {
+        const column = el.closest('[data-slot="schedule-day-column"]') as HTMLElement
+        return {
+          date: column.dataset.date,
+          top: el.getBoundingClientRect().top - column.getBoundingClientRect().top,
+        }
+      }),
+    )
+    expect(placed.map((p) => p.date)).toEqual(["2026-11-19", "2026-11-20"])
+    expect(placed[0]?.top).toBeCloseTo(22 * HOUR + 1, 0)
+    expect(placed[1]?.top).toBeCloseTo(1, 0)
   })
 
   test("switches views from the keyboard", async ({ page }) => {

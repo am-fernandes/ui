@@ -148,4 +148,28 @@ describe("layoutDayColumn", () => {
     const [p] = layoutDayColumn([ev("ping", d(18, 9), d(18, 9))], d(18), 0, 24, 48)
     expect(p).toMatchObject({ top: 9 * 48, height: 26 })
   })
+
+  it("places a 10:00 event on the 10:00 line on a day when daylight saving time starts", () => {
+    const original = process.env.TZ
+    process.env.TZ = "America/New_York"
+    try {
+      // 8 March 2026: clocks jump from 02:00 to 03:00, the day has 23 hours.
+      const day = new Date(2026, 2, 8)
+      const start = new Date(2026, 2, 8, 10)
+      const end = new Date(2026, 2, 8, 11)
+      expect(end.getTime() - start.getTime()).toBe(3_600_000)
+      const [p] = layoutDayColumn([ev("visita", start, end)], day, 0, 24, 48)
+      expect(p).toMatchObject({ top: 10 * 48, height: 48 })
+    } finally {
+      process.env.TZ = original
+    }
+  })
+
+  it("clips an event that crosses midnight to each day", () => {
+    const shift = ev("plantao", d(18, 22), d(19, 1))
+    const [first] = layoutDayColumn([shift], d(18), 0, 24, 48)
+    const [second] = layoutDayColumn([shift], d(19), 0, 24, 48)
+    expect(first).toMatchObject({ top: 22 * 48, height: 2 * 48 })
+    expect(second).toMatchObject({ top: 0, height: 48 })
+  })
 })

@@ -178,11 +178,23 @@ export function eventDays(event: ScheduleEventInput): { first: Date; last: Date 
   return { first, last }
 }
 
-/** All-day events and events crossing midnight render as bars; the rest as timed chips. */
+/** Month view: all-day events and events crossing midnight render as bars; the rest as chips. */
 export function isBarEvent(event: ScheduleEventInput): boolean {
   if (event.allDay) return true
   const { first, last } = eventDays(event)
   return last.getTime() !== first.getTime()
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/**
+ * Week and day views: what goes to the "Dia inteiro" row. All-day events and
+ * timed events of 24 hours or more. A shorter timed event that crosses
+ * midnight (a 22:00–01:00 shift) stays in the time grid, drawn on both days.
+ */
+export function isAllDayRowEvent(event: ScheduleEventInput): boolean {
+  if (event.allDay) return true
+  return event.end.getTime() - event.start.getTime() >= DAY_MS
 }
 
 export function eventOverlapsDay(event: ScheduleEventInput, day: Date): boolean {
