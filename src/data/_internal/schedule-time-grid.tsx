@@ -32,6 +32,8 @@ interface TimeGridViewProps {
   slotHour: number
   /** Name of the scrolling grid. */
   timeGridLabel: string
+  /** Most height of the scrolling grid. */
+  maxHeight: number | string
 }
 
 const GUTTER = "3.5rem"
@@ -52,6 +54,7 @@ export function TimeGridView({
   maxColumns,
   slotHour,
   timeGridLabel,
+  maxHeight,
 }: TimeGridViewProps) {
   const { now, onSlotClick, newEventLabel, locale } = React.useContext(ScheduleContext)
   const at = (day: Date, minutes: number) =>
@@ -178,7 +181,8 @@ export function TimeGridView({
         tabIndex={0}
         role="region"
         aria-label={timeGridLabel}
-        className="relative max-h-[36rem] overflow-y-auto [scrollbar-gutter:stable] focus-visible:focus-outline-inset"
+        className="relative overflow-y-auto [scrollbar-gutter:stable] focus-visible:focus-outline-inset"
+        style={{ maxHeight }}
       >
         <div className="grid" style={{ gridTemplateColumns: columns, height: totalHeight }}>
           <div aria-hidden="true" className="relative">

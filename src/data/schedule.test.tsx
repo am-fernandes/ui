@@ -596,4 +596,36 @@ describe("Schedule", () => {
       expect(screen.getAllByRole("button", { name: /^Revisão/ }).length).toBeGreaterThan(0)
     })
   })
+
+  describe("size props", () => {
+    it("monthMaxEvents sets how many events a day shows before '+N mais'", () => {
+      const many = Array.from({ length: 6 }, (_, i) => ({
+        id: `e${i}`,
+        title: `Evento ${i}`,
+        start: at(10, 9 + i),
+        end: at(10, 10 + i),
+      }))
+      const { container, rerender } = renderSchedule({ events: many })
+      const cell = () => container.querySelectorAll('[data-slot="schedule-event"]').length
+      expect(cell()).toBe(3)
+      expect(screen.getByRole("button", { name: /^\+3 mais/ })).toBeInTheDocument()
+      rerender(
+        <Schedule
+          events={many}
+          today={TODAY}
+          defaultDate={TODAY}
+          onEventClick={() => {}}
+          monthMaxEvents={5}
+        />,
+      )
+      expect(cell()).toBe(5)
+      expect(screen.getByRole("button", { name: /^\+1 mais/ })).toBeInTheDocument()
+    })
+
+    it("timeGridMaxHeight sets the height of the scrolling grid", () => {
+      const { container } = renderSchedule({ defaultView: "week", timeGridMaxHeight: 400 })
+      const grid = container.querySelector('[data-slot="schedule-scroll"]') as HTMLElement
+      expect(grid.style.maxHeight).toBe("400px")
+    })
+  })
 })

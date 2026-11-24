@@ -17,7 +17,7 @@ import {
 import { ScheduleContext, ScheduleEventButton, type ScheduleEventData } from "./schedule-event"
 import { hiddenCountByColumn, layoutRow } from "./schedule-layout"
 
-/** Lanes shown per week row before the rest collapses into "+N mais". */
+/** Lanes shown per week row before the rest collapses into "+N mais" (default). */
 export const MONTH_MAX_LANES = 3
 
 interface MonthViewProps {
@@ -28,12 +28,20 @@ interface MonthViewProps {
   events: ScheduleEventData[]
   todayLabel: string
   moreLabel: (count: number) => string
+  /** Events shown per day before "+N mais". */
+  maxLanes?: number
 }
 
-// Lanes of 26px: a 24px event (WCAG 2.2 target size) and 1px of air above and below.
-const ROW_TEMPLATE = `1.75rem repeat(${MONTH_MAX_LANES}, 1.625rem) 1.625rem`
-
-export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthViewProps) {
+export function MonthView({
+  days,
+  date,
+  events,
+  todayLabel,
+  moreLabel,
+  maxLanes = MONTH_MAX_LANES,
+}: MonthViewProps) {
+  // Lanes of 26px: a 24px event (WCAG 2.2 target size) and 1px of air above and below.
+  const rowTemplate = `1.75rem repeat(${maxLanes}, 1.625rem) 1.625rem`
   const { now, onSlotClick, newEventLabel, locale } = React.useContext(ScheduleContext)
   const weeks: Date[][] = []
   for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7))
@@ -53,13 +61,13 @@ export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthVi
           eventOverlapsRange(e, weekStart, addDays(weekStart, 7)),
         )
         const segments = layoutRow(weekEvents, week)
-        const hidden = hiddenCountByColumn(segments, 7, MONTH_MAX_LANES)
+        const hidden = hiddenCountByColumn(segments, 7, maxLanes)
         return (
           <div
             key={isoDay(weekStart)}
             data-slot="schedule-week-row"
             className="grid grid-cols-7 border-b last:border-b-0"
-            style={{ gridTemplateRows: ROW_TEMPLATE }}
+            style={{ gridTemplateRows: rowTemplate }}
           >
             {week.map((day, col) => {
               const isToday = isSameDay(day, now)
@@ -126,7 +134,7 @@ export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthVi
               )
             })}
             {segments
-              .filter((s) => s.lane < MONTH_MAX_LANES)
+              .filter((s) => s.lane < maxLanes)
               .map((s) => (
                 <div
                   key={`${s.event.id}-${s.startCol}`}
@@ -146,7 +154,7 @@ export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthVi
                 <div
                   key={`more-${isoDay(week[col] as Date)}`}
                   className="relative min-w-0 px-0.5"
-                  style={{ gridColumn: col + 1, gridRow: MONTH_MAX_LANES + 2 }}
+                  style={{ gridColumn: col + 1, gridRow: maxLanes + 2 }}
                 >
                   <MoreEvents
                     day={week[col] as Date}

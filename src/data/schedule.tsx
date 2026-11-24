@@ -142,6 +142,14 @@ export interface ScheduleProps {
    * the blocks never get too narrow to read. @default 3 in the week, 6 in the day
    */
   maxColumns?: number
+  /**
+   * Week/day views: most height of the scrolling grid of hours. A number is
+   * px. Pass `"none"` to show every hour without an inner scroll.
+   * @default "36rem"
+   */
+  timeGridMaxHeight?: number | string
+  /** Month view: events shown per day before "+N mais". @default 3 */
+  monthMaxEvents?: number
   /** List view: days shown from `date`. @default 7 */
   listDays?: number
   /** Shows a spinner with "Carregando…" in the header and marks the body `aria-busy`. */
@@ -194,6 +202,8 @@ function Schedule({
   scrollToHour = 8,
   hourHeight = 48,
   maxColumns,
+  timeGridMaxHeight = "36rem",
+  monthMaxEvents = 3,
   listDays = 7,
   loading = false,
   locale = "pt-BR",
@@ -234,9 +244,15 @@ function Schedule({
   React.useEffect(() => {
     onRangeChangeRef.current?.({ start: new Date(rangeStart), end: new Date(rangeEnd), view })
   }, [rangeStart, rangeEnd, view])
-  const visible = events
-    .filter((e) => eventOverlapsRange(e, range.start, range.end))
-    .sort(compareEvents)
+  // Filtered and sorted only when the events or the period change, not on
+  // every render (the clock ticks every minute).
+  const visible = React.useMemo(
+    () =>
+      events
+        .filter((e) => eventOverlapsRange(e, new Date(rangeStart), new Date(rangeEnd)))
+        .sort(compareEvents),
+    [events, rangeStart, rangeEnd],
+  )
   const title = formatPeriodTitle(view, date, weekStartsOn, listDays, locale)
   const Heading = `h${headingLevel}` as const
   const subHeading = Math.min(headingLevel + 1, 6) as 3 | 4 | 5 | 6
@@ -263,6 +279,7 @@ function Schedule({
         events={visible}
         todayLabel={l.today}
         moreLabel={l.more}
+        maxLanes={Math.max(1, Math.floor(monthMaxEvents))}
       />
     )
   } else if (view === "list") {
@@ -289,6 +306,7 @@ function Schedule({
         moreLabel={l.more}
         slotHour={scrollToHour}
         timeGridLabel={l.timeGrid}
+        maxHeight={timeGridMaxHeight}
         maxColumns={maxColumns ?? (view === "day" ? 6 : 3)}
       />
     )
