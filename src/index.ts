@@ -288,6 +288,12 @@ export {
 } from "./primitives/icon-button"
 export { Input, type InputProps } from "./primitives/input"
 export {
+  defaultNumberInputLabels,
+  NumberInput,
+  type NumberInputLabels,
+  type NumberInputProps,
+} from "./primitives/number-input"
+export {
   RadioGroup,
   type RadioGroupItemData,
   type RadioGroupProps,

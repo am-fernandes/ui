@@ -39,6 +39,10 @@
       "types": "./dist/primitives/input.d.ts",
       "import": "./dist/primitives/input.js"
     },
+    "./number-input": {
+      "types": "./dist/primitives/number-input.d.ts",
+      "import": "./dist/primitives/number-input.js"
+    },
     "./radio-group": {
       "types": "./dist/primitives/radio-group.d.ts",
       "import": "./dist/primitives/radio-group.js"

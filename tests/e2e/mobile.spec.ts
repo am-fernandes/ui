@@ -7,6 +7,7 @@
  *   - DataTable's internal table is wrapped in an overflow-auto container.
  *   - Tabs do not break layout when the trigger list is wider than the viewport.
  *   - Select opens and chooses by touch, with the list inside the screen.
+ *   - NumberInput uses 16px text on touch (iOS zooms into smaller fields).
  *
  * These specs are scoped to `mobile-chromium` in `playwright.config.ts`.
  */
@@ -166,5 +167,17 @@ test.describe("Select (mobile)", () => {
     await page.getByRole("option", { name: "Cobertura" }).tap()
     await expect(list).toHaveCount(0)
     await expect(trigger).toHaveText("Cobertura")
+  })
+})
+
+test.describe("NumberInput (mobile)", () => {
+  test("16px text on a touch screen, a numeric keyboard, and steppers by tap", async ({ page }) => {
+    await page.goto(story("primitives-numberinput--steppers"))
+    const field = page.getByRole("spinbutton", { name: "Vagas de garagem" })
+    await expect(field).toBeVisible({ timeout: 15_000 })
+    await expect(field).toHaveCSS("font-size", "16px")
+    await expect(field).toHaveAttribute("inputmode", "numeric")
+    await page.getByRole("button", { name: "Aumentar" }).tap()
+    await expect(field).toHaveValue("3")
   })
 })
