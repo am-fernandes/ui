@@ -181,8 +181,27 @@ export function CalendarQuickNav({
     refs.current[next]?.focus()
   }
 
+  // Escape closes the quick navigation only. A Radix popover or dialog around
+  // the calendar listens to Escape on the document, in the capture phase,
+  // before this element sees it, and would close as a whole. A listener on
+  // the window runs first: it marks the event handled (Radix leaves a
+  // prevented Escape alone), and the element's own handler below goes back
+  // to the days.
+  const rootRef = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    const view = rootRef.current?.ownerDocument.defaultView
+    if (!view) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      if (rootRef.current?.contains(event.target as Node)) event.preventDefault()
+    }
+    view.addEventListener("keydown", onKeyDown, true)
+    return () => view.removeEventListener("keydown", onKeyDown, true)
+  }, [])
+
   return (
     <div
+      ref={rootRef}
       data-slot="calendar"
       data-quick-nav=""
       // The width of the day grid it replaces: seven days per month, months

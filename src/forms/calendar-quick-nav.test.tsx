@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import type * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
 import { Calendar } from "./calendar"
+import { DateInput } from "./date-input"
 
 const JUNE_2025 = new Date(2025, 5, 15)
 
@@ -191,6 +192,21 @@ describe("Calendar quick nav", () => {
     expect(screen.getByRole("button", { name: /^jun/i })).toHaveFocus()
     await user.keyboard("{ArrowUp}")
     expect(screen.getByRole("button", { name: /^mar/i })).toHaveFocus()
+  })
+
+  it("inside a popover, Escape closes only the quick navigation", async () => {
+    const user = userEvent.setup({ delay: null })
+    render(<DateInput label="Data" defaultValue="2025-06-15" />)
+    await user.click(screen.getByRole("button", { name: "Abrir calendário" }))
+    await user.click(await screen.findByRole("button", { name: /junho 2025/i }))
+    expect(screen.getByRole("group", { name: /escolher ano/i })).toBeInTheDocument()
+    await user.keyboard("{Escape}")
+    expect(screen.queryByRole("group", { name: /escolher ano/i })).toBeNull()
+    expect(screen.getByRole("dialog", { name: "Data" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /junho 2025/i })).toHaveFocus()
+    // A second Escape closes the popover.
+    await user.keyboard("{Escape}")
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   })
 
   it("does not activate when captionLayout is not 'label'", () => {

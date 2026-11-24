@@ -785,3 +785,19 @@ test.describe("Navegação rápida: largura", () => {
     expect(await width(page)).toBe(days)
   })
 })
+
+test.describe("Navegação rápida: Escape", () => {
+  test("dentro do popover, Escape fecha só a navegação rápida", async ({ page }) => {
+    await gotoStory(page, "forms-dateinput--min-max", "ISO: 2025-06-15")
+    await page.getByRole("button", { name: "Abrir calendário" }).click()
+    await page.getByRole("button", { name: /junho 2025/i }).click()
+    await expect(page.getByRole("group", { name: "Escolher ano" })).toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(page.getByRole("group", { name: "Escolher ano" })).toHaveCount(0)
+    await expect(page.getByRole("grid")).toBeVisible()
+    await expect(page.getByRole("button", { name: /junho 2025/i })).toBeFocused()
+    await page.keyboard.press("Escape")
+    await expect(page.getByRole("grid")).toHaveCount(0)
+    await expect(page.getByRole("button", { name: "Abrir calendário" })).toBeFocused()
+  })
+})
