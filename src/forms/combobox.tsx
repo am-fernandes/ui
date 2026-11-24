@@ -383,7 +383,7 @@ export function Combobox(props: ComboboxProps) {
               aria-label={labelText}
             >
               {labelText}
-              {readOnly ? null : (
+              {readOnly || disabled ? null : (
                 <button
                   type="button"
                   aria-label={`Remover ${labelText}`}

@@ -358,6 +358,12 @@ describe("Combobox", () => {
     expect(screen.getByRole("combobox")).toHaveTextContent("Charlie")
   })
 
+  it("disabled, multiple: the chips cannot be removed", () => {
+    render(<Combobox multiple options={options} value={["a", "b"]} disabled />)
+    expect(screen.getByText("Alpha")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Remover/ })).toBeNull()
+  })
+
   it("the clear control is a real button next to the trigger, not inside it", () => {
     render(<Combobox options={options} value="a" placeholder="Selecione" />)
     const trigger = screen.getByRole("combobox")
