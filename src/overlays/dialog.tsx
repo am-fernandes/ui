@@ -15,6 +15,7 @@ import {
 } from "./_internal/modal-state"
 import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
 import { isToastFocused, isToastPress } from "./_internal/toasts"
+import { asTriggerElement } from "./_internal/trigger-child"
 
 export interface DialogProps {
   /** Element that opens the dialog. Omit for fully controlled use. */
@@ -112,7 +113,7 @@ function Dialog({
     <DialogPrimitive.Root open={isOpen} onOpenChange={setOpen}>
       {trigger ? (
         <DialogPrimitive.Trigger asChild data-slot="dialog-trigger">
-          {trigger}
+          {asTriggerElement(trigger)}
         </DialogPrimitive.Trigger>
       ) : null}
       <DialogPrimitive.Portal>

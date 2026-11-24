@@ -11,6 +11,7 @@ import { modalBodyClass } from "./_internal/modal-body"
 import { useModalOpen, useReturnFocus } from "./_internal/modal-state"
 import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
 import { isToastFocused } from "./_internal/toasts"
+import { asTriggerElement } from "./_internal/trigger-child"
 
 export interface AlertDialogProps {
   trigger?: React.ReactNode
@@ -141,7 +142,9 @@ function AlertDialog({
   return (
     <AlertDialogPrimitive.Root open={isOpen} onOpenChange={handleOpenChange}>
       {trigger ? (
-        <AlertDialogPrimitive.Trigger asChild>{trigger}</AlertDialogPrimitive.Trigger>
+        <AlertDialogPrimitive.Trigger asChild>
+          {asTriggerElement(trigger)}
+        </AlertDialogPrimitive.Trigger>
       ) : null}
       <AlertDialogPrimitive.Portal>
         <AlertDialogPrimitive.Overlay data-slot="alert-dialog-overlay" className={overlayBase} />

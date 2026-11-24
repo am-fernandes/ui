@@ -5,6 +5,7 @@ import { ChevronsUpDown } from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { asTriggerElement } from "./_internal/trigger-child"
 
 interface CollapsibleBaseProps {
   triggerSide?: "left" | "right"
@@ -80,7 +81,7 @@ function Collapsible({
     >
       {trigger ? (
         <CollapsiblePrimitive.Trigger asChild data-slot="collapsible-trigger">
-          {trigger}
+          {asTriggerElement(trigger)}
         </CollapsiblePrimitive.Trigger>
       ) : (
         <CollapsiblePrimitive.Trigger

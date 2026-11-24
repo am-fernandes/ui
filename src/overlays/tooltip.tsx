@@ -6,6 +6,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { motionTooltip } from "./_internal/animations"
 import { useOverlayContainer } from "./_internal/overlay-container"
+import { asTooltipTarget } from "./_internal/trigger-child"
 
 export interface TooltipProps {
   content: React.ReactNode
@@ -50,12 +51,14 @@ function Tooltip({
   // Inside a Dialog, AlertDialog or Sheet the tooltip renders into the modal
   // (see `OverlayContainerProvider`). `null`: the modal is still mounting.
   const container = useOverlayContainer()
+  // Text has no element for Radix to attach to: a term gets a focusable span.
+  const target = asTooltipTarget(children)
 
   return (
     <TooltipPrimitive.Provider delayDuration={delayDuration}>
       <TooltipPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
         <TooltipPrimitive.Trigger asChild data-slot="tooltip-trigger">
-          {isDisabledElement(children) ? (
+          {isDisabledElement(target) ? (
             // The disabled control has `pointer-events: none` (Button,
             // IconButton), so the pointer reaches this span.
             <span
@@ -63,10 +66,10 @@ function Tooltip({
               tabIndex={0}
               className="inline-flex cursor-default rounded-element focus-visible:focus-outline"
             >
-              {children}
+              {target}
             </span>
           ) : (
-            children
+            target
           )}
         </TooltipPrimitive.Trigger>
         {container === null ? null : (

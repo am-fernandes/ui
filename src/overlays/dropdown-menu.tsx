@@ -8,6 +8,7 @@ import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
 import { motionMenu } from "./_internal/animations"
 import { useOverlayContainer } from "./_internal/overlay-container"
+import { asTriggerElement } from "./_internal/trigger-child"
 
 type MenuIcon = React.ComponentType<{ className?: string }>
 
@@ -453,7 +454,7 @@ function DropdownMenu({
           modality.current = "pointer"
         }}
       >
-        {trigger}
+        {asTriggerElement(trigger)}
       </DropdownMenuPrimitive.Trigger>
       {container === null ? null : (
         <DropdownMenuPrimitive.Portal container={container}>

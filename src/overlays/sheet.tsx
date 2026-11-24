@@ -16,6 +16,7 @@ import {
 } from "./_internal/modal-state"
 import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
 import { isToastFocused, isToastPress } from "./_internal/toasts"
+import { asTriggerElement } from "./_internal/trigger-child"
 
 // The panel is a column: title, description and footer keep their size, the
 // body (`modalBodyClass`) takes what is left and scrolls. Side panels are as
@@ -144,7 +145,9 @@ function Sheet({
 
   return (
     <DialogPrimitive.Root open={isOpen} onOpenChange={setOpen}>
-      {trigger ? <DialogPrimitive.Trigger asChild>{trigger}</DialogPrimitive.Trigger> : null}
+      {trigger ? (
+        <DialogPrimitive.Trigger asChild>{asTriggerElement(trigger)}</DialogPrimitive.Trigger>
+      ) : null}
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay data-slot="sheet-overlay" className={sheetOverlayBase} />
         <DialogPrimitive.Content

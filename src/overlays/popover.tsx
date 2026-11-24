@@ -6,6 +6,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { motionPopover } from "./_internal/animations"
 import { useOverlayContainer } from "./_internal/overlay-container"
+import { asAnchorElement, asTriggerElement } from "./_internal/trigger-child"
 
 type PopoverContentProps = React.ComponentProps<typeof PopoverPrimitive.Content>
 
@@ -81,10 +82,11 @@ function Popover({
   // The content is a role="dialog": it needs a name, read when focus enters.
   // Without one of its own it is named by its trigger, as a menu is by its
   // button. (The trigger keeps an id it already has.)
+  const triggerElement = asTriggerElement(trigger)
   const generatedTriggerId = React.useId()
   const triggerId =
-    React.isValidElement<{ id?: string }>(trigger) && trigger.props.id
-      ? trigger.props.id
+    React.isValidElement<{ id?: string }>(triggerElement) && triggerElement.props.id
+      ? triggerElement.props.id
       : generatedTriggerId
   const labelledBy = ariaLabelledby ?? (ariaLabel || !trigger ? undefined : triggerId)
   const named = Boolean(ariaLabel || labelledBy)
@@ -105,12 +107,12 @@ function Popover({
     >
       {trigger ? (
         <PopoverPrimitive.Trigger asChild data-slot="popover-trigger" id={triggerId}>
-          {trigger}
+          {triggerElement}
         </PopoverPrimitive.Trigger>
       ) : null}
       {anchor ? (
         <PopoverPrimitive.Anchor asChild data-slot="popover-anchor">
-          {anchor}
+          {asAnchorElement(anchor)}
         </PopoverPrimitive.Anchor>
       ) : null}
       {container === null ? null : (
