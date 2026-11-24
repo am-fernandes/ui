@@ -624,3 +624,25 @@ test.describe("TimePicker: tamanhos", () => {
     }
   })
 })
+
+test.describe("TimePicker: somente leitura", () => {
+  test("fundo esmaecido, sem anel de hover, e as setas não mudam o horário", async ({ page }) => {
+    await gotoStory(page, "forms-timepicker--empty", "Valor: (vazio)")
+    const editableBg = await page
+      .getByRole("group", { name: "Horário" })
+      .evaluate((el) => getComputedStyle(el).backgroundColor)
+    await gotoStory(page, "forms-timepicker--read-only", "Encerramento")
+    const group = page.getByRole("group", { name: "Encerramento" })
+    expect(await group.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(editableBg)
+    await group.hover()
+    await page.waitForTimeout(250)
+    expect(await group.evaluate((el) => getComputedStyle(el).boxShadow)).toMatch(
+      /^(none|rgba\(0, 0, 0, 0\) .*)$/,
+    )
+    const hour = page.getByRole("textbox", { name: "Horas" })
+    await hour.click()
+    await page.keyboard.press("ArrowUp")
+    await page.keyboard.type("9")
+    await expect(hour).toHaveValue("18")
+  })
+})

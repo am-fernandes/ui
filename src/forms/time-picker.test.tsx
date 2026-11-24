@@ -430,6 +430,23 @@ describe("TimePicker", () => {
     expect(data().get("inicio")).toBe("09:05")
   })
 
+  it("readOnly: focusable and readable; typing, arrows and paste change nothing", async () => {
+    const spy = vi.fn()
+    render(<TimePicker value="14:30" readOnly onValueChange={spy} />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
+    expect(hour).toHaveAttribute("readonly")
+    expect(minute).toHaveAttribute("readonly")
+    hour.focus()
+    await userEvent.keyboard("{ArrowUp}{ArrowDown}9:")
+    fireEvent.paste(hour, { clipboardData: { getData: () => "08:00" } })
+    fireEvent.blur(hour)
+    expect(hour).toHaveValue("14")
+    expect(minute).toHaveValue("30")
+    expect(spy).not.toHaveBeenCalled()
+    expect(screen.getByRole("group").className).toContain("bg-muted")
+  })
+
   it("forwards ref to the hour input", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<TimePicker value="" ref={ref} />)

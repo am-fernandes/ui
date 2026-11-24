@@ -134,6 +134,19 @@ export const Disabled: Story = {
   render: () => <TimePicker label="Encerramento" value="18:00" disabled />,
 }
 
+export const ReadOnly: Story = {
+  name: "Read Only",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` mostra o horário num fundo esmaecido, sem reação ao hover: os campos recebem foco e vão junto no envio do formulário, mas digitar, as setas e colar não mudam nada.",
+      },
+    },
+  },
+  render: () => <TimePicker label="Encerramento" value="18:00" readOnly />,
+}
+
 export const Empty: Story = {
   render: () => {
     const [value, setValue] = useState("")

@@ -66,6 +66,13 @@ export interface TimePickerProps {
    */
   size?: ControlSize
   /**
+   * Shows the time without letting it be edited: the fields stay readable,
+   * take focus and are submitted with the form, but typing, the arrows and
+   * paste change nothing. For a view-only screen; `disabled` is for a field
+   * that does not apply.
+   */
+  readOnly?: boolean
+  /**
    * Name of the field in a native form. A hidden input sends `"HH:MM"`, or
    * `""` while the time is incomplete; the two visible fields have no name.
    */
@@ -145,6 +152,7 @@ interface TimeFieldProps {
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
   onPaste: (e: React.ClipboardEvent<HTMLInputElement>) => void
   disabled?: boolean
+  readOnly?: boolean
   ref?: React.Ref<HTMLInputElement>
 }
 
@@ -161,6 +169,7 @@ function TimeField({
   onKeyDown,
   onPaste,
   disabled,
+  readOnly,
   ref,
 }: TimeFieldProps) {
   return (
@@ -182,6 +191,7 @@ function TimeField({
       onPaste={onPaste}
       onFocus={(e) => e.target.select()}
       disabled={disabled}
+      readOnly={readOnly}
       className={fieldClasses}
     />
   )
@@ -205,6 +215,7 @@ function TimePicker({
   size = "md",
   labels,
   name,
+  readOnly = false,
   ref,
 }: TimePickerProps) {
   const l: TimePickerLabels = { ...defaultTimePickerLabels, ...labels }
@@ -282,6 +293,7 @@ function TimePicker({
   }
 
   const handleHourBlur = () => {
+    if (readOnly) return
     if (skipHourBlurRef.current) {
       skipHourBlurRef.current = false
       return
@@ -296,6 +308,7 @@ function TimePicker({
   }
 
   const handleMinuteBlur = () => {
+    if (readOnly) return
     const nextMinute = normalizeSegment(minute, MIN_MINUTE, MAX_MINUTE)
     setMinute(nextMinute)
     if (nextMinute === "") {
@@ -309,6 +322,8 @@ function TimePicker({
   // with a separator that is not a time changes nothing; digits alone go in
   // as typed.
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    // A read-only field takes no paste; the browser already ignores it.
+    if (readOnly) return
     const text = e.clipboardData?.getData("text") ?? ""
     const time = parseTime(text)
     if (time) {
@@ -322,6 +337,7 @@ function TimePicker({
   }
 
   const handleHourKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (readOnly) return
     if (e.key === ":") {
       e.preventDefault()
       // "9:" is 09: the colon completes the hour and moves to the minutes.
@@ -355,6 +371,7 @@ function TimePicker({
   }
 
   const handleMinuteKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (readOnly) return
     if (e.key === ":") {
       e.preventDefault()
       return
@@ -405,6 +422,9 @@ function TimePicker({
           controlHeight[size],
           controlPaddingX[size],
           disabled && "cursor-default",
+          // Read-only: a muted box that does not answer to hover; the focus
+          // look stays, because the fields still take focus.
+          readOnly && "bg-muted [--field-hover-ring:transparent]!",
           className,
         )}
       >
@@ -423,6 +443,7 @@ function TimePicker({
           onKeyDown={handleHourKeyDown}
           onPaste={handlePaste}
           disabled={disabled}
+          readOnly={readOnly}
         />
         <span aria-hidden className="text-muted-foreground">
           :
@@ -441,6 +462,7 @@ function TimePicker({
           onKeyDown={handleMinuteKeyDown}
           onPaste={handlePaste}
           disabled={disabled}
+          readOnly={readOnly}
         />
         {name != null && name !== "" ? (
           <input type="hidden" name={name} value={timeOf(hour, minute)} disabled={disabled} />
