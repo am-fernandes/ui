@@ -319,6 +319,30 @@ export const ReadOnly: Story = {
   ),
 }
 
+export const Sizes: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` dá a altura do gatilho: `sm` 32 px, `md` 40 px (padrão) e `lg` 44 px, a mesma de um botão ou campo do mesmo tamanho.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex w-[320px] flex-col gap-4">
+      {(["sm", "md", "lg"] as const).map((size) => (
+        <Combobox
+          key={size}
+          size={size}
+          options={plainOptions}
+          label={`Tamanho ${size}`}
+          defaultValue="pendente"
+        />
+      ))}
+    </div>
+  ),
+}
+
 export const EmptyOptions: Story = {
   render: () => {
     const [value, setValue] = useState<string | undefined>()

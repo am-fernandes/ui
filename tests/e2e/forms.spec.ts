@@ -305,3 +305,24 @@ test.describe("Combobox: somente leitura", () => {
     await expect(page.getByRole("button", { name: /Limpar|Remover/ })).toHaveCount(0)
   })
 })
+
+test.describe("Combobox: tamanhos", () => {
+  test("sm, md e lg medem 32, 40 e 44 px, com o limpar dentro da caixa", async ({ page }) => {
+    await gotoStory(page, "forms-combobox--sizes", "Tamanho lg")
+    const heights = { sm: 32, md: 40, lg: 44 }
+    for (const [size, height] of Object.entries(heights)) {
+      const trigger = page.getByRole("combobox", { name: `Tamanho ${size}` })
+      const box = await trigger.boundingBox()
+      expect(box?.height, size).toBeCloseTo(height, 0)
+      const clear = trigger.locator("xpath=..").getByRole("button", { name: "Limpar seleção" })
+      const clearBox = await clear.boundingBox()
+      if (!box || !clearBox) throw new Error("no box")
+      expect(clearBox.y).toBeGreaterThanOrEqual(box.y)
+      expect(clearBox.y + clearBox.height).toBeLessThanOrEqual(box.y + box.height)
+      // The text ends before the clear button.
+      const text = trigger.getByText("Pendente")
+      const textBox = await text.boundingBox()
+      expect((textBox?.x ?? 0) + (textBox?.width ?? 0)).toBeLessThanOrEqual(clearBox.x)
+    }
+  })
+})

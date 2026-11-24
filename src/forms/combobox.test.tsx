@@ -494,6 +494,17 @@ describe("Combobox: ARIA do gatilho", () => {
     expect(screen.getByRole("combobox", { name: /Status/ })).not.toHaveAttribute("aria-required")
   })
 
+  it("size sets the trigger's height from the control sizes (md by default)", () => {
+    const { rerender } = render(<Combobox options={options} label="Status" />)
+    const trigger = () => screen.getByRole("combobox", { name: "Status" })
+    expect(trigger().className).toContain("h-control-md")
+    rerender(<Combobox options={options} label="Status" size="sm" />)
+    expect(trigger().className).toContain("h-control-sm")
+    rerender(<Combobox options={options} label="Status" size="lg" />)
+    expect(trigger().className).toContain("h-control-lg")
+    expect(trigger().className).not.toMatch(/\bh-auto\b|min-h-10/)
+  })
+
   it("the trigger is a button that opens a list: no aria-autocomplete", () => {
     render(<Combobox options={options} placeholder="Pick" />)
     expect(screen.getByRole("combobox")).not.toHaveAttribute("aria-autocomplete")

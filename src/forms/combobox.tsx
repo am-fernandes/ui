@@ -7,10 +7,11 @@ import * as React from "react"
 import { matchesSearch, normalizeText } from "@/lib/text"
 import { cn } from "@/lib/utils"
 import { Popover } from "../overlays/popover"
+import type { ControlSize } from "../primitives/_internal/control-size"
 import {
   FieldShell,
   type LabelPosition,
-  fieldTriggerClass,
+  fieldTriggerSizeClass,
 } from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Badge } from "../primitives/badge"
@@ -28,6 +29,14 @@ function optionMatches(option: ComboboxOption, search: string) {
 }
 
 const countFormatter = new Intl.NumberFormat("pt-BR")
+
+// The clear button sits over a spacer in the trigger, just before the
+// chevron: the trigger's padding, the chevron (16px) and the gap (8px).
+const clearOffset: Record<ControlSize, string> = {
+  sm: "right-8.5",
+  md: "right-9",
+  lg: "right-10",
+}
 
 export interface ComboboxLabels {
   /** Shown instead of the empty message while `loading`. */
@@ -112,6 +121,12 @@ interface ComboboxBaseProps {
    */
   readOnly?: boolean
   /**
+   * Height of the trigger: `sm` 32px, `md` 40px, `lg` 44px, the same as a
+   * button or input of that size.
+   * @default "md"
+   */
+  size?: ControlSize
+  /**
    * Called when the focus leaves the field as a whole. Moving between the
    * trigger, the clear and remove buttons and the open list does not count.
    */
@@ -179,6 +194,7 @@ export function Combobox(props: ComboboxProps) {
     name,
     onBlur,
     readOnly = false,
+    size = "md",
     ref,
   } = props
   const l: ComboboxLabels = { ...defaultComboboxLabels, ...props.labels }
@@ -431,8 +447,8 @@ export function Combobox(props: ComboboxProps) {
       aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
       disabled={disabled}
       className={cn(
-        fieldTriggerClass,
-        "w-full justify-between min-h-10 h-auto overflow-hidden",
+        fieldTriggerSizeClass(size),
+        "justify-between overflow-hidden",
         !hasValue && "text-placeholder",
         hasError && "border-destructive-text field-error",
         // Read-only: a muted box that does not answer to hover; the focus
@@ -453,7 +469,10 @@ export function Combobox(props: ComboboxProps) {
       type="button"
       aria-label="Limpar seleção"
       data-slot="combobox-clear"
-      className="absolute top-1/2 right-9 inline-flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-inner state-layer focus-visible:focus-outline"
+      className={cn(
+        "absolute top-1/2 inline-flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-inner state-layer focus-visible:focus-outline",
+        clearOffset[size],
+      )}
       onClick={handleClearAll}
     >
       <X aria-hidden="true" className="size-4 shrink-0 opacity-50" />
