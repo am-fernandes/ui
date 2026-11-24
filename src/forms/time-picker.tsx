@@ -54,8 +54,8 @@ function normalizeSegment(raw: string, min: number, max: number) {
   return pad(n)
 }
 
-function emitIfComplete(hour: string, minute: string, onChange: TimePickerProps["onChange"]) {
-  if (!onChange || hour === "" || minute === "") return
+function emitIfComplete(hour: string, minute: string, onChange: (value: string) => void) {
+  if (hour === "" || minute === "") return
   const hNum = Number.parseInt(hour, 10)
   const mNum = Number.parseInt(minute, 10)
   if (!isInRange(hNum, MIN_HOUR, MAX_HOUR) || !isInRange(mNum, MIN_MINUTE, MAX_MINUTE)) return
@@ -138,11 +138,20 @@ function TimePicker({
   const [hour, setHour] = React.useState(() => parseValue(value).hour)
   const [minute, setMinute] = React.useState(() => parseValue(value).minute)
 
-  React.useEffect(() => {
+  // The fields follow `value` when it changes from outside, but not when it
+  // changes because this picker reported it: an invalid hour reported as ""
+  // must not take the minutes with it.
+  const [synced, setSynced] = React.useState(value)
+  if (value !== undefined && value !== synced) {
+    setSynced(value)
     const next = parseValue(value)
     setHour(next.hour)
     setMinute(next.minute)
-  }, [value])
+  }
+  const report = (next: string) => {
+    setSynced(next)
+    onChange?.(next)
+  }
 
   const focusMinute = () => {
     skipHourBlurRef.current = true
@@ -155,14 +164,14 @@ function TimePicker({
     if (raw.length !== 2) return
     const hNum = Number.parseInt(raw, 10)
     if (!isInRange(hNum, MIN_HOUR, MAX_HOUR)) return
-    emitIfComplete(raw, minute, onChange)
+    emitIfComplete(raw, minute, report)
     focusMinute()
   }
 
   const handleMinuteChange = (raw: string) => {
     setMinute(raw)
     if (raw.length === 2) {
-      emitIfComplete(hour, raw, onChange)
+      emitIfComplete(hour, raw, report)
     }
   }
 
@@ -174,27 +183,36 @@ function TimePicker({
     const nextHour = normalizeSegment(hour, MIN_HOUR, MAX_HOUR)
     setHour(nextHour)
     if (nextHour === "") {
-      onChange?.("")
+      report("")
       return
     }
-    emitIfComplete(nextHour, minute, onChange)
+    emitIfComplete(nextHour, minute, report)
   }
 
   const handleMinuteBlur = () => {
     const nextMinute = normalizeSegment(minute, MIN_MINUTE, MAX_MINUTE)
     setMinute(nextMinute)
     if (nextMinute === "") {
-      onChange?.("")
+      report("")
       return
     }
-    emitIfComplete(hour, nextMinute, onChange)
+    emitIfComplete(hour, nextMinute, report)
   }
 
   const handleHourKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === ":") {
       e.preventDefault()
-      if (hour.length === 2) {
+      // "9:" is 09: the colon completes the hour and moves to the minutes.
+      const padded = hour.length === 1 ? `0${hour}` : hour
+      const valid = padded === "" || isInRange(Number.parseInt(padded, 10), MIN_HOUR, MAX_HOUR)
+      if (padded !== hour) setHour(padded)
+      if (valid) {
+        if (padded !== "") emitIfComplete(padded, minute, report)
         focusMinute()
+      } else {
+        // Leaving normally: the blur clears the invalid hour.
+        minuteRef.current?.focus()
+        minuteRef.current?.select()
       }
       return
     }
@@ -207,14 +225,18 @@ function TimePicker({
       const next = pad(wrapped)
       setHour(next)
       if (minute === "") {
-        onChange?.("")
+        report("")
       } else {
-        emitIfComplete(next, minute, onChange)
+        emitIfComplete(next, minute, report)
       }
     }
   }
 
   const handleMinuteKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === ":") {
+      e.preventDefault()
+      return
+    }
     if (e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault()
       const current = minute === "" ? 0 : Number.parseInt(minute, 10)
@@ -224,9 +246,9 @@ function TimePicker({
       const next = pad(wrapped)
       setMinute(next)
       if (hour === "") {
-        onChange?.("")
+        report("")
       } else {
-        emitIfComplete(hour, next, onChange)
+        emitIfComplete(hour, next, report)
       }
       return
     }

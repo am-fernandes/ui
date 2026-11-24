@@ -108,21 +108,58 @@ describe("TimePicker", () => {
     expect(document.activeElement).toBe(minute)
   })
 
-  it("colon key is ignored when hour has fewer than 2 digits (prevents 1 -> 01 padding)", async () => {
+  it("typing 9:30 gives 09:30: the colon pads the hour and moves to the minutes", async () => {
     const spy = vi.fn()
     render(<Controlled onChangeSpy={spy} />)
     const hour = screen.getByLabelText("Horas") as HTMLInputElement
-    const minute = screen.getByLabelText("Minutos")
-    // Type a single digit then press the colon shortcut with focus on hour.
-    setInputValue(hour, "1")
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
+    await userEvent.type(hour, "9:30")
+    expect(hour).toHaveValue("09")
+    expect(minute).toHaveValue("30")
+    expect(spy).toHaveBeenLastCalledWith("09:30")
+    await userEvent.tab()
+    expect(hour).toHaveValue("09")
+    expect(minute).toHaveValue("30")
+    expect(spy).toHaveBeenLastCalledWith("09:30")
+  })
+
+  it("the colon with an empty hour moves to the minutes, and is ignored in the minutes", async () => {
+    render(<Controlled />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
     hour.focus()
     await userEvent.keyboard(":")
-    // Focus stays on hour; no padding/jump.
-    expect(document.activeElement).toBe(hour)
-    expect(hour.value).toBe("1")
+    expect(minute).toHaveFocus()
+    await userEvent.keyboard(":4:5")
+    expect(minute).toHaveValue("45")
+    expect(hour).toHaveValue("")
+  })
+
+  it("an invalid hour is cleared on blur without erasing the minutes", async () => {
+    const spy = vi.fn()
+    render(<Controlled initial="14:30" onChangeSpy={spy} />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
+    setInputValue(hour, "30")
+    fireEvent.blur(hour)
+    expect(hour).toHaveValue("")
+    expect(minute).toHaveValue("30")
+    expect(spy).toHaveBeenLastCalledWith("")
+    // Typing a valid hour completes the time again.
+    setInputValue(hour, "15")
+    expect(spy).toHaveBeenLastCalledWith("15:30")
+  })
+
+  it("an invalid minute is cleared on blur without erasing the hour", () => {
+    const spy = vi.fn()
+    render(<Controlled initial="14:30" onChangeSpy={spy} />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
+    setInputValue(minute, "75")
+    fireEvent.blur(minute)
     expect(minute).toHaveValue("")
-    // No emit fired with a padded "01" hour either.
-    expect(spy.mock.calls.some(([v]) => typeof v === "string" && v.startsWith("01"))).toBe(false)
+    expect(hour).toHaveValue("14")
+    expect(spy).toHaveBeenLastCalledWith("")
   })
 
   it("hour ArrowUp wraps modular: 23 -> 0", async () => {

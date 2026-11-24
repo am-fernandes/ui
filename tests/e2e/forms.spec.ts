@@ -568,3 +568,37 @@ test.describe("DateRangePicker: tamanhos", () => {
     }
   })
 })
+
+test.describe("TimePicker: digitar", () => {
+  test("9:30 vira 09:30 e sair do campo não apaga nada", async ({ page }) => {
+    await gotoStory(page, "forms-timepicker--empty", "Valor: (vazio)")
+    const hour = page.getByRole("textbox", { name: "Horas" })
+    const minute = page.getByRole("textbox", { name: "Minutos" })
+    await hour.click()
+    await page.keyboard.type("9:30")
+    await expect(hour).toHaveValue("09")
+    await expect(minute).toHaveValue("30")
+    await expect(page.getByText("Valor: 09:30")).toBeVisible()
+    await page.keyboard.press("Tab")
+    await expect(hour).toHaveValue("09")
+    await expect(minute).toHaveValue("30")
+    await expect(page.getByText("Valor: 09:30")).toBeVisible()
+  })
+
+  test("uma hora inválida é limpa ao sair, sem levar os minutos", async ({ page }) => {
+    await gotoStory(page, "forms-timepicker--default", "Valor: 09:30")
+    const hour = page.getByRole("textbox", { name: "Horas" })
+    const minute = page.getByRole("textbox", { name: "Minutos" })
+    await hour.click()
+    await page.keyboard.type("3")
+    await page.keyboard.press("Tab")
+    await expect(hour).toHaveValue("03")
+    await expect(page.getByText("Valor: 03:30")).toBeVisible()
+    await hour.click()
+    await page.keyboard.type("77")
+    await minute.click()
+    await page.keyboard.press("Tab")
+    await expect(hour).toHaveValue("")
+    await expect(minute).toHaveValue("30")
+  })
+})
