@@ -102,7 +102,9 @@ export function TimeGridView({
                   onClick={() => onSlotClick(at(day, slotHour * 60))}
                   className={cn(
                     "inline-flex size-6 cursor-pointer items-center justify-center rounded-full tabular-nums state-layer focus-visible:focus-outline",
-                    isToday && "bg-primary font-semibold text-primary-foreground",
+                    // Forced colours drop the fill: an outline marks today there.
+                    isToday &&
+                      "bg-primary font-semibold text-primary-foreground forced-colors:outline forced-colors:outline-2 forced-colors:outline-[Highlight]",
                   )}
                 >
                   {day.getDate()}
@@ -112,7 +114,9 @@ export function TimeGridView({
                   aria-hidden="true"
                   className={cn(
                     "inline-flex size-6 items-center justify-center rounded-full tabular-nums",
-                    isToday && "bg-primary font-semibold text-primary-foreground",
+                    // Forced colours drop the fill: an outline marks today there.
+                    isToday &&
+                      "bg-primary font-semibold text-primary-foreground forced-colors:outline forced-colors:outline-2 forced-colors:outline-[Highlight]",
                   )}
                 >
                   {day.getDate()}

@@ -267,6 +267,23 @@ test.describe("Schedule — list and mobile", () => {
   })
 })
 
+test.describe("Schedule — forced colours", () => {
+  test("today and every event stay visible when colours are forced", async ({ page }) => {
+    await page.emulateMedia({ forcedColors: "active" })
+    for (const id of ["month", "week"]) {
+      await gotoSchedule(page, `data-schedule--${id}`)
+      const today = page.locator('[aria-current="date"] .rounded-full').first()
+      expect(await today.evaluate((el) => getComputedStyle(el).outlineStyle), id).toBe("solid")
+      const looks = await page
+        .locator('[data-slot="schedule-event"]:is([data-variant="bar"], [data-variant="block"])')
+        .evaluateAll((els) => els.map((el) => getComputedStyle(el).borderTopStyle))
+      expect(looks.length, id).toBeGreaterThan(0)
+      for (const style of looks) expect(style, id).toBe("solid")
+    }
+    await page.emulateMedia({ forcedColors: "none" })
+  })
+})
+
 test.describe("Schedule — accessibility", () => {
   for (const id of ["month", "week", "day", "list"]) {
     test(`${id}: every event is a 24px target and no text is under 12px`, async ({ page }) => {

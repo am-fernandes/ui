@@ -140,7 +140,10 @@ export function ScheduleEventButton({
         "flex w-full min-w-0 items-center gap-1 overflow-hidden rounded-inner px-1 text-xs leading-6 state-layer"
       content = (
         <>
-          <span aria-hidden="true" className={cn("size-2 shrink-0 rounded-full", colors.dot)} />
+          <span
+            aria-hidden="true"
+            className={cn("size-2 shrink-0 rounded-full forced-colors:bg-[CanvasText]", colors.dot)}
+          />
           {/* Narrow month cells have no room for the time: dot + title only. */}
           <span
             aria-hidden="true"
@@ -156,7 +159,7 @@ export function ScheduleEventButton({
       break
     case "bar":
       variantClass = cn(
-        "flex w-full min-w-0 items-center rounded-inner border-l-[3px] px-1.5 text-xs font-medium leading-6 state-layer",
+        "flex w-full min-w-0 items-center rounded-inner border-l-[3px] px-1.5 text-xs font-medium leading-6 state-layer forced-colors:border",
         colors.surface,
         colors.border,
         continuesBefore && "rounded-l-none border-l-0 pl-2",
@@ -170,7 +173,7 @@ export function ScheduleEventButton({
       break
     case "block":
       variantClass = cn(
-        "absolute flex flex-col overflow-hidden rounded-inner border-l-[3px] px-1.5 py-0.5 text-xs leading-4 state-layer",
+        "absolute flex flex-col overflow-hidden rounded-inner border-l-[3px] px-1.5 py-0.5 text-xs leading-4 state-layer forced-colors:border",
         colors.surface,
         colors.border,
       )
@@ -195,7 +198,13 @@ export function ScheduleEventButton({
           <span aria-hidden="true" className="w-28 shrink-0 tabular-nums text-muted-foreground">
             {formatRowTime(event, day ?? event.start, allDayLabel, locale)}
           </span>
-          <span aria-hidden="true" className={cn("size-2.5 shrink-0 rounded-full", colors.dot)} />
+          <span
+            aria-hidden="true"
+            className={cn(
+              "size-2.5 shrink-0 rounded-full forced-colors:bg-[CanvasText]",
+              colors.dot,
+            )}
+          />
           <span aria-hidden="true" className="min-w-0 flex-1 truncate font-medium">
             {event.title}
           </span>

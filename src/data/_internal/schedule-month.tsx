@@ -97,7 +97,9 @@ export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthVi
                       className={cn(
                         "inline-flex size-6 cursor-pointer items-center justify-center rounded-full text-xs tabular-nums state-layer focus-visible:focus-outline",
                         outside && "text-muted-foreground",
-                        isToday && "bg-primary font-semibold text-primary-foreground",
+                        // Forced colours drop the fill: an outline marks today there.
+                        isToday &&
+                          "bg-primary font-semibold text-primary-foreground forced-colors:outline forced-colors:outline-2 forced-colors:outline-[Highlight]",
                       )}
                     >
                       {day.getDate()}
@@ -108,7 +110,9 @@ export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthVi
                       className={cn(
                         "inline-flex size-6 items-center justify-center rounded-full text-xs tabular-nums",
                         outside && "text-muted-foreground",
-                        isToday && "bg-primary font-semibold text-primary-foreground",
+                        // Forced colours drop the fill: an outline marks today there.
+                        isToday &&
+                          "bg-primary font-semibold text-primary-foreground forced-colors:outline forced-colors:outline-2 forced-colors:outline-[Highlight]",
                       )}
                     >
                       {day.getDate()}
