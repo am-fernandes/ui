@@ -46,8 +46,10 @@ function Tabs({
   ...props
 }: TabsProps) {
   const isVertical = orientation === "vertical"
+  // Without value or defaultValue the first tab that can be chosen is open:
+  // Radix alone would select nothing (every tab unselected, no panel).
   const [internalValue, setInternalValue] = React.useState<string | undefined>(
-    defaultValue ?? items[0]?.value,
+    () => defaultValue ?? items.find((item) => !item.disabled)?.value,
   )
   const activeValue = value ?? internalValue
 
@@ -69,8 +71,7 @@ function Tabs({
       ref={ref}
       data-slot="tabs"
       orientation={orientation}
-      value={value}
-      defaultValue={defaultValue}
+      value={activeValue ?? ""}
       onValueChange={handleValueChange}
       className={cn(isVertical ? "flex gap-2" : undefined, className)}
       {...props}

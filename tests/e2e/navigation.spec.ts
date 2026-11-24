@@ -11,6 +11,15 @@ async function gotoShell(page: Page, id: string) {
 }
 
 test.describe("Tabs", () => {
+  test("without a default the first tab and its panel are shown", async ({ page }) => {
+    await page.goto(story("navigation-tabs--without-default"))
+    await expect(page.getByRole("tab", { name: "Visão geral" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    )
+    await expect(page.getByRole("tabpanel")).toContainText("Resumo da conta")
+  })
+
   test("clicking trigger switches content", async ({ page }) => {
     await page.goto(story("navigation-tabs--default"))
     const tabs = page.getByRole("tab")

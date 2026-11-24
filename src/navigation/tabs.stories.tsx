@@ -18,7 +18,7 @@ const meta: Meta<typeof Tabs> = {
           "",
           "**Props:**",
           "- `items: TabsItemData[]` — abas + conteúdos.",
-          "- `defaultValue?: string` — aba inicial (uncontrolled). Default: primeiro item.",
+          "- `defaultValue?: string` — aba inicial (uncontrolled). Default: a primeira aba habilitada.",
           "- `value?` / `onValueChange?` — modo controlled.",
           "- `orientation?: 'horizontal' | 'vertical'` — layout das abas. Default `'horizontal'`.",
           "- `keepMounted?: boolean` — mantém os painéis no DOM (escondidos), para formulários, filtros e uploads não zerarem ao trocar de aba. Sem ele, o painel inativo é desmontado.",
@@ -130,6 +130,22 @@ export const Default: Story = {
     await userEvent.click(tabs[1]!)
     await expect(tabs[1]).toHaveAttribute("aria-selected", "true")
   },
+}
+
+export const WithoutDefault: Story = {
+  args: { items: baseItems },
+  parameters: {
+    docs: {
+      description: {
+        story: "Sem `value` nem `defaultValue`, a primeira aba habilitada começa aberta.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-[520px]">
+      <Tabs {...args} />
+    </div>
+  ),
 }
 
 export const WithBadge: Story = {

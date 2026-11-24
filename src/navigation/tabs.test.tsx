@@ -23,6 +23,32 @@ describe("Tabs", () => {
     expect(screen.getByText("Content B")).toBeInTheDocument()
   })
 
+  it("selects the first tab when neither value nor defaultValue is given", () => {
+    render(
+      <Tabs
+        items={[
+          { value: "a", label: "A", content: "Painel A" },
+          { value: "b", label: "B", content: "Painel B" },
+        ]}
+      />,
+    )
+    expect(screen.getByRole("tab", { name: "A" })).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Painel A")
+  })
+
+  it("skips a disabled first tab", () => {
+    render(
+      <Tabs
+        items={[
+          { value: "a", label: "A", content: "Painel A", disabled: true },
+          { value: "b", label: "B", content: "Painel B" },
+        ]}
+      />,
+    )
+    expect(screen.getByRole("tab", { name: "B" })).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Painel B")
+  })
+
   it("supports keyboard arrow navigation between triggers", async () => {
     render(
       <Tabs
