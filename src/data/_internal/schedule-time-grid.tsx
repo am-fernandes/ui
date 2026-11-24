@@ -59,7 +59,7 @@ export function TimeGridView({
   const { now, onSlotClick, newEventLabel, locale } = React.useContext(ScheduleContext)
   const at = (day: Date, minutes: number) =>
     new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, minutes)
-  const scrollRef = React.useRef<HTMLDivElement>(null)
+  const scrollRef = React.useRef<HTMLElement>(null)
   const columns = `${GUTTER} repeat(${days.length}, minmax(0, 1fr))`
   const hours = Array.from({ length: Math.max(0, maxHour - minHour) }, (_, i) => minHour + i)
   const totalHeight = hours.length * hourHeight
@@ -72,7 +72,7 @@ export function TimeGridView({
 
   React.useLayoutEffect(() => {
     // The ref is attached by the time layout effects run.
-    const el = scrollRef.current as HTMLDivElement
+    const el = scrollRef.current as HTMLElement
     // A few px less, so the label of `scrollToHour` (centred on its line) is not cut.
     el.scrollTop = Math.max(0, (scrollToHour - minHour) * hourHeight - 8)
   }, [scrollToHour, minHour, hourHeight])
@@ -172,14 +172,14 @@ export function TimeGridView({
         </div>
       ) : null}
 
-      <div
+      {/* A named <section> is a region landmark: the grid of hours. */}
+      <section
         ref={scrollRef}
         data-slot="schedule-scroll"
         // Focusable, so the hours can be scrolled from the keyboard even when
         // no event in view is a button.
         // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrolling region must be reachable by keyboard (WCAG 2.1.1).
         tabIndex={0}
-        role="region"
         aria-label={timeGridLabel}
         className="relative overflow-y-auto [scrollbar-gutter:stable] focus-visible:focus-outline-inset"
         style={{ maxHeight }}
@@ -268,7 +268,7 @@ export function TimeGridView({
             )
           })}
         </div>
-      </div>
+      </section>
     </div>
   )
 }
