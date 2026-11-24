@@ -52,7 +52,8 @@ const defaultStyle = {
   "--info-bg": "var(--info)",
   "--info-text": "var(--info-foreground)",
   "--info-border": "transparent",
-  "--border-radius": "var(--radius)",
+  // A floating surface, like Popover and Dialog (the old --radius was 8px).
+  "--border-radius": "var(--radius-container)",
   // Override Sonner's default 999999999 to keep toasts inside the system scale.
   zIndex: "var(--z-toast)",
   // A modal turns pointer events off on <body>: the toasts stay clickable.

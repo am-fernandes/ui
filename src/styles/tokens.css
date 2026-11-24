@@ -605,6 +605,26 @@
   border-color: inherit;
 }
 
+/* Flat, like every other surface: no shadow, the text size of the system
+   (Sonner fixes 13px), and the system focus ring instead of Sonner's shadow
+   ring. The radius comes through --border-radius (see `Toaster`). */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+  box-shadow: none;
+  font-size: var(--text-sm);
+}
+[data-sonner-toaster] [data-sonner-toast]:focus-visible,
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button]:focus-visible,
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-button]:focus-visible {
+  box-shadow: none;
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+/* The X was 20px: 24px is the smallest target (WCAG 2.2, 2.5.8). */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button] {
+  width: 24px;
+  height: 24px;
+}
+
 /* ---- Progress ----------------------------------------------------------------
    Indeterminate bar (`value` null or undefined): a third of the track that
    crosses it, from just outside the left edge to just outside the right. */

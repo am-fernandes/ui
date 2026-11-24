@@ -1374,6 +1374,31 @@ test.describe("Toaster", () => {
     await expect(toast).toHaveCount(0)
   })
 
+  // Sonner's stylesheet is not layered and won over the library's rules: a
+  // 0 4px 12px shadow, 13px text, the old 8px --radius and a 20px X.
+  test("the toast is flat: no shadow, 14px text, container radius, a 24px X", async ({ page }) => {
+    const toast = await playgroundToast(page, "variant:success;message:Proposta+salva", "light")
+    const look = await toast.evaluate((el) => {
+      const s = getComputedStyle(el)
+      return { shadow: s.boxShadow, fontSize: s.fontSize, radius: s.borderTopLeftRadius }
+    })
+    expect(look).toEqual({ shadow: "none", fontSize: "14px", radius: "12px" })
+    const close = (await toast.getByRole("button", { name: "Fechar notificação" }).boundingBox())!
+    expect(close.width).toBeGreaterThanOrEqual(24)
+    expect(close.height).toBeGreaterThanOrEqual(24)
+
+    // Keyboard focus (Alt+T to the list, Tab to the toast): the system ring,
+    // not Sonner's shadow.
+    await page.keyboard.press("Alt+KeyT")
+    await page.keyboard.press("Tab")
+    await expect(toast).toBeFocused()
+    const focus = await toast.evaluate((el) => {
+      const s = getComputedStyle(el)
+      return { shadow: s.boxShadow, outline: `${s.outlineWidth} ${s.outlineStyle}` }
+    })
+    expect(focus).toEqual({ shadow: "none", outline: "2px solid" })
+  })
+
   test("Toaster props add to the library's defaults instead of replacing them", async ({
     page,
   }) => {
