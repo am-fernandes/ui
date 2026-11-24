@@ -102,6 +102,13 @@ describe("Combobox", () => {
     expect(badges.length).toBeGreaterThan(0)
   })
 
+  it("the chip's remove button keeps its 12px icon and gets a 24px hit area", () => {
+    render(<Combobox multiple options={options} value={["a"]} />)
+    const remove = screen.getByRole("button", { name: "Remover Alpha" })
+    expect(remove.className).toMatch(/\brelative\b/)
+    expect(remove.className).toContain("before:-inset-1.5")
+  })
+
   it("removes a multi value via the X button on the badge", async () => {
     render(<MultiControlled initial={["a", "b"]} />)
     const removeBtn = screen.getByRole("button", { name: "Remover Alpha" })

@@ -668,3 +668,26 @@ test.describe("Combobox: teclado no gatilho fechado", () => {
     await expect(trigger).toHaveText(/Pendente/)
   })
 })
+
+test.describe("Combobox: alvo do × dos itens", () => {
+  test("o × de um item responde num quadrado de 24 px em volta do ícone", async ({ page }) => {
+    await gotoStory(page, "forms-combobox--multi-select", "2 selecionados")
+    const remove = page.getByRole("button", { name: "Remover Advocacia" })
+    const box = await remove.boundingBox()
+    if (!box) throw new Error("no box")
+    const cx = box.x + box.width / 2
+    const cy = box.y + box.height / 2
+    for (const [dx, dy] of [
+      [-11.5, -11.5],
+      [11.5, -11.5],
+      [-11.5, 11.5],
+      [11.5, 11.5],
+    ]) {
+      const hit = await page.evaluate(
+        ([x, y]) => document.elementFromPoint(x, y)?.closest("button")?.getAttribute("aria-label"),
+        [cx + dx, cy + dy],
+      )
+      expect(hit, `${dx},${dy}`).toBe("Remover Advocacia")
+    }
+  })
+})

@@ -424,7 +424,8 @@ export function Combobox(props: ComboboxProps) {
                 <button
                   type="button"
                   aria-label={l.remove(labelText)}
-                  className="rounded-inner cursor-pointer state-layer focus-visible:focus-outline"
+                  // The icon stays 12px; the hit area around it is 24px.
+                  className="relative cursor-pointer rounded-inner state-layer focus-visible:focus-outline before:absolute before:-inset-1.5"
                   onClick={(e) => handleRemoveValue(val, e)}
                 >
                   <X className="h-3 w-3 text-muted-foreground" />
