@@ -237,6 +237,7 @@ function TimePicker({
     [ref],
   )
   const skipHourBlurRef = React.useRef(false)
+  const hasLabel = label != null && label !== ""
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
   const describedBy = ids.describedBy({ description: hasDescription, error: hasError })
@@ -421,7 +422,11 @@ function TimePicker({
       <div
         // biome-ignore lint/a11y/useSemanticElements: a <fieldset> would force a <legend>, breaking the inline flex layout intended.
         role="group"
-        aria-label={ariaLabel ?? (typeof label === "string" ? label : l.group)}
+        // Named by the label itself, so a label that is not plain text and
+        // its "obrigatório" mark are read; aria-label only without a label
+        // (or when the consumer passes one).
+        aria-labelledby={ariaLabel == null && hasLabel ? ids.labelId : undefined}
+        aria-label={ariaLabel ?? (hasLabel ? undefined : l.group)}
         data-slot="time-picker"
         onBlur={(e) => {
           const next = e.relatedTarget as Node | null

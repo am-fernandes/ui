@@ -467,6 +467,23 @@ describe("TimePicker", () => {
     expect(calls).toEqual(["value:09:03", "blur"])
   })
 
+  it("the group is named by its label, also a non-text one, with the required mark", () => {
+    render(
+      <TimePicker
+        value=""
+        required
+        label={
+          <span>
+            Início <em>do expediente</em>
+          </span>
+        }
+      />,
+    )
+    const group = screen.getByRole("group")
+    expect(group).toHaveAccessibleName(/^Início do expediente\s*obrigatório$/)
+    expect(group).not.toHaveAttribute("aria-label")
+  })
+
   it("forwards ref to the hour input", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<TimePicker value="" ref={ref} />)
