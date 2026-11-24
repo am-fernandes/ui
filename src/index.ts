@@ -48,7 +48,13 @@ export {
   type ScheduleView,
 } from "./data/schedule"
 export { tableStyles, type TableStyles } from "./data/table-styles"
-export { Tree, type TreeNodeData, type TreeProps } from "./data/tree"
+export {
+  Tree,
+  defaultTreeLabels,
+  type TreeLabels,
+  type TreeNodeData,
+  type TreeProps,
+} from "./data/tree"
 export { Video, type VideoCaptionTrack, type VideoProps } from "./data/video"
 
 // Hooks

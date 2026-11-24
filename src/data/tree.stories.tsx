@@ -17,11 +17,19 @@ const meta = {
           "",
           "**Props:**",
           "- `data: TreeNodeData[]` — nós raiz. Cada nó pode ter `children` (recursivo).",
-          "- `defaultExpanded?: string[]` — ids inicialmente expandidos (uncontrolled).",
-          "- `expanded?: Set<string>` — set controlado de ids expandidos. Quando passado, ativa modo controlled.",
-          "- `onExpandedChange?: (next: Set<string>) => void` — callback do modo controlled.",
-          "- `selected?: string` — id do nó selecionado (single-select).",
-          "- `onSelectedChange?: (id: string) => void` — disparado ao clicar em um nó (folha ou pasta).",
+          "- `defaultExpanded?: string[] | Set<string>` — ids inicialmente expandidos (uncontrolled).",
+          "- `expanded?: string[] | Set<string>` — ids expandidos (controlado).",
+          "- `onExpandedChange?: (next: Set<string>) => void` — ao abrir ou fechar um nó.",
+          "- `selected?: string` / `defaultSelected?: string` — nó selecionado (controlado ou não).",
+          "- `onSelectedChange?: (id: string) => void` — ao selecionar um nó.",
+          '- `onLoadChildren?: (node) => void` — um nó com `hasChildren` e sem `children` pede os filhos ao abrir; uma linha "Carregando…" aparece até eles chegarem.',
+          "- `labels?: Partial<TreeLabels>` — textos fixos (`loading`, `depthLimit`, `cycle`).",
+          "",
+          "**Clique:** a seta abre e fecha sem mudar a seleção; o nome seleciona e abre uma pasta fechada.",
+          "",
+          "**Teclado (padrão treeview da WAI-ARIA):** setas para cima e para baixo percorrem os itens visíveis em qualquer nível; direita abre ou entra no primeiro filho; esquerda fecha ou volta ao pai; Home e End; Enter seleciona (e abre ou fecha uma pasta); Espaço seleciona; digitar uma letra pula para o próximo item que começa com ela.",
+          "",
+          "Dê um nome à árvore com `aria-label` ou `aria-labelledby`.",
           "",
           "**Shape do nó (`TreeNodeData`):**",
           "```ts",
@@ -119,7 +127,11 @@ const fsTree: TreeNodeData[] = [
 ]
 
 export const Default: Story = {
-  args: { data: fsTree, defaultExpanded: ["src", "components"] },
+  args: {
+    "aria-label": "Arquivos do projeto",
+    data: fsTree,
+    defaultExpanded: ["src", "components"],
+  },
   render: (args) => (
     <div className="w-[320px] rounded-md border p-2">
       <Tree {...args} />
@@ -135,6 +147,7 @@ export const Controlled: Story = {
     return (
       <div className="w-[320px] rounded-md border p-2">
         <Tree
+          aria-label="Arquivos do projeto"
           data={fsTree}
           expanded={expanded}
           onExpandedChange={setExpanded}
@@ -143,5 +156,53 @@ export const Controlled: Story = {
         />
       </div>
     )
+  },
+}
+
+const empreendimentos: TreeNodeData[] = [
+  { id: "aurora", label: "Residencial Aurora", icon: Folder, hasChildren: true },
+  { id: "parque", label: "Parque das Águas", icon: Folder, hasChildren: true },
+]
+
+export const LazyChildren: Story = {
+  name: "Lazy Children",
+  args: { data: empreendimentos },
+  render: () => {
+    const [data, setData] = useState(empreendimentos)
+    return (
+      <div className="w-[320px] rounded-md border p-2">
+        <Tree
+          aria-label="Empreendimentos"
+          data={data}
+          onLoadChildren={(node) => {
+            // Num app real: buscar as unidades no servidor.
+            window.setTimeout(() => {
+              setData((current) =>
+                current.map((n) =>
+                  n.id === node.id
+                    ? {
+                        ...n,
+                        children: ["Bloco A", "Bloco B", "Bloco C"].map((bloco) => ({
+                          id: `${node.id}-${bloco}`,
+                          label: bloco,
+                          icon: Folder,
+                        })),
+                      }
+                    : n,
+                ),
+              )
+            }, 800)
+          }}
+        />
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Um nó com `hasChildren` e sem `children` pede os filhos em `onLoadChildren` quando é aberto, e mostra "Carregando…" até o consumidor passar os filhos.',
+      },
+    },
   },
 }
