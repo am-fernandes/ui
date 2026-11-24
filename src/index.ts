@@ -182,6 +182,8 @@ export {
 export { DateInput, type DateInputProps } from "./forms/date-input"
 export {
   DateRangePicker,
+  defaultDateRangePickerLabels,
+  type DateRangePickerLabels,
   type DateRangePickerProps,
   type DateRangeValue,
 } from "./forms/date-range-picker"

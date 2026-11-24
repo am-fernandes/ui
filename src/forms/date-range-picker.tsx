@@ -22,6 +22,18 @@ export interface DateRangeValue {
   to: string
 }
 
+export interface DateRangePickerLabels {
+  /** The button that empties the period. */
+  clear: string
+  /** The button that keeps the days picked. */
+  confirm: string
+}
+
+export const defaultDateRangePickerLabels: DateRangePickerLabels = {
+  clear: "Limpar",
+  confirm: "Confirmar",
+}
+
 export interface DateRangePickerProps {
   label?: React.ReactNode
   description?: React.ReactNode
@@ -35,6 +47,8 @@ export interface DateRangePickerProps {
   className?: string
   numberOfMonths?: number
   id?: string
+  /** Texts of the picker. Defaults in `defaultDateRangePickerLabels`. */
+  labels?: Partial<DateRangePickerLabels>
   "aria-label"?: string
   ref?: React.Ref<HTMLButtonElement>
 }
@@ -62,9 +76,11 @@ function DateRangePicker({
   placeholder = "Selecione um período",
   className,
   numberOfMonths = 2,
+  labels,
   "aria-label": ariaLabel,
   ref,
 }: DateRangePickerProps) {
+  const l: DateRangePickerLabels = { ...defaultDateRangePickerLabels, ...labels }
   const ids = useFieldIds(id)
   const [open, setOpen] = React.useState(false)
   // Two months side by side do not fit a phone: one month below `md`.
@@ -192,9 +208,9 @@ function DateRangePicker({
         </div>
         <div className="flex shrink-0 justify-end gap-2 border-t p-3">
           <Button variant="ghost" onClick={handleClear}>
-            Limpar
+            {l.clear}
           </Button>
-          <Button onClick={handleConfirm}>Confirmar</Button>
+          <Button onClick={handleConfirm}>{l.confirm}</Button>
         </div>
       </Popover>
     </FieldShell>
