@@ -113,18 +113,26 @@ test.describe("DataTable (mobile)", () => {
 })
 
 test.describe("Tabs (mobile)", () => {
-  test("trigger list stays accessible when wrapper is wider than the viewport", async ({
+  test("a long tab list scrolls inside the screen and every tab can be reached", async ({
     page,
   }) => {
-    await page.goto(story("navigation-tabs--default"))
-
-    const tabs = page.getByRole("tab")
-    await expect(tabs.first()).toBeVisible({ timeout: 10_000 })
-    expect(await tabs.count()).toBeGreaterThan(1)
-
-    // Even when the parent wrapper is wider than the mobile viewport, the
-    // first tab must remain clickable and update aria-selected.
-    await tabs.nth(1).click()
-    await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true")
+    await page.goto(story("navigation-tabs--many-tabs"))
+    const list = page.getByRole("tablist")
+    await expect(list).toBeVisible({ timeout: 10_000 })
+    const viewport = page.viewportSize()!
+    const box = (await list.boundingBox())!
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
+    // The page does not scroll sideways; the list does.
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    )
+    expect(overflow).toBeLessThanOrEqual(0)
+    expect(await list.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true)
+    // A tab out of sight can be scrolled to and tapped.
+    const last = page.getByRole("tab", { name: "Tarefas" })
+    await last.scrollIntoViewIfNeeded()
+    await last.tap()
+    await expect(last).toHaveAttribute("aria-selected", "true")
+    await expect(page.getByRole("tabpanel")).toContainText("Tarefas do lead.")
   })
 })

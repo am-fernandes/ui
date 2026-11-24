@@ -83,22 +83,20 @@ test.describe("Layout responsivo", () => {
     await expect(page.locator('aside[data-slot="app-shell-sidebar"]')).toBeVisible()
   })
 
-  test("Tabs: trigger list não estoura a largura do viewport (overflow no scroll)", async ({
-    page,
-  }) => {
-    // The Tabs Default story has three short Brazilian-Portuguese labels
-    // ("Visão geral" / "Cobrança" / "Equipe") inside a 520px wrapper. The
-    // `TabsList` itself is `inline-flex` — its intrinsic width is the sum of
-    // its children, NOT the wrapper. So on a 375-wide viewport the tablist
-    // should still fit because the labels are short. This is the "intrinsic
-    // responsiveness" invariant: short content stays inside the viewport.
+  test("Tabs: a lista de abas não estoura o viewport, rola por dentro", async ({ page }) => {
+    // Oito abas (a ficha de um lead) não cabem em 375px: a lista fica do
+    // tamanho do contêiner e rola de lado; a página não ganha rolagem lateral.
     await page.setViewportSize(VIEWPORTS.mobile)
-    await page.goto(story("navigation-tabs--default"))
+    await page.goto(story("navigation-tabs--many-tabs"))
     const tablist = page.getByRole("tablist")
     await expect(tablist).toBeVisible({ timeout: 10_000 })
-    const box = await tablist.boundingBox()
-    expect(box).not.toBeNull()
-    expect(box?.width ?? 0).toBeLessThanOrEqual(VIEWPORTS.mobile.width)
+    const box = (await tablist.boundingBox())!
+    expect(box.x + box.width).toBeLessThanOrEqual(VIEWPORTS.mobile.width)
+    expect(await tablist.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true)
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    )
+    expect(overflow).toBeLessThanOrEqual(0)
   })
 
   test("Dialog: respeita o viewport em mobile sem virar minúsculo", async ({ page }) => {

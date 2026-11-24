@@ -11,6 +11,31 @@ async function gotoShell(page: Page, id: string) {
 }
 
 test.describe("Tabs", () => {
+  test("a tab list wider than its container scrolls and keeps the active tab in sight", async ({
+    page,
+  }) => {
+    await page.goto(story("navigation-tabs--many-tabs"))
+    const list = page.getByRole("tablist")
+    const wrapper = (await page.locator('[data-slot="tabs"]').boundingBox())!
+    const box = (await list.boundingBox())!
+    expect(box.width).toBeLessThanOrEqual(wrapper.width + 0.5)
+    expect(await list.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true)
+    await page.getByRole("tab", { name: "Resumo" }).click()
+    await page.keyboard.press("End")
+    const last = page.getByRole("tab", { name: "Tarefas" })
+    await expect(last).toHaveAttribute("aria-selected", "true")
+    // Fully inside the visible part of the list.
+    await expect
+      .poll(async () => {
+        const tab = (await last.boundingBox())!
+        const frame = (await list.boundingBox())!
+        return tab.x >= frame.x - 0.5 && tab.x + tab.width <= frame.x + frame.width + 0.5
+      })
+      .toBe(true)
+    // The page itself did not scroll.
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+  })
+
   test("without a default the first tab and its panel are shown", async ({ page }) => {
     await page.goto(story("navigation-tabs--without-default"))
     await expect(page.getByRole("tab", { name: "Visão geral" })).toHaveAttribute(

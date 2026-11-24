@@ -221,6 +221,42 @@ describe("Tabs", () => {
     expect(screen.queryByTestId("panel-a")).not.toBeInTheDocument()
   })
 
+  describe("tab list wider than its container", () => {
+    const many = Array.from({ length: 8 }, (_, i) => ({
+      value: `t${i}`,
+      label: `Aba ${i + 1}`,
+      content: `Painel ${i + 1}`,
+    }))
+
+    it("scrolls sideways instead of spilling out", () => {
+      const { container } = render(<Tabs items={many} />)
+      const list = container.querySelector('[data-slot="tabs-list"]') as HTMLElement
+      expect(list).toHaveClass("overflow-x-auto", "max-w-full")
+      for (const tab of screen.getAllByRole("tab")) expect(tab).toHaveClass("shrink-0")
+    })
+
+    it("scrolls the active tab into view, without scrolling the page", async () => {
+      const { container } = render(<Tabs items={many} />)
+      const list = container.querySelector('[data-slot="tabs-list"]') as HTMLElement
+      // jsdom does no layout: a 200px list with 100px tabs side by side.
+      Object.defineProperty(list, "clientWidth", { configurable: true, value: 200 })
+      screen.getAllByRole("tab").forEach((tab, i) => {
+        Object.defineProperty(tab, "offsetLeft", { configurable: true, value: i * 100 })
+        Object.defineProperty(tab, "offsetWidth", { configurable: true, value: 100 })
+      })
+      const scrollIntoView = vi.fn()
+      Element.prototype.scrollIntoView = scrollIntoView
+      screen.getAllByRole("tab")[0]!.focus()
+      await userEvent.keyboard("{End}")
+      expect(screen.getByRole("tab", { name: "Aba 8" })).toHaveAttribute("aria-selected", "true")
+      // Its right edge (800px) lines up with the list's (200px wide).
+      expect(list.scrollLeft).toBe(600)
+      await userEvent.keyboard("{Home}")
+      expect(list.scrollLeft).toBe(0)
+      expect(scrollIntoView).not.toHaveBeenCalled()
+    })
+  })
+
   describe("keepMounted", () => {
     const formItems = [
       { value: "a", label: "Dados", content: <input aria-label="Nome" /> },

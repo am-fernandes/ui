@@ -61,6 +61,22 @@ function Tabs({
     setVisited(new Set(visited).add(activeValue))
   }
 
+  // A list wider than its container scrolls sideways; keep the active tab in
+  // sight. Only the list scrolls (scrollLeft), never the page, as
+  // scrollIntoView would.
+  const listRef = React.useRef<HTMLDivElement>(null)
+  React.useLayoutEffect(() => {
+    const list = listRef.current
+    if (!list || isVertical || activeValue === undefined) return
+    const tab = list.querySelector<HTMLElement>('[data-state="active"]')
+    if (!tab) return
+    const margin = Number.parseFloat(getComputedStyle(list).paddingLeft) || 0
+    const left = tab.offsetLeft - margin
+    const right = tab.offsetLeft + tab.offsetWidth + margin
+    if (right > list.scrollLeft + list.clientWidth) list.scrollLeft = right - list.clientWidth
+    if (left < list.scrollLeft) list.scrollLeft = Math.max(0, left)
+  }, [activeValue, isVertical])
+
   const handleValueChange = (v: string) => {
     if (value === undefined) setInternalValue(v)
     onValueChange?.(v)
@@ -77,10 +93,15 @@ function Tabs({
       {...props}
     >
       <TabsPrimitive.List
+        ref={listRef}
         data-slot="tabs-list"
         className={cn(
-          "inline-flex items-center justify-center rounded-element bg-muted p-1 text-muted-foreground",
-          isVertical ? "flex-col items-stretch" : undefined,
+          "relative inline-flex items-center rounded-element bg-muted p-1 text-muted-foreground",
+          // Wider than its container: the list scrolls instead of spilling out
+          // (start-aligned, or what overflows on the left would be out of reach).
+          isVertical
+            ? "flex-col items-stretch justify-center"
+            : "max-w-full justify-start overflow-x-auto [scrollbar-width:thin]",
         )}
       >
         {items.map((item) => (
@@ -90,7 +111,7 @@ function Tabs({
             disabled={item.disabled}
             data-slot="tabs-trigger"
             className={cn(
-              "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-inner px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer state-layer focus-visible:focus-outline disabled:pointer-events-none disabled:cursor-default disabled:opacity-50 data-[state=active]:bg-card data-[state=active]:text-foreground",
+              "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-inner px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer state-layer focus-visible:focus-outline-inset disabled:pointer-events-none disabled:cursor-default disabled:opacity-50 data-[state=active]:bg-card data-[state=active]:text-foreground",
             )}
           >
             {item.label}

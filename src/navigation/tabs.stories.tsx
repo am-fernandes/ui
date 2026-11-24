@@ -148,6 +148,38 @@ export const WithoutDefault: Story = {
   ),
 }
 
+const leadTabs = [
+  "Resumo",
+  "Dados pessoais",
+  "Contatos",
+  "Imóveis de interesse",
+  "Propostas",
+  "Documentos",
+  "Histórico",
+  "Tarefas",
+].map((label, i) => ({
+  value: `aba-${i + 1}`,
+  label,
+  content: <p className="text-sm">{label} do lead.</p>,
+}))
+
+export const ManyTabs: Story = {
+  args: { items: leadTabs },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Quando as abas não cabem (a ficha de um lead no celular), a lista rola de lado e a aba ativa fica sempre à vista.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-full max-w-md">
+      <Tabs {...args} />
+    </div>
+  ),
+}
+
 export const WithBadge: Story = {
   args: {
     defaultValue: "inbox",
