@@ -196,6 +196,35 @@ test.describe("Schedule — list and mobile", () => {
 })
 
 test.describe("Schedule — accessibility", () => {
+  for (const id of ["month", "week", "day", "list"]) {
+    test(`${id}: every event is a 24px target and no text is under 12px`, async ({ page }) => {
+      await gotoSchedule(page, `data-schedule--${id}`)
+      const targets = await page
+        .locator('[data-slot="schedule-event"], [data-slot="schedule-more"]')
+        .evaluateAll((els) =>
+          els.map((el) => ({
+            name: el.getAttribute("aria-label") ?? el.textContent ?? "",
+            height: el.getBoundingClientRect().height,
+          })),
+        )
+      expect(targets.length).toBeGreaterThan(0)
+      for (const t of targets) expect(t.height, t.name).toBeGreaterThanOrEqual(24)
+
+      const small = await page.locator('[data-slot="schedule"]').evaluate((root) => {
+        const out: string[] = []
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+        while (walker.nextNode()) {
+          const el = walker.currentNode.parentElement
+          const text = walker.currentNode.nodeValue?.trim()
+          if (!el || !text || el.closest(".sr-only")) continue
+          if (Number.parseFloat(getComputedStyle(el).fontSize) < 12) out.push(text)
+        }
+        return out
+      })
+      expect(small).toEqual([])
+    })
+  }
+
   for (const id of ["month", "week", "day", "list", "empty-list", "loading"]) {
     test(`${id} has no WCAG 2.1 AA violations`, async ({ page }) => {
       await gotoSchedule(page, `data-schedule--${id}`)

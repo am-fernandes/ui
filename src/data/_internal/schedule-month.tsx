@@ -30,7 +30,8 @@ interface MonthViewProps {
   moreLabel: (count: number) => string
 }
 
-const ROW_TEMPLATE = `1.75rem repeat(${MONTH_MAX_LANES}, 1.375rem) 1.5rem`
+// Lanes of 26px: a 24px event (WCAG 2.2 target size) and 1px of air above and below.
+const ROW_TEMPLATE = `1.75rem repeat(${MONTH_MAX_LANES}, 1.625rem) 1.625rem`
 
 export function MonthView({ days, date, events, todayLabel, moreLabel }: MonthViewProps) {
   const { now } = React.useContext(ScheduleContext)
@@ -153,7 +154,7 @@ function MoreEvents({
           type="button"
           data-slot="schedule-more"
           aria-label={`${moreLabel(count)}, ${dayLabel}`}
-          className="w-full cursor-pointer truncate rounded-inner px-1 text-left text-xs font-medium leading-5 text-muted-foreground state-layer hover:text-foreground focus-visible:focus-outline-inset"
+          className="w-full cursor-pointer truncate rounded-inner px-1 text-left text-xs font-medium leading-6 text-muted-foreground state-layer hover:text-foreground focus-visible:focus-outline-inset"
         >
           {moreLabel(count)}
         </button>

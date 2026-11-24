@@ -103,7 +103,7 @@ export interface TimedPlacement<E extends ScheduleEventInput> {
   event: E
   /** Distance from the top of the visible hours, in px. */
   top: number
-  /** Height in px (at least `minHeight`). */
+  /** Height in px (at least `minHeight`, 26 by default). */
   height: number
   /** Column inside its overlap cluster (0-based). */
   column: number
@@ -124,7 +124,9 @@ export function layoutDayColumn<E extends ScheduleEventInput>(
   minHour: number,
   maxHour: number,
   hourHeight: number,
-  minHeight = 20,
+  // 26px: the block is drawn 2px shorter, so a short event is still a 24px
+  // target (WCAG 2.2, 2.5.8).
+  minHeight = 26,
 ): TimedPlacement<E>[] {
   const rangeStart = startOfDay(day).getTime() + minHour * 3_600_000
   const rangeEnd = startOfDay(day).getTime() + maxHour * 3_600_000

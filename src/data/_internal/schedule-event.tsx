@@ -128,7 +128,7 @@ export function ScheduleEventButton({
   switch (variant) {
     case "chip":
       variantClass =
-        "flex w-full min-w-0 items-center gap-1 overflow-hidden rounded-inner px-1 text-xs leading-5 state-layer"
+        "flex w-full min-w-0 items-center gap-1 overflow-hidden rounded-inner px-1 text-xs leading-6 state-layer"
       content = (
         <>
           <span aria-hidden="true" className={cn("size-2 shrink-0 rounded-full", colors.dot)} />
@@ -147,7 +147,7 @@ export function ScheduleEventButton({
       break
     case "bar":
       variantClass = cn(
-        "flex w-full min-w-0 items-center rounded-inner border-l-[3px] px-1.5 text-xs font-medium leading-5 state-layer",
+        "flex w-full min-w-0 items-center rounded-inner border-l-[3px] px-1.5 text-xs font-medium leading-6 state-layer",
         colors.surface,
         colors.border,
         continuesBefore && "rounded-l-none border-l-0 pl-2",

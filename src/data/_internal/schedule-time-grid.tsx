@@ -107,7 +107,7 @@ export function TimeGridView({
           className={cn("grid border-b", stableGutter)}
           style={{ gridTemplateColumns: columns }}
         >
-          <div className="flex items-start justify-end px-1.5 py-1 text-right text-[11px] leading-4 text-muted-foreground">
+          <div className="flex items-start justify-end px-1.5 py-1 text-right text-xs leading-4 text-muted-foreground">
             {allDayLabel}
           </div>
           <div
@@ -115,7 +115,7 @@ export function TimeGridView({
             style={{
               gridColumn: `2 / ${days.length + 2}`,
               gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
-              gridTemplateRows: `repeat(${barLanes}, 1.375rem)`,
+              gridTemplateRows: `repeat(${barLanes}, 1.625rem)`,
             }}
           >
             {barSegments.map((s) => (
@@ -147,7 +147,7 @@ export function TimeGridView({
               i === 0 ? null : (
                 <span
                   key={hour}
-                  className="absolute right-1.5 -translate-y-1/2 text-[11px] tabular-nums leading-none text-muted-foreground"
+                  className="absolute right-1.5 -translate-y-1/2 text-xs tabular-nums leading-none text-muted-foreground"
                   style={{ top: i * hourHeight }}
                 >
                   {`${String(hour).padStart(2, "0")}:00`}

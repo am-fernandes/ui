@@ -48,7 +48,7 @@ export function ListView({ days, events, headingLevel, emptyLabel, todayLabel }:
             >
               {formatDayLong(day)}
               {isToday ? (
-                <span className="rounded-inner bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground normal-case tracking-normal">
+                <span className="rounded-inner bg-primary px-1.5 py-0.5 text-xs text-primary-foreground normal-case tracking-normal">
                   {todayLabel}
                 </span>
               ) : null}

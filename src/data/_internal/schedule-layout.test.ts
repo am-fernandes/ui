@@ -144,8 +144,8 @@ describe("layoutDayColumn", () => {
     expect(byId.b).toMatchObject({ column: 1, columns: 2 })
   })
 
-  it("handles zero-length events", () => {
+  it("gives a zero-length event the minimum height (a 24px target once drawn)", () => {
     const [p] = layoutDayColumn([ev("ping", d(18, 9), d(18, 9))], d(18), 0, 24, 48)
-    expect(p).toMatchObject({ top: 9 * 48, height: 20 })
+    expect(p).toMatchObject({ top: 9 * 48, height: 26 })
   })
 })
