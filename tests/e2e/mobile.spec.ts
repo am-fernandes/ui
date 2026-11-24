@@ -100,15 +100,27 @@ test.describe("Dialog (mobile)", () => {
 })
 
 test.describe("DataTable (mobile)", () => {
-  test("table is wrapped in an overflow-auto container for horizontal scroll", async ({ page }) => {
+  test("a table wider than the phone scrolls inside its box and the page does not", async ({
+    page,
+  }) => {
     await page.goto(story("data-datatable--default"))
-
-    // The Table primitive wraps the <table> in `relative w-full overflow-auto`.
-    // On a narrow viewport, the wrapper must be present and contain the table.
-    const tableEl = page.locator('[data-slot="table"]').first()
-    await expect(tableEl).toBeVisible({ timeout: 10_000 })
-    const scrollContainer = page.locator(".overflow-auto", { has: tableEl }).first()
-    await expect(scrollContainer).toBeVisible()
+    const table = page.locator('[data-slot="data-table"] table').first()
+    await expect(table).toBeVisible({ timeout: 15_000 })
+    const viewport = page.viewportSize()?.width ?? 0
+    // The page itself never scrolls sideways.
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      viewport + 1,
+    )
+    // The table's own box does, and a swipe reaches its last column.
+    const box = page.locator('[data-slot="data-table"] table').first().locator("xpath=..")
+    const widths = await box.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }))
+    expect(widths.scroll).toBeGreaterThan(widths.client)
+    await box.evaluate((el) => {
+      el.scrollLeft = el.scrollWidth
+    })
+    const lastHeader = table.locator("thead th").last()
+    const header = (await lastHeader.boundingBox())!
+    expect(header.x + header.width).toBeLessThanOrEqual(viewport + 1)
   })
 })
 
