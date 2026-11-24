@@ -193,7 +193,7 @@ export const Disabled: Story = {
   ),
 }
 
-export const ReadOnly: Story = {
+export const AppendOnly: Story = {
   render: () => {
     const [files] = useState(() => [
       new File(["conteúdo"], "contrato.pdf", { type: "application/pdf" }),
@@ -209,6 +209,35 @@ export const ReadOnly: Story = {
       description: {
         story:
           "`removable={false}` esconde o botão de remover (append-only): a linha continua abrível e o dropzone aceita novos arquivos.",
+      },
+    },
+  },
+}
+
+export const ReadOnly: Story = {
+  render: () => {
+    const [files] = useState(() => [
+      new File(["conteúdo"], "contrato.pdf", { type: "application/pdf" }),
+    ])
+    return (
+      <form className="flex w-[460px] flex-col gap-6" onSubmit={(event) => event.preventDefault()}>
+        <FileUpload
+          readOnly
+          multiple
+          name="anexos"
+          value={files}
+          label="Anexos do processo"
+          description="Enviados pelo cliente; só a equipe jurídica altera."
+        />
+        <FileUpload readOnly label="Comprovante de renda" />
+      </form>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`readOnly`: sem dropzone, câmera ou botão de remover; os arquivos continuam abríveis e vão no formulário. Sem arquivos, aparece "Nenhum arquivo." (`labels.noFiles`).',
       },
     },
   },

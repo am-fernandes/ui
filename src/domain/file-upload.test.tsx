@@ -1436,4 +1436,52 @@ describe("FileUpload", () => {
       expect(onBlur).not.toHaveBeenCalled()
     })
   })
+
+  describe("readOnly", () => {
+    it("has no dropzone, camera or remove buttons, and names the list with the label", () => {
+      const file = new File(["x"], "contrato.pdf", { type: "application/pdf" })
+      render(
+        <FileUpload
+          readOnly
+          camera
+          multiple
+          value={[file]}
+          label="Anexos"
+          onValueChange={() => {}}
+        />,
+      )
+      expect(
+        screen.queryByRole("button", { name: /Arraste|Clique|Selecione|Câmera|Tirar/ }),
+      ).toBeNull()
+      expect(screen.queryByRole("button", { name: /Remover/ })).toBeNull()
+      expect(screen.getByRole("list", { name: "Anexos" })).toBeInTheDocument()
+      expect(
+        screen.getByRole("button", { name: "Abrir contrato.pdf em nova aba" }),
+      ).toBeInTheDocument()
+    })
+
+    it("says there are no files when the list is empty", () => {
+      render(<FileUpload readOnly label="Comprovante" labels={{ noFiles: "Sem comprovante." }} />)
+      expect(screen.getByText("Comprovante")).toBeInTheDocument()
+      expect(screen.getByText("Sem comprovante.")).toBeInTheDocument()
+    })
+
+    it("keeps server items without their remove button", () => {
+      render(
+        <FileUpload
+          readOnly
+          items={[{ id: "a", name: "matricula.pdf", url: "/m.pdf" }]}
+          onRemoveItem={() => {}}
+          label="Anexos"
+        />,
+      )
+      expect(screen.getByText("matricula.pdf")).toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: /Remover/ })).toBeNull()
+    })
+
+    it("disabled wins over readOnly", () => {
+      render(<FileUpload readOnly disabled label="Anexos" />)
+      expect(screen.getByRole("button", { name: /Anexos/ })).toBeDisabled()
+    })
+  })
 })

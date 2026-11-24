@@ -117,6 +117,8 @@ export interface FileUploadLabels {
   required?: string
   /** Shown, and announced, when a form is sent with a `required` field still empty. */
   requiredError?: string
+  /** Shown in a `readOnly` field with no files. */
+  noFiles?: string
   /** Part of the default hint that tells the size limit; `limit` is formatted. */
   maxSizeHint?: (limit: string) => string
   /**
@@ -170,6 +172,7 @@ export const defaultFileUploadLabels: ResolvedFileUploadLabels = {
   uploadProgress: (fileName) => `Envio de ${fileName}`,
   required: "obrigatório",
   requiredError: "Selecione um arquivo.",
+  noFiles: "Nenhum arquivo.",
   maxSizeHint: (limit) => `até ${limit}`,
   sizeUnits: { bytes: "B", kilobytes: "KB", megabytes: "MB", gigabytes: "GB" },
 }
@@ -215,6 +218,14 @@ export interface FileUploadProps {
   showRejections?: boolean
   /** Disable user interaction. */
   disabled?: boolean
+  /**
+   * Shows the files without letting the list change: no dropzone, camera or
+   * remove buttons; files can still be opened, previewed and downloaded, and
+   * are sent with the form. The dropzone's place takes the `label`, and "no
+   * files" (`labels.noFiles`) when the list is empty. The `ref` (the
+   * dropzone) is `null`.
+   */
+  readOnly?: boolean
   /** Validation message — when set, the dropzone border turns red and the message renders below. */
   error?: string
   /** Main label inside the dropzone. */
@@ -328,6 +339,7 @@ function FileUpload({
   onReject,
   showRejections = true,
   disabled = false,
+  readOnly: readOnlyProp = false,
   error,
   label,
   description,
@@ -343,6 +355,8 @@ function FileUpload({
   onBlur,
 }: FileUploadProps) {
   const mergedLabels: ResolvedFileUploadLabels = { ...defaultFileUploadLabels, ...labels }
+  // Disabled wins: a disabled field is dimmed, not read-only.
+  const readOnly = readOnlyProp && !disabled
   const resolvedLabel: React.ReactNode =
     label ?? (multiple ? mergedLabels.dropzoneMultiple : mergedLabels.dropzoneSingle)
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -497,71 +511,91 @@ function FileUpload({
         onBlur?.(e)
       }}
     >
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-        <button
-          ref={setDropzoneRef}
-          id={id}
-          type="button"
-          onClick={openPicker}
-          onDragOver={(e) => {
-            e.preventDefault()
-            if (!disabled) setDragging(true)
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault()
-            setDragging(false)
-            if (disabled) return
-            ingest(e.dataTransfer.files)
-          }}
-          disabled={disabled}
-          aria-labelledby={labelId}
-          aria-describedby={describedBy === "" ? undefined : describedBy}
-          className={cn(
-            "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-element border border-dashed border-input bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
-            "state-layer",
-            "focus-visible:focus-outline",
-            isDragging && "border-primary bg-accent/60",
-            hasError && "border-destructive-text",
-            disabled && "cursor-default opacity-50",
-            dropzoneClassName,
-          )}
-        >
-          <UploadCloud className="size-6 text-muted-foreground" aria-hidden />
-          <span id={labelId} className="font-medium">
-            {resolvedLabel}
-            {required ? (
-              <>
-                <span
-                  aria-hidden
-                  data-slot="file-upload-required"
-                  className="ml-0.5 text-destructive-text"
-                >
-                  *
-                </span>
-                <span className="sr-only"> ({mergedLabels.required})</span>
-              </>
-            ) : null}
-          </span>
-          {hasHint ? (
-            <span id={hintId} className="text-xs text-muted-foreground">
-              {renderedDescription}
+      {readOnly ? (
+        <div data-slot="file-upload-readonly" className="flex flex-col gap-1">
+          {label != null && label !== "" ? (
+            <span id={labelId} className="text-sm font-medium">
+              {label}
             </span>
           ) : null}
-        </button>
-        {camera ? (
-          <Button
+          {description != null && description !== "" ? (
+            <span id={hintId} className="text-xs text-muted-foreground">
+              {description}
+            </span>
+          ) : null}
+          {isEmpty ? (
+            <p data-slot="file-upload-empty" className="text-sm text-muted-foreground">
+              {mergedLabels.noFiles}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+          <button
+            ref={setDropzoneRef}
+            id={id}
             type="button"
-            variant="outline"
+            onClick={openPicker}
+            onDragOver={(e) => {
+              e.preventDefault()
+              if (!disabled) setDragging(true)
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault()
+              setDragging(false)
+              if (disabled) return
+              ingest(e.dataTransfer.files)
+            }}
             disabled={disabled}
-            onClick={() => setCameraOpen(true)}
-            className="sm:h-auto sm:min-h-26 sm:flex-col sm:gap-2 sm:px-6"
+            aria-labelledby={labelId}
+            aria-describedby={describedBy === "" ? undefined : describedBy}
+            className={cn(
+              "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-element border border-dashed border-input bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
+              "state-layer",
+              "focus-visible:focus-outline",
+              isDragging && "border-primary bg-accent/60",
+              hasError && "border-destructive-text",
+              disabled && "cursor-default opacity-50",
+              dropzoneClassName,
+            )}
           >
-            <Camera className="size-5" aria-hidden />
-            <span>{mergedLabels.cameraButton}</span>
-          </Button>
-        ) : null}
-      </div>
+            <UploadCloud className="size-6 text-muted-foreground" aria-hidden />
+            <span id={labelId} className="font-medium">
+              {resolvedLabel}
+              {required ? (
+                <>
+                  <span
+                    aria-hidden
+                    data-slot="file-upload-required"
+                    className="ml-0.5 text-destructive-text"
+                  >
+                    *
+                  </span>
+                  <span className="sr-only"> ({mergedLabels.required})</span>
+                </>
+              ) : null}
+            </span>
+            {hasHint ? (
+              <span id={hintId} className="text-xs text-muted-foreground">
+                {renderedDescription}
+              </span>
+            ) : null}
+          </button>
+          {camera ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={disabled}
+              onClick={() => setCameraOpen(true)}
+              className="sm:h-auto sm:min-h-26 sm:flex-col sm:gap-2 sm:px-6"
+            >
+              <Camera className="size-5" aria-hidden />
+              <span>{mergedLabels.cameraButton}</span>
+            </Button>
+          ) : null}
+        </div>
+      )}
       {error != null && error !== "" ? (
         <p id={errorId} role="alert" className="text-xs text-destructive-text">
           {error}
@@ -592,29 +626,31 @@ function FileUpload({
       {/* Only the dropzone is operated: the native input is a hidden helper
           that opens the picker, so it is out of the tab order and of the
           accessibility tree. */}
-      <input
-        ref={inputRef}
-        type="file"
-        tabIndex={-1}
-        aria-hidden="true"
-        accept={normalizeAccept(accept)}
-        multiple={multiple}
-        disabled={disabled}
-        // Native validation sees an empty required list here. The browser's
-        // own bubble would point at this hidden input: the message shows
-        // under the dropzone instead, and the dropzone takes the focus.
-        required={required && isEmpty}
-        onInvalid={(e) => {
-          e.preventDefault()
-          setMissing(true)
-          dropzoneRef.current?.focus()
-        }}
-        className="sr-only"
-        onChange={(e) => {
-          ingest(e.target.files)
-          e.target.value = ""
-        }}
-      />
+      {readOnly ? null : (
+        <input
+          ref={inputRef}
+          type="file"
+          tabIndex={-1}
+          aria-hidden="true"
+          accept={normalizeAccept(accept)}
+          multiple={multiple}
+          disabled={disabled}
+          // Native validation sees an empty required list here. The browser's
+          // own bubble would point at this hidden input: the message shows
+          // under the dropzone instead, and the dropzone takes the focus.
+          required={required && isEmpty}
+          onInvalid={(e) => {
+            e.preventDefault()
+            setMissing(true)
+            dropzoneRef.current?.focus()
+          }}
+          className="sr-only"
+          onChange={(e) => {
+            ingest(e.target.files)
+            e.target.value = ""
+          }}
+        />
+      )}
       {name != null && name !== "" ? (
         <input
           ref={formInputRef}
@@ -628,13 +664,22 @@ function FileUpload({
         />
       ) : null}
       {preview === "thumbnail" && items.length + files.length > 0 ? (
-        <ul className="space-y-2" aria-label={mergedLabels.fileListAriaLabel}>
+        <ul
+          className="space-y-2"
+          // Read-only, the list is the field: named by its label when it has one.
+          aria-labelledby={readOnly && label != null && label !== "" ? labelId : undefined}
+          aria-label={
+            readOnly && label != null && label !== "" ? undefined : mergedLabels.fileListAriaLabel
+          }
+        >
           {items.map((item) => (
             <ItemRow
               key={item.id}
               item={item}
               disabled={disabled}
-              onRemove={removable && onRemoveItem ? () => onRemoveItem(item.id) : undefined}
+              onRemove={
+                removable && !readOnly && onRemoveItem ? () => onRemoveItem(item.id) : undefined
+              }
               onOpenImage={(url) => setLightbox({ name: item.name, url })}
               labels={mergedLabels}
             />
@@ -644,7 +689,7 @@ function FileUpload({
               key={`${file.name}-${file.lastModified}-${index}`}
               file={file}
               disabled={disabled}
-              removable={removable}
+              removable={removable && !readOnly}
               onRemove={() => removeAt(index)}
               onOpenImage={() => setLightbox({ name: file.name, file })}
               labels={mergedLabels}

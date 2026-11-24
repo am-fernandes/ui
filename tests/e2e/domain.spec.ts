@@ -969,6 +969,7 @@ test.describe("FileUpload: teclado e leitor de tela", () => {
     "domain-fileupload--default",
     "domain-fileupload--with-error",
     "domain-fileupload--read-only",
+    "domain-fileupload--append-only",
   ]) {
     test(`${id}: sem violação de acessibilidade, com todas as regras ligadas`, async ({ page }) => {
       await gotoStory(page, id)
@@ -1197,4 +1198,58 @@ test.describe("FileUpload: hover na miniatura", () => {
       expect(layerBox).toEqual(tileBox)
     })
   }
+})
+
+test.describe("Campos somente leitura", () => {
+  test("MultiInput: focável, sem ×, nada entra pelo teclado, e a lista vai no formulário", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-multiinput--read-only")
+    const input = page.getByRole("textbox", { name: "Áreas de atuação" })
+    await input.focus()
+    await expect(input).toBeFocused()
+    await page.keyboard.type("penal")
+    await page.keyboard.press("Enter")
+    await page.keyboard.press("Backspace")
+    await expect(page.locator('[data-slot="multi-input-item"]')).toHaveCount(3)
+    await expect(page.locator('[data-slot="multi-input-remove"]')).toHaveCount(0)
+    const sent = await page.evaluate(() =>
+      new FormData(document.querySelector("form") as HTMLFormElement).get("areas"),
+    )
+    expect(sent).toBe("civil,trabalhista,tributário")
+    await expectNoA11yViolations(page, "#storybook-root")
+  })
+
+  test("InputOTP: o código não muda ao digitar ou apagar, e vai no formulário", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-inputotp--read-only")
+    const input = page.locator('[data-slot="input-otp"]')
+    await input.focus()
+    await page.keyboard.press("Backspace")
+    await page.keyboard.type("111")
+    await expect(input).toHaveValue("482913")
+    const sent = await page.evaluate(() =>
+      new FormData(document.querySelector("form") as HTMLFormElement).get("codigo"),
+    )
+    expect(sent).toBe("482913")
+    await expectNoA11yViolations(page, "#storybook-root")
+  })
+
+  test("FileUpload: sem dropzone nem remover, abre o arquivo e mostra a lista vazia", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-fileupload--read-only")
+    await expect(page.getByRole("button", { name: /Arraste|Clique|Selecione/ })).toHaveCount(0)
+    await expect(page.getByRole("button", { name: /Remover/ })).toHaveCount(0)
+    await expect(page.getByRole("list", { name: "Anexos do processo" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Abrir contrato.pdf em nova aba" })).toBeVisible()
+    await expect(page.getByText("Nenhum arquivo.")).toBeVisible()
+    const sent = await page.evaluate(() =>
+      new FormData(document.querySelector("form") as HTMLFormElement)
+        .getAll("anexos")
+        .map((f) => (f as File).name),
+    )
+    expect(sent).toEqual(["contrato.pdf"])
+  })
 })
