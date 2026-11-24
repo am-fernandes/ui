@@ -509,7 +509,7 @@ describe("AppShell", () => {
       expect(within(aside).queryByText("Financeiro")).not.toBeInTheDocument()
     })
 
-    it("hides the submenu in the collapsed rail", () => {
+    it("keeps the children out of the collapsed rail itself", () => {
       const { aside } = renderShell({
         defaultCollapsed: true,
         items: [
@@ -523,6 +523,61 @@ describe("AppShell", () => {
       })
       expect(within(aside).getByRole("button", { name: "Relatórios" })).toBeInTheDocument()
       expect(within(aside).queryByText("Financeiro")).not.toBeInTheDocument()
+    })
+
+    describe("group in the collapsed rail", () => {
+      const reports: AppShellItem = {
+        id: "reports",
+        label: "Relatórios",
+        icon: FileText,
+        items: [
+          { id: "fin", label: "Financeiro", href: "#fin" },
+          { id: "ops", label: "Operacional", href: "#ops" },
+        ],
+      }
+
+      it("opens a menu of its children next to the rail", async () => {
+        const { aside } = renderShell({ defaultCollapsed: true, items: [reports] })
+        const group = within(aside).getByRole("button", { name: "Relatórios" })
+        expect(group).toHaveAttribute("aria-haspopup", "menu")
+        await userEvent.click(group)
+        const menu = screen.getByRole("menu")
+        expect(group).toHaveAttribute("aria-expanded", "true")
+        expect(within(menu).getByRole("menuitem", { name: "Financeiro" })).toHaveAttribute(
+          "href",
+          "#fin",
+        )
+        expect(within(menu).getByRole("menuitem", { name: "Operacional" })).toBeInTheDocument()
+      })
+
+      it("opens from the keyboard, closes with Escape and gives focus back to the group", async () => {
+        const { aside } = renderShell({ defaultCollapsed: true, items: [reports] })
+        const group = within(aside).getByRole("button", { name: "Relatórios" })
+        group.focus()
+        await userEvent.keyboard("{Enter}")
+        const menu = screen.getByRole("menu")
+        expect(within(menu).getByRole("menuitem", { name: "Financeiro" })).toHaveFocus()
+        await userEvent.keyboard("{Escape}")
+        expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+        expect(group).toHaveFocus()
+      })
+
+      it("marks the active child, renders it through renderLink and closes on choice", async () => {
+        const onClick = vi.fn()
+        const { aside } = renderShell({
+          defaultCollapsed: true,
+          isActive: (item) => item.id === "ops",
+          renderLink: ({ href, ...props }) => <a data-router-link={href} href={href} {...props} />,
+          items: [{ ...reports, items: [reports.items![0]!, { ...reports.items![1]!, onClick }] }],
+        })
+        await userEvent.click(within(aside).getByRole("button", { name: "Relatórios" }))
+        const ops = within(screen.getByRole("menu")).getByRole("menuitem", { name: "Operacional" })
+        expect(ops).toHaveAttribute("aria-current", "page")
+        expect(ops).toHaveAttribute("data-router-link", "#ops")
+        await userEvent.click(ops)
+        expect(onClick).toHaveBeenCalledTimes(1)
+        expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+      })
     })
 
     it("renders an item without href as a button and fires onClick", async () => {

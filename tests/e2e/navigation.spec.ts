@@ -111,6 +111,32 @@ test.describe("AppShell", () => {
     await expect(page.getByRole("tooltip", { name: "Calculadora" })).toBeVisible()
   })
 
+  test("a group in the collapsed rail opens its pages in a menu next to the rail", async ({
+    page,
+  }) => {
+    await gotoShell(page, "navigation-appshell--collapsed")
+    const aside = page.locator('aside[data-slot="app-shell-sidebar"]')
+    const group = aside.getByRole("button", { name: "Propostas" })
+    await group.click()
+    const menu = page.getByRole("menu")
+    await expect(menu).toBeVisible()
+    await expect(menu.getByRole("menuitem", { name: "Pendentes" })).toBeVisible()
+    await expect(menu.getByRole("menuitem", { name: "Vendidas" })).toBeVisible()
+    const rail = (await aside.boundingBox())!
+    const box = (await menu.boundingBox())!
+    expect(box.x).toBeGreaterThanOrEqual(rail.x + rail.width)
+
+    await page.keyboard.press("Escape")
+    await expect(menu).toBeHidden()
+    await expect(group).toBeFocused()
+
+    // From the keyboard: Enter opens it with the first page focused.
+    await page.keyboard.press("Enter")
+    await expect(page.getByRole("menuitem", { name: "Pendentes" })).toBeFocused()
+    await page.keyboard.press("ArrowDown")
+    await expect(page.getByRole("menuitem", { name: "Aprovadas" })).toBeFocused()
+  })
+
   test("skip link appears on focus and moves focus to the content", async ({ page }) => {
     await gotoShell(page, "navigation-appshell--default")
     await page.keyboard.press("Tab")

@@ -1,13 +1,149 @@
 "use client"
 
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { ChevronDown } from "lucide-react"
 import * as React from "react"
 
 import { type RenderLink, type RenderLinkProps, renderLinkElement } from "@/lib/render-link"
 import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
+import { motionMenu } from "../../overlays/_internal/animations"
+import { useOverlayContainer } from "../../overlays/_internal/overlay-container"
 import { Tooltip } from "../../overlays/tooltip"
 import { isModifiedClick } from "./link-click"
+
+function isSafeHref(href: string | undefined): href is string {
+  return href != null && isAllowedUrl(href, DEFAULT_ALLOWED_LINK_PROTOCOLS)
+}
+
+const flyoutContentClass = cn(
+  "z-(--z-popover) min-w-48 overflow-y-auto overflow-x-hidden",
+  "max-h-(--radix-dropdown-menu-content-available-height) rounded-container border border-border-strong bg-popover p-1 text-popover-foreground outline-none",
+  motionMenu,
+  "data-[state=open]:animate-in data-[state=closed]:animate-out",
+  "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+  "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+  "origin-(--radix-dropdown-menu-content-transform-origin)",
+)
+
+const flyoutRowClass = cn(
+  "relative flex w-full cursor-pointer select-none items-center gap-2 rounded-element px-2 py-1.5 text-left text-sm outline-none transition-colors",
+  "focus:state-hover",
+  "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+)
+
+interface FlyoutProps {
+  item: AppShellItem
+  isActive?: (item: AppShellItem) => boolean
+  renderLink?: RenderLink
+}
+
+/** One row of the rail flyout: a link, an action, or a labelled set of rows. */
+function FlyoutEntry({ item, isActive, renderLink }: FlyoutProps) {
+  if (item.items?.length) {
+    return (
+      <DropdownMenuPrimitive.Group>
+        <DropdownMenuPrimitive.Label className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+          {item.label}
+        </DropdownMenuPrimitive.Label>
+        {item.items.map((child) => (
+          <FlyoutEntry key={child.id} item={child} isActive={isActive} renderLink={renderLink} />
+        ))}
+      </DropdownMenuPrimitive.Group>
+    )
+  }
+  const active = isActive?.(item) ?? false
+  const className = cn(flyoutRowClass, active && "bg-accent font-semibold text-accent-foreground")
+  const Icon = item.icon
+  const content = (
+    <>
+      {Icon ? <Icon className="size-4 shrink-0" aria-hidden /> : null}
+      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+    </>
+  )
+
+  if (isSafeHref(item.href) && !item.disabled) {
+    const linkProps: RenderLinkProps & { "data-slot": string } = {
+      href: item.href,
+      "data-slot": "app-shell-flyout-item",
+      "aria-current": active ? "page" : undefined,
+      className,
+      onClick: (event) => {
+        if (isModifiedClick(event)) return
+        item.onClick?.(event)
+      },
+      children: content,
+    }
+    return (
+      <DropdownMenuPrimitive.Item asChild>
+        {renderLinkElement(renderLink, linkProps)}
+      </DropdownMenuPrimitive.Item>
+    )
+  }
+  return (
+    <DropdownMenuPrimitive.Item asChild disabled={item.disabled}>
+      <button
+        type="button"
+        data-slot="app-shell-flyout-item"
+        aria-current={active ? "page" : undefined}
+        className={className}
+        onClick={(event) => item.onClick?.(event)}
+      >
+        {content}
+      </button>
+    </DropdownMenuPrimitive.Item>
+  )
+}
+
+/**
+ * A group in the collapsed rail: its children have no room there, so the
+ * group opens a menu next to the rail (Enter, Space or a click; Escape
+ * closes it and gives focus back to the group).
+ */
+function RailGroup({
+  item,
+  isActive,
+  renderLink,
+  trigger,
+}: FlyoutProps & { trigger: React.ReactElement }) {
+  // Same container as the rest of the overlays (the modal it sits in, if any).
+  const container = useOverlayContainer()
+  return (
+    <DropdownMenuPrimitive.Root modal={false}>
+      <Tooltip content={item.label} side="right">
+        <DropdownMenuPrimitive.Trigger asChild disabled={item.disabled}>
+          {trigger}
+        </DropdownMenuPrimitive.Trigger>
+      </Tooltip>
+      {container === null ? null : (
+        <DropdownMenuPrimitive.Portal container={container}>
+          <DropdownMenuPrimitive.Content
+            data-slot="app-shell-flyout"
+            side="right"
+            align="start"
+            // The trigger sits 12px inside the 64px rail: start just past its edge.
+            sideOffset={16}
+            collisionPadding={8}
+            loop
+            className={flyoutContentClass}
+          >
+            <DropdownMenuPrimitive.Label className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+              {item.label}
+            </DropdownMenuPrimitive.Label>
+            {item.items?.map((child) => (
+              <FlyoutEntry
+                key={child.id}
+                item={child}
+                isActive={isActive}
+                renderLink={renderLink}
+              />
+            ))}
+          </DropdownMenuPrimitive.Content>
+        </DropdownMenuPrimitive.Portal>
+      )}
+    </DropdownMenuPrimitive.Root>
+  )
+}
 
 /**
  * Single shape for an AppShell menu entry.
@@ -110,7 +246,7 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
     </>
   )
 
-  const hrefIsSafe = item.href != null && isAllowedUrl(item.href, DEFAULT_ALLOWED_LINK_PROTOCOLS)
+  const hrefIsSafe = isSafeHref(item.href)
   if (
     process.env.NODE_ENV !== "production" &&
     item.href != null &&
@@ -127,6 +263,30 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
   const collapsedLabel = collapsed ? item.label : undefined
   // The current page, whatever element the item is (link, action or group).
   const ariaCurrent = active ? ("page" as const) : undefined
+
+  if (hasChildren && collapsed && depth === 0) {
+    return (
+      <RailGroup
+        item={item}
+        isActive={isActive}
+        renderLink={renderLink}
+        trigger={
+          <button
+            type="button"
+            data-slot="app-shell-item"
+            data-active={active ? "true" : undefined}
+            disabled={item.disabled}
+            aria-label={item.label}
+            aria-current={ariaCurrent}
+            className={baseClass}
+            onClick={(event) => item.onClick?.(event)}
+          >
+            {inner}
+          </button>
+        }
+      />
+    )
+  }
 
   let trigger: React.ReactNode
   if (hasChildren) {
