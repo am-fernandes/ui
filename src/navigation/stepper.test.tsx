@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -138,8 +138,13 @@ describe("Stepper", () => {
       [3, "@sm:flex", "@sm:hidden"],
       [5, "@2xl:flex", "@2xl:hidden"],
       [6, "@3xl:flex", "@3xl:hidden"],
-      [9, "@4xl:flex", "@4xl:hidden"],
-    ])("collapse threshold grows with %i steps", (count, listClass, compactClass) => {
+      [7, "@4xl:flex", "@4xl:hidden"],
+      [8, "@5xl:flex", "@5xl:hidden"],
+      [9, "@6xl:flex", "@6xl:hidden"],
+      [10, "@7xl:flex", "@7xl:hidden"],
+      [12, "@min-[96rem]:flex", "@min-[96rem]:hidden"],
+      [20, "@min-[96rem]:flex", "@min-[96rem]:hidden"],
+    ])("collapse threshold grows with %i steps (~8rem each)", (count, listClass, compactClass) => {
       const many = Array.from({ length: count }, (_, i) => ({ label: `Etapa ${i + 1}` }))
       const { container } = render(<Stepper steps={many} activeStep={0} />)
       expect(list()).toHaveClass(listClass)
@@ -180,6 +185,19 @@ describe("Stepper", () => {
       expect(status).toHaveAttribute("data-status", "warning")
       expect(within(status).getByText("com alerta")).toBeInTheDocument()
       expect(within(status).getByText("RG vencido")).toBeInTheDocument()
+    })
+
+    it("gives a cut label its full text as a title, only when it is cut", () => {
+      renderStepper()
+      const label = within(items()[1]!).getByText("Endereço", { exact: false })
+      // jsdom does no layout: say the text overflows its box.
+      Object.defineProperty(label, "scrollWidth", { configurable: true, value: 200 })
+      Object.defineProperty(label, "clientWidth", { configurable: true, value: 120 })
+      fireEvent.pointerEnter(label)
+      expect(label).toHaveAttribute("title", "Endereço")
+      Object.defineProperty(label, "scrollWidth", { configurable: true, value: 120 })
+      fireEvent.pointerEnter(label)
+      expect(label).not.toHaveAttribute("title")
     })
 
     it("colours error and warning segments in the compact track", () => {

@@ -81,8 +81,14 @@ const COLLAPSE_AT: Record<number, { list: string; compact: string }> = {
   4: { list: "@lg:flex", compact: "@lg:hidden" },
   5: { list: "@2xl:flex", compact: "@2xl:hidden" },
   6: { list: "@3xl:flex", compact: "@3xl:hidden" },
+  7: { list: "@4xl:flex", compact: "@4xl:hidden" },
+  8: { list: "@5xl:flex", compact: "@5xl:hidden" },
+  9: { list: "@6xl:flex", compact: "@6xl:hidden" },
+  10: { list: "@7xl:flex", compact: "@7xl:hidden" },
+  11: { list: "@min-[88rem]:flex", compact: "@min-[88rem]:hidden" },
 }
-const COLLAPSE_AT_MANY = { list: "@4xl:flex", compact: "@4xl:hidden" }
+// Past 12 steps the list stops growing: a 96rem row is wider than most screens.
+const COLLAPSE_AT_MANY = { list: "@min-[96rem]:flex", compact: "@min-[96rem]:hidden" }
 
 function collapseClasses(count: number) {
   if (count <= 1) return { list: "flex", compact: "hidden" }
@@ -180,6 +186,13 @@ function Stepper({
       >
         <span
           data-slot="stepper-label"
+          // A label cut by the ellipsis shows its whole text on hover. Only
+          // then: a title equal to the name would be read twice.
+          onPointerEnter={(event) => {
+            const label = event.currentTarget
+            if (label.scrollWidth > label.clientWidth) label.title = step.label
+            else label.removeAttribute("title")
+          }}
           className={cn(
             "max-w-full truncate text-sm font-medium",
             state === "upcoming" && !step.status ? "text-muted-foreground" : "text-foreground",

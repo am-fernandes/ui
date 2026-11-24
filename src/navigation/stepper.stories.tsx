@@ -117,6 +117,31 @@ export const BackOnly: Story = {
   },
 }
 
+export const ManySteps: Story = {
+  args: {
+    activeStep: 3,
+    steps: [
+      { label: "Lead" },
+      { label: "Simulação" },
+      { label: "Dados do comprador" },
+      { label: "Documentos do cônjuge e comprovantes" },
+      { label: "Análise de crédito" },
+      { label: "Proposta" },
+      { label: "Contrato" },
+      { label: "Assinatura" },
+      { label: "Entrega das chaves" },
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com muitas etapas, o limiar para virar resumo cresce junto (~8rem por etapa). Um rótulo cortado mostra o texto inteiro no `title` ao passar o mouse.",
+      },
+    },
+  },
+}
+
 function Wizard() {
   const [active, setActive] = React.useState(0)
   const wizardSteps: StepperStep[] = [

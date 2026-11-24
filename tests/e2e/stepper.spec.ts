@@ -98,6 +98,28 @@ test.describe("Stepper", () => {
     expect(overflow).toBeLessThanOrEqual(0)
   })
 
+  test("with many steps the list needs ~8rem per step, and a cut label has a title", async ({
+    page,
+  }) => {
+    // 9 steps → the list from 72rem (1152px) of container.
+    await page.setViewportSize({ width: 1280, height: 720 })
+    await gotoStepper(page, "navigation-stepper--many-steps")
+    await expect(page.getByRole("list", { name: "Progresso" })).toBeVisible()
+    const label = page
+      .locator('[data-slot="stepper-label"]')
+      .filter({ hasText: "Documentos do cônjuge" })
+    await label.hover()
+    await expect(label).toHaveAttribute("title", "Documentos do cônjuge e comprovantes")
+    // A label that fits gets no title.
+    const short = page.locator('[data-slot="stepper-label"]').filter({ hasText: "Lead" })
+    await short.hover()
+    await expect(short).not.toHaveAttribute("title")
+
+    await page.setViewportSize({ width: 1100, height: 720 })
+    await expect(page.getByRole("list", { name: "Progresso" })).toBeHidden()
+    await expect(page.getByRole("group", { name: "Progresso" })).toContainText("Etapa 4 de 9")
+  })
+
   test("the threshold follows the container, not the viewport", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 })
     await gotoStepper(page, "navigation-stepper--narrow-container")
