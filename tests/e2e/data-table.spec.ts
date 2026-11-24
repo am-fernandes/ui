@@ -422,3 +422,19 @@ test.describe("DataTable: texto cortado no toque", () => {
     await expect(page.getByRole("tooltip")).toContainText("Itaim Bibi, São Paulo")
   })
 })
+
+test.describe("tableStyles", () => {
+  test("uma <table> com tableStyles() tem a densidade do DataTable", async ({ page }) => {
+    await page.goto(story("data-table--basic"))
+    const cell = page.getByRole("cell", { name: "Caderno universitário" })
+    await expect(cell).toBeVisible({ timeout: 15_000 })
+    const padding = await cell.evaluate((el) => {
+      const style = getComputedStyle(el)
+      return [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft]
+    })
+    expect(padding).toEqual(["10px", "12px", "10px", "12px"])
+    const row = await cell.locator("xpath=..").boundingBox()
+    expect(row?.height).toBeGreaterThanOrEqual(40)
+    expect(row?.height).toBeLessThanOrEqual(41)
+  })
+})

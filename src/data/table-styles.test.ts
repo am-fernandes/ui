@@ -17,15 +17,23 @@ describe("tableStyles", () => {
     })
   })
 
-  it("inclui classes Tailwind expressivas para layout de tabela", () => {
+  it("segue a densidade de linha da lib: py-2.5 px-3", () => {
     const s = tableStyles()
     expect(s.table).toMatch(/w-full|caption/)
     expect(s.row).toMatch(/border-b/)
     expect(s.head).toMatch(/font-medium|text-muted/)
-    expect(s.cell).toMatch(/px-4|align-middle/)
-    expect(s.cell).toMatch(/py-4/)
-    expect(s.head).toMatch(/px-4/)
-    expect(s.head).toMatch(/py-4/)
+    for (const slot of [s.head, s.cell]) {
+      expect(slot.split(" ")).toEqual(expect.arrayContaining(["px-3", "py-2.5"]))
+      expect(slot).not.toMatch(/\bp[xy]-4\b/)
+    }
+  })
+
+  it("marca a linha selecionada como o DataTable: bg-accent, e contorno em cores forçadas", () => {
+    const s = tableStyles()
+    expect(s.row).toContain("data-[state=selected]:bg-accent")
+    expect(s.row).toContain("data-[state=selected]:text-accent-foreground")
+    expect(s.row).not.toContain("data-[state=selected]:bg-muted")
+    expect(s.row).toContain("forced-colors:data-[state=selected]:outline-[Highlight]")
   })
 
   it("expõe classes específicas de cabeçalho, rodapé e legenda", () => {

@@ -708,6 +708,20 @@ describe("DataTable", () => {
     })
   })
 
+  describe("shared table styles", () => {
+    it("draws rows, headers and cells with tableStyles(), so both stay alike", async () => {
+      const { tableStyles } = await import("./table-styles")
+      const t = tableStyles()
+      render(<DataTable columns={columns} data={data} />)
+      const cell = screen.getByRole("cell", { name: "Bravo" })
+      for (const token of t.cell.split(" ")) expect(cell).toHaveClass(token)
+      for (const token of t.row.split(" ")) expect(cell.closest("tr")).toHaveClass(token)
+      for (const token of t.head.split(" ")) {
+        expect(screen.getByRole("columnheader", { name: "Name" })).toHaveClass(token)
+      }
+    })
+  })
+
   describe("density", () => {
     it("marks the table compact and tightens rows and the pager", () => {
       render(

@@ -41,10 +41,13 @@ import {
   recordsToSheet,
   toExportValue,
 } from "./_xlsx-export"
+import { tableStyles } from "./table-styles"
 
 export type { DataTableColumnMeta } from "./_internal/column-meta"
 
-// Internal Table primitives — inlined here (was src/data/table.tsx).
+// Internal Table primitives, drawn with `tableStyles()` so a raw <table>
+// styled with it looks the same as a DataTable.
+const styles = tableStyles()
 function Table({
   className,
   children,
@@ -68,68 +71,29 @@ function Table({
       className="relative isolate w-full overflow-auto focus-visible:focus-outline-inset"
       style={containerStyle}
     >
-      <table
-        data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      >
+      <table data-slot="table" className={cn(styles.table, className)} {...props}>
         {children}
       </table>
     </div>
   )
 }
 function TableHeader({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead data-slot="table-header" className={cn("[&_tr]:border-b", className)} {...props} />
+  return <thead data-slot="table-header" className={cn(styles.header, className)} {...props} />
 }
 function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return (
-    <tbody
-      data-slot="table-body"
-      className={cn("[&_tr:last-child]:border-0", className)}
-      {...props}
-    />
-  )
+  return <tbody data-slot="table-body" className={cn(styles.body, className)} {...props} />
 }
 function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
-  return (
-    <tr
-      data-slot="table-row"
-      className={cn(
-        "border-b transition-colors hover:state-hover data-[state=selected]:bg-accent data-[state=selected]:text-accent-foreground",
-        // Forced colours drop the fill: a selected row keeps a system outline.
-        "forced-colors:data-[state=selected]:outline-2 forced-colors:data-[state=selected]:-outline-offset-2 forced-colors:data-[state=selected]:outline-[Highlight]",
-        className,
-      )}
-      {...props}
-    />
-  )
+  return <tr data-slot="table-row" className={cn(styles.row, className)} {...props} />
 }
 function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
-  return (
-    <th
-      data-slot="table-head"
-      scope="col"
-      className={cn(
-        "px-3 py-2.5 text-left align-middle font-medium text-muted-foreground",
-        className,
-      )}
-      {...props}
-    />
-  )
+  return <th data-slot="table-head" scope="col" className={cn(styles.head, className)} {...props} />
 }
 function TableFooter({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return (
-    <tfoot
-      data-slot="table-footer"
-      className={cn("border-t bg-muted/50 font-medium [&>tr]:last:border-b-0", className)}
-      {...props}
-    />
-  )
+  return <tfoot data-slot="table-footer" className={cn(styles.footer, className)} {...props} />
 }
 function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return (
-    <td data-slot="table-cell" className={cn("px-3 py-2.5 align-middle", className)} {...props} />
-  )
+  return <td data-slot="table-cell" className={cn(styles.cell, className)} {...props} />
 }
 
 export interface DataTableLabels {
