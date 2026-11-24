@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -261,6 +261,36 @@ describe("Accordion", () => {
       // Controlled: nothing moves until the value does.
       expect(screen.getByLabelText("CEP")).not.toBeVisible()
     })
+  })
+
+  it("wraps each title in an h3 by default and in the heading level given", () => {
+    const items = [{ value: "a", title: "Dados do comprador", content: "x" }]
+    const { rerender } = render(<Accordion items={items} />)
+    expect(
+      screen.getByRole("heading", { level: 3, name: "Dados do comprador" }),
+    ).toBeInTheDocument()
+    rerender(<Accordion items={items} headingLevel={4} />)
+    expect(
+      screen.getByRole("heading", { level: 4, name: "Dados do comprador" }),
+    ).toBeInTheDocument()
+  })
+
+  it("keeps the action out of the heading, so it is not read as part of the title", () => {
+    render(
+      <Accordion
+        items={[
+          {
+            value: "a",
+            title: "Item A",
+            content: "x",
+            action: <button type="button">Remover Item A</button>,
+          },
+        ]}
+      />,
+    )
+    const heading = screen.getByRole("heading", { name: "Item A" })
+    expect(within(heading).queryByRole("button", { name: "Remover Item A" })).toBeNull()
+    expect(screen.getByRole("button", { name: "Remover Item A" })).toBeInTheDocument()
   })
 
   it("applies data-slot attributes", () => {
