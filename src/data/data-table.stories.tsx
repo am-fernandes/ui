@@ -383,6 +383,29 @@ export const Compact: Story = {
   },
 }
 
+export const StickyHeader: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        aria-label="Contratos"
+        columns={columns}
+        data={contratos}
+        maxHeight={280}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+        showRowCount
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`maxHeight` limita a altura: o corpo rola dentro da caixa e o cabeçalho fica no lugar (`stickyHeader`, ligado por padrão com `maxHeight`).",
+      },
+    },
+  },
+}
+
 export const FilenameByScope: Story = {
   render: () => (
     <div className="p-6">

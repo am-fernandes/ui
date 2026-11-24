@@ -242,3 +242,25 @@ test.describe("DataTable: densidade", () => {
     }
   })
 })
+
+test.describe("DataTable: cabeçalho fixo", () => {
+  test("o cabeçalho continua visível enquanto o corpo rola", async ({ page }) => {
+    await gotoTable(page, "data-datatable--sticky-header")
+    const scroller = page.locator('[data-slot="data-table-scroll"]')
+    const box = await scroller.boundingBox()
+    expect(box?.height).toBeLessThanOrEqual(280)
+    await scroller.evaluate((el) => {
+      el.scrollTop = 200
+    })
+    const header = page.getByRole("columnheader", { name: "Cliente" })
+    const headerBox = await header.boundingBox()
+    // Still at the top of the box, and on top of the rows that went under it.
+    expect(Math.abs((headerBox?.y ?? 0) - (box?.y ?? 0))).toBeLessThanOrEqual(2)
+    const hit = await page.evaluate(
+      ([x, y]) => document.elementFromPoint(x, y)?.closest("th, td")?.tagName,
+      [(headerBox?.x ?? 0) + 4, (headerBox?.y ?? 0) + (headerBox?.height ?? 0) / 2],
+    )
+    expect(hit).toBe("TH")
+    await expect(page.getByRole("cell", { name: "C-2026-001" })).not.toBeInViewport()
+  })
+})

@@ -39,9 +39,20 @@ import {
 export type { DataTableColumnMeta } from "./_internal/column-meta"
 
 // Internal Table primitives — inlined here (was src/data/table.tsx).
-function Table({ className, children, ...props }: React.HTMLAttributes<HTMLTableElement>) {
+function Table({
+  className,
+  children,
+  containerStyle,
+  ...props
+}: React.HTMLAttributes<HTMLTableElement> & { containerStyle?: React.CSSProperties }) {
   return (
-    <div className="relative w-full overflow-auto">
+    // `isolate`: the sticky header (and pinned columns) stack among themselves,
+    // never above the page's overlays.
+    <div
+      data-slot="data-table-scroll"
+      className="relative isolate w-full overflow-auto"
+      style={containerStyle}
+    >
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}
@@ -241,6 +252,16 @@ export interface DataTableProps<TData>
   "aria-labelledby"?: string
   /** A `<caption>` that names the table and is shown with it (below the rows). */
   caption?: React.ReactNode
+  /**
+   * Caps the table's height (`320`, `"50vh"`): the body scrolls inside the box
+   * and, by default, the header stays in place (`stickyHeader`).
+   */
+  maxHeight?: number | string
+  /**
+   * Keeps the header visible while the body scrolls inside `maxHeight`.
+   * Default: on when `maxHeight` is set.
+   */
+  stickyHeader?: boolean
   /**
    * Row density. `"compact"` gives rows of about 36px (`py-2`) and a 32px
    * pager, for dense back-office lists; `"default"` keeps the library's
@@ -523,6 +544,8 @@ function DataTable<TData>({
   "aria-labelledby": ariaLabelledBy,
   caption,
   density = "default",
+  maxHeight,
+  stickyHeader,
   pagination,
   showRowCount = false,
   globalFilter: globalFilterProp,
@@ -839,6 +862,7 @@ function DataTable<TData>({
     const align = columnAlign.get(columnId)
     return align === "right" ? "text-right" : align === "center" ? "text-center" : undefined
   }
+  const isStickyHeader = stickyHeader ?? maxHeight != null
   const compact = density === "compact"
   // Compact: 20px line + 16px = 36px rows; headers keep room for the 32px sort button.
   const cellDensity = compact ? "py-2" : undefined
@@ -1090,7 +1114,11 @@ function DataTable<TData>({
       ) : null}
 
       <div className="overflow-hidden rounded-container border border-border-strong bg-card">
-        <Table aria-label={ariaLabelProp} aria-labelledby={ariaLabelledBy}>
+        <Table
+          aria-label={ariaLabelProp}
+          aria-labelledby={ariaLabelledBy}
+          containerStyle={maxHeight != null ? { maxHeight } : undefined}
+        >
           {caption != null ? (
             <caption
               data-slot="data-table-caption"
@@ -1099,7 +1127,14 @@ function DataTable<TData>({
               {caption}
             </caption>
           ) : null}
-          <TableHeader>
+          <TableHeader
+            className={cn(
+              isStickyHeader &&
+                // A collapsed border does not travel with a sticky header: each
+                // th draws the line itself, in the border colour.
+                "sticky top-0 z-10 bg-card [&_tr]:border-b-0 [&_th]:relative [&_th]:after:pointer-events-none [&_th]:after:absolute [&_th]:after:inset-x-0 [&_th]:after:bottom-0 [&_th]:after:h-px [&_th]:after:bg-border",
+            )}
+          >
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {

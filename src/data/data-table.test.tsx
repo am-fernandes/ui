@@ -439,6 +439,29 @@ describe("DataTable", () => {
     })
   })
 
+  describe("sticky header", () => {
+    it("caps the body at maxHeight and keeps the header in place", () => {
+      const { container } = render(
+        <DataTable columns={columns} data={data} maxHeight={240} stickyHeader />,
+      )
+      const scroller = container.querySelector('[data-slot="data-table-scroll"]') as HTMLElement
+      expect(scroller.style.maxHeight).toBe("240px")
+      expect(container.querySelector("thead")).toHaveClass("sticky", "top-0")
+    })
+
+    it("sticks the header by default once maxHeight is set, and not without it", () => {
+      const { container, rerender } = render(
+        <DataTable columns={columns} data={data} maxHeight="50vh" />,
+      )
+      expect(
+        (container.querySelector('[data-slot="data-table-scroll"]') as HTMLElement).style.maxHeight,
+      ).toBe("50vh")
+      expect(container.querySelector("thead")).toHaveClass("sticky")
+      rerender(<DataTable columns={columns} data={data} />)
+      expect(container.querySelector("thead")).not.toHaveClass("sticky")
+    })
+  })
+
   describe("density", () => {
     it("marks the table compact and tightens rows and the pager", () => {
       render(
