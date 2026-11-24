@@ -440,6 +440,46 @@ describe("DataTable", () => {
     })
   })
 
+  describe("row identity", () => {
+    interface Cliente {
+      id: string
+      nome: string
+    }
+    const cols: ColumnDef<Cliente>[] = [
+      { accessorKey: "nome", header: "Nome" },
+      {
+        id: "nota",
+        header: "Nota",
+        cell: ({ row }) => <input aria-label={`Nota de ${row.original.nome}`} />,
+      },
+    ]
+    const page1 = [1, 2, 3].map((n) => ({ id: `c${n}`, nome: `Cliente ${n}` }))
+    const page2 = [4, 5, 6].map((n) => ({ id: `c${n}`, nome: `Cliente ${n}` }))
+
+    it("keys rows by getRowId, so what was typed in a row stays with that row", async () => {
+      const { rerender } = render(
+        <DataTable columns={cols} data={page1} getRowId={(row) => row.id} />,
+      )
+      await userEvent.type(screen.getByRole("textbox", { name: "Nota de Cliente 1" }), "ligar")
+      rerender(<DataTable columns={cols} data={page2} getRowId={(row) => row.id} />)
+      expect(screen.getByRole("textbox", { name: "Nota de Cliente 4" })).toHaveValue("")
+      rerender(
+        <DataTable
+          columns={cols}
+          data={[page1[0] as Cliente, ...page2]}
+          getRowId={(row) => row.id}
+        />,
+      )
+      expect(screen.getByRole("textbox", { name: "Nota de Cliente 4" })).toHaveValue("")
+    })
+
+    it("gives getRowId the row and its index", () => {
+      const getRowId = vi.fn((row: Cliente, index: number) => `${row.id}-${index}`)
+      render(<DataTable columns={cols} data={page1} getRowId={getRowId} />)
+      expect(getRowId).toHaveBeenCalledWith(page1[1], 1)
+    })
+  })
+
   describe("sorting", () => {
     interface Pessoa {
       nome: string

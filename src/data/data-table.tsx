@@ -278,6 +278,13 @@ export interface DataTableProps<TData> {
    * button cannot hold another one.
    */
   onRowClick?: (row: TData, event: React.MouseEvent<HTMLTableRowElement>) => void
+  /**
+   * A stable id for each row (its key in the database, not its position).
+   * React keys the rows by it, so a row's state (a field typed in, an open
+   * menu) stays with that row when the page, the sort or the data changes;
+   * row selection is kept by it too. Default: the row's index in `data`.
+   */
+  getRowId?: (row: TData, index: number) => string
   /** Per-row className. Receives the row data and index; return undefined to skip. Useful for coloring rows by status. */
   rowClassName?: (row: TData, index: number) => string | undefined
   /**
@@ -467,6 +474,7 @@ function DataTable<TData>({
   manualPagination,
   labels,
   onRowClick,
+  getRowId,
   rowClassName,
   loading = false,
   downloadable,
@@ -639,6 +647,7 @@ function DataTable<TData>({
         : {}),
       globalFilterFn,
       getColumnCanGlobalFilter,
+      ...(getRowId ? { getRowId: (row: TData, index: number) => getRowId(row, index) } : {}),
     }),
     [
       data,
@@ -658,6 +667,7 @@ function DataTable<TData>({
       rowCount,
       globalFilterFn,
       getColumnCanGlobalFilter,
+      getRowId,
     ],
   )
 
