@@ -409,6 +409,29 @@ describe("DataTable", () => {
       expect(screen.getByRole("table", { name: "Contratos" })).toBeInTheDocument()
     })
 
+    it("forwards ref and the remaining props to the root", () => {
+      const ref = React.createRef<HTMLDivElement>()
+      const onKeyDown = vi.fn()
+      render(
+        <DataTable
+          ref={ref}
+          columns={columns}
+          data={data}
+          id="tabela-contratos"
+          data-testid="contratos"
+          title="Contratos"
+          onKeyDown={onKeyDown}
+        />,
+      )
+      const root = screen.getByTestId("contratos")
+      expect(ref.current).toBe(root)
+      expect(root).toHaveAttribute("data-slot", "data-table")
+      expect(root).toHaveAttribute("id", "tabela-contratos")
+      expect(root).toHaveAttribute("title", "Contratos")
+      root.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }))
+      expect(onKeyDown).toHaveBeenCalled()
+    })
+
     it("renders a caption that names the table", () => {
       render(<DataTable columns={columns} data={data} caption="Contratos de maio" />)
       const table = screen.getByRole("table", { name: "Contratos de maio" })

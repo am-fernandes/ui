@@ -184,7 +184,13 @@ export const defaultDataTableLabels: DataTableLabels = {
   retry: "Tentar de novo",
 }
 
-export interface DataTableProps<TData> {
+export interface DataTableProps<TData>
+  extends Omit<
+    React.HTMLAttributes<HTMLDivElement>,
+    "aria-label" | "aria-labelledby" | "children"
+  > {
+  /** The root `<div>` (toolbar, table and footer). */
+  ref?: React.Ref<HTMLDivElement>
   columns: ColumnDef<TData>[]
   data: TData[]
   /**
@@ -526,6 +532,8 @@ function DataTable<TData>({
   onSortingChange: onSortingChangeProp,
   manualSorting,
   manualFiltering,
+  ref,
+  ...rootProps
 }: DataTableProps<TData>) {
   const idBase = React.useId()
   const isGlobalFilterControlled = globalFilterProp !== undefined
@@ -967,9 +975,11 @@ function DataTable<TData>({
 
   return (
     <div
+      {...rootProps}
+      ref={ref}
       className={cn("flex flex-col gap-3", className)}
       data-slot="data-table"
-      aria-busy={loading || undefined}
+      aria-busy={loading || rootProps["aria-busy"] || undefined}
     >
       {hasSearch || hasDownload || hasClearFilters ? (
         <div className="flex items-center justify-between gap-2">
