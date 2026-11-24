@@ -466,5 +466,7 @@ describe("Tree: large trees", () => {
     renders = 0
     await userEvent.keyboard("{ArrowDown}")
     expect(renders).toBeLessThanOrEqual(2)
-  })
+    // Mounting 2,000 items takes seconds under coverage instrumentation; the
+    // assertion is about re-renders, not time.
+  }, 30_000)
 })

@@ -29,6 +29,8 @@ export default defineConfig({
       "**/storybook-static/**",
       "tests/e2e/**",
       "docs/**",
+      // Local agent workspace (worktrees, probes): not the library's tests.
+      "**/.claude/**",
     ],
     // input-otp queues a deferred setSelectionRange via setTimeout that fires
     // after the jsdom env is torn down, throwing "window is not defined".
