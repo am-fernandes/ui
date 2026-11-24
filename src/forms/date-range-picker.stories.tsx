@@ -163,6 +163,24 @@ export const Disabled: Story = {
   ),
 }
 
+export const ReadOnly: Story = {
+  name: "Read Only",
+  args: { value: { from: "", to: "" } },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` mostra o período num fundo esmaecido, sem reação ao hover: o gatilho recebe foco e é lido, mas o calendário não abre, e o período vai junto no envio do formulário (com `name`).",
+      },
+    },
+  },
+  render: () => (
+    <div className="w-[360px]">
+      <DateRangePicker label="Período" value={{ from: "2025-01-01", to: "2025-01-15" }} readOnly />
+    </div>
+  ),
+}
+
 export const OneMonth: Story = {
   args: { value: { from: "", to: "" }, numberOfMonths: 1 },
   parameters: {

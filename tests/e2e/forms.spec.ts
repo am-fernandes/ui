@@ -533,3 +533,26 @@ test.describe("DateRangePicker: cabe na tela", () => {
     expect(await scroller.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
   })
 })
+
+test.describe("DateRangePicker: somente leitura", () => {
+  test("fundo esmaecido, sem anel de hover, recebe foco e não abre", async ({ page }) => {
+    await gotoStory(page, "forms-daterangepicker--default", "Selecione um período")
+    const editableBg = await page
+      .getByRole("button", { name: /Período/ })
+      .evaluate((el) => getComputedStyle(el).backgroundColor)
+    await gotoStory(page, "forms-daterangepicker--read-only", "15/01/2025")
+    const trigger = page.getByRole("button", { name: /Período/ })
+    expect(await trigger.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(
+      editableBg,
+    )
+    await trigger.hover()
+    await page.waitForTimeout(250)
+    expect(await trigger.evaluate((el) => getComputedStyle(el).boxShadow)).toMatch(
+      /^(none|rgba\(0, 0, 0, 0\) .*)$/,
+    )
+    await trigger.click()
+    await expect(trigger).toBeFocused()
+    await page.keyboard.press("Enter")
+    await expect(page.getByRole("grid")).toHaveCount(0)
+  })
+})

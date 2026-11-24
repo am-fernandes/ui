@@ -75,6 +75,13 @@ export interface DateRangePickerProps {
    * and `<name>-to`, with the ISO dates (`""` for an open end).
    */
   name?: string
+  /**
+   * Shows the period without letting it change: the trigger stays readable
+   * and focusable, the calendar does not open, and the period is submitted
+   * with the form. For a view-only screen; `disabled` is for a field that
+   * does not apply.
+   */
+  readOnly?: boolean
   /** Texts of the picker. Defaults in `defaultDateRangePickerLabels`. */
   labels?: Partial<DateRangePickerLabels>
   "aria-label"?: string
@@ -100,6 +107,7 @@ function DateRangePicker({
   max,
   labels,
   name,
+  readOnly = false,
   "aria-label": ariaLabel,
   ref,
 }: DateRangePickerProps) {
@@ -232,6 +240,9 @@ function DateRangePicker({
         "w-full justify-start text-left",
         !fromDate && "text-placeholder",
         hasError && "border-destructive-text field-error",
+        // Read-only: a muted box that does not answer to hover; the focus
+        // look stays, because the trigger still takes focus.
+        readOnly && "cursor-default bg-muted [--field-hover-ring:transparent]!",
         className,
       )}
     >
@@ -260,52 +271,57 @@ function DateRangePicker({
       required={required}
       disabled={disabled}
     >
-      <Popover
-        open={open}
-        onOpenChange={(next) => !disabled && setOpen(next)}
-        align="start"
-        trigger={trigger}
-        aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
-        // Never taller than the room the popover has on its side of the
-        // trigger: the calendar scrolls inside it, the actions stay in view.
-        collisionPadding={8}
-        className="flex max-h-(--radix-popover-content-available-height) w-auto max-w-(--radix-popover-content-available-width) flex-col p-0"
-        onPointerDownOutside={(event) => {
-          const target = event.target as HTMLElement | null
-          if (target?.closest('[role="grid"], .rdp, .rdp-root')) {
-            event.preventDefault()
-          }
-        }}
-        onFocusOutside={(event) => event.preventDefault()}
-      >
-        <div
-          data-slot="date-range-picker-calendar"
-          className="min-h-0 overflow-y-auto overscroll-contain"
+      {/* Read-only: the trigger alone, with no popup to announce or open. */}
+      {readOnly ? (
+        trigger
+      ) : (
+        <Popover
+          open={open}
+          onOpenChange={(next) => !disabled && setOpen(next)}
+          align="start"
+          trigger={trigger}
+          aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
+          // Never taller than the room the popover has on its side of the
+          // trigger: the calendar scrolls inside it, the actions stay in view.
+          collisionPadding={8}
+          className="flex max-h-(--radix-popover-content-available-height) w-auto max-w-(--radix-popover-content-available-width) flex-col p-0"
+          onPointerDownOutside={(event) => {
+            const target = event.target as HTMLElement | null
+            if (target?.closest('[role="grid"], .rdp, .rdp-root')) {
+              event.preventDefault()
+            }
+          }}
+          onFocusOutside={(event) => event.preventDefault()}
         >
-          <Calendar
-            mode="range"
-            selected={pendingRange}
-            onSelect={handleSelect}
-            numberOfMonths={monthsShown}
-            // Open on the saved range, not on the current month.
-            defaultMonth={fromDate ?? toDate}
-            // Hide previous/next-month days inside each calendar pane.
-            // Otherwise the range_end day (e.g. June 1) renders twice when the
-            // range spans two months: once as range_end in its own pane, and
-            // once as the outside-day of the previous month's pane.
-            showOutsideDays={false}
-            disabledDays={calendarDisabled}
-            startMonth={minDate}
-            endMonth={maxDate}
-          />
-        </div>
-        <div className="flex shrink-0 justify-end gap-2 border-t p-3">
-          <Button variant="ghost" onClick={handleClear}>
-            {l.clear}
-          </Button>
-          <Button onClick={handleConfirm}>{l.confirm}</Button>
-        </div>
-      </Popover>
+          <div
+            data-slot="date-range-picker-calendar"
+            className="min-h-0 overflow-y-auto overscroll-contain"
+          >
+            <Calendar
+              mode="range"
+              selected={pendingRange}
+              onSelect={handleSelect}
+              numberOfMonths={monthsShown}
+              // Open on the saved range, not on the current month.
+              defaultMonth={fromDate ?? toDate}
+              // Hide previous/next-month days inside each calendar pane.
+              // Otherwise the range_end day (e.g. June 1) renders twice when the
+              // range spans two months: once as range_end in its own pane, and
+              // once as the outside-day of the previous month's pane.
+              showOutsideDays={false}
+              disabledDays={calendarDisabled}
+              startMonth={minDate}
+              endMonth={maxDate}
+            />
+          </div>
+          <div className="flex shrink-0 justify-end gap-2 border-t p-3">
+            <Button variant="ghost" onClick={handleClear}>
+              {l.clear}
+            </Button>
+            <Button onClick={handleConfirm}>{l.confirm}</Button>
+          </div>
+        </Popover>
+      )}
       {name != null && name !== "" ? (
         <>
           <input

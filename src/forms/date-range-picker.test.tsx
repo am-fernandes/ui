@@ -271,6 +271,29 @@ describe("DateRangePicker", () => {
     expect(data().has("vigencia-from")).toBe(false)
   })
 
+  it("readOnly: readable and focusable, opens nothing, and is submitted", async () => {
+    const { container } = render(
+      <form>
+        <DateRangePicker
+          label="Período"
+          name="vigencia"
+          value={{ from: "2025-03-10", to: "2025-03-12" }}
+          readOnly
+        />
+      </form>,
+    )
+    const trigger = screen.getByRole("button", { name: /Período/ })
+    expect(trigger).not.toBeDisabled()
+    expect(trigger).not.toHaveAttribute("aria-haspopup")
+    await userEvent.click(trigger)
+    expect(trigger).toHaveFocus()
+    await userEvent.keyboard("{Enter}")
+    expect(screen.queryByRole("grid")).toBeNull()
+    expect(
+      new FormData(container.querySelector("form") as HTMLFormElement).get("vigencia-to"),
+    ).toBe("2025-03-12")
+  })
+
   it("does not open the popover when disabled", async () => {
     render(
       <DateRangePicker label="X" value={{ from: "", to: "" }} onValueChange={() => {}} disabled />,
