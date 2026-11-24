@@ -669,6 +669,49 @@ describe("Combobox: somente leitura", () => {
   })
 })
 
+describe("Combobox: teclado no gatilho fechado", () => {
+  it("ArrowDown and ArrowUp open the list", async () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    screen.getByRole("combobox").focus()
+    await userEvent.keyboard("{ArrowDown}")
+    expect(await screen.findByRole("listbox")).toBeInTheDocument()
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
+    await userEvent.keyboard("{ArrowUp}")
+    expect(await screen.findByRole("listbox")).toBeInTheDocument()
+  })
+
+  it("typing a letter opens the list with that letter in the search", async () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    screen.getByRole("combobox").focus()
+    await userEvent.keyboard("b")
+    const search = await screen.findByPlaceholderText("Buscar...")
+    await waitFor(() => expect(search).toHaveFocus())
+    expect(search).toHaveValue("b")
+    await userEvent.keyboard("r")
+    expect(search).toHaveValue("br")
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["Bravo"])
+    await userEvent.keyboard("{Enter}")
+    await waitFor(() => expect(screen.getByRole("combobox")).toHaveTextContent("Bravo"))
+  })
+
+  it("Tab, Shift and other non-printable keys do not open it", async () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    screen.getByRole("combobox").focus()
+    await userEvent.keyboard("{Shift}{Control>}c{/Control}{Home}")
+    expect(screen.queryByRole("listbox")).toBeNull()
+  })
+
+  it("disabled and readOnly do not open by keyboard", async () => {
+    const { rerender } = render(<Combobox options={options} readOnly value="a" />)
+    screen.getByRole("combobox").focus()
+    await userEvent.keyboard("{ArrowDown}b")
+    expect(screen.queryByRole("listbox")).toBeNull()
+    rerender(<Combobox options={options} disabled value="a" />)
+    expect(screen.queryByRole("listbox")).toBeNull()
+  })
+})
+
 describe("Combobox: listas grandes e busca no servidor", () => {
   const many: ComboboxOption[] = Array.from({ length: 250 }, (_, i) => ({
     value: `o-${i + 1}`,

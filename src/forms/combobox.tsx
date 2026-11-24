@@ -446,6 +446,19 @@ export function Combobox(props: ComboboxProps) {
       aria-readonly={readOnly ? true : undefined}
       aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
       disabled={disabled}
+      onKeyDown={(e) => {
+        if (open || disabled || readOnly) return
+        // As in a native select: the arrows open the list, and a typed
+        // character opens it with that character already in the search.
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault()
+          openList()
+        } else if (e.key.length === 1 && e.key !== " " && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault()
+          changeSearch(e.key)
+          openList()
+        }
+      }}
       className={cn(
         fieldTriggerSizeClass(size),
         "justify-between overflow-hidden",
@@ -537,6 +550,17 @@ export function Combobox(props: ComboboxProps) {
                   placeholder={resolvedSearchPlaceholder}
                   value={search}
                   onValueChange={changeSearch}
+                  // The list may open with a letter already typed on the
+                  // trigger: the caret goes after it, for the next one. Radix
+                  // selects the text right after focusing it, hence the
+                  // microtask.
+                  onFocus={(e) => {
+                    const el = e.currentTarget
+                    queueMicrotask(() => {
+                      const end = el.value.length
+                      el.setSelectionRange(end, end)
+                    })
+                  }}
                   className="flex w-full rounded-element bg-transparent py-2.5 text-sm outline-none placeholder:text-placeholder"
                 />
               </div>

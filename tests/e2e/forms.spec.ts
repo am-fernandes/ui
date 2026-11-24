@@ -646,3 +646,25 @@ test.describe("TimePicker: somente leitura", () => {
     await expect(hour).toHaveValue("18")
   })
 })
+
+test.describe("Combobox: teclado no gatilho fechado", () => {
+  test("seta para baixo abre; digitar abre com as letras na busca, sem perder nenhuma", async ({
+    page,
+  }) => {
+    await gotoStory(page, "forms-combobox--default", "Selecione um status")
+    const trigger = page.getByRole("combobox", { name: "Status" })
+    await trigger.focus()
+    await page.keyboard.press("ArrowDown")
+    await expect(page.getByRole("listbox")).toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(page.getByRole("listbox")).toHaveCount(0)
+    await expect(trigger).toBeFocused()
+
+    await page.keyboard.type("pen")
+    const search = page.getByPlaceholder("Buscar...")
+    await expect(search).toHaveValue("pen")
+    await expect(page.getByRole("option")).toHaveText(["Pendente"])
+    await page.keyboard.press("Enter")
+    await expect(trigger).toHaveText(/Pendente/)
+  })
+})
