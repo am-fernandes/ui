@@ -11,6 +11,7 @@ import { ptBR } from "react-day-picker/locale"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "../primitives/button"
+import { CALENDAR_ROOT_CLASS } from "./_internal/calendar-root"
 import { type DisabledDays, resolveDisabledDays } from "./_internal/disabled-days"
 import { CalendarQuickNav, type CalendarQuickNavView } from "./calendar-quick-nav"
 
@@ -231,6 +232,7 @@ function Calendar({
         pendingYear={pendingYear}
         startMonth={props.startMonth}
         endMonth={props.endMonth}
+        numberOfMonths={props.numberOfMonths}
         className={className}
         onSelectYear={(year) => {
           setPendingYear(year)
@@ -251,10 +253,7 @@ function Calendar({
       data-slot="calendar"
       showOutsideDays={showOutsideDays}
       disabled={resolvedDisabled}
-      className={cn(
-        "group/calendar p-2 [--cell-radius:var(--radius-inner)] [--cell-size:--spacing(7)]",
-        className,
-      )}
+      className={cn(CALENDAR_ROOT_CLASS, className)}
       captionLayout={captionLayout}
       locale={ptBR}
       formatters={finalFormatters}
@@ -283,7 +282,9 @@ const DAY_BUTTON_DEFAULTS = getDefaultClassNames()
 // becomes selected — combined with React's faster commit, it makes the click
 // feel instant even when the actual JS work is a few frames behind.
 const DAY_BUTTON_BASE_CLASS = [
-  "relative isolate z-10 flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 border-0 leading-none font-normal",
+  // A day is --day-size wide, whatever the width of its number: the quick
+  // navigation panels are sized from it.
+  "relative isolate z-10 flex aspect-square size-auto w-full min-w-(--day-size) px-0 flex-col gap-1 border-0 leading-none font-normal",
   "transition-colors duration-150",
   "data-[range-end=true]:rounded-(--cell-radius) data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground",
   "data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-muted data-[range-middle=true]:text-foreground",

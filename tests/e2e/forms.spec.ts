@@ -754,3 +754,34 @@ test.describe("Ponteiro fino (mouse): texto de 14px nos campos de digitação", 
     await expect(page.getByPlaceholder("Buscar...")).toHaveCSS("font-size", "14px")
   })
 })
+
+test.describe("Navegação rápida: largura", () => {
+  // The layout width: the popover opens with a zoom animation, and a
+  // bounding box taken during it would be scaled.
+  const width = (page: Page) =>
+    page.locator('[data-slot="popover-content"]').evaluate((el) => (el as HTMLElement).offsetWidth)
+
+  test("o popover do DateInput não muda de largura ao abrir anos e meses", async ({ page }) => {
+    await gotoStory(page, "forms-dateinput--min-max", "ISO: 2025-06-15")
+    await page.getByRole("button", { name: "Abrir calendário" }).click()
+    await expect(page.getByRole("grid")).toBeVisible()
+    const days = await width(page)
+    await page.getByRole("button", { name: /junho 2025/i }).click()
+    await expect(page.getByRole("group", { name: "Escolher ano" })).toBeVisible()
+    expect(await width(page)).toBe(days)
+    await page.getByRole("button", { name: "2025" }).click()
+    await expect(page.getByRole("group", { name: "Escolher mês" })).toBeVisible()
+    expect(await width(page)).toBe(days)
+  })
+
+  test("com dois meses, o DateRangePicker também não muda de largura", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await gotoStory(page, "forms-daterangepicker--default", "Selecione um período")
+    await page.getByRole("button", { name: /Período/ }).click()
+    await expect(page.getByRole("grid")).toHaveCount(2)
+    const days = await width(page)
+    await page.locator('[data-slot="calendar-caption-button"]').first().click()
+    await expect(page.getByRole("group", { name: "Escolher ano" })).toBeVisible()
+    expect(await width(page)).toBe(days)
+  })
+})

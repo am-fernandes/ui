@@ -7,6 +7,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "../primitives/button"
+import { CALENDAR_ROOT_CLASS } from "./_internal/calendar-root"
 
 // Same defaults as MUI's DateCalendar; consumers narrow the list via the
 // DayPicker `startMonth`/`endMonth` props they already use for day bounds.
@@ -77,6 +78,11 @@ export interface CalendarQuickNavProps {
   pendingYear: number
   startMonth?: Date
   endMonth?: Date
+  /**
+   * Months side by side in the day grid. The panels take their total width
+   * (they are stacked below `md`), so the popover does not change size.
+   */
+  numberOfMonths?: number
   className?: string
   onSelectYear: (year: number) => void
   onSelectMonth: (monthIndex: number) => void
@@ -99,6 +105,7 @@ export function CalendarQuickNav({
   pendingYear,
   startMonth,
   endMonth,
+  numberOfMonths = 1,
   className,
   onSelectYear,
   onSelectMonth,
@@ -177,8 +184,13 @@ export function CalendarQuickNav({
   return (
     <div
       data-slot="calendar"
+      data-quick-nav=""
+      // The width of the day grid it replaces: seven days per month, months
+      // side by side from `md` with the 1rem gap of the grid.
+      style={{ "--quick-nav-months": numberOfMonths } as React.CSSProperties}
       className={cn(
-        "group/calendar w-fit p-2 [--cell-radius:var(--radius-inner)] [--cell-size:--spacing(7)]",
+        CALENDAR_ROOT_CLASS,
+        "w-fit [--quick-nav-width:calc(var(--day-size)*7)] md:[--quick-nav-width:calc(var(--day-size)*7*var(--quick-nav-months)+1rem*(var(--quick-nav-months)-1))]",
         className,
       )}
       onKeyDown={(event) => {
@@ -193,7 +205,7 @@ export function CalendarQuickNav({
         <div
           role="group"
           aria-label="Escolher ano"
-          className="grid max-h-[calc(var(--cell-size)*4+0.75rem)] w-[calc(var(--cell-size)*7)] grid-cols-3 content-start gap-1 overflow-y-auto"
+          className="grid max-h-[calc(var(--cell-size)*4+0.75rem)] w-(--quick-nav-width) grid-cols-3 content-start gap-1 overflow-y-auto"
         >
           {years.map((year, index) => {
             const isSelected = year === selectedYear
@@ -227,7 +239,7 @@ export function CalendarQuickNav({
         </div>
       ) : (
         // biome-ignore lint/a11y/useSemanticElements: grid de botões; <fieldset> tem quirks históricos com display:grid.
-        <div role="group" aria-label="Escolher mês" className="w-[calc(var(--cell-size)*7)]">
+        <div role="group" aria-label="Escolher mês" className="w-(--quick-nav-width)">
           <div className="flex h-(--cell-size) items-center justify-center">
             <Button
               type="button"
