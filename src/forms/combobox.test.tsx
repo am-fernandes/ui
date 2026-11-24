@@ -391,6 +391,82 @@ describe("Combobox", () => {
   })
 })
 
+describe("Combobox: a opção escolhida", () => {
+  const fifty: ComboboxOption[] = Array.from({ length: 50 }, (_, i) => ({
+    value: `o${i + 1}`,
+    label: `Opção ${i + 1}`,
+  }))
+
+  it("exposes which option is chosen with aria-checked", async () => {
+    render(<Combobox options={options} value="b" placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByRole("option", { name: "Bravo" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    )
+    expect(screen.getByRole("option", { name: "Alpha" })).toHaveAttribute("aria-checked", "false")
+  })
+
+  it("multiple: every chosen option is checked", async () => {
+    render(<Combobox multiple options={options} value={["a", "c"]} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await screen.findByRole("listbox")
+    const checked = screen
+      .getAllByRole("option")
+      .filter((option) => option.getAttribute("aria-checked") === "true")
+      .map((option) => option.textContent)
+    expect(checked).toEqual(["Alpha", "Charlie"])
+  })
+
+  it("opens with the chosen option highlighted, not the first one", async () => {
+    render(<Combobox options={fifty} value="o30" placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    const chosen = await screen.findByRole("option", { name: "Opção 30" })
+    await waitFor(() => expect(chosen).toHaveAttribute("aria-selected", "true"))
+    expect(screen.getByRole("option", { name: "Opção 1" })).toHaveAttribute(
+      "aria-selected",
+      "false",
+    )
+  })
+
+  it("Enter right after opening keeps the value", async () => {
+    const onValueChange = vi.fn()
+    render(
+      <Combobox options={fifty} value="o30" onValueChange={onValueChange} placeholder="Pick" />,
+    )
+    await userEvent.click(screen.getByRole("combobox"))
+    const chosen = await screen.findByRole("option", { name: "Opção 30" })
+    await waitFor(() => expect(chosen).toHaveAttribute("aria-selected", "true"))
+    await userEvent.keyboard("{Enter}")
+    expect(onValueChange).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
+  })
+
+  it("multiple: opens on the first chosen option", async () => {
+    render(<Combobox multiple options={fifty} value={["o12", "o40"]} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    const chosen = await screen.findByRole("option", { name: "Opção 12" })
+    await waitFor(() => expect(chosen).toHaveAttribute("aria-selected", "true"))
+  })
+
+  it("required: clicking the chosen option keeps it chosen", async () => {
+    const onValueChange = vi.fn()
+    render(
+      <Combobox
+        options={options}
+        value="a"
+        required
+        onValueChange={onValueChange}
+        placeholder="Pick"
+      />,
+    )
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.click(await screen.findByRole("option", { name: "Alpha" }))
+    expect(onValueChange).not.toHaveBeenCalled()
+    expect(screen.getByRole("combobox")).toHaveTextContent("Alpha")
+  })
+})
+
 describe("Combobox: listas grandes e busca no servidor", () => {
   const many: ComboboxOption[] = Array.from({ length: 250 }, (_, i) => ({
     value: `o-${i + 1}`,

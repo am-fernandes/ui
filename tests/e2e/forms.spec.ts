@@ -196,3 +196,33 @@ test.describe("DateInput: digitar", () => {
     await expect(page.getByText("ISO: 1990-03-16")).toBeVisible()
   })
 })
+
+test.describe("Combobox: opção escolhida", () => {
+  test("abre na escolhida, à vista, marcada na árvore de acessibilidade, e Enter mantém", async ({
+    page,
+  }) => {
+    await gotoStory(page, "forms-combobox--opens-on-chosen", "Opção 30")
+    const trigger = page.getByRole("combobox", { name: "Opção" })
+    await trigger.click()
+    const list = page.getByRole("listbox")
+    await expect(list).toBeVisible()
+    const chosen = list.getByRole("option", { name: "Opção 30", checked: true })
+    await expect(chosen).toBeVisible()
+    await expect(list.getByRole("option", { checked: true })).toHaveCount(1)
+    await expect(chosen).toHaveAttribute("aria-selected", "true")
+
+    // Scrolled into the list's box.
+    await expect
+      .poll(async () => {
+        const listBox = await list.boundingBox()
+        const itemBox = await chosen.boundingBox()
+        if (!listBox || !itemBox) return false
+        return itemBox.y >= listBox.y && itemBox.y + itemBox.height <= listBox.y + listBox.height
+      })
+      .toBe(true)
+
+    await page.keyboard.press("Enter")
+    await expect(list).toHaveCount(0)
+    await expect(trigger).toHaveText(/Opção 30/)
+  })
+})

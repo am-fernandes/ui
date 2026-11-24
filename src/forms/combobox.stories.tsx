@@ -338,6 +338,32 @@ export const LongList: Story = {
   },
 }
 
+export const OpensOnChosen: Story = {
+  name: "Opens on the chosen option",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A lista abre com a opção escolhida destacada e rolada até a vista; Enter logo depois de abrir mantém o valor. A escolhida é anunciada como marcada (`aria-checked`), separada do destaque do teclado.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState<string | undefined>("option-30")
+    return (
+      <div className="w-[320px]">
+        <Combobox
+          options={longOptions}
+          label="Opção"
+          value={value}
+          onValueChange={setValue}
+          placeholder="Selecione"
+        />
+      </div>
+    )
+  },
+}
+
 const thousandsOfOptions: ComboboxOption[] = Array.from({ length: 2000 }, (_, i) => ({
   value: String(i + 1),
   label: `Unidade ${i + 1}`,

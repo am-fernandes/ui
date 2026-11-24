@@ -172,6 +172,11 @@ export function Combobox(props: ComboboxProps) {
   const listboxId = `${ids.controlId}-listbox`
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
+  // The highlighted option (cmdk's value), which Enter would choose.
+  const [highlight, setHighlight] = React.useState("")
+  const listRef = React.useRef<HTMLDivElement>(null)
+  // Whether the option being chosen was clicked, not picked with Enter.
+  const pickedWithPointer = React.useRef(false)
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
 
@@ -204,9 +209,36 @@ export function Combobox(props: ComboboxProps) {
     return { visibleOptions: visible, hiddenCount: matches.length - visible.length }
   }, [options, search, shouldFilter, maxVisibleOptions, chosen])
 
+  // The list opens on the chosen option (the first one, in multiple mode),
+  // so Enter right after opening keeps the value instead of taking the first
+  // option of the list.
+  const openList = () => {
+    setHighlight(chosen[0] ?? "")
+    setOpen(true)
+  }
+
+  React.useEffect(() => {
+    if (!open) return
+    // The options mount in the popover's portal after this render.
+    const frame = requestAnimationFrame(() => {
+      const list = listRef.current
+      const item = list?.querySelector<HTMLElement>('[cmdk-item][aria-selected="true"]')
+      if (!list || !item) return
+      const listBox = list.getBoundingClientRect()
+      const itemBox = item.getBoundingClientRect()
+      list.scrollTop += itemBox.top - listBox.top - (listBox.height - itemBox.height) / 2
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [open])
+
   const handleSingleSelect = (currentValue: string) => {
+    const byPointer = pickedWithPointer.current
+    pickedWithPointer.current = false
     if (!isMultiple && props.onValueChange) {
-      props.onValueChange(currentValue === props.value ? "" : currentValue)
+      if (currentValue !== props.value) props.onValueChange(currentValue)
+      // A click on the chosen option of an optional field clears it, as
+      // before. Enter on it (where the list opens) and a required field keep it.
+      else if (byPointer && !required) props.onValueChange("")
     }
     setOpen(false)
   }
@@ -393,7 +425,8 @@ export function Combobox(props: ComboboxProps) {
             open={open}
             onOpenChange={(isOpen) => {
               if (disabled) return
-              setOpen(isOpen)
+              if (isOpen) openList()
+              else setOpen(false)
               if (!isOpen && search !== "") changeSearch("")
             }}
             align="start"
@@ -402,7 +435,15 @@ export function Combobox(props: ComboboxProps) {
             className={cn("p-0", popoverWidth || "w-[--radix-popover-trigger-width]")}
           >
             {/* The list is filtered here, not by cmdk: it only gets what is on screen. */}
-            <CommandPrimitive shouldFilter={false} className="flex h-full w-full flex-col">
+            <CommandPrimitive
+              shouldFilter={false}
+              value={highlight}
+              onValueChange={setHighlight}
+              onKeyDown={() => {
+                pickedWithPointer.current = false
+              }}
+              className="flex h-full w-full flex-col"
+            >
               <div className="flex items-center gap-2 border-b px-3" cmdk-input-wrapper="">
                 <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
                 <CommandPrimitive.Input
@@ -413,6 +454,7 @@ export function Combobox(props: ComboboxProps) {
                 />
               </div>
               <CommandPrimitive.List
+                ref={listRef}
                 id={listboxId}
                 onTouchMove={(e) => e.stopPropagation()}
                 className="max-h-75 overflow-y-auto overflow-x-hidden overscroll-y-contain p-1"
@@ -440,6 +482,12 @@ export function Combobox(props: ComboboxProps) {
                         key={option.value}
                         value={option.value}
                         disabled={option.disabled}
+                        // cmdk marks the highlighted option aria-selected; the
+                        // chosen one is told apart by aria-checked.
+                        aria-checked={isSelected}
+                        onPointerDown={() => {
+                          pickedWithPointer.current = true
+                        }}
                         onSelect={() => {
                           if (isMultiple) handleMultipleSelect(option.value)
                           else handleSingleSelect(option.value)
