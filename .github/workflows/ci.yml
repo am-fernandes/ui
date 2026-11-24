@@ -108,6 +108,29 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
+  e2e:
+    name: E2E (Playwright, desktop + mobile + tablet)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: bunx playwright install --with-deps chromium
+      - run: bun run build-storybook
+      - run: bun run test:e2e:ci
+        env:
+          CI: "true"
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-e2e-report
+          path: playwright-report/
+          retention-days: 14
+
   storybook-tests:
     name: Storybook tests (interaction + a11y)
     runs-on: ubuntu-latest

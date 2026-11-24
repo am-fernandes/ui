@@ -324,6 +324,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:ci": "concurrently -k -s first -n SB,E2E \"http-server storybook-static --port 6006 --silent\" \"wait-on tcp:6006 && STORYBOOK_STATIC=1 E2E_SKIP_VISUAL=1 playwright test\"",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:mobile": "playwright test --project=mobile-chromium",
