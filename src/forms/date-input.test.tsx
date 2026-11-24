@@ -317,6 +317,53 @@ describe("DateInput", () => {
     expect(calls).toEqual(["value:", "blur"])
   })
 
+  it("min and max: a typed date outside them is not reported and is an error on blur", async () => {
+    const spy = vi.fn()
+    render(<Controlled min="2020-01-01" max="2020-12-31" onChangeSpy={spy} />)
+    await userEvent.type(input(), "15031990")
+    expect(spy).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(screen.getByRole("alert")).toHaveTextContent("A data deve ser a partir de 01/01/2020.")
+
+    await userEvent.clear(input())
+    await userEvent.type(input(), "01012021")
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(screen.getByRole("alert")).toHaveTextContent("A data deve ser até 31/12/2020.")
+
+    await userEvent.clear(input())
+    await userEvent.type(input(), "31122020")
+    expect(spy).toHaveBeenLastCalledWith("2020-12-31")
+    expect(screen.queryByRole("alert")).toBeNull()
+  })
+
+  it("min and max limit the calendar too", async () => {
+    render(<DateInput label="Data" value="2020-01-10" min="2020-01-05" max="2020-01-20" />)
+    await userEvent.click(screen.getByRole("button", { name: "Abrir calendário" }))
+    await screen.findByRole("grid")
+    const day = (iso: string) => document.querySelector(`button[data-day="${iso}"]`)
+    expect(day("2020-01-04")).toBeDisabled()
+    expect(day("2020-01-05")).not.toBeDisabled()
+    expect(day("2020-01-21")).toBeDisabled()
+    // No way to the months outside the range.
+    expect(screen.getByRole("button", { name: "Ir para o mês anterior" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    )
+  })
+
+  it("disabledDays applies to typed dates as well as to the calendar", async () => {
+    const spy = vi.fn()
+    render(<Controlled disabledDays="weekends" onChangeSpy={spy} />)
+    // 15/03/2025 is a Saturday.
+    await userEvent.type(input(), "15032025")
+    expect(spy).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(screen.getByRole("alert")).toHaveTextContent("Esta data não está disponível.")
+    await userEvent.clear(input())
+    await userEvent.type(input(), "14032025")
+    expect(spy).toHaveBeenLastCalledWith("2025-03-14")
+  })
+
   it("forwards the ref to the text field", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<DateInput value="" ref={ref} />)

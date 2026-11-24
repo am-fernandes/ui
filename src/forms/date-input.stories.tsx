@@ -119,6 +119,36 @@ export const Default: Story = {
   },
 }
 
+export const MinMax: Story = {
+  name: "Min Max",
+  args: { value: "" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`min` e `max` (ISO) valem para o calendário (dias fora ficam inativos e a navegação para nos limites) e para a data digitada: fora do intervalo, nada é reportado e, ao sair, o campo diz o limite. `disabledDays` funciona do mesmo jeito.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState("2025-06-15")
+    return (
+      <div className="flex w-[280px] flex-col gap-2">
+        <DateInput
+          label="Data da vistoria"
+          description="Entre 01/06/2025 e 31/12/2025, em dia útil."
+          min="2025-06-01"
+          max="2025-12-31"
+          disabledDays="weekends"
+          value={value}
+          onValueChange={setValue}
+        />
+        <span className="text-xs text-muted-foreground">ISO: {value || "(vazio)"}</span>
+      </div>
+    )
+  },
+}
+
 export const Typing: Story = {
   args: { value: "" },
   parameters: {

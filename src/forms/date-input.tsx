@@ -13,12 +13,14 @@ import { assignRef } from "./_internal/assign-ref"
 import {
   dateToIso,
   digitsToIso,
+  formatIsoDate,
   isoToDate,
   isoToDigits,
   maskDateDigits,
   toIsoDate,
 } from "./_internal/date-only"
-import { Calendar, type DisabledDays } from "./calendar"
+import { type DisabledDays, resolveDisabledDays } from "./_internal/disabled-days"
+import { Calendar } from "./calendar"
 
 export interface DateInputLabels {
   /** Accessible name of the button that opens the calendar. */
@@ -27,12 +29,21 @@ export interface DateInputLabels {
   invalidDate: string
   /** Accessible name of the field when it has neither `label` nor `aria-label`. */
   field: string
+  /** Shown when the field is left with a date before `min` (given as dd/mm/aaaa). */
+  beforeMin: (min: string) => string
+  /** Shown when the field is left with a date after `max` (given as dd/mm/aaaa). */
+  afterMax: (max: string) => string
+  /** Shown when the field is left with a day that `disabledDays` rules out. */
+  unavailableDate: string
 }
 
 export const defaultDateInputLabels: DateInputLabels = {
   openCalendar: "Abrir calendário",
   invalidDate: "Data inválida. Use o formato dd/mm/aaaa.",
   field: "Data",
+  beforeMin: (min) => `A data deve ser a partir de ${min}.`,
+  afterMax: (max) => `A data deve ser até ${max}.`,
+  unavailableDate: "Esta data não está disponível.",
 }
 
 const dateSpec: MaskSpec = {
@@ -86,6 +97,13 @@ export interface DateInputProps {
    */
   disabledDays?: DisabledDays
   /**
+   * First date allowed (ISO). Days before it are off in the calendar, and a
+   * typed date before it is an error when the field is left.
+   */
+  min?: string
+  /** Last date allowed (ISO), as `min`. */
+  max?: string
+  /**
    * Name of the field in a native form. The form receives the ISO date (what
    * `onValueChange` reports), carried by a hidden input; the visible input,
    * which shows `dd/mm/aaaa`, has no name.
@@ -124,6 +142,8 @@ function DateInput({
   labelPosition,
   required,
   disabledDays,
+  min,
+  max,
   labels,
   name,
   onBlur,
@@ -149,6 +169,28 @@ function DateInput({
     setSynced(current)
     if (digitsToIso(digits) !== current) setDigits(isoToDigits(current))
   }
+
+  // min, max and disabledDays hold for typed dates as for the calendar.
+  const minIso = toIsoDate(min)
+  const maxIso = toIsoDate(max)
+  const isDayOff = React.useMemo(() => resolveDisabledDays(disabledDays), [disabledDays])
+  /** Why a real day cannot be taken, or `null` when it can. */
+  const problemWith = (iso: string): string | null => {
+    if (minIso !== "" && iso < minIso) return l.beforeMin(formatIsoDate(minIso))
+    if (maxIso !== "" && iso > maxIso) return l.afterMax(formatIsoDate(maxIso))
+    const date = isoToDate(iso)
+    if (date && isDayOff?.(date)) return l.unavailableDate
+    return null
+  }
+  const minDate = isoToDate(minIso)
+  const maxDate = isoToDate(maxIso)
+  const calendarDisabled =
+    minDate || maxDate || isDayOff
+      ? (date: Date) =>
+          (minDate != null && date < minDate) ||
+          (maxDate != null && date > maxDate) ||
+          isDayOff?.(date) === true
+      : undefined
 
   const [ownError, setOwnError] = React.useState<string | null>(null)
   const shownError = error != null && error !== "" ? error : (ownError ?? undefined)
@@ -215,11 +257,12 @@ function DateInput({
       return
     }
     const iso = digitsToIso(next)
-    if (iso != null) {
+    if (iso != null && problemWith(iso) == null) {
       setOwnError(null)
       report(iso)
     }
-    // Incomplete or impossible: nothing is reported until the field is left.
+    // Incomplete, impossible or not allowed: nothing is reported until the
+    // field is left.
   }
 
   const commit = (edit: { raw: string; caret: number }) => {
@@ -230,8 +273,11 @@ function DateInput({
 
   /** The focus left the field: the text box, its button and the calendar. */
   const leaveField = () => {
-    if (digits === "" || digitsToIso(digits) != null) return
-    setOwnError(l.invalidDate)
+    if (digits === "") return
+    const iso = digitsToIso(digits)
+    const problem = iso == null ? l.invalidDate : problemWith(iso)
+    if (problem == null) return
+    setOwnError(problem)
     report("")
   }
 
@@ -357,7 +403,9 @@ function DateInput({
               defaultMonth={selected}
               // The chosen day (or today) takes the focus when the calendar opens.
               autoFocus
-              disabledDays={disabledDays}
+              disabledDays={calendarDisabled}
+              startMonth={minDate}
+              endMonth={maxDate}
             />
           </div>
         </Popover>
