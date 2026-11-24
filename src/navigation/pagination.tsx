@@ -150,8 +150,12 @@ function roomFor(controls: number, controlPx: number) {
 }
 
 function totalPageCount(totalItems?: number, totalPages?: number, pageSize = 10) {
-  if (totalItems != null) return Math.max(1, Math.ceil(Math.max(0, totalItems) / pageSize))
-  if (totalPages != null) return Math.max(1, Math.floor(totalPages))
+  if (totalItems != null && Number.isFinite(totalItems)) {
+    return Math.max(1, Math.ceil(Math.max(0, totalItems) / pageSize))
+  }
+  if (totalPages != null && Number.isFinite(totalPages)) {
+    return Math.max(1, Math.floor(totalPages))
+  }
   return undefined
 }
 
@@ -182,9 +186,16 @@ function Pagination({
   const safePageSize = pageSize > 0 ? pageSize : 10
   const total = totalPageCount(totalItems, totalPages, safePageSize)
   const isCursor = total === undefined
-  const current = isCursor
-    ? Math.max(1, Math.floor(page))
-    : Math.min(Math.max(1, Math.floor(page)), total)
+  // A page that is not a number (NaN from a bad query string) is page 1; one
+  // past either end is the nearest end. The consumer is told in development,
+  // because its own state still holds the bad value.
+  const requested = Number.isFinite(page) ? Math.floor(page) : 1
+  const current = isCursor ? Math.max(1, requested) : Math.min(Math.max(1, requested), total)
+  if (process.env.NODE_ENV !== "production" && current !== page) {
+    console.warn(
+      `[Pagination] page ${String(page)} is out of range; showing page ${current}. Keep \`page\` between 1 and the last page.`,
+    )
+  }
   const canPrevious = !disabled && current > 1
   const canNext = !disabled && (isCursor ? hasMore : current < total)
 
@@ -407,7 +418,7 @@ function Pagination({
 
   const showFirstLastButtons = showFirstLast && !isCursor
   const summary =
-    totalItems != null
+    totalItems != null && Number.isFinite(totalItems)
       ? l.range(
           totalItems <= 0 ? 0 : (current - 1) * safePageSize + 1,
           Math.min(current * safePageSize, Math.max(0, totalItems)),

@@ -958,6 +958,15 @@ function DataTable<TData>({
           : { hasMore: data.length >= paginationState.pageSize }
       : { totalItems: table.getPrePaginationRowModel().rows.length }
 
+  // When the data shrinks under the current page, the table moves to the
+  // last one in an effect; until then, show the last page instead of handing
+  // Pagination a page it would warn about.
+  const knownPageCount = table.getPageCount()
+  const shownPage =
+    knownPageCount > 0
+      ? Math.min(paginationState.pageIndex + 1, knownPageCount)
+      : paginationState.pageIndex + 1
+
   // As many skeleton rows as the page the user is about to see.
   const skeletonRowCount = paginationEnabled ? paginationState.pageSize : 5
   const hasError = !loading && error != null && error !== false && error !== ""
@@ -1651,7 +1660,7 @@ function DataTable<TData>({
           )}
           {paginationEnabled ? (
             <Pagination
-              page={paginationState.pageIndex + 1}
+              page={shownPage}
               onPageChange={(page) =>
                 handlePaginationChange((prev) => ({ ...prev, pageIndex: page - 1 }))
               }

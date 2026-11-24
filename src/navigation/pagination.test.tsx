@@ -162,7 +162,30 @@ describe("Pagination", () => {
       expect(screen.queryByRole("button", { name: "Última página" })).not.toBeInTheDocument()
     })
 
+    it("shows page 1, never NaN, when page or the total is not a number", () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+      const { container } = render(
+        <Pagination page={Number.NaN} totalItems={243} pageSize={10} onPageChange={() => {}} />,
+      )
+      expect(container.textContent).not.toContain("NaN")
+      expect(screen.getByRole("button", { name: "Página 1" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      )
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("page NaN is out of range"))
+
+      render(<Pagination page={2} totalItems={Number.NaN} onPageChange={() => {}} />)
+      expect(document.body.textContent).not.toContain("NaN")
+    })
+
+    it("warns in development when page is past the last page", () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+      render(<Pagination page={42} totalItems={43} pageSize={10} onPageChange={() => {}} />)
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("showing page 5"))
+    })
+
     it("clamps out-of-range pages", async () => {
+      vi.spyOn(console, "warn").mockImplementation(() => {})
       const { onPageChange, rerender } = renderPagination({ page: 42, totalPages: 5 })
       expect(screen.getByRole("button", { name: "Página 5" })).toHaveAttribute(
         "aria-current",
@@ -325,6 +348,7 @@ describe("Pagination", () => {
     })
 
     it("ignores showFirstLast (the last page is unknown) and clamps below 1", () => {
+      vi.spyOn(console, "warn").mockImplementation(() => {})
       render(<Pagination page={0} hasMore showFirstLast onPageChange={() => {}} />)
       expect(screen.queryByRole("button", { name: "Última página" })).not.toBeInTheDocument()
       expect(screen.getByText("Página 1")).toBeInTheDocument()
