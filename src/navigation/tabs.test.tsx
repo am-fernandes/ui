@@ -49,6 +49,21 @@ describe("Tabs", () => {
     expect(screen.getByRole("tabpanel")).toHaveTextContent("Painel B")
   })
 
+  it("names the tab list with aria-label / aria-labelledby", () => {
+    const { container, rerender } = render(
+      <Tabs aria-label="Seções do lead" items={[{ value: "a", label: "A", content: "AC" }]} />,
+    )
+    expect(screen.getByRole("tablist", { name: "Seções do lead" })).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="tabs"]')).not.toHaveAttribute("aria-label")
+    rerender(
+      <>
+        <h2 id="titulo">Ficha do lead</h2>
+        <Tabs aria-labelledby="titulo" items={[{ value: "a", label: "A", content: "AC" }]} />
+      </>,
+    )
+    expect(screen.getByRole("tablist", { name: "Ficha do lead" })).toBeInTheDocument()
+  })
+
   it("supports keyboard arrow navigation between triggers", async () => {
     render(
       <Tabs

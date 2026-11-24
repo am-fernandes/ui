@@ -31,6 +31,10 @@ export interface TabsProps
    */
   lazy?: boolean
   ref?: React.Ref<React.ComponentRef<typeof TabsPrimitive.Root>>
+  /** Accessible name of the list of tabs ("Seções do lead"). */
+  "aria-label"?: string
+  /** Id of a visible title that names the list of tabs. */
+  "aria-labelledby"?: string
 }
 
 function Tabs({
@@ -43,6 +47,9 @@ function Tabs({
   defaultValue,
   onValueChange,
   ref,
+  // They name the list of tabs (role="tablist"), not the wrapper around it.
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
   ...props
 }: TabsProps) {
   const isVertical = orientation === "vertical"
@@ -95,6 +102,8 @@ function Tabs({
       <TabsPrimitive.List
         ref={listRef}
         data-slot="tabs-list"
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
         className={cn(
           "relative inline-flex items-center rounded-element bg-muted p-1 text-muted-foreground",
           // Wider than its container: the list scrolls instead of spilling out
