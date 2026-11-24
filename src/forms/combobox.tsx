@@ -39,6 +39,20 @@ const clearOffset: Record<ControlSize, string> = {
 }
 
 export interface ComboboxLabels {
+  /** The trigger with nothing chosen. `placeholder` wins over it. */
+  placeholder: string
+  /** The search box of the list. `searchPlaceholder` wins over it. */
+  search: string
+  /** Accessible name of the list of options. */
+  list: string
+  /** When nothing matches the search. `emptyMessage` wins over it. */
+  empty: string
+  /** The button that clears the choice. */
+  clear: string
+  /** The × of a chosen item, in multiple mode. Receives the item's label. */
+  remove: (label: string) => string
+  /** The option that uses the typed text, with `creatable`. */
+  create: (term: string) => string
   /** Shown instead of the empty message while `loading`. */
   loading: string
   /**
@@ -49,6 +63,13 @@ export interface ComboboxLabels {
 }
 
 export const defaultComboboxLabels: ComboboxLabels = {
+  placeholder: "Selecione...",
+  search: "Buscar...",
+  list: "Opções",
+  empty: "Nenhuma opção encontrada.",
+  clear: "Limpar seleção",
+  remove: (label) => `Remover ${label}`,
+  create: (term) => `Usar: “${term}”`,
   loading: "Carregando…",
   hiddenOptions: (count) =>
     `${countFormatter.format(count)} ${count === 1 ? "opção a mais" : "opções a mais"}. Continue digitando para filtrar.`,
@@ -199,9 +220,9 @@ export function Combobox(props: ComboboxProps) {
   } = props
   const l: ComboboxLabels = { ...defaultComboboxLabels, ...props.labels }
 
-  const resolvedPlaceholder = placeholder ?? "Selecione..."
-  const resolvedSearchPlaceholder = searchPlaceholder ?? "Buscar..."
-  const resolvedEmptyMessage = emptyMessage ?? "Nenhuma opção encontrada."
+  const resolvedPlaceholder = placeholder ?? l.placeholder
+  const resolvedSearchPlaceholder = searchPlaceholder ?? l.search
+  const resolvedEmptyMessage = emptyMessage ?? l.empty
 
   const ids = useFieldIds(id)
   const triggerRef = React.useRef<HTMLButtonElement | null>(null)
@@ -402,7 +423,7 @@ export function Combobox(props: ComboboxProps) {
               {readOnly || disabled ? null : (
                 <button
                   type="button"
-                  aria-label={`Remover ${labelText}`}
+                  aria-label={l.remove(labelText)}
                   className="rounded-inner cursor-pointer state-layer focus-visible:focus-outline"
                   onClick={(e) => handleRemoveValue(val, e)}
                 >
@@ -480,7 +501,7 @@ export function Combobox(props: ComboboxProps) {
   const clearButton = showClear ? (
     <button
       type="button"
-      aria-label="Limpar seleção"
+      aria-label={l.clear}
       data-slot="combobox-clear"
       className={cn(
         "absolute top-1/2 inline-flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-inner state-layer focus-visible:focus-outline",
@@ -565,6 +586,7 @@ export function Combobox(props: ComboboxProps) {
                 />
               </div>
               <CommandPrimitive.List
+                label={l.list}
                 ref={setListRef}
                 onTouchMove={(e) => e.stopPropagation()}
                 className="max-h-75 overflow-y-auto overflow-x-hidden overscroll-y-contain p-1"
@@ -581,7 +603,7 @@ export function Combobox(props: ComboboxProps) {
                       onSelect={() => handleCreate(trimmedSearch)}
                       className="relative flex cursor-default select-none items-center rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover"
                     >
-                      Usar: &ldquo;{trimmedSearch}&rdquo;
+                      {l.create(trimmedSearch)}
                     </CommandPrimitive.Item>
                   ) : null}
                   {visibleOptions.map((option) => {

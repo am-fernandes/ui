@@ -712,6 +712,52 @@ describe("Combobox: teclado no gatilho fechado", () => {
   })
 })
 
+describe("Combobox: textos", () => {
+  it("the list has a Portuguese name", async () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByRole("listbox", { name: "Opções" })).toBeInTheDocument()
+    expect(screen.queryByRole("listbox", { name: "Suggestions" })).toBeNull()
+  })
+
+  it("every fixed text comes from labels", async () => {
+    render(
+      <Combobox
+        multiple
+        creatable
+        options={options}
+        defaultValue={["a"]}
+        labels={{
+          clear: "Apagar tudo",
+          remove: (label) => `Tirar ${label}`,
+          create: (term) => `Criar ${term}`,
+          list: "Áreas",
+          empty: "Nada aqui",
+          placeholder: "Escolha",
+          search: "Procurar",
+        }}
+      />,
+    )
+    expect(screen.getByRole("button", { name: "Apagar tudo" })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Tirar Alpha" }))
+    expect(screen.getByRole("combobox")).toHaveTextContent("Escolha")
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByRole("listbox", { name: "Áreas" })).toBeInTheDocument()
+    await userEvent.type(screen.getByPlaceholderText("Procurar"), "zz")
+    expect(screen.getByRole("option", { name: "Criar zz" })).toBeInTheDocument()
+  })
+
+  it("the empty text comes from labels, and emptyMessage still wins", async () => {
+    const { unmount } = render(<Combobox options={[]} labels={{ empty: "Nada aqui" }} />)
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByText("Nada aqui")).toBeInTheDocument()
+    unmount()
+    render(<Combobox options={[]} labels={{ empty: "Nada aqui" }} emptyMessage="Vazio" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByText("Vazio")).toBeInTheDocument()
+  })
+})
+
 describe("Combobox: listas grandes e busca no servidor", () => {
   const many: ComboboxOption[] = Array.from({ length: 250 }, (_, i) => ({
     value: `o-${i + 1}`,
