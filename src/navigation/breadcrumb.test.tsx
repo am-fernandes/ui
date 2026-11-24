@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import type { RenderLinkProps } from "@/lib/render-link"
 import { Breadcrumb } from "./breadcrumb"
 
 describe("Breadcrumb", () => {
@@ -97,6 +98,29 @@ describe("Breadcrumb", () => {
     for (const sep of separators) {
       expect(sep.hasAttribute("aria-hidden")).toBe(false)
     }
+  })
+
+  it("renders the links through renderLink (the app's router)", () => {
+    const renderLink = vi.fn(({ href, ...props }: RenderLinkProps) => (
+      <a data-router-link={href} href={href} {...props} />
+    ))
+    render(
+      <Breadcrumb
+        renderLink={renderLink}
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Contratos", href: "/contratos" },
+          { label: "C-2026-001" },
+        ]}
+      />,
+    )
+    expect(screen.getByRole("link", { name: "Contratos" })).toHaveAttribute(
+      "data-router-link",
+      "/contratos",
+    )
+    expect(renderLink).toHaveBeenCalledTimes(2)
+    // The current page is not a link at all.
+    expect(screen.getByText("C-2026-001").closest("a")).toBeNull()
   })
 
   describe("href protocol safety", () => {

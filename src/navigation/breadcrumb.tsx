@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react"
 import * as React from "react"
 
+import { type RenderLink, type RenderLinkProps, renderLinkElement } from "@/lib/render-link"
 import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
 
@@ -13,6 +14,11 @@ export interface BreadcrumbItemData {
    * `vbscript:`) are dropped — the item then renders as plain text.
    */
   href?: string
+  /**
+   * Runs when the link is clicked and receives the event:
+   * `event.preventDefault()` stops the navigation.
+   */
+  onClick?: (event: React.MouseEvent<HTMLAnchorElement>) => void
   /** Marks the current page. Auto-detected as true when href is omitted on the last item. */
   isCurrentPage?: boolean
 }
@@ -21,6 +27,13 @@ export interface BreadcrumbProps extends React.ComponentPropsWithoutRef<"nav"> {
   items: BreadcrumbItemData[]
   /** aria-label applied to the wrapping nav. Default: "Breadcrumb". */
   ariaLabel?: string
+  /**
+   * Renders the links with your router's `<Link>`, so a click navigates
+   * without reloading the page:
+   * `renderLink={({ href, ...props }) => <Link to={href} {...props} />}`.
+   * Pass every prop on: they carry the classes and the click handler.
+   */
+  renderLink?: RenderLink
   ref?: React.Ref<HTMLElement>
 }
 
@@ -28,6 +41,7 @@ function Breadcrumb({
   items,
   className,
   ariaLabel = "Breadcrumb",
+  renderLink,
   ref,
   ...props
 }: BreadcrumbProps) {
@@ -67,13 +81,13 @@ function Breadcrumb({
                     {item.label}
                   </span>
                 ) : (
-                  <a
-                    data-slot="breadcrumb-link"
-                    href={item.href}
-                    className="transition-colors hover:text-foreground"
-                  >
-                    {item.label}
-                  </a>
+                  renderLinkElement(renderLink, {
+                    "data-slot": "breadcrumb-link",
+                    href: item.href as string,
+                    onClick: item.onClick,
+                    className: "transition-colors hover:text-foreground",
+                    children: item.label,
+                  } as RenderLinkProps)
                 )}
               </li>
               {!isLast ? (
