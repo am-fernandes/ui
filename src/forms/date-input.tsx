@@ -85,6 +85,12 @@ export interface DateInputProps {
    * event entry dates).
    */
   disabledDays?: DisabledDays
+  /**
+   * Name of the field in a native form. The form receives the ISO date (what
+   * `onValueChange` reports), carried by a hidden input; the visible input,
+   * which shows `dd/mm/aaaa`, has no name.
+   */
+  name?: string
   /** Texts of the field. Defaults in `defaultDateInputLabels`. */
   labels?: Partial<DateInputLabels>
   "aria-label"?: string
@@ -113,6 +119,7 @@ function DateInput({
   required,
   disabledDays,
   labels,
+  name,
   "aria-label": ariaLabel,
   ref,
 }: DateInputProps) {
@@ -344,6 +351,9 @@ function DateInput({
             />
           </div>
         </Popover>
+        {name != null && name !== "" ? (
+          <input type="hidden" name={name} value={toIsoDate(current)} disabled={disabled} />
+        ) : null}
       </div>
     </FieldShell>
   )

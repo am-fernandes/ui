@@ -265,6 +265,30 @@ describe("DateInput", () => {
     await waitFor(() => expect(input()).toHaveValue("14/03/2025"))
   })
 
+  it("name: a native form receives the ISO date, not the typed text", async () => {
+    const { container } = render(
+      <form>
+        <DateInput label="Data" name="nascimento" />
+      </form>,
+    )
+    const form = container.querySelector("form") as HTMLFormElement
+    expect(input()).not.toHaveAttribute("name")
+    expect(new FormData(form).get("nascimento")).toBe("")
+    await userEvent.type(input(), "15031990")
+    expect(new FormData(form).get("nascimento")).toBe("1990-03-15")
+  })
+
+  it("name, disabled: nothing is submitted", () => {
+    const { container } = render(
+      <form>
+        <DateInput label="Data" name="nascimento" value="1990-03-15" disabled />
+      </form>,
+    )
+    expect(new FormData(container.querySelector("form") as HTMLFormElement).has("nascimento")).toBe(
+      false,
+    )
+  })
+
   it("forwards the ref to the text field", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<DateInput value="" ref={ref} />)
