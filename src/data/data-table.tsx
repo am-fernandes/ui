@@ -234,8 +234,20 @@ export interface DataTableProps<TData> {
   pageIndex?: number
   /** Controlled pagination change handler. */
   onPaginationChange?: OnChangeFn<PaginationState>
-  /** Total page count (required when `manualPagination` is true). */
+  /**
+   * Number of pages on the server (`manualPagination`). Optional when
+   * `rowCount` is given: the count then derives from it and the page size.
+   * With neither, the total is unknown: no page count is shown and "next"
+   * stays available.
+   */
   pageCount?: number
+  /**
+   * Number of rows on the server, for `manualPagination` / `manualFiltering`:
+   * `data` only holds the current page, so the footer shows this total
+   * (`showRowCount`) and the page count derives from it when `pageCount` is
+   * absent. Without it, server pagination shows no row count.
+   */
+  rowCount?: number
   /** Whether pagination is server-driven. */
   manualPagination?: boolean
   /** Controlled sorting state. When provided, parent owns the sort. */
@@ -434,6 +446,7 @@ function DataTable<TData>({
   pageIndex: pageIndexProp,
   onPaginationChange: onPaginationChangeProp,
   pageCount,
+  rowCount,
   manualPagination,
   labels,
   onRowClick,
@@ -597,7 +610,16 @@ function DataTable<TData>({
       ...(paginationEnabled && !manualPagination
         ? { getPaginationRowModel: getPaginationRowModel() }
         : {}),
-      ...(manualPagination ? { manualPagination: true, pageCount: pageCount ?? -1 } : {}),
+      // Server pagination: TanStack derives the page count from `rowCount`
+      // when `pageCount` is absent; with neither, -1 means "unknown" (next
+      // stays enabled, no count is shown).
+      ...(manualPagination
+        ? {
+            manualPagination: true,
+            pageCount: pageCount ?? (rowCount == null ? -1 : undefined),
+            rowCount,
+          }
+        : {}),
       globalFilterFn,
       getColumnCanGlobalFilter,
     }),
@@ -616,6 +638,7 @@ function DataTable<TData>({
       manualSorting,
       manualFiltering,
       pageCount,
+      rowCount,
       globalFilterFn,
       getColumnCanGlobalFilter,
     ],
@@ -628,6 +651,18 @@ function DataTable<TData>({
   const resolvedSearchPlaceholder = searchPlaceholder ?? mergedLabels.search
   const resolvedEmptyMessage = emptyMessage ?? mergedLabels.empty
   const rowCountFn = mergedLabels.rowCount
+
+  // Rows for the footer count. On the server (`manualPagination` /
+  // `manualFiltering`) `data` is a page or the filtered set, and the total is
+  // `rowCount`: unknown under server pagination when it is not given.
+  const counts: { filtered: number; total: number } | null =
+    manualPagination || manualFiltering
+      ? rowCount != null
+        ? { filtered: rowCount, total: rowCount }
+        : manualPagination
+          ? null
+          : { filtered: data.length, total: data.length }
+      : { filtered: table.getFilteredRowModel().rows.length, total: data.length }
 
   const skeletonRowCount = pagination?.pageSize ?? 5
   // Skip `meta.exportOnly` columns: they're absent from the rendered header,
@@ -697,6 +732,23 @@ function DataTable<TData>({
     [data, defaultRowToRecord, downloadConfig, table],
   )
 
+  // Only the scopes the table can fill. With server pagination `data` is one
+  // page: "filtered" and "all" need their fetcher, or they would export that
+  // page under the wrong name. With server filtering only, `data` is the
+  // filtered set: "filtered" is it, "all" needs `fetchAll`.
+  const exportScopes: ExportScope[] = (["filtered", "page", "all"] as const).filter((scope) => {
+    if (scope === "filtered") return !manualPagination || downloadConfig?.fetchFiltered != null
+    if (scope === "all") {
+      return (!manualPagination && !manualFiltering) || downloadConfig?.fetchAll != null
+    }
+    return true
+  })
+  const scopeLabels: Record<ExportScope, string> = {
+    filtered: mergedLabels.exportFiltered,
+    page: mergedLabels.exportPage,
+    all: mergedLabels.exportAll,
+  }
+
   const [downloadMenuOpen, setDownloadMenuOpen] = React.useState(false)
   const runExport = React.useCallback(
     async (scope: ExportScope) => {
@@ -744,33 +796,18 @@ function DataTable<TData>({
         className="w-56 p-1"
       >
         <div role="menu" className="flex flex-col">
-          <button
-            type="button"
-            role="menuitem"
-            data-slot="data-table-download-filtered"
-            className="rounded-element px-2 py-1.5 text-left text-sm transition-colors cursor-pointer state-layer"
-            onClick={() => runExport("filtered")}
-          >
-            {mergedLabels.exportFiltered}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            data-slot="data-table-download-page"
-            className="rounded-element px-2 py-1.5 text-left text-sm transition-colors cursor-pointer state-layer"
-            onClick={() => runExport("page")}
-          >
-            {mergedLabels.exportPage}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            data-slot="data-table-download-all"
-            className="rounded-element px-2 py-1.5 text-left text-sm transition-colors cursor-pointer state-layer"
-            onClick={() => runExport("all")}
-          >
-            {mergedLabels.exportAll}
-          </button>
+          {exportScopes.map((scope) => (
+            <button
+              key={scope}
+              type="button"
+              role="menuitem"
+              data-slot={`data-table-download-${scope}`}
+              className="rounded-element px-2 py-1.5 text-left text-sm transition-colors cursor-pointer state-layer"
+              onClick={() => runExport(scope)}
+            >
+              {scopeLabels[scope]}
+            </button>
+          ))}
         </div>
       </Popover>
     )
@@ -982,12 +1019,12 @@ function DataTable<TData>({
         // row count / pagination read as part of the table block instead of
         // floating below it; pb-3 keeps a normal bottom breath at the edge.
         <div className="-mt-1 flex items-center justify-between gap-2 px-3 pt-1 pb-3">
-          {showRowCount ? (
+          {showRowCount && counts !== null ? (
             loading ? (
               <div className="h-4 w-32 animate-pulse rounded-inner bg-primary/10" />
             ) : (
               <span className="text-xs text-muted-foreground">
-                {rowCountFn(table.getFilteredRowModel().rows.length, data.length)}
+                {rowCountFn(counts.filtered, counts.total)}
               </span>
             )
           ) : (
@@ -1030,12 +1067,14 @@ function DataTable<TData>({
               {loading ? (
                 <div className="h-4 w-24 animate-pulse rounded-inner bg-primary/10" />
               ) : (
-                <span className="text-xs text-muted-foreground">
-                  {mergedLabels.pageIndicator(
-                    table.getState().pagination.pageIndex,
-                    table.getPageCount(),
-                  )}
-                </span>
+                table.getPageCount() >= 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    {mergedLabels.pageIndicator(
+                      table.getState().pagination.pageIndex,
+                      Math.max(1, table.getPageCount()),
+                    )}
+                  </span>
+                )
               )}
               <Button
                 variant="outline"

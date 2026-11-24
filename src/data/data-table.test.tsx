@@ -332,6 +332,97 @@ describe("DataTable", () => {
     expect(btn).toBeTruthy()
   })
 
+  describe("server mode", () => {
+    const page: Row[] = Array.from({ length: 10 }, (_, i) => ({ name: `Row ${i + 1}`, age: i }))
+
+    it("shows the server total and derives the page count from rowCount", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={page}
+          manualPagination
+          rowCount={243}
+          pagination={{ pageSize: 10 }}
+          showRowCount
+        />,
+      )
+      expect(screen.getByText("243 registros")).toBeInTheDocument()
+      expect(screen.getByText("Página 1 de 25")).toBeInTheDocument()
+    })
+
+    it("lets pageCount win over rowCount", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={page}
+          manualPagination
+          rowCount={243}
+          pageCount={30}
+          pagination={{ pageSize: 10 }}
+        />,
+      )
+      expect(screen.getByText("Página 1 de 30")).toBeInTheDocument()
+    })
+
+    it("never shows a negative page count and keeps next available when the total is unknown", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={page}
+          manualPagination
+          pagination={{ pageSize: 10 }}
+          showRowCount
+        />,
+      )
+      expect(screen.queryByText(/-1/)).not.toBeInTheDocument()
+      // The page's own 10 rows are not the total: no count is shown.
+      expect(screen.queryByText("10 registros")).not.toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Próxima página" })).toBeEnabled()
+    })
+
+    it("hides export scopes the table cannot fill from the server page", async () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={page}
+          manualPagination
+          rowCount={243}
+          pagination={{ pageSize: 10 }}
+          downloadable
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      expect(screen.getByRole("menuitem", { name: "Exportar página atual" })).toBeInTheDocument()
+      expect(screen.queryByRole("menuitem", { name: "Exportar todos os dados" })).toBeNull()
+      expect(screen.queryByRole("menuitem", { name: "Exportar dados filtrados" })).toBeNull()
+    })
+
+    it("offers the scopes that have a fetcher", async () => {
+      const fetchAll = vi.fn(async () => page)
+      const fetchFiltered = vi.fn(async () => page.slice(0, 2))
+      render(
+        <DataTable
+          columns={columns}
+          data={page}
+          manualPagination
+          rowCount={243}
+          pagination={{ pageSize: 10 }}
+          downloadable={{ fetchAll, fetchFiltered }}
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      expect(screen.getByRole("menuitem", { name: "Exportar todos os dados" })).toBeInTheDocument()
+      expect(screen.getByRole("menuitem", { name: "Exportar dados filtrados" })).toBeInTheDocument()
+    })
+
+    it("with server filtering only, keeps 'filtered' (the data) and hides 'all'", async () => {
+      render(<DataTable columns={columns} data={page} manualFiltering downloadable />)
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      expect(screen.getByRole("menuitem", { name: "Exportar dados filtrados" })).toBeInTheDocument()
+      expect(screen.queryByRole("menuitem", { name: "Exportar todos os dados" })).toBeNull()
+    })
+  })
+
   describe("sorting", () => {
     interface Pessoa {
       nome: string

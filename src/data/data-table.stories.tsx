@@ -182,7 +182,7 @@ const meta = {
           "- `pagination?: { pageSize?: number; pageSizeOptions?: number[] }` — habilita paginação. Quando `pageSizeOptions` é informado (ex.: `[10, 20, 50, 100]`), o footer mostra um `<select>` 'Linhas por página' que ao mudar reseta o cursor pra página 1 e propaga via `onPaginationChange`. Sem `pageSize` explícito, o tamanho inicial vira `pageSizeOptions[0]`.",
           "- `showRowCount?: boolean` — mostra a contagem de registros no footer.",
           "- `globalFilter` / `onGlobalFilterChange` — filtro de busca controlado.",
-          "- `pageIndex` / `onPaginationChange` / `pageCount` / `manualPagination` — paginação server-side.",
+          "- `pageIndex` / `onPaginationChange` / `rowCount` / `pageCount` / `manualPagination` — paginação server-side. `rowCount` é o total no servidor: o rodapé o mostra e a contagem de páginas sai dele.",
           "- `labels?: { search?, empty?, rowCount?(filtered, total) => string }` — sobrescreve os textos default.",
           "- `onRowClick?: (row, event) => void` — torna cada linha clicável. A linha continua linha; o teclado chega à ação por um `<button>` que envolve o conteúdo da primeira célula. Clique ou tecla em controle dentro da linha (botão, link, campo, menu) não dispara `onRowClick`.",
           "- `rowClassName?: (row, index) => string | undefined` — classes por linha. Retorne `undefined` para a linha herdar o estilo padrão. Útil para destacar linhas.",
@@ -486,10 +486,8 @@ export const PaginatedWithPageSizeSelectorServerSide: Story = {
               // quando o usuário troca o tamanho — sem fetch da página errada.
               setPagination(next)
             }}
+            rowCount={total}
             showRowCount
-            labels={{
-              rowCount: () => `${total} registros (server-side)`,
-            }}
           />
         </div>
       )
@@ -580,10 +578,8 @@ export const ServerSide: Story = {
                   : updater
               setPageIndex(next.pageIndex)
             }}
+            rowCount={total}
             showRowCount
-            labels={{
-              rowCount: (_filtered, _t) => `${total} registros (server-side)`,
-            }}
           />
         </div>
       )
@@ -594,7 +590,7 @@ export const ServerSide: Story = {
     docs: {
       description: {
         story:
-          "Server-side: o backend devolve uma página por vez. Passe `manualPagination`, `pageIndex`, `pageCount` e `onPaginationChange` — o componente não tenta paginar localmente.",
+          "Server-side: o backend devolve uma página por vez. Passe `manualPagination`, `pageIndex`, `onPaginationChange` e o total do servidor em `rowCount` (o rodapé mostra esse total e a contagem de páginas sai dele; `pageCount` continua aceito). Sem `fetchAll`/`fetchFiltered`, a exportação oferece só a página atual.",
       },
     },
   },
