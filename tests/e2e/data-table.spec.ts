@@ -2,6 +2,8 @@
  * DataTable in a real browser: the accessibility tree, keyboard, layout,
  * scrolling and sizes that jsdom cannot measure.
  */
+import { readFileSync } from "node:fs"
+
 import { type Page, expect, test } from "@playwright/test"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
@@ -58,5 +60,22 @@ test.describe("DataTable: linha clicável", () => {
 
     await page.getByRole("cell", { name: "Empresa A" }).click()
     await expect(state).toContainText("Linha aberta: C-2026-001")
+  })
+})
+
+test.describe("DataTable: exportação", () => {
+  test("um .csv sai para o Excel brasileiro", async ({ page }) => {
+    await gotoTable(page, "data-datatable--export-csv")
+    await page.getByRole("button", { name: "Exportar para Excel" }).click()
+    const downloading = page.waitForEvent("download")
+    await page.getByRole("menuitem", { name: "Exportar todos os dados" }).click()
+    const download = await downloading
+    expect(download.suggestedFilename()).toBe("contratos.csv")
+    const bytes = readFileSync((await download.path()) ?? "")
+    expect([...bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
+    const lines = bytes.subarray(3).toString("utf8").split("\r\n")
+    expect(lines[0]).toBe("Número;Cliente;Vencimento;Valor;Status")
+    expect(lines[1]).toBe("C-2026-001;Empresa A;2026-06-15;12000;aprovado")
+    expect(lines[4]).toBe("C-2026-099;'=SOMA(A1:A2);2026-10-01;1234,56;pendente")
   })
 })

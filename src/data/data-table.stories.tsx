@@ -1030,6 +1030,37 @@ export const WithDownload: Story = {
   },
 }
 
+const csvContratos: Contrato[] = [
+  ...contratos.slice(0, 3),
+  {
+    numero: "C-2026-099",
+    cliente: "=SOMA(A1:A2)",
+    vencimento: "2026-10-01",
+    valor: 1234.56,
+    status: "pendente",
+  },
+]
+
+export const ExportCsv: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        columns={columns}
+        data={csvContratos}
+        downloadable={{ filename: "contratos.csv" }}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com `filename` terminado em `.csv`, a própria lib escreve o arquivo para o Excel brasileiro: UTF-8 com BOM, `;` entre as células, vírgula decimal, datas em `dd/mm/aaaa` e `'` na frente de texto que começa com `=`, `+`, `-` ou `@` (o Excel o rodaria como fórmula).",
+      },
+    },
+  },
+}
+
 export const Loading: Story = {
   render: () => (
     <div className="space-y-6 p-6">
