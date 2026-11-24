@@ -117,6 +117,29 @@ test.describe("AppShell", () => {
     await expect(page.getByRole("button", { name: "Recolher menu" })).toBeFocused()
   })
 
+  test("the rail shows a dot for a badge and the initial of an item without icon", async ({
+    page,
+  }) => {
+    await gotoShell(page, "navigation-appshell--rail-without-icons")
+    const aside = page.locator('aside[data-slot="app-shell-sidebar"]')
+    const leads = aside.getByRole("link", { name: /^Leads\s*,\s*3$/ })
+    await expect(leads).toBeVisible()
+    const dot = leads.locator('[data-slot="app-shell-item-dot"]')
+    await expect(dot).toBeVisible()
+    expect((await dot.boundingBox())?.width).toBe(8)
+    // The count and the label are not drawn in the 64px rail.
+    await expect(leads.getByText("3", { exact: true })).not.toBeInViewport()
+    const initial = aside
+      .getByRole("link", { name: "Obras" })
+      .locator('[data-slot="app-shell-item-initial"]')
+    await expect(initial).toHaveText("O")
+    await expect(initial).toBeVisible()
+    const link = (await aside.getByRole("link", { name: "Obras" }).boundingBox())!
+    const box = (await initial.boundingBox())!
+    // Centred in the item, where the icons are.
+    expect(Math.abs(box.x + box.width / 2 - (link.x + link.width / 2))).toBeLessThanOrEqual(1)
+  })
+
   test("collapsed rail shows the item label as a tooltip", async ({ page }) => {
     await gotoShell(page, "navigation-appshell--collapsed")
     await page.getByRole("link", { name: "Calculadora" }).hover()

@@ -229,11 +229,49 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
     depth > 0 && "pl-9",
   )
 
+  // In the 64px rail only a mark is shown: the icon, or the label's initial
+  // when there is none, with a dot when there is a badge. The label and the
+  // badge stay in the DOM, visually hidden, so the item is still named (and
+  // its count still read) by assistive technology.
+  let mark: React.ReactNode = Icon ? (
+    <Icon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+  ) : null
+  if (collapsed && !Icon) {
+    mark = (
+      <span
+        data-slot="app-shell-item-initial"
+        aria-hidden="true"
+        className="flex size-4 shrink-0 items-center justify-center text-xs font-semibold"
+      >
+        {item.label.trim().charAt(0).toLocaleUpperCase("pt-BR")}
+      </span>
+    )
+  }
+  if (collapsed && item.badge) {
+    mark = (
+      <span className="relative flex shrink-0">
+        {mark}
+        <span
+          data-slot="app-shell-item-dot"
+          aria-hidden="true"
+          className="absolute -right-1 -top-1 size-2 rounded-full bg-destructive ring-2 ring-sidebar forced-colors:bg-[CanvasText]"
+        />
+      </span>
+    )
+  }
+
   const inner = (
     <>
-      {Icon ? <Icon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden /> : null}
-      {!collapsed ? <span className="flex-1 truncate">{item.label}</span> : null}
-      {!collapsed && item.badge ? <span data-slot="app-shell-item-badge">{item.badge}</span> : null}
+      {mark}
+      <span className={collapsed ? "sr-only" : "flex-1 truncate"}>{item.label}</span>
+      {item.badge ? (
+        <>
+          <span className="sr-only">, </span>
+          <span data-slot="app-shell-item-badge" className={collapsed ? "sr-only" : undefined}>
+            {item.badge}
+          </span>
+        </>
+      ) : null}
       {!collapsed && hasChildren ? (
         <ChevronDown
           aria-hidden
@@ -258,9 +296,6 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
     )
   }
 
-  // In the collapsed rail the label is not rendered, so the control needs an
-  // explicit accessible name (the tooltip is only a visual hint).
-  const collapsedLabel = collapsed ? item.label : undefined
   // The current page, whatever element the item is (link, action or group).
   const ariaCurrent = active ? ("page" as const) : undefined
 
@@ -276,7 +311,6 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
             data-slot="app-shell-item"
             data-active={active ? "true" : undefined}
             disabled={item.disabled}
-            aria-label={item.label}
             aria-current={ariaCurrent}
             className={baseClass}
             onClick={(event) => item.onClick?.(event)}
@@ -297,7 +331,6 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
         data-active={active ? "true" : undefined}
         data-state={expanded ? "open" : "closed"}
         disabled={item.disabled}
-        aria-label={collapsedLabel}
         aria-current={ariaCurrent}
         aria-expanded={expanded}
         className={baseClass}
@@ -318,7 +351,6 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
         data-active={active ? "true" : undefined}
         // biome-ignore lint/a11y/useSemanticElements: without an href an <a> has no role of its own.
         role="link"
-        aria-label={collapsedLabel}
         aria-disabled="true"
         aria-current={ariaCurrent}
         tabIndex={-1}
@@ -334,7 +366,6 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
       href: item.href as string,
       "data-slot": "app-shell-item",
       "data-active": active ? "true" : undefined,
-      "aria-label": collapsedLabel,
       "aria-current": ariaCurrent,
       className: baseClass,
       onClick: (event) => {
@@ -353,7 +384,6 @@ export const AppShellNavItem = React.memo(function AppShellNavItem({
         data-slot="app-shell-item"
         data-active={active ? "true" : undefined}
         disabled={item.disabled}
-        aria-label={collapsedLabel}
         aria-current={ariaCurrent}
         className={baseClass}
         onClick={(event) => {

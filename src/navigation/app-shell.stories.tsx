@@ -238,6 +238,26 @@ export const Collapsed: Story = {
   },
 }
 
+export const RailWithoutIcons: Story = {
+  args: {
+    defaultCollapsed: true,
+    items: [
+      { id: "leads", label: "Leads", href: "#leads", badge: <CountBadge value={3} /> },
+      { id: "propostas", label: "Propostas", href: "#propostas" },
+      { id: "obras", label: "Obras", href: "#obras" },
+    ],
+    isActive: (item) => item.id === "leads",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "No trilho, um item sem `icon` mostra a inicial do rótulo, e um `badge` vira um ponto. O rótulo e o badge continuam no nome acessível (o leitor ouve “Leads, 3”).",
+      },
+    },
+  },
+}
+
 export const OnlyItems: Story = {
   args: {
     defaultCollapsed: false,

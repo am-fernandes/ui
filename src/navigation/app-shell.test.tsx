@@ -379,14 +379,40 @@ describe("AppShell", () => {
       expect(aside).toHaveAttribute("data-state", "expanded")
     })
 
-    it("hides labels and badges in the rail but keeps an accessible name", () => {
+    it("hides the labels in the rail but keeps them as the accessible name", () => {
+      const { aside } = renderShell()
+      expect(within(aside).getByText("Dashboard")).toHaveClass("sr-only")
+      expect(within(aside).getByRole("link", { name: "Dashboard" })).toBeInTheDocument()
+      expect(within(aside).getByRole("link", { name: "Usuários" })).toBeInTheDocument()
+    })
+
+    it("turns a badge into a dot in the rail and keeps its count in the name", () => {
       const { aside } = renderShell({
         items: [{ ...items[0]!, badge: <span data-testid="badge">3</span> }, items[1]!],
       })
-      expect(within(aside).queryByText("Dashboard")).not.toBeInTheDocument()
-      expect(within(aside).queryByTestId("badge")).not.toBeInTheDocument()
-      expect(within(aside).getByRole("link", { name: "Dashboard" })).toBeInTheDocument()
-      expect(within(aside).getByRole("link", { name: "Usuários" })).toBeInTheDocument()
+      // Each part is its own box: engines put a space around the comma.
+      const link = within(aside).getByRole("link", { name: /^Dashboard\s*,\s*3$/ })
+      expect(within(link).getByTestId("badge").parentElement).toHaveClass("sr-only")
+      expect(link.querySelector('[data-slot="app-shell-item-dot"]')).not.toBeNull()
+      // No badge, no dot.
+      const users = within(aside).getByRole("link", { name: "Usuários" })
+      expect(users.querySelector('[data-slot="app-shell-item-dot"]')).toBeNull()
+    })
+
+    it("shows the initial of an item without an icon in the rail", () => {
+      const { aside } = renderShell({ items: [{ id: "leads", label: "leads", href: "#leads" }] })
+      const link = within(aside).getByRole("link", { name: "leads" })
+      const initial = link.querySelector('[data-slot="app-shell-item-initial"]')
+      expect(initial).toHaveTextContent("L")
+      expect(initial).toHaveAttribute("aria-hidden", "true")
+    })
+
+    it("does not show the initial in the expanded menu", () => {
+      const { aside } = renderShell({
+        defaultCollapsed: false,
+        items: [{ id: "leads", label: "Leads", href: "#leads" }],
+      })
+      expect(aside.querySelector('[data-slot="app-shell-item-initial"]')).toBeNull()
     })
   })
 
