@@ -100,6 +100,29 @@ test.describe("Calendar", () => {
     expect(decoration).toContain("underline")
   })
 
+  test("navegação rápida: a grade de anos é uma parada de Tab, e as setas andam nela", async ({
+    page,
+  }) => {
+    await gotoStory(page, "forms-calendar--quick-nav-year-month")
+    await page.getByRole("button", { name: /junho 2025/i }).click()
+    const years = page.getByRole("group", { name: "Escolher ano" })
+    await expect(years.getByRole("button", { name: "2025" })).toBeFocused()
+    await page.keyboard.press("ArrowDown")
+    await page.keyboard.press("ArrowDown")
+    await page.keyboard.press("ArrowDown")
+    await page.keyboard.press("ArrowDown")
+    const target = years.getByRole("button", { name: "2037" })
+    await expect(target).toBeFocused()
+    // Scrolled into the grid's box.
+    const gridBox = await years.boundingBox()
+    const targetBox = await target.boundingBox()
+    if (!gridBox || !targetBox) throw new Error("no box")
+    expect(targetBox.y + targetBox.height).toBeLessThanOrEqual(gridBox.y + gridBox.height + 1)
+    // One Tab leaves the 201 years.
+    await page.keyboard.press("Shift+Tab")
+    expect(await years.evaluate((el) => el.contains(document.activeElement))).toBe(false)
+  })
+
   test("disabledDays=past disables past dates", async ({ page }) => {
     await page.goto(story("forms-calendar--disabled-past"))
     // At least one button has aria-disabled=true

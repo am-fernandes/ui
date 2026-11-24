@@ -137,6 +137,62 @@ describe("Calendar quick nav", () => {
     expect(screen.getByRole("button", { name: /^jul/i })).toBeDisabled()
   })
 
+  it("years: one tab stop for the whole grid, arrows move inside it", async () => {
+    const user = userEvent.setup({ delay: null })
+    render(<Calendar mode="single" defaultMonth={JUNE_2025} />)
+    await user.click(screen.getByRole("button", { name: /junho 2025/i }))
+    const grid = screen.getByRole("group", { name: /escolher ano/i })
+    const tabbable = Array.from(grid.querySelectorAll("button")).filter((b) => b.tabIndex === 0)
+    expect(tabbable.map((b) => b.textContent)).toEqual(["2025"])
+    expect(screen.getByRole("button", { name: "2025" })).toHaveFocus()
+
+    await user.keyboard("{ArrowRight}")
+    expect(screen.getByRole("button", { name: "2026" })).toHaveFocus()
+    await user.keyboard("{ArrowDown}")
+    expect(screen.getByRole("button", { name: "2029" })).toHaveFocus()
+    await user.keyboard("{ArrowLeft}")
+    expect(screen.getByRole("button", { name: "2028" })).toHaveFocus()
+    await user.keyboard("{ArrowUp}")
+    expect(screen.getByRole("button", { name: "2025" })).toHaveFocus()
+    await user.keyboard("{End}")
+    expect(screen.getByRole("button", { name: "2100" })).toHaveFocus()
+    await user.keyboard("{Home}")
+    expect(screen.getByRole("button", { name: "1900" })).toHaveFocus()
+    // The tab stop follows the focus.
+    expect(screen.getByRole("button", { name: "1900" })).toHaveAttribute("tabindex", "0")
+    expect(screen.getByRole("button", { name: "2025" })).toHaveAttribute("tabindex", "-1")
+
+    await user.keyboard("{Enter}")
+    expect(screen.getByRole("group", { name: /escolher mês/i })).toBeInTheDocument()
+  })
+
+  it("months: one tab stop, arrows skip the months out of range", async () => {
+    const user = userEvent.setup({ delay: null })
+    render(
+      <Calendar
+        mode="single"
+        defaultMonth={JUNE_2025}
+        startMonth={new Date(2025, 0)}
+        endMonth={new Date(2026, 5)}
+      />,
+    )
+    await user.click(screen.getByRole("button", { name: /junho 2025/i }))
+    await user.click(screen.getByRole("button", { name: "2026" }))
+    const grid = screen.getByRole("group", { name: /escolher mês/i })
+    const monthButtons = Array.from(grid.querySelectorAll("button")).filter(
+      (b) => !b.getAttribute("aria-label")?.includes("voltar"),
+    )
+    expect(monthButtons.filter((b) => b.tabIndex === 0)).toHaveLength(1)
+    expect(screen.getByRole("button", { name: /^jan/i })).toHaveFocus()
+    await user.keyboard("{End}")
+    // July to December 2026 are out of range.
+    expect(screen.getByRole("button", { name: /^jun/i })).toHaveFocus()
+    await user.keyboard("{ArrowRight}")
+    expect(screen.getByRole("button", { name: /^jun/i })).toHaveFocus()
+    await user.keyboard("{ArrowUp}")
+    expect(screen.getByRole("button", { name: /^mar/i })).toHaveFocus()
+  })
+
   it("does not activate when captionLayout is not 'label'", () => {
     render(<Calendar mode="single" defaultMonth={JUNE_2025} captionLayout="dropdown" />)
     expect(screen.queryByRole("button", { name: /junho 2025/i })).not.toBeInTheDocument()
