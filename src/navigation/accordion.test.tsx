@@ -209,6 +209,60 @@ describe("Accordion", () => {
     expect(screen.getByRole("button", { name: "Third" })).toHaveFocus()
   })
 
+  describe("keepMounted", () => {
+    const formItems = [
+      { value: "dados", title: "Dados", content: <input aria-label="Nome" /> },
+      { value: "endereco", title: "Endereço", content: <input aria-label="CEP" /> },
+    ]
+
+    it("by default unmounts a closed section", async () => {
+      render(<Accordion type="single" collapsible defaultValue="dados" items={formItems} />)
+      expect(screen.getByRole("textbox", { name: "Nome" })).toBeInTheDocument()
+      expect(screen.queryByLabelText("CEP")).not.toBeInTheDocument()
+    })
+
+    it("keeps closed sections in the DOM, hidden, with what was typed", async () => {
+      render(
+        <Accordion type="single" collapsible keepMounted defaultValue="dados" items={formItems} />,
+      )
+      expect(screen.getByLabelText("CEP")).not.toBeVisible()
+      await userEvent.type(screen.getByRole("textbox", { name: "Nome" }), "Maria")
+      await userEvent.click(screen.getByRole("button", { name: "Endereço" }))
+      expect(screen.getByRole("textbox", { name: "CEP" })).toBeVisible()
+      expect(screen.getByLabelText("Nome")).not.toBeVisible()
+      await userEvent.click(screen.getByRole("button", { name: "Dados" }))
+      expect(screen.getByRole("textbox", { name: "Nome" })).toHaveValue("Maria")
+    })
+
+    it("keeps the trigger and its region linked", async () => {
+      render(<Accordion type="multiple" keepMounted items={formItems} />)
+      const trigger = screen.getByRole("button", { name: "Endereço" })
+      expect(trigger).toHaveAttribute("aria-expanded", "false")
+      await userEvent.click(trigger)
+      expect(trigger).toHaveAttribute("aria-expanded", "true")
+      const region = screen.getByRole("region", { name: "Endereço" })
+      expect(trigger).toHaveAttribute("aria-controls", region.id)
+      expect(region).toContainElement(screen.getByLabelText("CEP"))
+    })
+
+    it("still reports changes when controlled", async () => {
+      const onValueChange = vi.fn()
+      render(
+        <Accordion
+          type="single"
+          keepMounted
+          value="dados"
+          onValueChange={onValueChange}
+          items={formItems}
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Endereço" }))
+      expect(onValueChange).toHaveBeenCalledWith("endereco")
+      // Controlled: nothing moves until the value does.
+      expect(screen.getByLabelText("CEP")).not.toBeVisible()
+    })
+  })
+
   it("applies data-slot attributes", () => {
     const { container } = render(
       <Accordion type="single" collapsible items={[{ value: "a", title: "T", content: "C" }]} />,
