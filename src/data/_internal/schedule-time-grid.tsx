@@ -228,7 +228,7 @@ export function TimeGridView({
                 className={cn("relative border-l", onSlotClick && "cursor-pointer")}
                 style={{
                   backgroundImage:
-                    "linear-gradient(to bottom, var(--color-border) 1px, transparent 1px)",
+                    "linear-gradient(to bottom, var(--border) 1px, transparent 1px)",
                   backgroundSize: `100% ${hourHeight}px`,
                 }}
               >

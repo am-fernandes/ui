@@ -437,9 +437,104 @@
   --sidebar-ring: var(--ring);
 }
 
+/* The `--color-*` names (the ones `@theme inline` hands Tailwind) are
+   computed where they are declared, on :root, and inherited already
+   resolved. With `dark` on an element other than <html>, CSS that reads
+   `var(--color-border)` (the app's, or the library's) drew the light value
+   inside the dark part: dividers at about 1:1 on a dark panel. Declared
+   again here, they follow the tokens of the dark part. Kept in step with
+   `@theme inline` by src/contracts/theme-scope.test.ts. */
+.dark {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-pressed: var(--primary-pressed);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-text: var(--destructive-text);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-category-gray-bg: var(--category-gray-bg);
+  --color-category-gray-text: var(--category-gray-text);
+  --color-category-gray-solid: var(--category-gray-solid);
+  --color-category-red-bg: var(--category-red-bg);
+  --color-category-red-text: var(--category-red-text);
+  --color-category-red-solid: var(--category-red-solid);
+  --color-category-orange-bg: var(--category-orange-bg);
+  --color-category-orange-text: var(--category-orange-text);
+  --color-category-orange-solid: var(--category-orange-solid);
+  --color-category-yellow-bg: var(--category-yellow-bg);
+  --color-category-yellow-text: var(--category-yellow-text);
+  --color-category-yellow-solid: var(--category-yellow-solid);
+  --color-category-green-bg: var(--category-green-bg);
+  --color-category-green-text: var(--category-green-text);
+  --color-category-green-solid: var(--category-green-solid);
+  --color-category-teal-bg: var(--category-teal-bg);
+  --color-category-teal-text: var(--category-teal-text);
+  --color-category-teal-solid: var(--category-teal-solid);
+  --color-category-blue-bg: var(--category-blue-bg);
+  --color-category-blue-text: var(--category-blue-text);
+  --color-category-blue-solid: var(--category-blue-solid);
+  --color-category-purple-bg: var(--category-purple-bg);
+  --color-category-purple-text: var(--category-purple-text);
+  --color-category-purple-solid: var(--category-purple-solid);
+  --color-category-pink-bg: var(--category-pink-bg);
+  --color-category-pink-text: var(--category-pink-text);
+  --color-category-pink-solid: var(--category-pink-solid);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-placeholder: var(--placeholder);
+  --color-ring: var(--ring);
+  --color-link: var(--link);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-seq-1: var(--chart-seq-1);
+  --color-chart-seq-2: var(--chart-seq-2);
+  --color-chart-seq-3: var(--chart-seq-3);
+  --color-chart-seq-4: var(--chart-seq-4);
+  --color-chart-seq-5: var(--chart-seq-5);
+  --color-chart-div-1: var(--chart-div-1);
+  --color-chart-div-2: var(--chart-div-2);
+  --color-chart-div-3: var(--chart-div-3);
+  --color-chart-div-4: var(--chart-div-4);
+  --color-chart-div-5: var(--chart-div-5);
+  --color-chart-div-6: var(--chart-div-6);
+  --color-chart-div-7: var(--chart-div-7);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
 @layer base {
   * {
-    border-color: var(--color-border);
+    border-color: var(--border);
   }
   /* The system ring is the default for anything focusable, so parts without
      their own focus style (links, calendar days, tree rows) match the rest. */
@@ -451,9 +546,15 @@
     background-color: var(--selection);
     color: var(--selection-foreground);
   }
+  /* A dark part of the page (`dark` on an ancestor other than <html>) gets
+     the dark text colour too: the text it holds inherited the light one from
+     <body>, dark on dark. The surface stays the app's choice. */
+  .dark {
+    color: var(--foreground);
+  }
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
+    background-color: var(--background);
+    color: var(--foreground);
     font-family: var(--font-sans);
   }
   input::placeholder,
