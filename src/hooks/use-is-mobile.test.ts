@@ -82,6 +82,20 @@ describe("useIsMobile", () => {
     expect(result.current).toBe(true)
   })
 
+  // What renders on one side of the breakpoint only (the AppShell's footer
+  // in the aside) must not mount once on the wrong side first.
+  it("is right from the first render in the browser", () => {
+    mql.matches = true
+    const seen: boolean[] = []
+    renderHook(() => {
+      const value = useIsMobile()
+      seen.push(value)
+      return value
+    })
+    expect(seen[0]).toBe(true)
+    expect(seen.every((value) => value)).toBe(true)
+  })
+
   it("asks the browser with Tailwind's md breakpoint in rem, like the CSS", () => {
     const stub = createMatchMediaStub(false)
     const matchMedia = vi.fn(() => stub)

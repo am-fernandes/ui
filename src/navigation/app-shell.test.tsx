@@ -1,7 +1,7 @@
 import { act, fireEvent, render, renderHook, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { FileText, LayoutDashboard, Users } from "lucide-react"
-import type * as React from "react"
+import * as React from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { RenderLinkProps } from "@/lib/render-link"
@@ -545,9 +545,11 @@ describe("AppShell", () => {
       expect(screen.getByTestId("page")).toHaveTextContent("true:false")
     })
 
-    it("reports isMobile below 768px", () => {
+    it("reports isMobile below 768px", async () => {
       installMatchMedia(true)
       renderShell({ footer: <FooterProbe /> })
+      // Below 768px the footer lives in the menu dialog only.
+      await userEvent.click(screen.getByRole("button", { name: "Abrir menu" }))
       expect(screen.getByTestId("footer-probe")).toHaveAttribute("data-mobile", "true")
     })
 
@@ -1230,13 +1232,14 @@ describe("AppShell", () => {
         },
       })
       expect(screen.getByRole("link", { name: "Ir ao conteúdo" })).toBeInTheDocument()
-      expect(within(aside).getByRole("navigation", { name: "Seções" })).toBeInTheDocument()
       expect(within(aside).getByRole("button", { name: "Abrir trilho" })).toBeInTheDocument()
       expect(within(aside).getByRole("button", { name: "Início" })).toBeInTheDocument()
 
       await userEvent.click(screen.getByRole("button", { name: "Mostrar menu" }))
       const menu = screen.getByRole("dialog", { name: "Navegação" })
       expect(within(menu).getByRole("button", { name: "Esconder menu" })).toBeInTheDocument()
+      // Below 768px the navigation lives in the menu dialog only.
+      expect(within(menu).getByRole("navigation", { name: "Seções" })).toBeInTheDocument()
     })
 
     it("overrides the collapse label", () => {
@@ -1252,5 +1255,75 @@ describe("AppShell", () => {
     const legacy: SidebarItem = { id: "a", label: "A", href: "#a" }
     const { aside } = renderShell({ defaultCollapsed: false, items: [legacy] })
     expect(within(aside).getByText("A")).toBeInTheDocument()
+  })
+})
+
+// The aside is hidden below 768px but stayed mounted: the footer (and the
+// navigation, with the app's links) mounted there and again in the open
+// menu. A footer that fetches the account, polls or registers shortcuts ran
+// twice.
+describe("AppShell: the footer and the navigation mount once", () => {
+  let mounted = 0
+  let links = 0
+  function Footer() {
+    React.useEffect(() => {
+      mounted++
+      return () => {
+        mounted--
+      }
+    }, [])
+    return <span>Conta</span>
+  }
+  function Link({ href, children, ...rest }: RenderLinkProps) {
+    React.useEffect(() => {
+      links++
+      return () => {
+        links--
+      }
+    }, [])
+    return (
+      <a href={href} {...rest}>
+        {children}
+      </a>
+    )
+  }
+  const shell = () => (
+    <AppShell
+      items={[{ id: "a", label: "Leads", href: "/leads" }]}
+      footer={<Footer />}
+      renderLink={(props) => <Link {...props} />}
+      storageKey={false}
+    >
+      conteúdo
+    </AppShell>
+  )
+
+  beforeEach(() => {
+    mounted = 0
+    links = 0
+    window.localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it("on desktop: one footer and one set of links", () => {
+    installMatchMedia(false)
+    render(shell())
+    expect(mounted).toBe(1)
+    expect(links).toBe(1)
+  })
+
+  it("on mobile: none with the menu closed, one with it open", async () => {
+    installMatchMedia(true)
+    render(shell())
+    expect(mounted).toBe(0)
+    expect(links).toBe(0)
+    await userEvent.click(screen.getByRole("button", { name: "Abrir menu" }))
+    expect(mounted).toBe(1)
+    expect(links).toBe(1)
+    await userEvent.click(screen.getByRole("button", { name: "Fechar menu" }))
+    expect(mounted).toBe(0)
   })
 })

@@ -12,20 +12,26 @@ export const MOBILE_QUERY = "not all and (min-width: 48rem)"
 /**
  * `true` below Tailwind's `md:` breakpoint. Same query as the CSS, so a
  * component that switches its layout with `md:` and with this hook never
- * disagrees. `false` on the server and on the first render.
+ * disagrees. `false` on the server and while the page hydrates (the server
+ * cannot know the screen); in the browser it is right from the first render,
+ * so what renders only on one side of the breakpoint does not mount once on
+ * the wrong side first.
  */
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean>(false)
+  return React.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+}
 
-  React.useEffect(() => {
-    const mql = window.matchMedia(MOBILE_QUERY)
-    const onChange = (event: MediaQueryListEvent) => {
-      setIsMobile(event.matches)
-    }
-    mql.addEventListener("change", onChange)
-    setIsMobile(mql.matches)
-    return () => mql.removeEventListener("change", onChange)
-  }, [])
+function subscribe(onChange: () => void) {
+  if (typeof window.matchMedia !== "function") return () => {}
+  const mql = window.matchMedia(MOBILE_QUERY)
+  mql.addEventListener("change", onChange)
+  return () => mql.removeEventListener("change", onChange)
+}
 
-  return isMobile
+function getSnapshot() {
+  return typeof window.matchMedia === "function" && window.matchMedia(MOBILE_QUERY).matches
+}
+
+function getServerSnapshot() {
+  return false
 }

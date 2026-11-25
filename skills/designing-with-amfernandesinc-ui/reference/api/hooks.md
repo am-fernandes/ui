@@ -30,7 +30,7 @@ useDebounce<T>(value: T, delay: number): T
 
 `import { useIsMobile } from "@amfernandesinc/ui"` ou `"@amfernandesinc/ui/hooks/use-is-mobile"`
 
-`true` below Tailwind's `md:` breakpoint. Same query as the CSS, so a component that switches its layout with `md:` and with this hook never disagrees. `false` on the server and on the first render.
+`true` below Tailwind's `md:` breakpoint. Same query as the CSS, so a component that switches its layout with `md:` and with this hook never disagrees. `false` on the server and while the page hydrates (the server cannot know the screen); in the browser it is right from the first render, so what renders only on one side of the breakpoint does not mount once on the wrong side first.
 
 ```ts
 useIsMobile(): boolean

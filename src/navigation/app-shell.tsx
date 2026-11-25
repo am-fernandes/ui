@@ -358,24 +358,33 @@ function AppShell({
             </div>
           ) : null}
 
-          <nav
-            aria-label={l.navigation}
-            className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4"
-          >
-            <ul className="space-y-1">
-              {items.map((item) => (
-                <AppShellNavItem
-                  key={item.id}
-                  item={item}
-                  collapsed={collapsed}
-                  isActive={isActive}
-                  renderLink={renderLink}
-                  openGroups={openGroups}
-                  onOpenGroupChange={onOpenGroupChange}
-                />
-              ))}
-            </ul>
-          </nav>
+          {/* Below 768px the menu dialog holds the navigation and the footer:
+              the hidden aside does not mount them too. A footer that fetches
+              the account or registers shortcuts ran twice with the menu open,
+              and the app's links (`renderLink`) mounted twice. Until the page
+              is hydrated `isMobile` is false, so the server HTML keeps them. */}
+          {isMobile ? (
+            <div className="flex-1" />
+          ) : (
+            <nav
+              aria-label={l.navigation}
+              className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4"
+            >
+              <ul className="space-y-1">
+                {items.map((item) => (
+                  <AppShellNavItem
+                    key={item.id}
+                    item={item}
+                    collapsed={collapsed}
+                    isActive={isActive}
+                    renderLink={renderLink}
+                    openGroups={openGroups}
+                    onOpenGroupChange={onOpenGroupChange}
+                  />
+                ))}
+              </ul>
+            </nav>
+          )}
 
           <div className="border-t px-3 py-2">
             {/* The same wrapper in both states: swapping it would remount the
@@ -391,7 +400,7 @@ function AppShell({
             </Tooltip>
           </div>
 
-          {footer ? (
+          {footer && !isMobile ? (
             <div data-slot="app-shell-footer" className="border-t p-3">
               {footer}
             </div>
