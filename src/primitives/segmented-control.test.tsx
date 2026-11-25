@@ -398,6 +398,26 @@ describe("SegmentedControl", () => {
       await waitFor(() => expect(screen.getByRole("radio", { name: "Dia" })).toBeChecked())
       expect(new FormData(form).get("periodo")).toBe("dia")
     })
+
+    // Newer Radix RadioGroup (underneath) resets itself too: reported twice.
+    it("reports the reset once", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(
+        <form data-testid="form">
+          <SegmentedControl
+            label="Período"
+            options={options}
+            defaultValue="dia"
+            onValueChange={onValueChange}
+          />
+        </form>,
+      )
+      await user.click(screen.getByRole("radio", { name: "Semana" }))
+      act(() => (screen.getByTestId("form") as HTMLFormElement).reset())
+      await waitFor(() => expect(screen.getByRole("radio", { name: "Dia" })).toBeChecked())
+      expect(onValueChange.mock.calls).toEqual([["semana"], ["dia"]])
+    })
   })
 
   // The API was closed: no id, aria-*, onBlur or data-*; the label was never

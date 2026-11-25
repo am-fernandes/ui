@@ -152,6 +152,26 @@ describe("RadioGroup", () => {
       expect(new FormData(form).get("plano")).toBe("free")
     })
 
+    // Newer Radix RadioGroup resets itself too: the parent heard it twice.
+    it("reports the reset once", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(
+        <form data-testid="form">
+          <RadioGroup
+            label="Plano"
+            values={VALUES}
+            defaultValue="free"
+            onValueChange={onValueChange}
+          />
+        </form>,
+      )
+      await user.click(screen.getByRole("radio", { name: "Pro" }))
+      act(() => (screen.getByTestId("form") as HTMLFormElement).reset())
+      await waitFor(() => expect(screen.getByRole("radio", { name: "Free" })).toBeChecked())
+      expect(onValueChange.mock.calls).toEqual([["pro"], ["free"]])
+    })
+
     it("goes back to no choice when there was none", async () => {
       const user = userEvent.setup()
       render(

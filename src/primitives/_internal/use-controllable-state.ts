@@ -20,6 +20,10 @@ export function useControllableState<T>(
   const setValue = React.useCallback((next: T) => {
     const { current: previous, isControlled: controlled, onChange: report } = latest.current
     if (Object.is(previous, next)) return
+    // Two calls in the same event (a form reset that Radix handles and the
+    // component handles too) must report once: the second compares with the
+    // first, not with the value of the last render.
+    latest.current = { ...latest.current, current: next }
     if (!controlled) setLocal(next)
     report?.(next)
   }, [])
