@@ -336,6 +336,7 @@
     "audit:contrast": "bun scripts/contrast-audit.ts",
     "sync:coverage": "vitest run --coverage && bun scripts/sync-coverage.ts",
     "sync:e2e-stats": "bun scripts/sync-e2e-stats.ts",
+    "skill:api": "bun scripts/skill-api.ts",
     "changeset": "changeset",
     "changeset:version": "changeset version && biome check --write package.json CHANGELOG.md",
     "changeset:publish": "changeset publish",
