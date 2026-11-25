@@ -188,6 +188,13 @@ bun run test:e2e   # com o Storybook rodando
 
 Build deve sair sem warnings. Se aparecer warning de tsup, investigue antes de commitar.
 
+### Passo 9. Atualizar a skill de agentes
+
+A skill `skills/designing-with-amfernandesinc-ui/` ensina agentes (Claude Code e outros) a usar a lib nos apps. Ela tem duas partes:
+
+- `reference/api/`: **gerada** dos tipos e do JSDoc de `src/`. Depois de mudar props, JSDoc, `labels` ou exports, rode `bun run skill:api` e commite o resultado. O teste `scripts/lib/skill-api.test.ts` falha enquanto ela estiver velha.
+- `SKILL.md` e os demais guias de `reference/`: escritos à mão. Componente novo entra no mapa de componentes do `SKILL.md` e no guia da sua família. Todo bloco ` ```tsx ` dos guias é compilado contra a lib (`scripts/lib/skill-examples.test.ts`): um exemplo que não compila reprova o teste. Blocos que mostram o jeito errado começam com `// ❌`; os que dependem de um pacote do app que o repositório não tem (`next`, `zod`), com `// fora da verificação: <motivo>`.
+
 ---
 
 ## 6. Checklist do PR
@@ -210,6 +217,7 @@ Cole no corpo do PR e marque conforme avança:
 - [ ] `readOnly` e `disabled` em todo field
 - [ ] Subpath export adicionado em `package.json` `exports`
 - [ ] Adicionado em `src/index.ts` (barrel)
+- [ ] `bun run skill:api` rodado; componente novo no `SKILL.md` e no guia da família em `skills/designing-with-amfernandesinc-ui/reference/`
 - [ ] Commits no padrão Conventional (`feat:`, `fix:`, etc.) — um por mudança lógica
 - [ ] Trailer `Co-Authored-By:` quando trabalho foi assistido por agente
 

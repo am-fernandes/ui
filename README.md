@@ -60,6 +60,7 @@ Helpers utilitários (BRL em centavos, tamanhos em bytes, `cn`, hooks) estão do
 - Storybook local: `bun run storybook` (http://localhost:6006).
 - Contribuição: [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 - Histórico de versões: [`CHANGELOG.md`](./CHANGELOG.md).
+- Skill para agentes de IA: [`skills/designing-with-amfernandesinc-ui/`](./skills/designing-with-amfernandesinc-ui/SKILL.md). Ensina setup, escolha de componentes, formulários, dinheiro, datas, tabelas, gráficos e as regras visuais; a referência de API é gerada do código. Para usar num app, copie (ou crie um link para) a pasta em `~/.claude/skills/` ou em `.claude/skills/` do projeto.
 
 ## Status
 
