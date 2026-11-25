@@ -31,6 +31,10 @@ const flyoutContentClass = cn(
 const flyoutRowClass = cn(
   "relative flex w-full cursor-pointer select-none items-center gap-2 rounded-element px-2 py-1.5 text-left text-sm outline-none transition-colors",
   "focus:state-hover",
+  // The layer is a background image, which forced colours drop, and the row
+  // has no ring: there it takes the system highlight, as a native menu does
+  // (and as DropdownMenu).
+  "forced-colors:data-highlighted:bg-[Highlight] forced-colors:data-highlighted:text-[HighlightText]",
   "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
 )
 

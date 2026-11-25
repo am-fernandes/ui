@@ -264,6 +264,10 @@ function CommandPalette({
                     className={cn(
                       "relative flex cursor-default select-none items-center gap-2 rounded-element px-2 py-1.5 text-sm outline-none transition-colors",
                       "aria-selected:state-hover",
+                      // The layer is a background image, which forced colours
+                      // drop, and the focus stays in the search field: the
+                      // active item takes an outline there (as in Combobox).
+                      "forced-colors:aria-selected:outline-2 forced-colors:aria-selected:outline-solid forced-colors:aria-selected:-outline-offset-2",
                       "data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50",
                     )}
                   >
