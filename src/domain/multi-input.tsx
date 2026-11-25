@@ -359,6 +359,9 @@ function MultiInput(props: MultiInputProps) {
       error={error}
       labelPosition={labelPosition}
       required={required}
+      // The input carries aria-required: the label draws only the asterisk, so
+      // "obrigatório" is not read twice.
+      nativeRequired
       disabled={disabled}
     >
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard focus reaches the input natively via Tab. */}

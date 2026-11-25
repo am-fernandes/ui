@@ -516,6 +516,7 @@ const defaultDateRangePickerLabels: DateRangePickerLabels = {
   clear: "Limpar",
   confirm: "Confirmar",
   field: "Período",
+  required: "obrigatório",
 }
 ```
 
@@ -531,6 +532,11 @@ export interface DateRangePickerLabels {
   confirm: string
   /** Name of the trigger when it has neither `label` nor `aria-label`. */
   field: string
+  /**
+   * Read with the label of a required field: the control cannot say it
+   * itself, so the label does.
+   */
+  required: string
 }
 ```
 
@@ -776,6 +782,7 @@ const defaultTimePickerLabels: TimePickerLabels = {
   hours: "Horas",
   minutes: "Minutos",
   group: "Horário",
+  required: "obrigatório",
 }
 ```
 
@@ -791,6 +798,11 @@ export interface TimePickerLabels {
   minutes: string
   /** Name of the group when it has neither a text `label` nor `aria-label`. */
   group: string
+  /**
+   * Read with the label of a required field: the control cannot say it
+   * itself, so the label does.
+   */
+  required: string
 }
 ```
 

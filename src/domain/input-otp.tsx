@@ -136,6 +136,9 @@ function InputOTP({
       error={error}
       labelPosition={labelPosition}
       required={required}
+      // The input carries required and aria-required: the label draws only the asterisk, so
+      // "obrigatório" is not read twice.
+      nativeRequired
       disabled={disabled}
     >
       <OTPInput

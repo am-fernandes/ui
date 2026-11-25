@@ -525,6 +525,9 @@ export function Combobox(props: ComboboxProps) {
       error={error}
       labelPosition={labelPosition}
       required={required}
+      // The trigger carries aria-required: the label draws only the asterisk, so
+      // "obrigatório" is not read twice.
+      nativeRequired
       disabled={disabled}
     >
       <div

@@ -33,12 +33,18 @@ export interface TimePickerLabels {
   minutes: string
   /** Name of the group when it has neither a text `label` nor `aria-label`. */
   group: string
+  /**
+   * Read with the label of a required field: the control cannot say it
+   * itself, so the label does.
+   */
+  required: string
 }
 
 export const defaultTimePickerLabels: TimePickerLabels = {
   hours: "Horas",
   minutes: "Minutos",
   group: "Horário",
+  required: "obrigatório",
 }
 
 export interface TimePickerProps {
@@ -417,6 +423,7 @@ function TimePicker({
       error={error}
       labelPosition={labelPosition}
       required={required}
+      requiredLabel={l.required}
       disabled={disabled}
     >
       <div
