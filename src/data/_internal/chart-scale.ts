@@ -310,6 +310,15 @@ function numberFormat(options: Intl.NumberFormatOptions): Intl.NumberFormat {
 }
 
 /** Brazilian number format, up to two decimals: `1.250,5`. */
+/**
+ * The start of an announcement: `label` and a period, without doubling one
+ * that is already there ("dez." from the month names stays "dez.", not "dez..").
+ */
+export function asSentence(label: string): string {
+  const trimmed = label.trim()
+  return /[.!?…]$/.test(trimmed) ? trimmed : `${trimmed}.`
+}
+
 export function formatNumber(value: number): string {
   return numberFormat({ maximumFractionDigits: 2 }).format(value)
 }

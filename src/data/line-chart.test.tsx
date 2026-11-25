@@ -92,7 +92,7 @@ describe("LineChart", () => {
     expect(tooltip).toHaveTextContent("7Residencial Bosque")
     expect(tooltip).toHaveTextContent("—Torre Norte")
     expect(container.querySelector('[data-slot="chart-announcer"]')).toHaveTextContent(
-      "fev.. Residencial Bosque: 7; Torre Norte: —",
+      "fev. Residencial Bosque: 7; Torre Norte: —",
     )
   })
 

@@ -20,6 +20,7 @@ import {
 import {
   BAR_GAP,
   MAX_BAR,
+  asSentence,
   axisTickFormat,
   bandScale,
   barPath,
@@ -179,7 +180,7 @@ function BarChart<T extends Record<string, unknown>>({
       const v = rows[index]?.[j]
       return `${s.label}: ${v == null ? labels.missing : formatValue(v)}`
     })
-    return `${name}. ${parts.join("; ")}`
+    return `${asSentence(name)} ${parts.join("; ")}`
   }
 
   const active = cursor.active

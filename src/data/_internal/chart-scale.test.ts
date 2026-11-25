@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 import {
   MAX_BAR,
   areaPath,
+  asSentence,
   axisTickFormat,
   bandScale,
   barPath,
@@ -206,5 +207,15 @@ describe("chart-scale", () => {
       expect(readValue({ a: "3" }, "a")).toBeNull()
       expect(readValue({ a: Number.NaN }, "a")).toBeNull()
     })
+  })
+})
+
+// The month names end in a period ("dez."): the announcement read "dez..".
+describe("asSentence", () => {
+  it("ends a label with one period", () => {
+    expect(asSentence("dez.")).toBe("dez.")
+    expect(asSentence("2º tri")).toBe("2º tri.")
+    expect(asSentence(" Portais ")).toBe("Portais.")
+    expect(asSentence("Fim?")).toBe("Fim?")
   })
 })

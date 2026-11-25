@@ -21,6 +21,7 @@ import {
 import {
   type Point,
   areaPath,
+  asSentence,
   axisTickFormat,
   checkSeriesCount,
   defaultFormatX,
@@ -173,7 +174,7 @@ function LineChart<T extends Record<string, unknown>>({
       const v = values[j]?.[index]
       return `${s.label}: ${v == null ? labels.missing : formatValue(v)}`
     })
-    return `${xText[index] ?? ""}. ${parts.join("; ")}`
+    return `${asSentence(xText[index] ?? "")} ${parts.join("; ")}`
   }
 
   const active = cursor.active

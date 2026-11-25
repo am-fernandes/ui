@@ -88,7 +88,7 @@ test.describe("Charts — keyboard", () => {
     await page.keyboard.press("End")
     await expect(page.locator('[data-slot="chart-tooltip"]')).toContainText("dez.")
     await expect(page.locator('[data-slot="chart-announcer"]')).toHaveText(
-      "dez.. Residencial Bosque: 17; Torre Norte: 9; Vila Jardim: 5",
+      "dez. Residencial Bosque: 17; Torre Norte: 9; Vila Jardim: 5",
     )
     await page.keyboard.press("Tab")
     await expect(page.locator('[data-slot="chart-tooltip"]')).toHaveCount(0)
