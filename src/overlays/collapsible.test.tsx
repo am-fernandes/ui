@@ -130,9 +130,8 @@ describe("Collapsible keepMounted", () => {
     const field = screen.getByLabelText("Nome", { selector: "input" }) as HTMLInputElement
     expect(field).not.toBeVisible()
     expect(trigger).toHaveAttribute("aria-expanded", "false")
-    expect(
-      document.getElementById(trigger.getAttribute("aria-controls") as string),
-    ).toContainElement(field)
+    // Radix 1.2 leaves aria-controls off while closed: find the content by its slot.
+    expect(field.closest('[data-slot="collapsible-content"]')).not.toBeNull()
 
     await userEvent.click(trigger)
     expect(screen.getByLabelText("Nome")).toBeVisible()

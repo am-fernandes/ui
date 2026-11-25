@@ -59,7 +59,7 @@ describe("Avatar", () => {
         public complete = false
         public naturalWidth = 0
         private _src = ""
-        private listeners: Record<string, Array<() => void>> = {}
+        private listeners: Record<string, Array<(event: { currentTarget: MockImage }) => void>> = {}
         get src() {
           return this._src
         }
@@ -68,14 +68,15 @@ describe("Avatar", () => {
           this.complete = true
           this.naturalWidth = 1
           queueMicrotask(() => {
-            for (const cb of this.listeners.load ?? []) cb()
+            // Radix Avatar 1.2 reads event.currentTarget, as a real load event has it.
+            for (const cb of this.listeners.load ?? []) cb({ currentTarget: this })
           })
         }
-        addEventListener(name: string, cb: () => void) {
+        addEventListener(name: string, cb: (event: { currentTarget: MockImage }) => void) {
           if (!this.listeners[name]) this.listeners[name] = []
           this.listeners[name]?.push(cb)
         }
-        removeEventListener(name: string, cb: () => void) {
+        removeEventListener(name: string, cb: (event: { currentTarget: MockImage }) => void) {
           this.listeners[name] = (this.listeners[name] ?? []).filter((x) => x !== cb)
         }
       }
