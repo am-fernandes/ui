@@ -914,9 +914,13 @@ function DataTable<TData>({
   }, [viewKey, paginationEnabled, shouldAutoResetPage, handlePaginationChange])
 
   // A page that no longer exists (the data shrank) moves to the last one.
+  // Not while the rows are on their way (`loading`, or no rows at all): a
+  // page that came from the URL (`pageIndex={3}` with `data={query.data ??
+  // []}`) went to page 1 before the data arrived, and stayed there.
   const pageCountNow = table.getPageCount()
   React.useLayoutEffect(() => {
     if (!paginationEnabled || manualPagination) return
+    if (loading || pageCountNow === 0) return
     const lastPage = Math.max(0, pageCountNow - 1)
     if (paginationState.pageIndex > lastPage) {
       handlePaginationChange((prev) => ({ ...prev, pageIndex: lastPage }))
@@ -926,6 +930,7 @@ function DataTable<TData>({
     paginationState.pageIndex,
     paginationEnabled,
     manualPagination,
+    loading,
     handlePaginationChange,
   ])
 
@@ -1220,8 +1225,15 @@ function DataTable<TData>({
     all: mergedLabels.exportAll,
   }
 
+  // One file at a time. The trigger is busy while a file is made (and a
+  // busy Button opens nothing), and this holds for any other way in: a
+  // second export used to fetch everything again, download twice and take
+  // the spinner away while the first was still running.
+  const exporting = React.useRef(false)
   const runExport = React.useCallback(
     async (scope: ExportScope) => {
+      if (exporting.current) return
+      exporting.current = true
       setExportingScope(scope)
       setExportFailed(false)
       try {
@@ -1231,6 +1243,7 @@ function DataTable<TData>({
         setExportFailed(true)
         downloadConfig?.onExportError?.(error)
       } finally {
+        exporting.current = false
         setExportingScope(null)
       }
     },

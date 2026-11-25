@@ -1,8 +1,8 @@
 import type { ColumnDef, PaginationState } from "@tanstack/react-table"
-import { render, screen, within } from "@testing-library/react"
+import { act, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 
 const { downloadSheetMock } = vi.hoisted(() => ({
   downloadSheetMock: vi.fn(
@@ -2105,5 +2105,130 @@ describe("DataTable", () => {
       expect(select).toBeInTheDocument()
       expect(select.getAttribute("aria-label")).toBeNull()
     })
+  })
+})
+
+// The page came from the URL and the rows from a fetch: the clamp to the
+// last page ran on the empty first render and moved a deep link to page 1.
+describe("DataTable: a controlled page and rows still on their way", () => {
+  const rows: Row[] = Array.from({ length: 30 }, (_, i) => ({ name: `Row ${i + 1}`, age: i }))
+
+  function FromUrl({ data, loading }: { data: Row[]; loading?: boolean }) {
+    const [page, setPage] = React.useState(3)
+    return (
+      <DataTable
+        columns={columns}
+        data={data}
+        loading={loading}
+        pagination={{ pageSize: 5 }}
+        pageIndex={page}
+        onPaginationChange={(next) => {
+          const value = typeof next === "function" ? next({ pageIndex: page, pageSize: 5 }) : next
+          setPage(value.pageIndex)
+        }}
+      />
+    )
+  }
+
+  it("keeps page 4 while the data is empty, and shows it when the rows arrive", () => {
+    const onPaginationChange = vi.fn()
+    const { rerender } = render(
+      <DataTable
+        columns={columns}
+        data={[]}
+        pagination={{ pageSize: 5 }}
+        pageIndex={3}
+        onPaginationChange={onPaginationChange}
+      />,
+    )
+    rerender(
+      <DataTable
+        columns={columns}
+        data={rows}
+        pagination={{ pageSize: 5 }}
+        pageIndex={3}
+        onPaginationChange={onPaginationChange}
+      />,
+    )
+    expect(onPaginationChange).not.toHaveBeenCalled()
+    expect(pager().current).toBe("4")
+    expect(screen.getByText("Row 16")).toBeInTheDocument()
+  })
+
+  it("with the page in the parent's state: a deep link opens on its page", () => {
+    const { rerender } = render(<FromUrl data={[]} />)
+    rerender(<FromUrl data={rows} />)
+    expect(pager().current).toBe("4")
+  })
+
+  it("does not clamp while loading, even with stale rows that are fewer", () => {
+    const { rerender } = render(<FromUrl data={rows.slice(0, 5)} loading />)
+    rerender(<FromUrl data={rows} />)
+    expect(pager().current).toBe("4")
+  })
+
+  it("a refetch that empties the data keeps the page", () => {
+    const { rerender } = render(<FromUrl data={rows} />)
+    expect(pager().current).toBe("4")
+    rerender(<FromUrl data={[]} />)
+    rerender(<FromUrl data={rows} />)
+    expect(pager().current).toBe("4")
+  })
+
+  it("still moves to the last page when loaded rows shrink under it", () => {
+    const { rerender } = render(<FromUrl data={rows} />)
+    rerender(<FromUrl data={rows.slice(0, 12)} />)
+    expect(pager()).toEqual({ current: "3", last: "3" })
+  })
+})
+
+// While a file was being made, the export menu opened again and a second
+// export started: two fetches, two downloads, and the spinner gone early.
+describe("DataTable: one export at a time", () => {
+  beforeAll(() => {
+    const proto = Element.prototype as unknown as Record<string, unknown>
+    proto.hasPointerCapture ??= () => false
+    proto.setPointerCapture ??= () => {}
+    proto.releasePointerCapture ??= () => {}
+  })
+
+  it("the busy trigger does not open the menu again, and fetchAll runs once", async () => {
+    downloadSheetMock.mockClear()
+    let finish: (rows: Row[]) => void = () => {}
+    const fetchAll = vi.fn(
+      () =>
+        new Promise<Row[]>((resolve) => {
+          finish = resolve
+        }),
+    )
+    const user = userEvent.setup()
+    render(<DataTable columns={columns} data={data} downloadable={{ fetchAll }} />)
+    const trigger = screen.getByRole("button", { name: /Exportar para Excel/ })
+    await user.click(trigger)
+    await user.click(screen.getByRole("menuitem", { name: "Exportar todos os dados" }))
+    expect(trigger).toHaveAttribute("aria-busy", "true")
+
+    for (const open of [
+      () => user.click(trigger),
+      async () => {
+        trigger.focus()
+        await user.keyboard("{Enter}")
+      },
+      async () => {
+        trigger.focus()
+        await user.keyboard("{ArrowDown}")
+      },
+    ]) {
+      await open()
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+    }
+    expect(fetchAll).toHaveBeenCalledTimes(1)
+
+    await act(async () => finish(data))
+    expect(downloadSheetMock).toHaveBeenCalledTimes(1)
+    expect(trigger).not.toHaveAttribute("aria-busy")
+    // Free again: the next export goes.
+    await user.click(trigger)
+    expect(screen.getByRole("menu")).toBeInTheDocument()
   })
 })
