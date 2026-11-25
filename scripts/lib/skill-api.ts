@@ -78,7 +78,9 @@ function packageOf(file: string): string | null {
 }
 
 /** The function node of a component or helper, to read parameter defaults and signatures. */
-function functionNode(decl: ts.Declaration): ts.SignatureDeclaration | undefined {
+function functionNode(
+  decl: ts.Declaration,
+): ts.FunctionDeclaration | ts.ArrowFunction | ts.FunctionExpression | undefined {
   if (ts.isFunctionDeclaration(decl)) return decl
   if (ts.isVariableDeclaration(decl) && decl.initializer) {
     const init = decl.initializer
