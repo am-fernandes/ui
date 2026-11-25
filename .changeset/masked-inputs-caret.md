@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **`CPFInput`, `CNPJInput`, `CEPInput` e `PhoneInput` mantêm o cursor no lugar.** Corrigir um dígito no meio do campo jogava o cursor para o fim e o dígito seguinte entrava no lugar errado, embaralhando o número. Agora o cursor fica onde a pessoa está, ao digitar e ao apagar.

@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **Colar em `CPFInput`, `CNPJInput`, `CEPInput` e `PhoneInput` não perde mais dígitos.** O campo tinha `maxLength` do tamanho da máscara, e o navegador cortava o texto colado antes da limpeza: `" 529.982.247-25"` virava `529.982.247-2` e `"CPF: 529.982.247-25"` virava `529.982.2`. O `maxLength` saiu; o texto é limpo primeiro e limitado depois, e o número é achado no meio de rótulo, espaço e outros números (o CEP no fim de um endereço colado, por exemplo). Um número completo colado substitui o que estava no campo.

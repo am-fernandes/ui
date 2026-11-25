@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **Rótulos com altura de linha de texto.** O rótulo dos campos tinha `line-height` igual ao tamanho da fonte (14px em 14px): quando quebrava em duas ou mais linhas, elas encostavam uma na outra, e a caixa do `Checkbox` ficava no meio do bloco em vez de na primeira linha.

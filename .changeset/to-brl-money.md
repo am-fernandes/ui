@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **`toBRLMoney` nunca mostra mais de duas casas e lê texto em formato brasileiro.** `toBRLMoney(1000 / 3)` devolvia `"333,333"` e `toBRLMoney("1.234,56")` devolvia `"1,234"`, porque o texto era lido com `parseFloat`. Agora o resultado tem sempre duas casas (`"333,33"`) e um texto é lido nos dois formatos: `"1234.56"`, `"1.234,56"` e `"R$ 1.234,56"` dão `"1.234,56"`.

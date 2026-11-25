@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **`Input` e `Textarea` com `readOnly` agora parecem somente leitura.** Antes o campo ficava idêntico a um editável, e um valor calculado ou travado parecia digitável. Agora ganha fundo `muted` e perde o anel de hover; continua focável, o texto pode ser copiado e o valor vai no envio do formulário.

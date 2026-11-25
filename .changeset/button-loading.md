@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **`Button` em `loading` mantém o foco e a largura.** Antes o `loading` desabilitava o botão de verdade: quem apertava Enter em "Salvar" perdia o foco do teclado para o corpo da página, o spinner entrava antes do texto e alargava o botão (de 127 para 151px num "Salvar proposta") e o leitor de tela não ouvia nada.

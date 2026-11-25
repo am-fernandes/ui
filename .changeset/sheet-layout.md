@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **`Sheet`: o painel vira uma coluna de verdade.** O painel era `display: block`, então o `gap-4` e o `mt-auto` do rodapé não faziam nada: título, descrição e corpo ficavam colados, o rodapé parava logo abaixo do conteúdo e um formulário longo empurrava o "Salvar" para fora da tela, sem rolagem.

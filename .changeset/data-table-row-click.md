@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **`DataTable`: a linha clicável continua sendo linha.** Com `onRowClick`, o `<tr>` deixa de ser `role="button"`: o leitor de tela volta a ver as linhas e as células da tabela, e o teclado chega à ação por um `<button>` que envolve o conteúdo da primeira célula, com o mesmo nome (Tab, Enter, Espaço). O clique do mouse em qualquer ponto da linha continua chamando `onRowClick`.

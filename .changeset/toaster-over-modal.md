@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **Os toasts continuam usáveis com um modal aberto.** Com um `Dialog`, `AlertDialog` ou `Sheet` aberto, o toast ficava inerte: o clique em "Tentar de novo" não chegava ao botão e ainda contava como clique fora, fechando o diálogo e perdendo o formulário; pelo teclado, Alt+T e Tab não chegavam ao toast.

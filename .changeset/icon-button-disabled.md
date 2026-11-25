@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **`IconButton` desabilitado continua com tooltip e alcançável pelo teclado.** Com o `disabled` nativo, o ícone ficava mudo: nenhum tooltip no hover e o Tab pulava o botão. Numa ação de linha de tabela não dava para saber o que era nem que estava travada.

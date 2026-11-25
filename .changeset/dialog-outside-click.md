@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **`Dialog` volta a fechar com clique fora.** Para não fechar quando o clique vinha de um popover aninhado, o `Dialog` perguntava se existia em qualquer lugar do documento um `[role="grid"]`, um calendário, uma lista de comandos ou um popper aberto. Numa página com tabela, campo de data ou busca isso é sempre verdade, e o clique no fundo não fechava mais nada. A `CommandPalette`, que é um `Dialog` em volta de uma lista de comandos e não tem X, só fechava com Esc ou escolhendo um item.

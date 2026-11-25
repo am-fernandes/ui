@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **Listas dentro de `Popover` voltam a rolar quando ele está num `Dialog`, `AlertDialog` ou `Sheet`.** O modal trava a rolagem do resto da página, e o popover era renderizado no `<body>`, fora do modal: a roda do mouse e o dedo não rolavam a lista de um `Combobox` com 40 opções.

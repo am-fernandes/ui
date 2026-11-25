@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **`Dialog` e `AlertDialog` não passam mais da altura da tela.** Um formulário longo num notebook ou num celular deixava o título acima da tela e o rodapé abaixo, e nada rolava. Agora o diálogo tem altura máxima (`100dvh` menos 1rem em cima e embaixo): título e descrição ficam no topo, o rodapé (ou os botões do `AlertDialog`) fica embaixo e só o corpo rola, com a barra de rolagem na borda do diálogo.

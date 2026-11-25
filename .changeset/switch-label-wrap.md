@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **`Switch`: o rótulo quebra em linhas em vez de sair do contêiner.** O rótulo tinha `whitespace-nowrap`: um texto de 411px num espaço de 220px passava por cima do que estivesse ao lado. Agora ele quebra dentro do contêiner, com o switch na altura da primeira linha.

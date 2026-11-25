@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **`DataTable`: a busca acha o que está na tela, sem acento.** Buscar `joao`, `123.456`, `1.234,50` ou `19/05/2026` agora encontra a linha que mostra "João", "123.456.789-01", "R$ 1.234,50" e "19/05/2026". A busca ignora acento e caixa (`matchesSearch`) e compara o texto que a célula mostra, não o valor bruto: um `t` deixa de casar com o "T" de toda data ISO.

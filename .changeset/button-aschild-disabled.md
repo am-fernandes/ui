@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **`Button asChild` passa a respeitar `disabled` e `loading`.** Com um link como filho (`<Button asChild disabled><a href="…">`), saía um `<a disabled>`: o atributo não significa nada num link, que continuava com cara de ativo, clicável e navegando.

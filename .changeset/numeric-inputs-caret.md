@@ -1,5 +1,5 @@
 ---
-"@amfernandesinc/ui": minor
+"@amfernandesinc/ui": patch
 ---
 
 **`CurrencyInput` e `PercentageInput` mantêm o cursor no lugar.** Corrigir um dígito no meio de `1.234,56` jogava o cursor para o fim e os dígitos seguintes entravam no lugar errado. Agora o cursor fica onde a pessoa está, ao digitar e ao apagar, e Backspace logo depois do ponto de milhar ou da vírgula apaga o dígito anterior a ele.
