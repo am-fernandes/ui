@@ -1,6 +1,6 @@
 ---
 name: designing-with-amfernandesinc-ui
-description: Use ao construir, modificar, estilizar, testar ou revisar qualquer UI React num projeto que depende de @amfernandesinc/ui (o design system da AM Fernandes, "AMF UI", "nossa lib de UI"). Cobre setup do Tailwind v4 (inclusive a linha @source que, se faltar, deixa os overlays sem estilo), tema claro e escuro, escolha e composição dos mais de 60 componentes, formulários com react-hook-form, dinheiro em BRL, percentuais, datas sem bug de fuso, inputs brasileiros (CPF/CNPJ/CEP/telefone), tabelas (DataTable), gráficos (BarChart/LineChart/Sparkline), overlays, navegação (AppShell), textos trocáveis (labels/i18n), acessibilidade e as regras visuais do sistema (flat, raio por papel, densidade). Dispara em qualquer import de @amfernandesinc/ui (ou do legado @am-fernandes/ui).
+description: Use ao construir, modificar, estilizar, testar ou revisar qualquer UI React num projeto que depende de @amfernandesinc/ui (o design system da AM Fernandes, "AMF UI", "nossa lib de UI"). Cobre setup do Tailwind v4 (inclusive o @source que a 0.5.x exige no app, sem o qual os overlays saem sem estilo), tema claro e escuro, escolha e composição dos mais de 60 componentes, formulários com react-hook-form, dinheiro em BRL, percentuais, datas sem bug de fuso, inputs brasileiros (CPF/CNPJ/CEP/telefone), tabelas (DataTable), gráficos (BarChart/LineChart/Sparkline), overlays, navegação (AppShell), textos trocáveis (labels/i18n), acessibilidade e as regras visuais do sistema (flat, raio por papel, densidade). Dispara em qualquer import de @amfernandesinc/ui (ou do legado @am-fernandes/ui).
 ---
 
 # Construindo interfaces com @amfernandesinc/ui
@@ -26,7 +26,7 @@ Não aplique estas APIs a projetos com shadcn/ui puro, MUI, Chakra etc.: a apar�
 ## Antes de escrever código
 
 1. **Veja a versão instalada:** `node_modules/@amfernandesinc/ui/package.json`. Esta skill descreve a **0.6** (o código atual da lib). A 0.5.x não tem tema escuro, os três raios, `Select`, `NumberInput`, `Slider`, `IconButton`, `DropdownMenu`, gráficos, `AppShell` (era `Sidebar`) e outros: num app em 0.5.x, use só o que o `dist/index.d.ts` instalado exporta, e veja a migração em [`reference/anti-patterns.md`](reference/anti-patterns.md#versões-05x-e-06).
-2. **Confira o setup** (próxima seção): os dois imports de CSS, a linha `@source` e um `<Toaster />`. Se faltar algo, conserte primeiro: sem isso, componentes aparecem sem estilo e toasts somem em silêncio.
+2. **Confira o setup** (próxima seção): os dois imports de CSS (mais a linha `@source` na 0.5.x) e um `<Toaster />`. Se faltar algo, conserte primeiro: sem isso, componentes aparecem sem estilo e toasts somem em silêncio.
 3. **Escolha os componentes** pelo mapa abaixo e **leia as props exatas** em `reference/api/` antes de usar cada um.
 
 ## Setup (a parte que quebra em silêncio)
@@ -35,16 +35,11 @@ No CSS de entrada do app (`src/index.css`, `app/globals.css`):
 
 ```css
 @import "@amfernandesinc/ui/fonts";   /* Geist e Geist Mono, self-hosted */
-@import "@amfernandesinc/ui/styles";  /* tokens + Tailwind v4 (este arquivo já importa o tailwindcss) */
-
-/* Obrigatório: o Tailwind v4 não lê node_modules. Sem esta linha, as classes
-   usadas só dentro da lib não são geradas e Dialog, Popover, Select, DataTable
-   aparecem sem estilo, transparentes ou fora do lugar. Caminho relativo a ESTE arquivo. */
-@source "../node_modules/@amfernandesinc/ui/dist";
+@import "@amfernandesinc/ui/styles";  /* tokens + Tailwind v4 + o @source da própria lib */
 ```
 
 - **Não** escreva `@import "tailwindcss"` de novo: `./styles` já faz isso.
-- Ajuste o caminho do `@source` à posição do CSS (`app/globals.css` → `../node_modules/...`; monorepo → `../../node_modules/...`). Confirme com `ls node_modules/@amfernandesinc/ui/dist`.
+- **Na 0.5.x, acrescente** `@source "../node_modules/@amfernandesinc/ui/dist";` (caminho relativo a esse CSS). O Tailwind v4 não lê `node_modules`; sem a linha, as classes usadas só dentro da lib não existem e Dialog, Popover, Select e DataTable aparecem sem estilo. Na 0.6 o `styles` já declara isso (a linha a mais não atrapalha).
 - **Monte `<Toaster />` uma vez**, na raiz. Sem ele, `toast(...)` não mostra nada.
 - **Tema escuro:** classe `dark` no `<html>` (ou num ancestral). Não há provider da lib; para seguir o sistema, use `next-themes` com `attribute="class"`.
 - **Peer deps:** `react@^19`, `react-dom@^19`, `tailwindcss@^4`. React 18 não funciona (`ref` como prop). `react-hook-form` e `@tanstack/react-table` (tipos de coluna) são do app.
@@ -308,7 +303,7 @@ Catálogo com correções em [`reference/anti-patterns.md`](reference/anti-patte
 
 ## Fluxo para construir uma tela
 
-1. Setup conferido (CSS + `@source` + `<Toaster />`).
+1. Setup conferido (CSS, `@source` na 0.5.x, `<Toaster />`).
 2. Escolha os componentes pelo mapa; leia as props em `reference/api/`.
 3. Monte o layout com Tailwind; componha com os componentes da lib, sem reestilizar.
 4. Campos pelo contrato de campo; dinheiro e datas pelos helpers.

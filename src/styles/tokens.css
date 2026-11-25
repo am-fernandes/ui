@@ -2,6 +2,12 @@
 /* Required by overlay components for data-state animations. */
 @import "tw-animate-css";
 
+/* Tailwind v4 does not scan node_modules: an app that imports this file would
+   miss every class used only inside the library (the Dialog's position, the
+   radii, the status colours). Relative to this file, which ships in dist/, so
+   the app needs no @source line of its own. */
+@source "./";
+
 /* Dark mode: put the `dark` class on <html> (or on any ancestor of the part
    that should be dark). Components need no `dark:` classes; the tokens flip. */
 @custom-variant dark (&:where(.dark, .dark *));

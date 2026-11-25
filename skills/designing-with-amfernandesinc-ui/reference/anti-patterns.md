@@ -92,7 +92,7 @@ export function JeitoCerto({ excluir }: { excluir: () => Promise<void> }) {
 
 | Erro | Por que está errado | Faça assim |
 |---|---|---|
-| CSS sem `@source "…/@amfernandesinc/ui/dist"` | O Tailwind v4 não lê `node_modules`: classes da lib não existem e overlays saem sem estilo | Adicione o `@source` com o caminho relativo ao CSS |
+| Na 0.5.x, CSS sem `@source "…/@amfernandesinc/ui/dist"` | O Tailwind v4 não lê `node_modules`: classes da lib não existem e overlays saem sem estilo | Adicione o `@source` com o caminho relativo ao CSS (na 0.6 o `styles` já traz) |
 | `@import "tailwindcss"` junto com `@amfernandesinc/ui/styles` | Carrega o Tailwind duas vezes | Só `fonts` + `styles` + `@source` |
 | `toast()` sem `<Toaster />` | Não aparece nada | Monte `<Toaster />` uma vez na raiz |
 | `:root { --primary: … }` / `@theme { --color-primary }` no app | Briga com os tokens, quebra o tema escuro e o contraste validado | Use os tokens como estão |
@@ -159,6 +159,8 @@ Mudanças que quebram:
 | Export da `DataTable` sem `xlsx` | Nada a fazer; se o app dependia do `xlsx` transitivo, declare-o. |
 
 Tema escuro: opcional; ligue a classe `dark` no `<html>` quando quiser e troque cores fixas das suas telas por tokens.
+
+O `@source "…/@amfernandesinc/ui/dist"` do CSS do app pode sair: na 0.6 o `styles` já o declara (deixá-lo não atrapalha).
 
 ### Escopo antigo e cópias do shadcn
 

@@ -25,6 +25,8 @@ Peer deps: `react@^19`, `react-dom@^19`, `tailwindcss@^4`. A lib é ESM, com um 
 /* src/index.css (Vite) ou app/globals.css (Next.js) */
 @import "@amfernandesinc/ui/fonts";
 @import "@amfernandesinc/ui/styles";
+
+/* Só na 0.5.x (a 0.6 já traz isto dentro do styles): */
 @source "../node_modules/@amfernandesinc/ui/dist";
 
 /* Daqui para baixo, só o que é do app (sem redefinir tokens). */
@@ -32,7 +34,9 @@ Peer deps: `react@^19`, `react-dom@^19`, `tailwindcss@^4`. A lib é ESM, com um 
 
 ### Por que o `@source`
 
-O Tailwind v4 gera só as classes que encontra nos arquivos que ele lê, e por padrão **não lê `node_modules`**. As classes que existem só dentro da lib compilada (posição do Dialog, `rounded-container`, animações de entrada, cores de status, larguras de menus) não são geradas sem a linha `@source`. Medido num app novo: sem ela, o CSS sai com 30 KB e nenhuma classe da lib; com ela, 128 KB.
+O Tailwind v4 gera só as classes que encontra nos arquivos que ele lê, e por padrão **não lê `node_modules`**. As classes que existem só dentro da lib compilada (posição do Dialog, `rounded-container`, animações de entrada, cores de status, larguras de menus) não são geradas sem um `@source` que aponte para a `dist/` da lib. Medido num app novo: sem ele, o CSS sai com 30 KB e nenhuma classe da lib; com ele, 128 KB.
+
+Na **0.6**, o próprio `tokens.css` publicado declara `@source "./"` (relativo a ele, dentro da `dist/`), e o app não precisa de nada. Na **0.5.x**, a linha é do app, e o resto desta seção vale para ela.
 
 Sintomas de `@source` faltando ou com caminho errado:
 
