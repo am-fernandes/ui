@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { expect, fn, userEvent, within } from "@storybook/test"
+import { expect, fn, userEvent, waitFor, within } from "@storybook/test"
 import { useState } from "react"
 
 import { Dialog } from "../overlays/dialog"
@@ -102,6 +102,9 @@ export const Default: Story = {
     await userEvent.click(trigger)
     await userEvent.click(await body.findByRole("option", { name: "Visita agendada" }))
     await expect(trigger).toHaveTextContent("Visita agendada")
+    // The list leaves after its closing animation; until then Radix keeps the
+    // page aria-hidden. Wait for it, so the a11y check sees the settled page.
+    await waitFor(() => expect(body.queryByRole("listbox")).toBeNull())
     await expect(args.onValueChange).toHaveBeenCalledWith("visita")
   },
 }
