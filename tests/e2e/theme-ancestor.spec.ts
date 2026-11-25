@@ -139,3 +139,55 @@ test("cada story pinta igual com dark no <html> e num ancestral", async ({ page 
   }
   expect([...perStory.values()].flat()).toEqual([])
 })
+
+// As camadas flutuantes vão para o <body>, fora do ancestral escuro: abertas
+// de dentro dele, saíam no tema claro. Abertas de um ancestral escuro, têm de
+// pintar como com o tema no <html>.
+test.describe("camadas abertas de um ancestral escuro", () => {
+  const layers: Array<{ id: string; open: (page: Page) => Promise<void>; layer: string }> = [
+    {
+      id: "overlays-dropdownmenu--default",
+      open: (page) => page.locator('[data-slot="dropdown-menu-trigger"]').first().click(),
+      layer: '[data-slot="dropdown-menu-content"]',
+    },
+    {
+      // A Default abre o popover no play; esta não.
+      id: "overlays-popover--align-start",
+      open: (page) => page.locator('[data-slot="popover-trigger"]').first().click(),
+      layer: '[data-slot="popover-content"]',
+    },
+    {
+      id: "forms-select--default",
+      open: (page) => page.getByRole("combobox").first().click(),
+      layer: '[data-slot="select-content"]',
+    },
+    {
+      id: "overlays-dialog--default",
+      open: (page) => page.getByRole("button").first().click(),
+      layer: '[data-slot="dialog-content"]',
+    },
+  ]
+
+  for (const { id, open: openLayer, layer } of layers) {
+    test(id, async ({ page }) => {
+      const read = async () => {
+        await openLayer(page)
+        const content = page.locator(layer).first()
+        await expect(content).toBeVisible()
+        return content.evaluate((element) => {
+          const style = getComputedStyle(element)
+          return [style.backgroundColor, style.color, style.borderTopColor].join(" | ")
+        })
+      }
+      await open(page, id, "Escuro")
+      const onHtml = await read()
+
+      await open(page, id)
+      await page.evaluate(() => {
+        document.documentElement.classList.remove("dark")
+        document.getElementById("storybook-root")?.classList.add("dark")
+      })
+      expect(await read()).toBe(onHtml)
+    })
+  }
+})

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { useComposedRefs } from "../primitives/_internal/compose-refs"
 import { motionSheet, sheetOverlayBase } from "./_internal/animations"
 import type { OverlayContentProps } from "./_internal/content-props"
+import { useLayerTheme } from "./_internal/layer-theme"
 import { modalBodyClass } from "./_internal/modal-body"
 import { DEFAULT_CLOSE_LABEL, ModalCloseButton, titleBesideClose } from "./_internal/modal-close"
 import {
@@ -152,16 +153,23 @@ function Sheet({
   // The popovers, menus and tooltips opened inside the panel render into its
   // content element (see `OverlayContainerProvider`).
   const [overlayContainer, contentRef] = useOverlayContainerState()
-  const composedContentRef = useComposedRefs(contentRef, ref)
+  // Opened from a dark part of the page, the modal and its backdrop are dark too.
+  const theme = useLayerTheme()
+  const composedContentRef = useComposedRefs(contentRef, theme.contentRef, ref)
   const footerContent = renderModalFooter(footer, () => setOpen(false))
 
   return (
     <DialogPrimitive.Root open={isOpen} onOpenChange={setOpen}>
       {trigger ? (
-        <DialogPrimitive.Trigger asChild>{asTriggerElement(trigger)}</DialogPrimitive.Trigger>
+        <DialogPrimitive.Trigger asChild ref={theme.anchorRef}>
+          {asTriggerElement(trigger)}
+        </DialogPrimitive.Trigger>
       ) : null}
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay data-slot="sheet-overlay" className={sheetOverlayBase} />
+        <DialogPrimitive.Overlay
+          data-slot="sheet-overlay"
+          className={cn(sheetOverlayBase, theme.className)}
+        />
         <DialogPrimitive.Content
           {...contentProps}
           ref={composedContentRef}
@@ -171,7 +179,7 @@ function Sheet({
           {...(description ? {} : { "aria-describedby": undefined })}
           data-side={side}
           data-size={size}
-          className={cn(sheetVariants({ side, size }), className)}
+          className={cn(sheetVariants({ side, size }), theme.className, className)}
           onOpenAutoFocus={onOpenAutoFocus}
           onCloseAutoFocus={returnFocus}
           // A toast floats above the panel and belongs to no modal: a press on

@@ -9,6 +9,7 @@ import { useComposedRefs } from "../primitives/_internal/compose-refs"
 import { Button, type ButtonProps } from "../primitives/button"
 import { dialogContentBase, overlayBase } from "./_internal/animations"
 import type { OverlayContentProps } from "./_internal/content-props"
+import { useLayerTheme } from "./_internal/layer-theme"
 import { modalBodyClass } from "./_internal/modal-body"
 import { useModalOpen, useReturnFocus } from "./_internal/modal-state"
 import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
@@ -149,17 +150,22 @@ function AlertDialog({
   // The popovers, menus and tooltips opened inside the dialog render into its
   // content element (see `OverlayContainerProvider`).
   const [overlayContainer, contentRef] = useOverlayContainerState()
-  const composedContentRef = useComposedRefs(contentRef, ref)
+  // Opened from a dark part of the page, the modal and its backdrop are dark too.
+  const theme = useLayerTheme()
+  const composedContentRef = useComposedRefs(contentRef, theme.contentRef, ref)
 
   return (
     <AlertDialogPrimitive.Root open={isOpen} onOpenChange={handleOpenChange}>
       {trigger ? (
-        <AlertDialogPrimitive.Trigger asChild>
+        <AlertDialogPrimitive.Trigger asChild ref={theme.anchorRef}>
           {asTriggerElement(trigger)}
         </AlertDialogPrimitive.Trigger>
       ) : null}
       <AlertDialogPrimitive.Portal>
-        <AlertDialogPrimitive.Overlay data-slot="alert-dialog-overlay" className={overlayBase} />
+        <AlertDialogPrimitive.Overlay
+          data-slot="alert-dialog-overlay"
+          className={cn(overlayBase, theme.className)}
+        />
         <AlertDialogPrimitive.Content
           {...contentProps}
           ref={composedContentRef}
@@ -167,7 +173,7 @@ function AlertDialog({
           // Without a description Radix still points here, at an id no element
           // has: leave the attribute out.
           {...(description ? {} : { "aria-describedby": undefined })}
-          className={cn(dialogContentBase, "max-w-lg", className)}
+          className={cn(dialogContentBase, "max-w-lg", theme.className, className)}
           onCloseAutoFocus={returnFocus}
           // Escape is the keyboard's "Cancelar", so it calls `onCancel` too
           // (once: not again while the dialog closes). Escape typed with

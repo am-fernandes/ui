@@ -6,8 +6,10 @@ import * as React from "react"
 
 import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
+import { useComposedRefs } from "../primitives/_internal/compose-refs"
 import { motionMenu } from "./_internal/animations"
 import type { OverlayContentProps } from "./_internal/content-props"
+import { useLayerTheme } from "./_internal/layer-theme"
 import { useOverlayContainer } from "./_internal/overlay-container"
 import { asTriggerElement } from "./_internal/trigger-child"
 
@@ -356,9 +358,12 @@ function SubmenuRow({ item }: { item: DropdownMenuSubmenu }) {
   // Same container as the menu itself (the modal it was opened from, if any).
   const container = useOverlayContainer()
   const modality = useMenuModality()
+  // A submenu opened from a dark menu is dark too.
+  const theme = useLayerTheme()
   return (
     <DropdownMenuPrimitive.Sub>
       <DropdownMenuPrimitive.SubTrigger
+        ref={theme.anchorRef}
         data-slot="dropdown-menu-sub-trigger"
         disabled={item.disabled}
         className={cn(
@@ -373,11 +378,16 @@ function SubmenuRow({ item }: { item: DropdownMenuSubmenu }) {
       <DropdownMenuPrimitive.Portal container={container}>
         <DropdownMenuPrimitive.SubContent
           {...modality}
+          ref={theme.contentRef}
           data-slot="dropdown-menu-sub-content"
           sideOffset={4}
           collisionPadding={8}
           loop
-          className={cn(contentClass, "origin-(--radix-dropdown-menu-content-transform-origin)")}
+          className={cn(
+            contentClass,
+            "origin-(--radix-dropdown-menu-content-transform-origin)",
+            theme.className,
+          )}
         >
           <Entries items={item.items} />
         </DropdownMenuPrimitive.SubContent>
@@ -446,6 +456,9 @@ function DropdownMenu({
   // Opened from the keyboard (Enter, Space, ↓ on the trigger), the first row
   // is focused before any key reaches the panel: the trigger tells it.
   const modality = React.useRef<Modality>("pointer")
+  // Opened from a dark part of the page, the menu is dark too.
+  const theme = useLayerTheme()
+  const contentRef = useComposedRefs(theme.contentRef, ref)
 
   return (
     <DropdownMenuPrimitive.Root
@@ -457,6 +470,7 @@ function DropdownMenu({
       <DropdownMenuPrimitive.Trigger
         asChild
         data-slot="dropdown-menu-trigger"
+        ref={theme.anchorRef}
         onKeyDown={() => {
           modality.current = "keyboard"
         }}
@@ -473,9 +487,9 @@ function DropdownMenu({
               side={side}
               align={align}
               sideOffset={sideOffset}
-              className={className}
+              className={cn(theme.className, className)}
               items={items}
-              contentRef={ref}
+              contentRef={contentRef}
               contentProps={contentProps}
             />
           </ModalityContext.Provider>

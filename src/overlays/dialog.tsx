@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { useComposedRefs } from "../primitives/_internal/compose-refs"
 import { dialogContentBase, overlayBase } from "./_internal/animations"
 import type { OverlayContentProps } from "./_internal/content-props"
+import { useLayerTheme } from "./_internal/layer-theme"
 import { modalBodyClass } from "./_internal/modal-body"
 import { DEFAULT_CLOSE_LABEL, ModalCloseButton, titleBesideClose } from "./_internal/modal-close"
 import {
@@ -118,18 +119,23 @@ function Dialog({
   // The popovers, menus and tooltips opened inside the dialog render into its
   // content element (see `OverlayContainerProvider`).
   const [overlayContainer, contentRef] = useOverlayContainerState()
-  const composedContentRef = useComposedRefs(contentRef, ref)
+  // Opened from a dark part of the page, the modal and its backdrop are dark too.
+  const theme = useLayerTheme()
+  const composedContentRef = useComposedRefs(contentRef, theme.contentRef, ref)
   const footerContent = renderModalFooter(footer, () => setOpen(false))
 
   return (
     <DialogPrimitive.Root open={isOpen} onOpenChange={setOpen}>
       {trigger ? (
-        <DialogPrimitive.Trigger asChild data-slot="dialog-trigger">
+        <DialogPrimitive.Trigger asChild data-slot="dialog-trigger" ref={theme.anchorRef}>
           {asTriggerElement(trigger)}
         </DialogPrimitive.Trigger>
       ) : null}
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay data-slot="dialog-overlay" className={overlayBase} />
+        <DialogPrimitive.Overlay
+          data-slot="dialog-overlay"
+          className={cn(overlayBase, theme.className)}
+        />
         <DialogPrimitive.Content
           {...contentProps}
           ref={composedContentRef}
@@ -137,7 +143,7 @@ function Dialog({
           // Without a description Radix still points here, at an id no element
           // has: leave the attribute out.
           {...(description ? {} : { "aria-describedby": undefined })}
-          className={cn(dialogContentBase, SIZE_CLASSES[size], className)}
+          className={cn(dialogContentBase, SIZE_CLASSES[size], theme.className, className)}
           onOpenAutoFocus={onOpenAutoFocus}
           onCloseAutoFocus={returnFocus}
           onEscapeKeyDown={(e) => {

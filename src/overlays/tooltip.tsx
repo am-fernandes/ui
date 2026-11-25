@@ -4,8 +4,10 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useComposedRefs } from "../primitives/_internal/compose-refs"
 import { motionTooltip } from "./_internal/animations"
 import type { OverlayContentProps } from "./_internal/content-props"
+import { useLayerTheme } from "./_internal/layer-theme"
 import { useOverlayContainer } from "./_internal/overlay-container"
 import { asTooltipTarget } from "./_internal/trigger-child"
 
@@ -63,11 +65,14 @@ function Tooltip({
   const container = useOverlayContainer()
   // Text has no element for Radix to attach to: a term gets a focusable span.
   const target = asTooltipTarget(children)
+  // Opened from a dark part of the page, the tooltip is dark too.
+  const theme = useLayerTheme()
+  const contentRef = useComposedRefs(theme.contentRef, ref)
 
   return (
     <TooltipPrimitive.Provider delayDuration={delayDuration}>
       <TooltipPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
-        <TooltipPrimitive.Trigger asChild data-slot="tooltip-trigger">
+        <TooltipPrimitive.Trigger asChild data-slot="tooltip-trigger" ref={theme.anchorRef}>
           {isDisabledElement(target) ? (
             // The disabled control has `pointer-events: none` (Button,
             // IconButton), so the pointer reaches this span.
@@ -86,7 +91,7 @@ function Tooltip({
           <TooltipPrimitive.Portal container={container}>
             <TooltipPrimitive.Content
               {...contentProps}
-              ref={ref}
+              ref={contentRef}
               data-slot="tooltip-content"
               side={side}
               align={align}
@@ -102,6 +107,7 @@ function Tooltip({
                 "data-[state=closed]:fade-out-0 data-[state=delayed-open]:fade-in-0 data-[state=instant-open]:fade-in-0",
                 "data-[state=closed]:zoom-out-95 data-[state=delayed-open]:zoom-in-95 data-[state=instant-open]:zoom-in-95",
                 "origin-[var(--radix-tooltip-content-transform-origin)]",
+                theme.className,
                 className,
               )}
             >

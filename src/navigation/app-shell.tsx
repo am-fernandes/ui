@@ -8,6 +8,7 @@ import { useIsMobile } from "@/hooks/use-is-mobile"
 import type { RenderLink } from "@/lib/render-link"
 import { cn } from "@/lib/utils"
 import { motionSheet, overlayBase } from "../overlays/_internal/animations"
+import { useLayerTheme } from "../overlays/_internal/layer-theme"
 import { Tooltip } from "../overlays/tooltip"
 import { type AppShellItem, AppShellNavItem } from "./_internal/app-shell-item"
 import { useStoredBoolean, writeStoredBoolean } from "./_internal/stored-boolean"
@@ -250,6 +251,8 @@ function AppShell({
   }, [collapsed, controlled, persistKey, onCollapsedChange])
 
   const closeMenu = React.useCallback(() => setMenuOpen(false), [])
+  // An AppShell inside a dark part of the page opens a dark mobile menu.
+  const menuTheme = useLayerTheme()
 
   // The menu dialog only exists below the breakpoint. Growing the window past
   // it must not leave an open modal (and its scroll lock) behind.
@@ -412,7 +415,11 @@ function AppShell({
                 data-slot="app-shell-mobile-bar"
                 className="flex min-w-0 items-center gap-2 md:hidden"
               >
-                <DialogPrimitive.Trigger aria-label={l.openMenu} className={iconButtonClass}>
+                <DialogPrimitive.Trigger
+                  ref={menuTheme.anchorRef}
+                  aria-label={l.openMenu}
+                  className={iconButtonClass}
+                >
                   <Menu className="size-5" aria-hidden />
                 </DialogPrimitive.Trigger>
                 {brand ? (
@@ -433,9 +440,10 @@ function AppShell({
               <DialogPrimitive.Portal>
                 <DialogPrimitive.Overlay
                   data-slot="app-shell-menu-overlay"
-                  className={overlayBase}
+                  className={cn(overlayBase, menuTheme.className)}
                 />
                 <DialogPrimitive.Content
+                  ref={menuTheme.contentRef}
                   data-slot="app-shell-menu"
                   aria-describedby={undefined}
                   className={cn(
@@ -443,6 +451,7 @@ function AppShell({
                     motionSheet,
                     "data-[state=open]:animate-in data-[state=closed]:animate-out",
                     "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
+                    menuTheme.className,
                   )}
                 >
                   <DialogPrimitive.Title className="sr-only">{l.menu}</DialogPrimitive.Title>

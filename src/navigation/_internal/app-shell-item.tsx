@@ -8,6 +8,7 @@ import { type RenderLink, type RenderLinkProps, renderLinkElement } from "@/lib/
 import { DEFAULT_ALLOWED_LINK_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
 import { motionMenu } from "../../overlays/_internal/animations"
+import { useLayerTheme } from "../../overlays/_internal/layer-theme"
 import { useOverlayContainer } from "../../overlays/_internal/overlay-container"
 import { Tooltip } from "../../overlays/tooltip"
 import { ignoreActivation } from "../../primitives/_internal/soft-disabled"
@@ -109,16 +110,19 @@ function RailGroup({
 }: FlyoutProps & { trigger: React.ReactElement }) {
   // Same container as the rest of the overlays (the modal it sits in, if any).
   const container = useOverlayContainer()
+  // An AppShell inside a dark part of the page opens a dark flyout.
+  const theme = useLayerTheme()
   return (
     <DropdownMenuPrimitive.Root modal={false}>
       <Tooltip content={item.label} side="right">
-        <DropdownMenuPrimitive.Trigger asChild disabled={item.disabled}>
+        <DropdownMenuPrimitive.Trigger asChild disabled={item.disabled} ref={theme.anchorRef}>
           {trigger}
         </DropdownMenuPrimitive.Trigger>
       </Tooltip>
       {container === null ? null : (
         <DropdownMenuPrimitive.Portal container={container}>
           <DropdownMenuPrimitive.Content
+            ref={theme.contentRef}
             data-slot="app-shell-flyout"
             side="right"
             align="start"
@@ -126,7 +130,7 @@ function RailGroup({
             sideOffset={16}
             collisionPadding={8}
             loop
-            className={flyoutContentClass}
+            className={cn(flyoutContentClass, theme.className)}
           >
             <DropdownMenuPrimitive.Label className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
               {item.label}

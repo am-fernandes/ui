@@ -10,6 +10,7 @@ import { Button } from "../primitives/button"
 import { IconButton } from "../primitives/icon-button"
 import { motionPopover } from "./_internal/animations"
 import type { OverlayContentProps } from "./_internal/content-props"
+import { isInDarkPart } from "./_internal/layer-theme"
 
 export type TourTarget = React.RefObject<HTMLElement | null> | string | (() => HTMLElement | null)
 
@@ -273,6 +274,9 @@ function Tour({
 
   if (!current) return null
 
+  // A step that points at a dark part of the page is dark too (the callout
+  // and the dimming are portaled into <body>).
+  const theme = isInDarkPart(target) ? "dark" : undefined
   const side = target ? (current.side ?? "bottom") : "bottom"
   const align = target ? (current.align ?? "start") : "center"
 
@@ -286,7 +290,10 @@ function Tour({
               // The page is dimmed by a huge translucent outline. Forced
               // colours would make it opaque and hide the page: there it is
               // a ring of the system highlight around the target instead.
-              className="pointer-events-none fixed z-(--z-overlay) rounded-element outline-[9999px] outline-solid outline-scrim-light forced-colors:outline-2 forced-colors:outline-[Highlight]"
+              className={cn(
+                "pointer-events-none fixed z-(--z-overlay) rounded-element outline-[9999px] outline-solid outline-scrim-light forced-colors:outline-2 forced-colors:outline-[Highlight]",
+                theme,
+              )}
               style={{
                 top: box.top - SPOTLIGHT_PADDING,
                 left: box.left - SPOTLIGHT_PADDING,
@@ -355,6 +362,7 @@ function Tour({
               "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
               "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
               "origin-(--radix-popover-content-transform-origin)",
+              theme,
             )}
           >
             <div className="flex items-start gap-2">

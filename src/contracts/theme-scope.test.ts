@@ -137,3 +137,21 @@ describe("dark theme on any ancestor", () => {
     expect(base).not.toMatch(/var\(--color-/)
   })
 })
+
+describe("floating layers follow a dark part of the page", () => {
+  // A new overlay is portaled out of the section it was opened from: it has
+  // to take the theme of that section (src/overlays/_internal/layer-theme.ts).
+  // The toaster is the one exception: toasts belong to the page, not to a part.
+  const EXEMPT = ["src/overlays/sonner.tsx"]
+
+  it("every file that portals a layer takes the theme of where it opened", () => {
+    const missing = sourceFiles(path.join(root, "src"))
+      .map((file) => path.relative(root, file))
+      .filter((file) => !EXEMPT.includes(file) && !file.endsWith("layer-theme.ts"))
+      .filter((file) => {
+        const text = readFileSync(path.join(root, file), "utf8")
+        return /\.Portal\b|createPortal\(/.test(text) && !/useLayerTheme|isInDarkPart/.test(text)
+      })
+    expect(missing).toEqual([])
+  })
+})

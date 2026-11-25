@@ -4,8 +4,10 @@ import * as PopoverPrimitive from "@radix-ui/react-popover"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useComposedRefs } from "../primitives/_internal/compose-refs"
 import { motionPopover } from "./_internal/animations"
 import type { OverlayContentProps } from "./_internal/content-props"
+import { useLayerTheme } from "./_internal/layer-theme"
 import { useOverlayContainer } from "./_internal/overlay-container"
 import { asAnchorElement, asTriggerElement } from "./_internal/trigger-child"
 
@@ -79,6 +81,9 @@ function Popover({
   // (not into <body>), where the wheel and touch scrolling are not locked.
   // `null`: the modal is mounting; its element comes in the next pass.
   const container = useOverlayContainer()
+  // Opened from a dark part of the page, the popover is dark too.
+  const theme = useLayerTheme()
+  const contentRef = useComposedRefs(theme.contentRef, ref)
 
   const placed = Boolean(trigger || anchor)
   React.useEffect(() => {
@@ -116,12 +121,17 @@ function Popover({
       modal={modal}
     >
       {trigger ? (
-        <PopoverPrimitive.Trigger asChild data-slot="popover-trigger" id={triggerId}>
+        <PopoverPrimitive.Trigger
+          asChild
+          data-slot="popover-trigger"
+          id={triggerId}
+          ref={theme.anchorRef}
+        >
           {triggerElement}
         </PopoverPrimitive.Trigger>
       ) : null}
       {anchor ? (
-        <PopoverPrimitive.Anchor asChild data-slot="popover-anchor">
+        <PopoverPrimitive.Anchor asChild data-slot="popover-anchor" ref={theme.anchorRef}>
           {asAnchorElement(anchor)}
         </PopoverPrimitive.Anchor>
       ) : null}
@@ -129,7 +139,7 @@ function Popover({
         <PopoverPrimitive.Portal container={container}>
           <PopoverPrimitive.Content
             {...contentProps}
-            ref={ref}
+            ref={contentRef}
             data-slot="popover-content"
             align={align}
             side={side}
@@ -152,6 +162,7 @@ function Popover({
               "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
               "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
               "origin-(--radix-popover-content-transform-origin)",
+              theme.className,
               className,
             )}
           >

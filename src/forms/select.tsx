@@ -6,6 +6,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { motionMenu } from "../overlays/_internal/animations"
+import { useLayerTheme } from "../overlays/_internal/layer-theme"
 import { useOverlayContainer } from "../overlays/_internal/overlay-container"
 import { useComposedRefs } from "../primitives/_internal/compose-refs"
 import type { ControlSize } from "../primitives/_internal/control-size"
@@ -160,7 +161,9 @@ function Select({
   const ids = useFieldIds(id)
   const container = useOverlayContainer()
   const triggerRef = React.useRef<HTMLButtonElement>(null)
-  const composedRef = useComposedRefs(triggerRef, ref)
+  // Opened from a dark part of the page, the list is dark too.
+  const theme = useLayerTheme()
+  const composedRef = useComposedRefs(triggerRef, theme.anchorRef, ref)
 
   // Value and open state are always handed to Radix as controlled, so a
   // read-only select can refuse a change (Radix also changes the value from
@@ -308,6 +311,7 @@ function Select({
         </div>
         <SelectPrimitive.Portal container={container}>
           <SelectPrimitive.Content
+            ref={theme.contentRef}
             data-slot="select-content"
             data-modality={modality.current}
             onKeyDown={mark("keyboard")}
@@ -315,7 +319,7 @@ function Select({
             position="popper"
             sideOffset={4}
             collisionPadding={8}
-            className={cn(contentClass, contentClassName)}
+            className={cn(contentClass, theme.className, contentClassName)}
           >
             <SelectPrimitive.ScrollUpButton className={scrollButtonClass}>
               <ChevronUp aria-hidden="true" />
