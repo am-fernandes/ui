@@ -479,6 +479,9 @@ export const NativeForm: Story = {
         <FileUpload multiple name="anexos" required label="Anexar documentos" />
         <div className="flex items-center gap-3">
           <Button type="submit">Enviar</Button>
+          <Button type="reset" variant="outline" onClick={() => setSent(null)}>
+            Limpar
+          </Button>
           <output data-testid="form-data" className="text-sm text-muted-foreground">
             {sent ?? ""}
           </output>
@@ -490,7 +493,52 @@ export const NativeForm: Story = {
     docs: {
       description: {
         story:
-          "Num `<form>` nativo, `name` faz o `FormData` receber os arquivos da lista e `required` impede o envio com a lista vazia: o aviso aparece embaixo da dropzone e o foco vai para ela. `id` vai para a dropzone e `ref` aponta para ela.",
+          'Num `<form>` nativo, `name` faz o `FormData` receber os arquivos da lista e `required` impede o envio com a lista vazia: o aviso aparece embaixo da dropzone e o foco vai para ela. O reset do formulário (o botão **Limpar**, `form.reset()` ou o reset que o React 19 faz depois de uma `action`) esvazia a lista, como num `<input type="file">`. `id` vai para a dropzone e `ref` aponta para ela.',
+      },
+    },
+  },
+}
+
+export const NativeFormControlled: Story = {
+  render: () => {
+    const [files, setFiles] = useState<File[]>([])
+    const [sent, setSent] = useState<string | null>(null)
+    return (
+      <form
+        className="flex w-[460px] flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault()
+          const names = new FormData(e.currentTarget)
+            .getAll("anexos")
+            .map((entry) => (entry instanceof File ? entry.name : String(entry)))
+            .filter((entry) => entry !== "")
+          setSent(names.length > 0 ? names.join(", ") : "(nenhum arquivo)")
+        }}
+      >
+        <FileUpload
+          multiple
+          name="anexos"
+          label="Anexar documentos"
+          value={files}
+          onValueChange={setFiles}
+        />
+        <div className="flex items-center gap-3">
+          <Button type="submit">Enviar</Button>
+          <Button type="reset" variant="outline">
+            Redefinir outros campos
+          </Button>
+          <output data-testid="form-data" className="text-sm text-muted-foreground">
+            {sent ?? ""}
+          </output>
+        </div>
+      </form>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Controlado num `<form>` nativo: a lista é do app. Um reset do formulário não a apaga, e o `FormData` continua recebendo os arquivos que estão na tela.",
       },
     },
   },

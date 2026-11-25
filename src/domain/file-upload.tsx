@@ -395,13 +395,45 @@ function FileUpload({
   // The files a native form sends: the browser only submits what an
   // <input type="file"> holds, so the list is copied into one.
   const formInputRef = React.useRef<HTMLInputElement>(null)
-  React.useEffect(() => {
+  const copyIntoForm = React.useCallback((list: File[]) => {
     const input = formInputRef.current
     if (input == null || typeof DataTransfer === "undefined") return
     const transfer = new DataTransfer()
-    for (const file of files) transfer.items.add(file)
+    for (const file of list) transfer.items.add(file)
     input.files = transfer.files
-  }, [files])
+  }, [])
+  React.useEffect(() => copyIntoForm(files), [files, copyIntoForm])
+
+  // A form reset (`<button type="reset">`, `form.reset()`, the reset React 19
+  // does after a form action, `reset()` of react-hook-form) empties every
+  // <input type="file">. Uncontrolled, the list empties with it, like a
+  // native file input; controlled, the files the app holds go back into the
+  // form's input. The event fires before the browser resets the fields, so
+  // the copy waits for it. Before this, the list stayed on screen and the
+  // next submit sent no file.
+  const [root, setRoot] = React.useState<HTMLDivElement | null>(null)
+  const latestFiles = React.useRef({ isControlled, files })
+  latestFiles.current = { isControlled, files }
+  React.useEffect(() => {
+    const form = root?.closest("form")
+    if (!form) return
+    let timer: number | undefined
+    const reset = () => {
+      if (!latestFiles.current.isControlled) setInternal([])
+      setRejected([])
+      setMissing(false)
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        const { isControlled: controlled, files: current } = latestFiles.current
+        copyIntoForm(controlled ? current : [])
+      })
+    }
+    form.addEventListener("reset", reset)
+    return () => {
+      window.clearTimeout(timer)
+      form.removeEventListener("reset", reset)
+    }
+  }, [root, copyIntoForm])
 
   const setFiles = React.useCallback(
     (next: File[]) => {
@@ -499,6 +531,7 @@ function FileUpload({
 
   return (
     <div
+      ref={setRoot}
       className={cn("relative flex flex-col gap-3", className)}
       data-slot="file-upload"
       onBlur={(e) => {

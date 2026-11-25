@@ -1176,6 +1176,58 @@ test.describe("FileUpload: form nativo", () => {
   })
 })
 
+// O reset do formulário esvazia todo <input type="file">. A lista do
+// FileUpload ficava na tela e o envio seguinte saía sem nenhum arquivo.
+test.describe("FileUpload: reset do formulário", () => {
+  const picker = 'input[type="file"]:not([name])'
+  const files = [
+    { name: "contrato.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4") },
+    { name: "planta.png", mimeType: "image/png", buffer: Buffer.from("png") },
+  ]
+
+  test("não controlado: a lista esvazia junto com o form, e o required volta a valer", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-fileupload--native-form")
+    await page.locator(picker).setInputFiles(files)
+    await expect(page.getByRole("button", { name: "Remover contrato.pdf" })).toBeVisible()
+
+    await page.getByRole("button", { name: "Limpar" }).click()
+    await expect(page.getByRole("button", { name: "Remover contrato.pdf" })).toHaveCount(0)
+    expect(
+      await page
+        .locator('input[name="anexos"]')
+        .evaluate((el) => (el as HTMLInputElement).files?.length),
+    ).toBe(0)
+
+    // Vazia de verdade: o required barra o envio.
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByText("Selecione um arquivo.")).toBeVisible()
+    await expect(page.getByTestId("form-data")).toHaveText("")
+
+    // E um arquivo novo vai sozinho, sem sobras da lista anterior.
+    await page.locator(picker).setInputFiles(files[1] as (typeof files)[number])
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByTestId("form-data")).toHaveText("planta.png")
+  })
+
+  test("form.reset() chamado por código também esvazia", async ({ page }) => {
+    await gotoStory(page, "domain-fileupload--native-form")
+    await page.locator(picker).setInputFiles(files)
+    await page.locator("form").evaluate((form) => (form as HTMLFormElement).reset())
+    await expect(page.getByRole("button", { name: "Remover contrato.pdf" })).toHaveCount(0)
+  })
+
+  test("controlado: a lista continua e o FormData leva os arquivos da tela", async ({ page }) => {
+    await gotoStory(page, "domain-fileupload--native-form-controlled")
+    await page.locator(picker).setInputFiles(files)
+    await page.getByRole("button", { name: "Redefinir outros campos" }).click()
+    await expect(page.getByRole("button", { name: "Remover contrato.pdf" })).toBeVisible()
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByTestId("form-data")).toHaveText("contrato.pdf, planta.png")
+  })
+})
+
 test.describe("FileUpload: hover na miniatura", () => {
   const cases = [
     { id: "domain-fileupload--read-only", tile: "Abrir contrato.pdf em nova aba" },
