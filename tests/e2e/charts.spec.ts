@@ -6,6 +6,11 @@ const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 async function open(page: Page, id: string, slot = "bar-chart") {
   await page.goto(story(id))
   await expect(page.locator(`[data-slot="${slot}"]`).first()).toBeVisible({ timeout: 15_000 })
+  // Geometry is read once the web font is in: the chart lays out again then.
+  await page.evaluate(async () => {
+    await document.fonts.ready
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+  })
 }
 
 test.describe("Charts — hover", () => {
@@ -42,6 +47,31 @@ test.describe("Charts — hover", () => {
     expect(Math.abs(at - (plot.x + (plot.width * 9) / 11))).toBeLessThanOrEqual(1)
     await expect(page.locator('[data-slot="line-chart-point"]')).toHaveCount(3)
   })
+})
+
+test.describe("Charts — web font", () => {
+  // The axes are sized by measuring their text in the page's font. A chart
+  // drawn before the web font arrives must measure again when it does, or
+  // its gutters stay sized for the fallback font and the plot jumps on the
+  // first hover (seen on a clean Ubuntu runner, where Geist loads late).
+  for (const [id, slot] of [
+    ["data-linechart--several-series", "line-chart"],
+    ["data-barchart--several-series", "bar-chart"],
+  ] as const) {
+    test(`${id} lays out again when the web font arrives late`, async ({ page }) => {
+      await page.route(/\.woff2(\?|$)/, async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        await route.continue()
+      })
+      await open(page, id, slot)
+      const hit = page.locator(`[data-slot="${slot}-hit"]`).first()
+      const before = await hit.boundingBox()
+      // A hover re-renders the chart; nothing may move.
+      await hit.hover()
+      await expect(page.locator('[data-slot="chart-tooltip"]')).toBeVisible()
+      expect(await hit.boundingBox()).toEqual(before)
+    })
+  }
 })
 
 test.describe("Charts — keyboard", () => {

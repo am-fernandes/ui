@@ -15,6 +15,7 @@ import {
   measureText,
   useChartCursor,
   useChartWidth,
+  useWebFontsLoaded,
 } from "./_internal/chart-frame"
 import {
   BAR_GAP,
@@ -99,6 +100,7 @@ function BarChart<T extends Record<string, unknown>>({
   const horizontal = orientation === "horizontal"
 
   const [containerRef, width] = useChartWidth()
+  useWebFontsLoaded()
   const [hidden, setHidden] = React.useState<Set<string>>(new Set())
   const slots = seriesSlots(series)
   const visible = series.slice(0, 6).filter((s) => !hidden.has(s.key))

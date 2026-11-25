@@ -93,6 +93,31 @@ export function useChartWidth(fallback = 640) {
   return [ref, width] as const
 }
 
+/**
+ * Re-renders when the page's web fonts finish loading. `measureText` reads
+ * the page font, which is the fallback until a web font arrives: without a
+ * new render the axes would stay sized for it, and the plot would jump on
+ * the first hover.
+ */
+export function useWebFontsLoaded() {
+  const [, setLoads] = React.useState(0)
+  React.useEffect(() => {
+    const fonts = typeof document === "undefined" ? undefined : document.fonts
+    if (!fonts?.addEventListener) return
+    let alive = true
+    const remeasure = () => {
+      if (alive) setLoads((n) => n + 1)
+    }
+    fonts.addEventListener("loadingdone", remeasure)
+    // Fonts already on their way when the chart mounted.
+    if (fonts.status === "loading") fonts.ready.then(remeasure)
+    return () => {
+      alive = false
+      fonts.removeEventListener("loadingdone", remeasure)
+    }
+  }, [])
+}
+
 let measureContext: CanvasRenderingContext2D | null | undefined
 /** Width in px of `text` at 12px in the page's font; an estimate where there is no canvas. */
 export function measureText(text: string, weight = 400): number {

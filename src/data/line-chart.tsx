@@ -16,6 +16,7 @@ import {
   strokeClass,
   useChartCursor,
   useChartWidth,
+  useWebFontsLoaded,
 } from "./_internal/chart-frame"
 import {
   type Point,
@@ -98,6 +99,7 @@ function LineChart<T extends Record<string, unknown>>({
   const hintId = `${baseId}-hint`
 
   const [containerRef, width] = useChartWidth()
+  useWebFontsLoaded()
   const [hidden, setHidden] = React.useState<Set<string>>(new Set())
   const slots = seriesSlots(series)
   const visible = series.slice(0, 6).filter((s) => !hidden.has(s.key))
