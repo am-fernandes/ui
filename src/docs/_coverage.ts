@@ -3,7 +3,7 @@
  * Run `bun run sync:coverage` to refresh.
  *
  * Source: coverage/coverage-summary.json (vitest + v8 provider)
- * Generated: 2026-11-24T23:22:26.020Z
+ * Generated: 2026-11-25T23:40:44.214Z
  */
 
 export interface CoverageMetric {
@@ -28,28 +28,28 @@ export interface CoverageRow {
   branches: number
 }
 
-export const COVERAGE_GENERATED_AT = "2026-11-24T23:22:26.020Z"
+export const COVERAGE_GENERATED_AT = "2026-11-25T23:40:44.214Z"
 
 export const TOTAL_COVERAGE: CoverageFile = {
   lines: {
-    total: 15417,
-    covered: 15283,
-    pct: 99.13,
+    total: 15772,
+    covered: 15637,
+    pct: 99.14,
   },
   statements: {
-    total: 15417,
-    covered: 15283,
-    pct: 99.13,
+    total: 15772,
+    covered: 15637,
+    pct: 99.14,
   },
   functions: {
-    total: 822,
-    covered: 798,
-    pct: 97.08,
+    total: 851,
+    covered: 828,
+    pct: 97.29,
   },
   branches: {
-    total: 5466,
-    covered: 5087,
-    pct: 93.06,
+    total: 5718,
+    covered: 5338,
+    pct: 93.35,
   },
 } as const
 
@@ -57,16 +57,16 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     file: "data/_xlsx-export.ts",
     group: "Data",
-    lines: 97.94,
-    statements: 97.94,
+    lines: 96.57,
+    statements: 96.57,
     functions: 100,
-    branches: 89.77,
+    branches: 89.65,
   },
   {
     file: "data/bar-chart.tsx",
     group: "Data",
-    lines: 99.37,
-    statements: 99.37,
+    lines: 99.38,
+    statements: 99.38,
     functions: 66.66,
     branches: 79.59,
   },
@@ -81,18 +81,18 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     file: "data/columns.tsx",
     group: "Data",
-    lines: 94.76,
-    statements: 94.76,
+    lines: 94.21,
+    statements: 94.21,
     functions: 87.5,
-    branches: 84.31,
+    branches: 84.46,
   },
   {
     file: "data/data-table.tsx",
     group: "Data",
-    lines: 97.72,
-    statements: 97.72,
+    lines: 97.74,
+    statements: 97.74,
     functions: 100,
-    branches: 89.73,
+    branches: 89.87,
   },
   {
     file: "data/empty-state.tsx",
@@ -124,7 +124,7 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     lines: 100,
     statements: 100,
     functions: 100,
-    branches: 100,
+    branches: 96.96,
   },
   {
     file: "data/scroll-area.tsx",
@@ -201,18 +201,18 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     file: "domain/file-upload.tsx",
     group: "Domain",
-    lines: 97.22,
-    statements: 97.22,
-    functions: 98,
-    branches: 93.25,
+    lines: 97.3,
+    statements: 97.3,
+    functions: 98.03,
+    branches: 93.58,
   },
   {
     file: "domain/input-otp.tsx",
     group: "Domain",
-    lines: 98.23,
-    statements: 98.23,
+    lines: 98.47,
+    statements: 98.47,
     functions: 100,
-    branches: 97.05,
+    branches: 93.47,
   },
   {
     file: "domain/multi-input.tsx",
@@ -220,7 +220,7 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     lines: 100,
     statements: 100,
     functions: 100,
-    branches: 95.15,
+    branches: 95.9,
   },
   {
     file: "domain/percentage-input.tsx",
@@ -252,7 +252,7 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     lines: 100,
     statements: 100,
     functions: 100,
-    branches: 90,
+    branches: 88.7,
   },
   {
     file: "forms/combobox.tsx",
@@ -260,15 +260,15 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     lines: 99.54,
     statements: 99.54,
     functions: 96.66,
-    branches: 96.29,
+    branches: 96.48,
   },
   {
     file: "forms/date-input.tsx",
     group: "Forms",
-    lines: 98.97,
-    statements: 98.97,
+    lines: 99,
+    statements: 99,
     functions: 100,
-    branches: 88.98,
+    branches: 92.36,
   },
   {
     file: "forms/date-range-picker.tsx",
@@ -276,7 +276,7 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     lines: 100,
     statements: 100,
     functions: 100,
-    branches: 98.66,
+    branches: 98.71,
   },
   {
     file: "forms/select.tsx",
@@ -284,15 +284,15 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     lines: 100,
     statements: 100,
     functions: 77.77,
-    branches: 96.36,
+    branches: 98.33,
   },
   {
     file: "forms/time-picker.tsx",
     group: "Forms",
-    lines: 99.15,
-    statements: 99.15,
+    lines: 99.14,
+    statements: 99.14,
     functions: 100,
-    branches: 93.12,
+    branches: 93.93,
   },
   {
     file: "hooks/use-copy-to-clipboard.ts",
@@ -316,7 +316,7 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     lines: 100,
     statements: 100,
     functions: 100,
-    branches: 100,
+    branches: 83.33,
   },
   {
     file: "lib/brazil.ts",
@@ -340,7 +340,7 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     lines: 100,
     statements: 100,
     functions: 100,
-    branches: 97.93,
+    branches: 97.95,
   },
   {
     file: "lib/format-count.ts",
@@ -425,10 +425,10 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     file: "navigation/command-palette.tsx",
     group: "Navigation",
-    lines: 99.39,
-    statements: 99.39,
+    lines: 99.4,
+    statements: 99.4,
     functions: 100,
-    branches: 91.3,
+    branches: 93.61,
   },
   {
     file: "navigation/pagination.tsx",
@@ -537,10 +537,10 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     file: "overlays/tour.tsx",
     group: "Overlays",
-    lines: 99.27,
-    statements: 99.27,
+    lines: 99.29,
+    statements: 99.29,
     functions: 100,
-    branches: 97.52,
+    branches: 97.56,
   },
   {
     file: "primitives/avatar.tsx",
@@ -595,8 +595,8 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     group: "Primitives",
     lines: 100,
     statements: 100,
-    functions: 92,
-    branches: 87.9,
+    functions: 92.59,
+    branches: 89.47,
   },
   {
     file: "primitives/radio-group.tsx",
@@ -633,10 +633,10 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
   {
     file: "primitives/slider.tsx",
     group: "Primitives",
-    lines: 98.25,
-    statements: 98.25,
+    lines: 98.26,
+    statements: 98.26,
     functions: 100,
-    branches: 91.3,
+    branches: 90.32,
   },
   {
     file: "primitives/switch.tsx",
@@ -652,7 +652,7 @@ export const COVERAGE_ROWS: readonly CoverageRow[] = [
     lines: 100,
     statements: 100,
     functions: 87.5,
-    branches: 87.69,
+    branches: 88.23,
   },
   {
     file: "primitives/toggle.tsx",
