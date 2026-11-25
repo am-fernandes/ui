@@ -9,4 +9,4 @@
 - Digitação aceita dígitos, uma vírgula (o ponto do teclado numérico vira vírgula) e o menos só com `min` negativo; colar segue a regra do `CurrencyInput`.
 - `role="spinbutton"` com `aria-valuenow`/`min`/`max`/`valuetext`; ↑/↓ um passo, PageUp/PageDown dez, Home/End vão a `min`/`max`. A roda do mouse nunca muda o valor.
 - `steppers`: botões − e + de 24px que não tiram o foco e repetem enquanto pressionados (`labels.decrement`, `labels.increment`).
-- `prefix` e `suffix` (`m²`) dentro do campo; com `name`, o formulário recebe o número bruto com ponto decimal. Anatomia de campo, `size` e `readOnly` como no `Input`; teclado numérico no celular e texto de 16px em telas de toque.
+- `prefix` e `suffix` (`m²`) dentro do campo; com `name`, o formulário recebe o número bruto com ponto decimal, e um reset do formulário volta ao `defaultValue`. Anatomia de campo, `size` e `readOnly` como no `Input`; teclado numérico no celular e texto de 16px em telas de toque.

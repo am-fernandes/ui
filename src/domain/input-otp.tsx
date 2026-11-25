@@ -4,6 +4,7 @@ import { OTPInput, REGEXP_ONLY_DIGITS, type SlotProps } from "input-otp"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useComposedRefs } from "../primitives/_internal/compose-refs"
 import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 
@@ -122,6 +123,27 @@ function InputOTP({
     if (value === undefined) setInner(next)
     onValueChange?.(next)
   }
+
+  // An uncontrolled field goes back to `defaultValue` when its form is reset,
+  // like a native input. The code lives in state (input-otp is always
+  // controlled here), so the browser's reset alone left the old code on
+  // screen and in the form.
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const composedRef = useComposedRefs(inputRef, ref)
+  const onFormReset = React.useRef(() => {})
+  onFormReset.current = () => {
+    if (value !== undefined) return
+    const initial = defaultValue ?? ""
+    setInner(initial)
+    if (initial !== inner) onValueChange?.(initial)
+  }
+  React.useEffect(() => {
+    const form = inputRef.current?.form
+    if (form == null) return
+    const reset = () => onFormReset.current()
+    form.addEventListener("reset", reset)
+    return () => form.removeEventListener("reset", reset)
+  }, [])
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
 
@@ -142,7 +164,7 @@ function InputOTP({
       disabled={disabled}
     >
       <OTPInput
-        ref={ref}
+        ref={composedRef}
         id={ids.controlId}
         data-slot="input-otp"
         maxLength={length}

@@ -167,6 +167,26 @@ function NumberInput({
     if (next !== value) onValueChange?.(next)
   }
 
+  // An uncontrolled field goes back to `defaultValue` when its form is reset,
+  // like a native input. React keeps the input's `value` attribute equal to
+  // what is on screen, so the browser's own reset changed nothing: the form
+  // showed, and sent, the edited number. Read through a ref, so the listener
+  // is attached once and sees the latest props.
+  const initialValue = React.useRef(defaultValue)
+  const onFormReset = React.useRef(() => {})
+  onFormReset.current = () => {
+    if (controlled) return
+    setEditing(null)
+    commit(initialValue.current)
+  }
+  React.useEffect(() => {
+    const owner = inputRef.current?.form
+    if (owner == null) return
+    const reset = () => onFormReset.current()
+    owner.addEventListener("reset", reset)
+    return () => owner.removeEventListener("reset", reset)
+  }, [])
+
   // A value set from outside while the field is being edited (a reset, a
   // computed field) replaces the typed text.
   // biome-ignore lint/correctness/useExhaustiveDependencies: only an outside value change matters here.
