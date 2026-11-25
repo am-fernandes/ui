@@ -190,7 +190,10 @@ function TruncatedText({
   // Inside a clickable row's button the button is the tab stop.
   const insideRowAction = React.useContext(InsideRowActionContext)
   const [open, setOpen] = React.useState(false)
-  const tapping = React.useRef(false)
+  // A tap's outcome is decided when the finger goes down: newer Radix closes
+  // an open tooltip on that same press (its dismissable layer), so toggling
+  // the state at click time would open it again.
+  const tap = React.useRef<{ wasOpen: boolean } | null>(null)
   return (
     <Tooltip content={full} open={open} onOpenChange={setOpen} side={side} align={align}>
       <span
@@ -200,14 +203,15 @@ function TruncatedText({
         // a pointer press and closes on click): toggle it here, and keep
         // Radix's own handlers out of it (preventDefault).
         onPointerDown={(event) => {
-          tapping.current = event.pointerType === "touch"
-          if (tapping.current) event.preventDefault()
+          tap.current = event.pointerType === "touch" ? { wasOpen: open } : null
+          if (tap.current) event.preventDefault()
         }}
         onClick={(event) => {
-          if (!tapping.current) return
-          tapping.current = false
+          const press = tap.current
+          if (!press) return
+          tap.current = null
           event.preventDefault()
-          setOpen((current) => !current)
+          setOpen(!press.wasOpen)
         }}
         // Focus opens it; after Escape, Enter or Space brings it back.
         onKeyDown={(event) => {
