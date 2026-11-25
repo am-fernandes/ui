@@ -334,7 +334,7 @@ A date field: type it (`dd/mm/aaaa`, the separators come by themselves) or pick 
 | Prop | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `id` | `string` | — | — |
-| `value` | `string` | — | The date as an ISO string (`"yyyy-MM-dd"`), or `""` for no date, controlled. It changes only when the typed text is a whole valid date, when a day is picked in the calendar, or (to `""`) when the field is emptied or left with a date that is not valid. Leave it out to let the field keep its own date, starting from `defaultValue`. |
+| `value` | `string` | — | The date as an ISO string (`"yyyy-MM-dd"`), or `""` for no date, controlled. It is the date the text shows: the typed ISO once the text is a whole valid date, the day picked in the calendar, and `""` while the text is empty, incomplete or not a date the field takes (as a native `<input type="date">`). The text stays on screen to be fixed. Leave it out to let the field keep its own date, starting from `defaultValue`. |
 | `defaultValue` | `string` | — | Initial date (ISO) of an uncontrolled field. |
 | `onValueChange` | `(value: string) => void` | — | Called with the new ISO date, or `""`. |
 | `onChange` | `(value: string) => void` | — | — |
@@ -347,9 +347,9 @@ A date field: type it (`dd/mm/aaaa`, the separators come by themselves) or pick 
 | `labelPosition` | `LabelPosition` | — | — |
 | `required` | `boolean` | — | — |
 | `disabledDays` | `DisabledDays` | — | Forwarded to the underlying Calendar's `disabledDays` — accepts a preset ("past" \| "future" \| "weekends" \| "weekdays" \| "today"), a Date / Date[], or a custom predicate. Use this to lock the picker to a valid range (e.g. `disabledDays="future"` for birthdates or event entry dates). |
-| `min` | `string` | — | First date allowed (ISO). Days before it are off in the calendar, and a typed date before it is an error when the field is left. |
+| `min` | `string` | — | First date allowed (ISO). Days before it are off in the calendar, and a typed date before it is reported as `""` and shown as an error when the field is left. |
 | `max` | `string` | — | Last date allowed (ISO), as `min`. |
-| `name` | `string` | — | Name of the field in a native form. The form receives the ISO date (what `onValueChange` reports), carried by a hidden input; the visible input, which shows `dd/mm/aaaa`, has no name. |
+| `name` | `string` | — | Name of the field in a native form. The form receives the ISO date (what `onValueChange` reports), carried by a hidden input; the visible input, which shows `dd/mm/aaaa`, has no name. A text that is not a valid date makes the field invalid for the browser, so a native submit (Enter included) stops on it with the field's message. |
 | `onBlur` | `(event: React.FocusEvent<HTMLElement>) => void` | — | Called when the focus leaves the field as a whole, after an invalid date was turned into `""`. Moving between the text, the calendar button and the open calendar does not count. |
 | `readOnly` | `boolean` | `false` | Shows the date without letting it be edited: it stays readable, takes focus, can be copied and is submitted with the form; the calendar button goes away. For a view-only screen; `disabled` is for a field that does not apply. |
 | `size` | `ControlSize` | `"md"` | Height of the field: `sm` 32px, `md` 40px, `lg` 44px, the same as a button or input of that size. |
@@ -402,10 +402,12 @@ export interface DateInputProps {
   id?: string
   /**
    * The date as an ISO string (`"yyyy-MM-dd"`), or `""` for no date,
-   * controlled. It changes only when the typed text is a whole valid date,
-   * when a day is picked in the calendar, or (to `""`) when the field is
-   * emptied or left with a date that is not valid. Leave it out to let the
-   * field keep its own date, starting from `defaultValue`.
+   * controlled. It is the date the text shows: the typed ISO once the text
+   * is a whole valid date, the day picked in the calendar, and `""` while
+   * the text is empty, incomplete or not a date the field takes (as a
+   * native `<input type="date">`). The text stays on screen to be fixed.
+   * Leave it out to let the field keep its own date, starting from
+   * `defaultValue`.
    */
   value?: string
   /** Initial date (ISO) of an uncontrolled field. */
@@ -437,7 +439,8 @@ export interface DateInputProps {
   disabledDays?: DisabledDays
   /**
    * First date allowed (ISO). Days before it are off in the calendar, and a
-   * typed date before it is an error when the field is left.
+   * typed date before it is reported as `""` and shown as an error when the
+   * field is left.
    */
   min?: string
   /** Last date allowed (ISO), as `min`. */
@@ -445,7 +448,9 @@ export interface DateInputProps {
   /**
    * Name of the field in a native form. The form receives the ISO date (what
    * `onValueChange` reports), carried by a hidden input; the visible input,
-   * which shows `dd/mm/aaaa`, has no name.
+   * which shows `dd/mm/aaaa`, has no name. A text that is not a valid date
+   * makes the field invalid for the browser, so a native submit (Enter
+   * included) stops on it with the field's message.
    */
   name?: string
   /**
@@ -755,7 +760,7 @@ export interface SelectProps {
 |---|---|---|---|
 | `value` | `string` | — | The time as `"HH:MM"`, or `""` while it is incomplete. |
 | `defaultValue` | `string` | — | Initial time (`"HH:MM"`) of an uncontrolled picker, used without `value`. |
-| `onValueChange` | `(value: string) => void` | — | Called with `"HH:MM"` once both fields hold a valid time, and with `""` otherwise. |
+| `onValueChange` | `(value: string) => void` | — | Called on every edit that changes the time: with `"HH:MM"` once both fields hold a valid time, and with `""` while one is empty, incomplete or out of range (the digits stay on screen to be fixed). |
 | `onChange` | `(value: string) => void` | — | — |
 | `disabled` | `boolean` | — | — |
 | `id` | `string` | — | — |
@@ -816,7 +821,11 @@ export interface TimePickerProps {
   value?: string
   /** Initial time (`"HH:MM"`) of an uncontrolled picker, used without `value`. */
   defaultValue?: string
-  /** Called with `"HH:MM"` once both fields hold a valid time, and with `""` otherwise. */
+  /**
+   * Called on every edit that changes the time: with `"HH:MM"` once both
+   * fields hold a valid time, and with `""` while one is empty, incomplete
+   * or out of range (the digits stay on screen to be fixed).
+   */
   onValueChange?: (value: string) => void
   /** @deprecated Use `onValueChange`; it receives the same value. */
   onChange?: (value: string) => void

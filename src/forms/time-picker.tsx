@@ -52,7 +52,11 @@ export interface TimePickerProps {
   value?: string
   /** Initial time (`"HH:MM"`) of an uncontrolled picker, used without `value`. */
   defaultValue?: string
-  /** Called with `"HH:MM"` once both fields hold a valid time, and with `""` otherwise. */
+  /**
+   * Called on every edit that changes the time: with `"HH:MM"` once both
+   * fields hold a valid time, and with `""` while one is empty, incomplete
+   * or out of range (the digits stay on screen to be fixed).
+   */
   onValueChange?: (value: string) => void
   /** @deprecated Use `onValueChange`; it receives the same value. */
   onChange?: (value: string) => void
@@ -259,6 +263,8 @@ function TimePicker({
     const initial = parseValue(defaultValue)
     setHour(initial.hour)
     setMinute(initial.minute)
+    // Told, like the other fields: the time it reports is the default again.
+    emit(initial.hour, initial.minute)
   }
   React.useEffect(() => {
     const form = hourRef.current?.form
@@ -280,8 +286,23 @@ function TimePicker({
   }
   const report = (next: string) => {
     setSynced(next)
+    reported.current = next
     onValueChange?.(next)
     onChange?.(next)
+  }
+  // The time last reported (or received): every edit reports what the two
+  // fields now hold, once it differs. An hour left incomplete or out of range
+  // reported nothing, so the app (react-hook-form included) kept the old
+  // time while the screen showed another.
+  const [initialTime] = React.useState(() => {
+    const initial = parseValue(value ?? defaultValue)
+    return timeOf(initial.hour, initial.minute)
+  })
+  const reported = React.useRef(initialTime)
+  if (value !== undefined) reported.current = value
+  const emit = (nextHour: string, nextMinute: string) => {
+    const next = timeOf(nextHour, nextMinute)
+    if (next !== reported.current) report(next)
   }
 
   const focusMinute = () => {
@@ -292,18 +313,16 @@ function TimePicker({
 
   const handleHourChange = (raw: string) => {
     setHour(raw)
+    emit(raw, minute)
     if (raw.length !== 2) return
     const hNum = Number.parseInt(raw, 10)
     if (!isInRange(hNum, MIN_HOUR, MAX_HOUR)) return
-    emitIfComplete(raw, minute, report)
     focusMinute()
   }
 
   const handleMinuteChange = (raw: string) => {
     setMinute(raw)
-    if (raw.length === 2) {
-      emitIfComplete(hour, raw, report)
-    }
+    emit(hour, raw)
   }
 
   const handleHourBlur = () => {
@@ -314,22 +333,14 @@ function TimePicker({
     }
     const nextHour = normalizeSegment(hour, MIN_HOUR, MAX_HOUR)
     setHour(nextHour)
-    if (nextHour === "") {
-      report("")
-      return
-    }
-    emitIfComplete(nextHour, minute, report)
+    emit(nextHour, minute)
   }
 
   const handleMinuteBlur = () => {
     if (readOnly) return
     const nextMinute = normalizeSegment(minute, MIN_MINUTE, MAX_MINUTE)
     setMinute(nextMinute)
-    if (nextMinute === "") {
-      report("")
-      return
-    }
-    emitIfComplete(hour, nextMinute, report)
+    emit(hour, nextMinute)
   }
 
   // A pasted time fills both fields, whichever has the focus. A pasted text
@@ -344,7 +355,7 @@ function TimePicker({
       e.preventDefault()
       setHour(time.hour)
       setMinute(time.minute)
-      report(`${time.hour}:${time.minute}`)
+      emit(time.hour, time.minute)
     } else if (/[:hH]/.test(text)) {
       e.preventDefault()
     }
@@ -359,7 +370,7 @@ function TimePicker({
       const valid = padded === "" || isInRange(Number.parseInt(padded, 10), MIN_HOUR, MAX_HOUR)
       if (padded !== hour) setHour(padded)
       if (valid) {
-        if (padded !== "") emitIfComplete(padded, minute, report)
+        emit(padded, minute)
         focusMinute()
       } else {
         // Leaving normally: the blur clears the invalid hour.
@@ -376,11 +387,7 @@ function TimePicker({
       const wrapped = ((((current - MIN_HOUR + delta) % span) + span) % span) + MIN_HOUR
       const next = pad(wrapped)
       setHour(next)
-      if (minute === "") {
-        report("")
-      } else {
-        emitIfComplete(next, minute, report)
-      }
+      emit(next, minute)
     }
   }
 
@@ -398,11 +405,7 @@ function TimePicker({
       const wrapped = ((((current - MIN_MINUTE + delta) % span) + span) % span) + MIN_MINUTE
       const next = pad(wrapped)
       setMinute(next)
-      if (hour === "") {
-        report("")
-      } else {
-        emitIfComplete(hour, next, report)
-      }
+      emit(hour, next)
       return
     }
     if (e.key === "Backspace" && minute === "") {
