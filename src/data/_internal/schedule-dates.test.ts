@@ -4,6 +4,7 @@ import {
   compareEvents,
   eventAccessibleName,
   eventDays,
+  eventNameAsShown,
   eventOverlapsDay,
   eventOverlapsRange,
   formatDayLong,
@@ -193,6 +194,36 @@ describe("schedule-dates", () => {
     )
     expect(formatEventTime(ev(d(11, 19, 22), d(11, 20, 4)), "Dia inteiro")).toBe(
       "19 de nov., 22:00 – 20 de nov., 04:00",
+    )
+  })
+
+  // axe (label-content-name-mismatch, WCAG 2.5.3) wants the text on the
+  // event inside its name, in the same order: the name led with the title
+  // while a month chip reads "15:00 Comitê" and a list row "09:00 – 10:00 Daily".
+  it("names each variant in the order it is drawn", () => {
+    const daily = ev(d(11, 18, 9), d(11, 18, 10), { title: "Daily" })
+    expect(eventNameAsShown("chip", daily, "Dia inteiro")).toBe(
+      "09:00 Daily, quarta-feira, 18 de novembro, 09:00 – 10:00",
+    )
+    expect(eventNameAsShown("block", daily, "Dia inteiro")).toBe(
+      "Daily, 09:00 – 10:00, quarta-feira, 18 de novembro",
+    )
+    expect(eventNameAsShown("block", daily, "Dia inteiro", "pt-BR", { showTime: false })).toBe(
+      "Daily, quarta-feira, 18 de novembro, 09:00 – 10:00",
+    )
+    expect(eventNameAsShown("row", daily, "Dia inteiro", "pt-BR", { day: d(11, 18) })).toBe(
+      "09:00 – 10:00 Daily, quarta-feira, 18 de novembro",
+    )
+    const feriado = ev(d(11, 20), d(11, 20), { allDay: true, title: "Feriado" })
+    expect(eventNameAsShown("bar", feriado, "Dia inteiro")).toBe(
+      "Feriado, sexta-feira, 20 de novembro, dia inteiro",
+    )
+    expect(eventNameAsShown("row", feriado, "Dia inteiro", "pt-BR", { day: d(11, 20) })).toBe(
+      "Dia inteiro Feriado, sexta-feira, 20 de novembro",
+    )
+    const plantao = ev(d(11, 19, 22), d(11, 20, 4), { title: "Plantão" })
+    expect(eventNameAsShown("block", plantao, "Dia inteiro")).toBe(
+      eventAccessibleName(plantao, "Dia inteiro"),
     )
   })
 

@@ -259,6 +259,40 @@ export function eventAccessibleName(
 }
 
 /**
+ * The accessible name of an event as a variant draws it. It starts with the
+ * text on the event, in the order the eye reads it (WCAG 2.5.3, Label in
+ * Name: someone using voice control says what is on screen), and goes on
+ * with what the event does not show, the day and the full time.
+ *
+ * - chip (month): "15:00 Comitê de obras, terça-feira, 3 de novembro, 15:00 – 16:30"
+ * - block (week, day): "Comitê de obras, 15:00 – 16:30, terça-feira, 3 de novembro"
+ * - row (list): "09:00 – 10:30 Daily, quarta-feira, 18 de novembro"
+ * - bar (all day, several days): the title leads, as in `eventAccessibleName`
+ */
+export function eventNameAsShown(
+  variant: "chip" | "bar" | "block" | "row",
+  event: ScheduleEventInput,
+  allDayLabel: string,
+  locale = DEFAULT_LOCALE,
+  options: { showTime?: boolean; day?: Date } = {},
+): string {
+  const name = eventAccessibleName(event, allDayLabel, locale)
+  if (variant === "row") {
+    const day = options.day ?? event.start
+    return `${formatRowTime(event, day, allDayLabel, locale)} ${event.title}, ${formatDayLong(day, locale)}`
+  }
+  if (event.allDay) return name
+  if (variant === "chip") return `${formatTime(event.start, locale)} ${name}`
+  if (variant === "block" && options.showTime !== false) {
+    const { first, last } = eventDays(event)
+    // Several days: the name is already the title, then the time.
+    if (last.getTime() !== first.getTime()) return name
+    return `${event.title}, ${formatEventTime(event, allDayLabel, locale)}, ${formatDayLong(first, locale)}`
+  }
+  return name
+}
+
+/**
  * Time column of a list row, already grouped under `day`: "09:00 – 10:30",
  * "22:00 – …" on the first day of an event crossing midnight, "… – 04:00" on
  * its last day, and the all-day label otherwise.

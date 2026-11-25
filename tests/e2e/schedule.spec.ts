@@ -38,7 +38,9 @@ test.describe("Schedule — month", () => {
 
   test("a timed event sits in its day cell", async ({ page }) => {
     await gotoSchedule(page, "data-schedule--month")
-    const chip = await page.getByRole("button", { name: /^Comitê de obras/ }).boundingBox()
+    const chip = await page
+      .getByRole("button", { name: /^\d{2}:\d{2} Comitê de obras/ })
+      .boundingBox()
     const cell = await box(page, '[data-slot="schedule-day"][data-date="2026-11-03"]')
     expect(chip?.x).toBeGreaterThanOrEqual(cell.x)
     expect((chip?.x ?? 0) + (chip?.width ?? 0)).toBeLessThanOrEqual(cell.x + cell.width)
@@ -171,7 +173,7 @@ test.describe("Schedule — week and day", () => {
     expect((await more.boundingBox())?.height).toBeGreaterThanOrEqual(24)
     await more.click()
     const list = page.getByRole("dialog")
-    await expect(list.getByRole("button", { name: /^Visita/ })).toHaveCount(5)
+    await expect(list.getByRole("button", { name: /^\d{2}:\d{2} Visita/ })).toHaveCount(5)
     await page.keyboard.press("Escape")
     await expect(more).toBeFocused()
   })

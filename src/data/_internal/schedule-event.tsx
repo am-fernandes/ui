@@ -7,7 +7,7 @@ import { Popover } from "../../overlays/popover"
 import {
   type ScheduleColor,
   type ScheduleEventInput,
-  eventAccessibleName,
+  eventNameAsShown,
   formatEventTime,
   formatRowTime,
   formatTime,
@@ -130,7 +130,7 @@ export function ScheduleEventButton({
   const { allDayLabel, onEventClick, renderEventDetails, locale } =
     React.useContext(ScheduleContext)
   const colors = eventColors(event)
-  const name = eventAccessibleName(event, allDayLabel, locale)
+  const name = eventNameAsShown(variant, event, allDayLabel, locale, { showTime, day })
 
   let content: React.ReactNode
   let variantClass: string

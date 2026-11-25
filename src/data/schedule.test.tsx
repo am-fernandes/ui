@@ -204,7 +204,8 @@ describe("Schedule", () => {
 
     it("renders timed events as chips and all-day/multi-day events as bars", () => {
       renderSchedule()
-      const chip = eventButton("Vistoria, quarta-feira, 18 de novembro, 10:00 – 11:00")
+      // The name starts as the chip reads: time, then title (WCAG 2.5.3).
+      const chip = eventButton("10:00 Vistoria, quarta-feira, 18 de novembro, 10:00 – 11:00")
       expect(chip).toHaveAttribute("data-variant", "chip")
       expect(chip.querySelector(".bg-category-red-solid")).not.toBeNull()
       const holiday = eventButton("Feriado, sexta-feira, 20 de novembro, dia inteiro")
@@ -247,10 +248,10 @@ describe("Schedule", () => {
           .getAllByRole("button")
           .map((b) => b.getAttribute("aria-label")),
       ).toEqual([
-        "Daily, quarta-feira, 18 de novembro, 09:00 – 09:30",
-        "Revisão, quarta-feira, 18 de novembro, 09:15 – 10:30",
-        "Vistoria, quarta-feira, 18 de novembro, 10:00 – 11:00",
-        "Almoço, quarta-feira, 18 de novembro, 12:00 – 13:00",
+        "09:00 Daily, quarta-feira, 18 de novembro, 09:00 – 09:30",
+        "09:15 Revisão, quarta-feira, 18 de novembro, 09:15 – 10:30",
+        "10:00 Vistoria, quarta-feira, 18 de novembro, 10:00 – 11:00",
+        "12:00 Almoço, quarta-feira, 18 de novembro, 12:00 – 13:00",
       ])
     })
 
@@ -331,7 +332,8 @@ describe("Schedule", () => {
       expect((blocks[0] as HTMLElement).style.width).toMatch(/^calc\(33\.333\d*% - 4px\)$/)
       const more = within(column).getByRole("button", { name: /^\+3 mais/ })
       await userEvent.click(more)
-      expect(await screen.findAllByRole("button", { name: /^Visita/ })).toHaveLength(5)
+      // 2 blocks in the column ("Visita…, 10:00 – 11:00, …") and 3 chips in the list ("10:00 Visita…").
+      expect(await screen.findAllByRole("button", { name: /Visita/ })).toHaveLength(5)
     })
 
     it("draws the current-time line on today's column", () => {
@@ -593,7 +595,7 @@ describe("Schedule", () => {
 
     it("are buttons as soon as a click does something", () => {
       renderSchedule({ onEventClick: () => {} })
-      expect(screen.getAllByRole("button", { name: /^Revisão/ }).length).toBeGreaterThan(0)
+      expect(screen.getAllByRole("button", { name: /^09:15 Revisão/ }).length).toBeGreaterThan(0)
     })
   })
 

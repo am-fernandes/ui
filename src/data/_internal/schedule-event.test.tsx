@@ -17,7 +17,7 @@ describe("ScheduleEventButton", () => {
     const event = container.querySelector('[data-slot="schedule-event"]') as HTMLElement
     expect(event.tagName).toBe("DIV")
     expect(event).toHaveTextContent("09:00 – 10:00")
-    expect(screen.getByText("Visita, quarta-feira, 18 de novembro, 09:00 – 10:00")).toHaveClass(
+    expect(screen.getByText("09:00 – 10:00 Visita, quarta-feira, 18 de novembro")).toHaveClass(
       "sr-only",
     )
   })
