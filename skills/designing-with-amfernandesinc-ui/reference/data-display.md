@@ -466,6 +466,8 @@ Agenda com visões mês, semana, dia e lista. Eventos `ScheduleEvent` (`id`, `ti
 
 - `onEventClick` ou `renderEventDetails` (popover com o conteúdo) tornam os eventos clicáveis; sem eles, eventos são só conteúdo.
 - `onSlotClick(date)` para "novo evento" num dia ou horário (também pelo teclado).
+- Fuso: os eventos são instantes (`Date`) e aparecem em `timeZone` (`America/Sao_Paulo` por padrão), igual em qualquer máquina. Evento de dia inteiro começa à meia-noite desse fuso.
+- Renderização no servidor (Next.js): o relógio do navegador só entra depois da hidratação. Sem `today`, o servidor não marca o hoje nem a linha da hora atual; sem `date`, `defaultDate` ou `today`, manda só a moldura e o período chega no navegador. Para o servidor mandar a agenda pronta, passe `defaultDate` e `today`.
 - `views` limita as visões; `minHour`/`maxHour`/`scrollToHour` para o expediente; `weekStartsOn`; `locale` (`"pt-BR"` padrão) para nomes de dias e meses.
 - `today` fixo deixa testes e screenshots determinísticos.
 
@@ -519,7 +521,7 @@ export function AgendaDeVisitas({
 }
 ```
 
-`getScheduleRange(view, date, { weekStartsOn })` dá o mesmo período fora do componente (para pré-carregar).
+`getScheduleRange(view, date, { weekStartsOn, timeZone })` dá o mesmo período fora do componente (para pré-carregar).
 
 ## Image e Video
 

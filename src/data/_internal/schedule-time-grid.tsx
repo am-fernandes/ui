@@ -1,6 +1,6 @@
 "use client"
 
-import { addDays, isSameDay } from "date-fns"
+import { addDays, isSameDay, setMinutes, startOfDay } from "date-fns"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -57,8 +57,8 @@ export function TimeGridView({
   maxHeight,
 }: TimeGridViewProps) {
   const { now, onSlotClick, newEventLabel, locale } = React.useContext(ScheduleContext)
-  const at = (day: Date, minutes: number) =>
-    new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, minutes)
+  // The day's own zone: `new Date(y, m, d, 0, minutes)` was the machine's.
+  const at = (day: Date, minutes: number) => setMinutes(startOfDay(day), minutes)
   const scrollRef = React.useRef<HTMLElement>(null)
   const columns = `${GUTTER} repeat(${days.length}, minmax(0, 1fr))`
   const hours = Array.from({ length: Math.max(0, maxHour - minHour) }, (_, i) => minHour + i)
@@ -77,7 +77,9 @@ export function TimeGridView({
     el.scrollTop = Math.max(0, (scrollToHour - minHour) * hourHeight - 8)
   }, [scrollToHour, minHour, hourHeight])
 
-  const nowMinutes = (now.getHours() - minHour) * 60 + now.getMinutes()
+  // No `now` yet (on the server and while hydrating, without `today`): no
+  // current-time line and no day marked as today.
+  const nowMinutes = now ? (now.getHours() - minHour) * 60 + now.getMinutes() : -1
   const nowVisible = nowMinutes >= 0 && nowMinutes <= hours.length * 60
 
   return (
@@ -88,7 +90,7 @@ export function TimeGridView({
       >
         <div aria-hidden="true" />
         {days.map((day) => {
-          const isToday = isSameDay(day, now)
+          const isToday = now != null && isSameDay(day, now)
           return (
             <div
               key={isoDay(day)}
@@ -205,7 +207,7 @@ export function TimeGridView({
               layoutDayColumn(timed, day, minHour, maxHour, hourHeight),
               maxColumns,
             )
-            const isToday = isSameDay(day, now)
+            const isToday = now != null && isSameDay(day, now)
             return (
               // biome-ignore lint/a11y/useKeyWithClickEvents: the keyboard uses the day's button (data-slot="schedule-new-event").
               <div
@@ -227,8 +229,7 @@ export function TimeGridView({
                 }
                 className={cn("relative border-l", onSlotClick && "cursor-pointer")}
                 style={{
-                  backgroundImage:
-                    "linear-gradient(to bottom, var(--border) 1px, transparent 1px)",
+                  backgroundImage: "linear-gradient(to bottom, var(--border) 1px, transparent 1px)",
                   backgroundSize: `100% ${hourHeight}px`,
                 }}
               >

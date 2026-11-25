@@ -10,6 +10,11 @@ import {
   getScheduleRange,
 } from "./schedule"
 
+// These tests build their dates with the machine's clock (`new Date(2026, 10,
+// 18, 10, 30)`), so they show them in the machine's zone. The São Paulo
+// default and the server/browser agreement have their own tests below.
+const LOCAL = Intl.DateTimeFormat().resolvedOptions().timeZone
+
 const TODAY = new Date(2026, 10, 18, 10, 30) // qua. 18 nov. 2026, 10:30
 const at = (day: number, hour = 0, minute = 0, month = 10) =>
   new Date(2026, month, day, hour, minute)
@@ -27,6 +32,7 @@ const events: ScheduleEvent[] = [
 function renderSchedule(props: Partial<ScheduleProps> = {}) {
   return render(
     <Schedule
+      timeZone={LOCAL}
       events={events}
       today={TODAY}
       defaultDate={TODAY}
@@ -83,9 +89,13 @@ describe("Schedule", () => {
       const { rerender } = renderSchedule({ view: "week" })
       expect(screen.getByRole("button", { name: "Semana anterior" })).toBeInTheDocument()
       expect(screen.getByRole("button", { name: "Próxima semana" })).toBeInTheDocument()
-      rerender(<Schedule events={events} today={TODAY} defaultDate={TODAY} view="day" />)
+      rerender(
+        <Schedule timeZone={LOCAL} events={events} today={TODAY} defaultDate={TODAY} view="day" />,
+      )
       expect(screen.getByRole("button", { name: "Dia anterior" })).toBeInTheDocument()
-      rerender(<Schedule events={events} today={TODAY} defaultDate={TODAY} view="list" />)
+      rerender(
+        <Schedule timeZone={LOCAL} events={events} today={TODAY} defaultDate={TODAY} view="list" />,
+      )
       expect(screen.getByRole("button", { name: "Próximo período" })).toBeInTheDocument()
     })
 
@@ -126,6 +136,7 @@ describe("Schedule", () => {
       expect(screen.getAllByRole("radio")).toHaveLength(2)
       rerender(
         <Schedule
+          timeZone={LOCAL}
           events={events}
           today={TODAY}
           defaultDate={TODAY}
@@ -350,9 +361,25 @@ describe("Schedule", () => {
     it("omits the time line when now is outside the visible hours or days", () => {
       const { container, rerender } = renderSchedule({ defaultView: "week", minHour: 12 })
       expect(container.querySelector('[data-slot="schedule-now"]')).toBeNull()
-      rerender(<Schedule events={events} today={TODAY} defaultDate={at(2)} defaultView="week" />)
+      rerender(
+        <Schedule
+          timeZone={LOCAL}
+          events={events}
+          today={TODAY}
+          defaultDate={at(2)}
+          defaultView="week"
+        />,
+      )
       // defaultDate only applies on mount, so remount on another week.
-      render(<Schedule events={events} today={TODAY} defaultDate={at(2)} defaultView="week" />)
+      render(
+        <Schedule
+          timeZone={LOCAL}
+          events={events}
+          today={TODAY}
+          defaultDate={at(2)}
+          defaultView="week"
+        />,
+      )
       const columns = document.querySelectorAll('[data-slot="schedule-time-grid"]')
       expect(columns[1]?.querySelector('[data-slot="schedule-now"]')).toBeNull()
     })
@@ -472,7 +499,7 @@ describe("Schedule", () => {
     it("falls back to the real clock and refreshes every minute", () => {
       vi.useFakeTimers({ shouldAdvanceTime: false })
       vi.setSystemTime(new Date(2026, 10, 18, 23, 59, 30))
-      const { container } = render(<Schedule events={[]} />)
+      const { container } = render(<Schedule timeZone={LOCAL} events={[]} />)
       const current = () =>
         container
           .querySelector('[data-slot="schedule-day"][aria-current="date"]')
@@ -484,8 +511,23 @@ describe("Schedule", () => {
       expect(current()).toBe("2026-11-19")
     })
 
+    // The clock moves "today"; the period on screen stays where the user
+    // left it (it used to follow the clock past midnight on Saturday).
+    it("keeps the period when the clock crosses into the next week", () => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      vi.setSystemTime(new Date(2026, 10, 21, 23, 59, 30)) // sábado
+      render(<Schedule timeZone={LOCAL} events={[]} defaultView="week" />)
+      const title = () => screen.getByRole("heading", { level: 2 }).textContent
+      expect(title()).toBe("15 – 21 de nov. de 2026")
+      act(() => {
+        vi.advanceTimersByTime(60_000)
+      })
+      expect(title()).toBe("15 – 21 de nov. de 2026")
+      vi.useRealTimers()
+    })
+
     it("starts on today's date when there is no defaultDate", () => {
-      render(<Schedule events={[]} today={new Date(2027, 1, 3)} />)
+      render(<Schedule timeZone={LOCAL} events={[]} today={new Date(2027, 1, 3)} />)
       expect(screen.getByRole("heading", { name: "fevereiro de 2027" })).toBeInTheDocument()
     })
   })
@@ -552,11 +594,13 @@ describe("Schedule", () => {
     })
 
     it("getScheduleRange gives the same range, for the first fetch", () => {
-      expect(getScheduleRange("week", new Date(2026, 10, 18), { weekStartsOn: 1 })).toEqual({
+      expect(
+        getScheduleRange("week", new Date(2026, 10, 18), { weekStartsOn: 1, timeZone: LOCAL }),
+      ).toEqual({
         start: new Date(2026, 10, 16),
         end: new Date(2026, 10, 23),
       })
-      expect(getScheduleRange("month", new Date(2026, 10, 18))).toEqual({
+      expect(getScheduleRange("month", new Date(2026, 10, 18), { timeZone: LOCAL })).toEqual({
         start: new Date(2026, 10, 1),
         end: new Date(2026, 11, 6),
       })
@@ -613,6 +657,7 @@ describe("Schedule", () => {
       expect(screen.getByRole("button", { name: /^\+3 mais/ })).toBeInTheDocument()
       rerender(
         <Schedule
+          timeZone={LOCAL}
           events={many}
           today={TODAY}
           defaultDate={TODAY}

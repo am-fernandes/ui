@@ -2,12 +2,23 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, fn, userEvent, waitFor, within } from "@storybook/test"
 import * as React from "react"
 
+import { TZDate } from "@date-fns/tz"
+
 import { Schedule, type ScheduleEvent } from "./schedule"
 
-/** Wednesday, 18 Nov 2026, 10:30 — fixed so every render is identical. */
-const TODAY = new Date(2026, 10, 18, 10, 30)
+/**
+ * A time in São Paulo, the schedule's zone. Built there (not with the
+ * machine's `new Date(y, m, d, h)`), the stories show the same hours on any
+ * machine: in CI's UTC and on a laptop in Brasília.
+ */
+const SP = "America/Sao_Paulo"
+const inSaoPaulo = (day: number, hour: number, minute = 0) =>
+  new Date(new TZDate(2026, 10, day, hour, minute, SP).getTime())
 
-const at = (day: number, hour: number, minute = 0) => new Date(2026, 10, day, hour, minute)
+/** Wednesday, 18 Nov 2026, 10:30 — fixed so every render is identical. */
+const TODAY = inSaoPaulo(18, 10, 30)
+
+const at = inSaoPaulo
 
 const events: ScheduleEvent[] = [
   {
@@ -166,13 +177,15 @@ export const NewEventOnSlot: Story = {
           defaultView="week"
           onSlotClick={setSlot}
           onRangeChange={({ start, end }) =>
-            setRange(`${start.toLocaleDateString("pt-BR")} até ${end.toLocaleDateString("pt-BR")}`)
+            setRange(
+              `${start.toLocaleDateString("pt-BR", { timeZone: SP })} até ${end.toLocaleDateString("pt-BR", { timeZone: SP })}`,
+            )
           }
         />
         <p data-testid="slot" className="text-sm">
           Agendar visita em:{" "}
           {slot
-            ? slot.toLocaleString("pt-BR", { dateStyle: "full", timeStyle: "short" })
+            ? slot.toLocaleString("pt-BR", { dateStyle: "full", timeStyle: "short", timeZone: SP })
             : "clique num horário vazio"}
         </p>
         <p data-testid="range" className="text-sm text-muted-foreground">
@@ -237,7 +250,7 @@ export const WithEventDetails: Story = {
         <p className="text-xs text-muted-foreground">
           {event.allDay
             ? "Dia inteiro"
-            : `${event.start.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} – ${event.end.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`}
+            : `${event.start.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: SP })} – ${event.end.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: SP })}`}
         </p>
         {event.description ? <p className="text-sm">{event.description}</p> : null}
       </div>
@@ -283,7 +296,7 @@ function ControlledSchedule() {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-xs text-muted-foreground">
-        Estado no app: {view} · {date.toLocaleDateString("pt-BR")}
+        Estado no app: {view} · {date.toLocaleDateString("pt-BR", { timeZone: SP })}
       </p>
       <Schedule
         events={events}

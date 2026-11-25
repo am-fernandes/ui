@@ -37,7 +37,7 @@ export function ListView({ days, events, headingLevel, emptyLabel, todayLabel }:
   return (
     <div data-slot="schedule-list" className="flex flex-col divide-y">
       {groups.map(({ day, events: dayEvents }) => {
-        const isToday = isSameDay(day, now)
+        const isToday = now != null && isSameDay(day, now)
         const headingId = `${idPrefix}-${isoDay(day)}`
         return (
           <section key={isoDay(day)} aria-labelledby={headingId} className="px-2 py-3">

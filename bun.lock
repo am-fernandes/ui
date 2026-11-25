@@ -5,6 +5,7 @@
     "": {
       "name": "@am-fernandes/ui",
       "dependencies": {
+        "@date-fns/tz": "^1.4.1",
         "@fontsource/geist": "^5.3.0",
         "@fontsource/geist-mono": "^5.3.0",
         "@radix-ui/react-accordion": "^1.3.1",

@@ -70,7 +70,7 @@ export function MonthView({
             style={{ gridTemplateRows: rowTemplate }}
           >
             {week.map((day, col) => {
-              const isToday = isSameDay(day, now)
+              const isToday = now != null && isSameDay(day, now)
               const outside = !isSameMonth(day, date)
               return (
                 // biome-ignore lint/a11y/useKeyWithClickEvents: the keyboard uses the day's button (data-slot="schedule-new-event").

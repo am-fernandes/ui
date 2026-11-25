@@ -21,8 +21,12 @@ export interface ScheduleContextValue {
   allDayLabel: string
   onEventClick?: (event: ScheduleEventData) => void
   renderEventDetails?: (event: ScheduleEventData) => React.ReactNode
-  /** "Now" — today's date and the time used by the current-time line. */
-  now: Date
+  /**
+   * "Now" — today's date and the time used by the current-time line, in the
+   * schedule's zone. `null` on the server and while hydrating when the app
+   * gives no `today`: the server cannot know the browser's clock.
+   */
+  now: Date | null
   /** Click or keyboard on an empty day or time slot. */
   onSlotClick?: (date: Date) => void
   /** Name of the button that creates an event on a day ("Novo evento em …"). */

@@ -1014,7 +1014,7 @@ export interface LineChartProps<T extends Record<string, unknown> = Record<strin
 
 `import { Schedule } from "@amfernandesinc/ui"` ou `"@amfernandesinc/ui/schedule"`
 
-Calendar of events with month, week, day and list views. Data-driven: pass `events` (plain `Date`s, local time) and the schedule lays them out — spanning bars for all-day and multi-day events, side-by-side blocks for overlapping times, "+N mais" when a month day is full.
+Calendar of events with month, week, day and list views. Data-driven: pass `events` (`Date`s, shown in `timeZone`) and the schedule lays them out — spanning bars for all-day and multi-day events, side-by-side blocks for overlapping times, "+N mais" when a month day is full.
 
 | Prop | Tipo | Padrão | Descrição |
 |---|---|---|---|
@@ -1024,9 +1024,10 @@ Calendar of events with month, week, day and list views. Data-driven: pass `even
 | `onViewChange` | `(view: ScheduleView) => void` | — | — |
 | `views` | `ScheduleView[]` | `ALL_VIEWS` | Views offered in the switcher. The switcher hides when there is only one. |
 | `date` | `Date` | — | Focused date — decides the visible period. |
-| `defaultDate` | `Date` | — | — |
+| `defaultDate` | `Date` | — | Focused date of an uncontrolled schedule. Without it (and without `date` and `today`), the server renders the frame and the period comes in the browser: the server cannot know the browser's date. Pass it to have the period in the server HTML. |
 | `onDateChange` | `(date: Date) => void` | — | — |
-| `today` | `Date` | — | What counts as "today" (highlight, "Hoje" button, current-time line). Defaults to the real clock, refreshed every minute. Pass a fixed date for deterministic renders (tests, screenshots). |
+| `today` | `Date` | — | What counts as "today" (highlight, "Hoje" button, current-time line). Defaults to the real clock, refreshed every minute, read once the page is in the browser: the server renders no "today" and no current-time line. Pass a fixed date for deterministic renders (tests, screenshots, a server render with "today" in it). |
+| `timeZone` | `string` | `DEFAULT_TIME_ZONE` | Time zone the days and hours are shown in, an IANA name. Events are instants (`Date`s); a meeting at 13:00 in São Paulo sits at 13:00 on any machine, server or browser, so the server HTML and the hydration agree. All-day events start at midnight of this zone. |
 | `onEventClick` | `(event: ScheduleEvent) => void` | — | Click on an event. Without it (and without `renderEventDetails`) the events are plain content, not buttons, so the keyboard does not stop on each of them. |
 | `onSlotClick` | `(date: Date) => void` | — | Click on an empty day (month) or time slot (week, day): receives the day at 00:00, or the time clicked rounded down to the half hour. From the keyboard, each day's number or header becomes a button that gives the day at `scrollToHour`. Use it to start "Agendar visita". |
 | `onRangeChange` | `(range: { start: Date; end: Date; view: ScheduleView }) => void` | — | Called with the period on screen whenever it changes, and once on mount: fetch the events of `{ start, end }` (end exclusive). Same range as `getScheduleRange`. |
@@ -1050,10 +1051,10 @@ Calendar of events with month, week, day and list views. Data-driven: pass `even
 
 `import { getScheduleRange } from "@amfernandesinc/ui"` ou `"@amfernandesinc/ui/schedule"`
 
-The period a view shows, the same one `onRangeChange` reports: `start` is the first visible day at 00:00 and `end` the day after the last one (exclusive). Use it to fetch the events before the first render.
+The period a view shows, the same one `onRangeChange` reports: `start` is the first visible day at 00:00 and `end` the day after the last one (exclusive), midnights of `timeZone` (São Paulo unless you pass the schedule's). Use it to fetch the events before the first render.
 
 ```ts
-getScheduleRange(view: ScheduleView, date: Date, options: { weekStartsOn?: WeekStart; listDays?: number } = {}): { start: Date; end: Date }
+getScheduleRange(view: ScheduleView, date: Date, options: { weekStartsOn?: WeekStart; listDays?: number; timeZone?: string } = {}): { start: Date; end: Date }
 ```
 
 ### defaultScheduleLabels
@@ -1167,14 +1168,30 @@ export interface ScheduleProps {
   views?: ScheduleView[]
   /** Focused date — decides the visible period. */
   date?: Date
+  /**
+   * Focused date of an uncontrolled schedule. Without it (and without `date`
+   * and `today`), the server renders the frame and the period comes in the
+   * browser: the server cannot know the browser's date. Pass it to have the
+   * period in the server HTML.
+   */
   defaultDate?: Date
   onDateChange?: (date: Date) => void
   /**
    * What counts as "today" (highlight, "Hoje" button, current-time line).
-   * Defaults to the real clock, refreshed every minute. Pass a fixed date for
-   * deterministic renders (tests, screenshots).
+   * Defaults to the real clock, refreshed every minute, read once the page
+   * is in the browser: the server renders no "today" and no current-time
+   * line. Pass a fixed date for deterministic renders (tests, screenshots,
+   * a server render with "today" in it).
    */
   today?: Date
+  /**
+   * Time zone the days and hours are shown in, an IANA name. Events are
+   * instants (`Date`s); a meeting at 13:00 in São Paulo sits at 13:00 on any
+   * machine, server or browser, so the server HTML and the hydration agree.
+   * All-day events start at midnight of this zone.
+   * @default "America/Sao_Paulo"
+   */
+  timeZone?: string
   /**
    * Click on an event. Without it (and without `renderEventDetails`) the
    * events are plain content, not buttons, so the keyboard does not stop on

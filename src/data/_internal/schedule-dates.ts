@@ -10,6 +10,7 @@ import {
   startOfDay,
   startOfMonth,
   startOfWeek,
+  subMilliseconds,
 } from "date-fns"
 
 export type ScheduleView = "month" | "week" | "day" | "list"
@@ -52,15 +53,37 @@ interface Formatter {
 // plain spaces keep the text the same to copy, search and test.
 const plainSpaces = (text: string) => text.replace(/[\u2009\u202f\u00a0]/g, " ")
 
+/**
+ * The wall clock of `date` as the same numbers in UTC. Inside the schedule
+ * every date is a `TZDate` of its `timeZone`, whose getters give that zone's
+ * day and hour; printed from UTC, the text is that wall clock on any machine.
+ * `Intl` without a `timeZone` printed the machine's: the server (in UTC) and
+ * the browser (in Brasília) wrote different hours, and hydration failed.
+ */
+function asWallClock(date: Date): Date {
+  return new Date(
+    Date.UTC(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      date.getHours(),
+      date.getMinutes(),
+      date.getSeconds(),
+      date.getMilliseconds(),
+    ),
+  )
+}
+
 const formatters = new Map<string, Formatter>()
 function formatter(locale: string, options: Intl.DateTimeFormatOptions): Formatter {
   const key = `${locale}|${JSON.stringify(options)}`
   let f = formatters.get(key)
   if (!f) {
-    const intl = new Intl.DateTimeFormat(locale, options)
+    const intl = new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" })
     f = {
-      format: (date) => plainSpaces(intl.format(date)),
-      formatRange: (start, end) => plainSpaces(intl.formatRange(start, end)),
+      format: (date) => plainSpaces(intl.format(asWallClock(date))),
+      formatRange: (start, end) =>
+        plainSpaces(intl.formatRange(asWallClock(start), asWallClock(end))),
     }
     formatters.set(key, f)
   }
@@ -176,7 +199,8 @@ export function eventDays(event: ScheduleEventInput): { first: Date; last: Date 
   if (event.end.getTime() <= event.start.getTime()) return { first, last: first }
   // All-day: `end` is the last day, inclusive. Timed: `end` is exclusive, so an
   // event ending at 00:00 does not spill into the next day.
-  const last = event.allDay ? startOfDay(event.end) : startOfDay(new Date(event.end.getTime() - 1))
+  // (subMilliseconds keeps the date's zone; a `new Date` would take the machine's.)
+  const last = event.allDay ? startOfDay(event.end) : startOfDay(subMilliseconds(event.end, 1))
   // end > start here, so `last` is never before `first`.
   return { first, last }
 }
