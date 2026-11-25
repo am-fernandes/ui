@@ -12,8 +12,11 @@ import * as React from "react"
  * initialiser instead makes React throw the server HTML away whenever the two
  * differ.
  *
- * When storage is blocked (private mode, sandboxed iframes) the value lives
- * in memory for the page's lifetime, so the toggle still works.
+ * When saving fails (storage full, private mode, sandboxed iframes) the value
+ * lives in memory for the page's lifetime, so the toggle still works. A
+ * choice kept in memory wins over what storage holds: reading storage first
+ * (when only the write failed, as with a full storage) gave back the old
+ * value, or nothing, and the toggle did nothing.
  */
 
 const listeners = new Map<string, Set<() => void>>()
@@ -27,18 +30,23 @@ function parse(raw: string | null): boolean | null {
 
 export function readStoredBoolean(key: string): boolean | null {
   if (typeof window === "undefined") return null
+  // A choice this page could not save is the latest one.
+  const kept = memory.get(key)
+  if (kept !== undefined) return kept
   try {
     return parse(window.localStorage.getItem(key))
   } catch {
-    return memory.get(key) ?? null
+    return null
   }
 }
 
 export function writeStoredBoolean(key: string, value: boolean) {
   try {
     window.localStorage.setItem(key, String(value))
+    // Saved: storage holds the choice again.
+    memory.delete(key)
   } catch {
-    // Storage blocked: keep the choice for this page only.
+    // Not saved (blocked or full): keep the choice for this page only.
     memory.set(key, value)
   }
   for (const listener of listeners.get(key) ?? []) listener()
@@ -51,9 +59,11 @@ function subscribe(key: string, listener: () => void) {
     listeners.set(key, set)
   }
   set.add(listener)
-  // Another tab changed the choice.
+  // Another tab changed the choice: storage has the latest one again.
   const onStorage = (event: StorageEvent) => {
-    if (event.key === key || event.key === null) listener()
+    if (event.key !== key && event.key !== null) return
+    memory.delete(key)
+    listener()
   }
   window.addEventListener("storage", onStorage)
   return () => {

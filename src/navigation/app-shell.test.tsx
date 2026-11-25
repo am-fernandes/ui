@@ -439,6 +439,36 @@ describe("AppShell", () => {
       expect(aside).toHaveAttribute("data-state", "expanded")
     })
 
+    // A full localStorage throws on setItem and still answers getItem: the
+    // choice went to memory, the shell read storage, and the button did
+    // nothing. Each case uses its own key (the memory is the module's).
+    it("the toggle works when the storage is full, from no saved choice", async () => {
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+        throw new DOMException("The quota has been exceeded.", "QuotaExceededError")
+      })
+      const { aside } = renderShell({ defaultCollapsed: true, storageKey: "cheio-1" })
+      await userEvent.click(within(aside).getByRole("button", { name: "Expandir menu" }))
+      expect(aside).toHaveAttribute("data-state", "expanded")
+      await userEvent.click(within(aside).getByRole("button", { name: "Recolher menu" }))
+      expect(aside).toHaveAttribute("data-state", "collapsed")
+      vi.restoreAllMocks()
+    })
+
+    it("the toggle works when the storage is full, over an older saved choice", async () => {
+      window.localStorage.setItem("cheio-2", "true")
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+        throw new DOMException("The quota has been exceeded.", "QuotaExceededError")
+      })
+      const onCollapsedChange = vi.fn()
+      const { aside } = renderShell({ storageKey: "cheio-2", onCollapsedChange })
+      expect(aside).toHaveAttribute("data-state", "collapsed")
+      await userEvent.click(within(aside).getByRole("button", { name: "Expandir menu" }))
+      expect(aside).toHaveAttribute("data-state", "expanded")
+      // What the app heard is what the screen shows.
+      expect(onCollapsedChange).toHaveBeenLastCalledWith(false)
+      vi.restoreAllMocks()
+    })
+
     it("does not write to storage until the user toggles", () => {
       renderShell({ defaultCollapsed: false })
       expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull()
@@ -451,7 +481,9 @@ describe("AppShell", () => {
       vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
         throw new Error("SecurityError")
       })
-      const { aside } = renderShell({ defaultCollapsed: true })
+      // Its own key: the choice it could not save stays in memory for the
+      // page (the module), as it would in a real tab.
+      const { aside } = renderShell({ defaultCollapsed: true, storageKey: "bloqueado" })
       expect(aside).toHaveAttribute("data-state", "collapsed")
       await userEvent.click(within(aside).getByRole("button", { name: "Expandir menu" }))
       expect(aside).toHaveAttribute("data-state", "expanded")
