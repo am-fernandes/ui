@@ -88,7 +88,10 @@ jobs:
 
   visual:
     name: Visual regression (Playwright)
-    runs-on: ubuntu-latest
+    # Playwright 1.60 não roda no ubuntu-latest atual (Ubuntu 26.04: "Playwright
+    # does not support chromium on ubuntu26.04-x64"). As baselines visuais também
+    # são de 24.04. Volte para ubuntu-latest quando o Playwright suportar o 26.04.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -110,7 +113,10 @@ jobs:
 
   e2e:
     name: E2E (Playwright, desktop + mobile + tablet)
-    runs-on: ubuntu-latest
+    # Playwright 1.60 não roda no ubuntu-latest atual (Ubuntu 26.04: "Playwright
+    # does not support chromium on ubuntu26.04-x64"). As baselines visuais também
+    # são de 24.04. Volte para ubuntu-latest quando o Playwright suportar o 26.04.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -133,7 +139,10 @@ jobs:
 
   storybook-tests:
     name: Storybook tests (interaction + a11y)
-    runs-on: ubuntu-latest
+    # Playwright 1.60 não roda no ubuntu-latest atual (Ubuntu 26.04: "Playwright
+    # does not support chromium on ubuntu26.04-x64"). As baselines visuais também
+    # são de 24.04. Volte para ubuntu-latest quando o Playwright suportar o 26.04.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
