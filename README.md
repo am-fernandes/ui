@@ -19,6 +19,8 @@ import "@amfernandesinc/ui/styles"
 import "@amfernandesinc/ui/fonts"
 ```
 
+O `styles` já importa o Tailwind e declara o `@source` da própria lib, então as classes usadas só dentro dos componentes são geradas sem configuração no app. Na 0.5.x, acrescente no CSS de entrada `@source "../node_modules/@amfernandesinc/ui/dist";` (caminho relativo a esse CSS); com ele, Dialog, Popover e Select aparecem sem estilo.
+
 As famílias **Geist** e **Geist Mono** são self-hosted via `@fontsource/geist` e `@fontsource/geist-mono` — vêm como dependências do pacote, sem chamadas externas a Google Fonts.
 
 ## Importação
@@ -33,15 +35,15 @@ import { Button, DataTable } from "@amfernandesinc/ui"
 import { Button } from "@amfernandesinc/ui/button"
 ```
 
-## Componentes (62 no total)
+## Componentes (61 no total)
 
 | Categoria  | Count | Componentes                                                                                          |
 | ---------- | ----- | ---------------------------------------------------------------------------------------------------- |
-| Primitives | 17    | Avatar, Badge, Button, Checkbox, IconButton, Input, Label, NumberInput, RadioGroup, SegmentedControl, Separator, Skeleton, Slider, Switch, Textarea, Token, Typography |
+| Primitives | 17    | Avatar, Badge, Button, Checkbox, IconButton, Input, NumberInput, RadioGroup, SegmentedControl, Separator, Skeleton, Slider, Switch, Textarea, Toggle, Token, Typography |
 | Overlays   | 11    | Alert, AlertDialog, Collapsible, Dialog, DropdownMenu, Popover, Progress, Sheet, Toaster, Tooltip, Tour |
 | Forms      | 6     | Calendar, Combobox, DateInput, DateRangePicker, Select, TimePicker                                   |
 | Navigation | 7     | Accordion, AppShell, Breadcrumb, CommandPalette, Pagination, Stepper, Tabs                          |
-| Data       | 12    | BarChart, Card, DataTable, EmptyState, Image, LineChart, Schedule, ScrollArea, Sparkline, Tree, Video + helpers `columns` / `tableStyles` |
+| Data       | 11    | BarChart, Card, DataTable, EmptyState, Image, LineChart, Schedule, ScrollArea, Sparkline, Tree, Video + helpers `columns` / `tableStyles` |
 | Domain     | 9     | CEPInput, CNPJInput, CPFInput, CurrencyInput, FileUpload, InputOTP, MultiInput, PercentageInput, PhoneInput |
 
 Helpers utilitários (BRL em centavos, tamanhos em bytes, `cn`, hooks) estão documentados na aba **Hooks** do Storybook.
