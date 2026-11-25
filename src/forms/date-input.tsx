@@ -75,10 +75,12 @@ export interface DateInputProps {
   id?: string
   /**
    * The date as an ISO string (`"yyyy-MM-dd"`), or `""` for no date,
-   * controlled. It changes only when the typed text is a whole valid date,
-   * when a day is picked in the calendar, or (to `""`) when the field is
-   * emptied or left with a date that is not valid. Leave it out to let the
-   * field keep its own date, starting from `defaultValue`.
+   * controlled. It is the date the text shows: the typed ISO once the text
+   * is a whole valid date, the day picked in the calendar, and `""` while
+   * the text is empty, incomplete or not a date the field takes (as a
+   * native `<input type="date">`). The text stays on screen to be fixed.
+   * Leave it out to let the field keep its own date, starting from
+   * `defaultValue`.
    */
   value?: string
   /** Initial date (ISO) of an uncontrolled field. */
@@ -110,7 +112,8 @@ export interface DateInputProps {
   disabledDays?: DisabledDays
   /**
    * First date allowed (ISO). Days before it are off in the calendar, and a
-   * typed date before it is an error when the field is left.
+   * typed date before it is reported as `""` and shown as an error when the
+   * field is left.
    */
   min?: string
   /** Last date allowed (ISO), as `min`. */
@@ -118,7 +121,9 @@ export interface DateInputProps {
   /**
    * Name of the field in a native form. The form receives the ISO date (what
    * `onValueChange` reports), carried by a hidden input; the visible input,
-   * which shows `dd/mm/aaaa`, has no name.
+   * which shows `dd/mm/aaaa`, has no name. A text that is not a valid date
+   * makes the field invalid for the browser, so a native submit (Enter
+   * included) stops on it with the field's message.
    */
   name?: string
   /**
@@ -276,21 +281,36 @@ function DateInput({
   })
   const [, forceRender] = React.useReducer((n: number) => n + 1, 0)
 
+  /** Why the text cannot be taken (incomplete, impossible, not allowed), or `null`. */
+  const problemOf = (text: string): string | null => {
+    if (text === "") return null
+    const iso = digitsToIso(text)
+    return iso == null ? l.invalidDate : problemWith(iso)
+  }
+
   const takeDigits = (next: string) => {
     setDigits(next)
-    if (next === "") {
-      setOwnError(null)
-      report("")
-      return
-    }
-    const iso = digitsToIso(next)
-    if (iso != null && problemWith(iso) == null) {
+    const iso = next === "" ? "" : digitsToIso(next)
+    if (iso != null && (iso === "" || problemWith(iso) == null)) {
       setOwnError(null)
       report(iso)
+      return
     }
-    // Incomplete, impossible or not allowed: nothing is reported until the
-    // field is left.
+    // Incomplete, impossible or not allowed: the date the field had is no
+    // longer the one on screen, so it reports "" (the text stays, to be
+    // fixed). Reporting nothing kept the old date: Enter sent it while the
+    // screen showed another. The message waits for the field to be left.
+    report("")
   }
+
+  // A text that is not a date makes the field invalid for the browser: a
+  // native submit (Enter included, which leaves no blur behind) stops here
+  // and shows the field's own message, instead of sending "" for a date the
+  // user typed. `required` with an empty field is the browser's own check.
+  const typedProblem = problemOf(digits)
+  React.useEffect(() => {
+    inputRef.current?.setCustomValidity(typedProblem ?? "")
+  }, [typedProblem])
 
   const commit = (edit: { raw: string; caret: number }) => {
     pendingCaret.current = edit.caret
@@ -300,9 +320,7 @@ function DateInput({
 
   /** The focus left the field: the text box, its button and the calendar. */
   const leaveField = () => {
-    if (digits === "") return
-    const iso = digitsToIso(digits)
-    const problem = iso == null ? l.invalidDate : problemWith(iso)
+    const problem = problemOf(digits)
     if (problem == null) return
     setOwnError(problem)
     report("")
@@ -391,6 +409,11 @@ function DateInput({
             const start = el.selectionStart ?? el.value.length
             const end = el.selectionEnd ?? start
             commit(applyPaste(dateSpec, digits, e.clipboardData?.getData("text") ?? "", start, end))
+          }}
+          // A native submit stopped on a text that is not a date: the
+          // field shows why, as it does when it is left.
+          onInvalid={() => {
+            if (typedProblem != null) setOwnError(typedProblem)
           }}
           onKeyDown={(e) => {
             // Alt + ↓ opens the calendar, as in a native date field.

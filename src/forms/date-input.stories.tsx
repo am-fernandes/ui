@@ -16,7 +16,7 @@ const meta = {
         component: [
           "Campo de data **digitável** (`dd/mm/aaaa`, as barras entram sozinhas) com um botão de calendário no fim. Exibição em **pt-BR** e valor sempre como string **ISO** (`YYYY-MM-DD`) — fácil de serializar e enviar para API.",
           "",
-          "Enquanto o texto está incompleto, nada é reportado. Uma data inteira e válida reporta o ISO. Ao sair do campo com uma data incompleta ou que não existe (`31/02/2026`), o campo mostra o erro e reporta `''`. Colar `15/03/1990` ou `1990-03-15` preenche o campo.",
+          "Uma data inteira e válida reporta o ISO. Enquanto o texto está incompleto ou não é uma data aceita (`31/02/2026`, fora de `min`/`max`), o campo reporta `''` e o texto fica na tela para ser corrigido; o erro aparece ao sair do campo. Num `<form>` nativo, um texto que não é data deixa o campo inválido para o navegador: Enter não envia a data anterior. Colar `15/03/1990` ou `1990-03-15` preenche o campo.",
           "",
           "**Props principais:**",
           "- `value` — string ISO (`YYYY-MM-DD`) ou vazio.",
@@ -264,6 +264,41 @@ export const Typing: Story = {
     await userEvent.tab()
     await expect(canvas.getByRole("alert")).toHaveTextContent("Data inválida")
     await expect(canvas.getByText("ISO: (vazio)")).toBeInTheDocument()
+  },
+}
+
+export const NativeForm: Story = {
+  args: { value: "" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Num `<form>` nativo, `name` faz o `FormData` receber o ISO. Com o texto incompleto ou inválido, o campo fica inválido para o navegador: Enter (que envia sem tirar o foco) para nele e mostra o erro, em vez de enviar a data que estava antes.",
+      },
+    },
+  },
+  render: () => {
+    const [sent, setSent] = useState<string | null>(null)
+    return (
+      <form
+        className="flex w-[280px] flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault()
+          setSent(String(new FormData(e.currentTarget).get("vencimento")))
+        }}
+      >
+        <DateInput label="Vencimento" name="vencimento" defaultValue="2024-05-10" />
+        <button
+          type="submit"
+          className="rounded-element border border-input bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+        >
+          Enviar
+        </button>
+        <output data-testid="form-data" className="text-xs text-muted-foreground">
+          {sent == null ? "" : `Enviado: ${sent || "(vazio)"}`}
+        </output>
+      </form>
+    )
   },
 }
 

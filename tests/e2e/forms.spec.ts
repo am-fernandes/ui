@@ -274,6 +274,62 @@ test.describe("DateInput: digitar", () => {
   })
 })
 
+// Enter envia o form sem tirar o foco do campo. Com o texto incompleto, o
+// DateInput não tinha reportado nada e o form saía com a data anterior.
+test.describe("DateInput: Enter num form nativo", () => {
+  const id = "forms-dateinput--native-form"
+
+  test("com a data completa, o FormData recebe o ISO", async ({ page }) => {
+    await gotoStory(page, id, "Vencimento")
+    const field = page.getByRole("textbox", { name: "Vencimento" })
+    await field.click()
+    await page.keyboard.press("Enter")
+    await expect(page.getByTestId("form-data")).toHaveText("Enviado: 2024-05-10")
+  })
+
+  test("com um dígito apagado, Enter não envia a data anterior e mostra o erro", async ({
+    page,
+  }) => {
+    await gotoStory(page, id, "Vencimento")
+    const field = page.getByRole("textbox", { name: "Vencimento" })
+    await field.click()
+    await page.keyboard.press("End")
+    await page.keyboard.press("Backspace")
+    await expect(field).toHaveValue("10/05/202")
+    await page.keyboard.press("Enter")
+    await expect(page.getByTestId("form-data")).toHaveText("")
+    await expect(page.getByRole("alert")).toHaveText(/^Data inválida/)
+    await expect(field).toBeFocused()
+    // A mensagem do balão do navegador é a mesma do campo.
+    expect(await field.evaluate((el: HTMLInputElement) => el.validationMessage)).toBe(
+      await page.getByRole("alert").textContent(),
+    )
+
+    // Corrigido, o mesmo Enter envia a data da tela.
+    await page.keyboard.type("5")
+    await page.keyboard.press("Enter")
+    await expect(page.getByTestId("form-data")).toHaveText("Enviado: 2025-05-10")
+  })
+
+  test("uma data que não existe também para o envio", async ({ page }) => {
+    await gotoStory(page, id, "Vencimento")
+    const field = page.getByRole("textbox", { name: "Vencimento" })
+    await field.fill("")
+    await field.pressSequentially("31022024")
+    await page.keyboard.press("Enter")
+    await expect(page.getByTestId("form-data")).toHaveText("")
+    await expect(page.getByRole("alert")).toHaveText(/^Data inválida/)
+  })
+
+  test("apagado de todo, envia vazio", async ({ page }) => {
+    await gotoStory(page, id, "Vencimento")
+    const field = page.getByRole("textbox", { name: "Vencimento" })
+    await field.fill("")
+    await page.keyboard.press("Enter")
+    await expect(page.getByTestId("form-data")).toHaveText("Enviado: (vazio)")
+  })
+})
+
 test.describe("Combobox: opção escolhida", () => {
   test("abre na escolhida, à vista, marcada na árvore de acessibilidade, e Enter mantém", async ({
     page,
