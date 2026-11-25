@@ -8,7 +8,7 @@ import { Tooltip, type TooltipProps } from "../overlays/tooltip"
 import { useAnnounceWhen } from "./_internal/announce"
 import { useComposedRefs } from "./_internal/compose-refs"
 import { type ControlSize, controlSquare } from "./_internal/control-size"
-import { ignoreActivation } from "./_internal/soft-disabled"
+import { ignoreActivation, unavailableHandlers } from "./_internal/soft-disabled"
 import { type ButtonLabels, buttonVariants, defaultButtonLabels } from "./button"
 
 /**
@@ -124,6 +124,9 @@ function IconButton({
         className,
       )}
       {...props}
+      // Unavailable, it opens nothing either: a DropdownMenu or a Select
+      // around it opens on pointerdown and on keys, not on click.
+      {...(unavailable ? unavailableHandlers(props.onKeyDown) : null)}
       onClick={unavailable ? ignoreActivation : onClick}
     >
       {loading ? <Loader2 className="animate-spin" aria-hidden="true" /> : icon}

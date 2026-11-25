@@ -8,7 +8,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { useAnnounceWhen } from "./_internal/announce"
 import { controlHeight, controlPaddingX } from "./_internal/control-size"
-import { ignoreActivation } from "./_internal/soft-disabled"
+import { ignoreActivation, unavailableHandlers } from "./_internal/soft-disabled"
 
 // Every variant has a 1px border (transparent unless it is `outline`), so the
 // box of a size is the same in all of them: same height, same width for the
@@ -163,6 +163,9 @@ function Button({
       aria-disabled={softDisabled || undefined}
       aria-busy={loading || undefined}
       {...props}
+      // Unavailable, it opens nothing either: a DropdownMenu or a Select
+      // around it opens on pointerdown and on keys, not on click.
+      {...(softDisabled ? unavailableHandlers(props.onKeyDown) : null)}
       onClick={softDisabled ? ignoreActivation : onClick}
     >
       {content}
