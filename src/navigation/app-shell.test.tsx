@@ -150,6 +150,24 @@ describe("AppShell", () => {
       expect(main).toHaveAttribute("tabindex", "-1")
     })
 
+    // With a hash router `#conteudo` is a route: following the link opened a
+    // "not found" page. The link moves the focus and leaves the URL alone.
+    it("the skip link focuses the content without changing the URL", async () => {
+      const { main } = renderShell()
+      const before = window.location.href
+      const onHashChange = vi.fn()
+      window.addEventListener("hashchange", onHashChange)
+      const skip = screen.getByRole("link", { name: "Pular para o conteúdo" })
+      skip.focus()
+      await userEvent.keyboard("{Enter}")
+      expect(main).toHaveFocus()
+      await userEvent.click(skip)
+      expect(main).toHaveFocus()
+      expect(window.location.href).toBe(before)
+      expect(onHashChange).not.toHaveBeenCalled()
+      window.removeEventListener("hashchange", onHashChange)
+    })
+
     it("applies the standard content padding by default", () => {
       const { main } = renderShell()
       expect(main).toHaveClass("p-4", "md:p-6")

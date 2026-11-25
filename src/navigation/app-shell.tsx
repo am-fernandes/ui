@@ -313,6 +313,17 @@ function AppShell({
         <a
           href={`#${MAIN_ID}`}
           data-slot="app-shell-skip-link"
+          // Moves the focus without touching the URL. With a hash router
+          // (HashRouter, createHashHistory, common in Electron) `#conteudo` is
+          // a route: the link opened a "not found" page. Elsewhere it left
+          // `#conteudo` in the address and one more step in Back. The href
+          // stays for a page without JavaScript.
+          onClick={(event) => {
+            const main = document.getElementById(MAIN_ID)
+            if (!main) return
+            event.preventDefault()
+            main.focus()
+          }}
           className={cn(
             "sr-only",
             "focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[var(--z-toast)] focus:rounded-element",

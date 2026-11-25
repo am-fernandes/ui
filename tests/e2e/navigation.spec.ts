@@ -439,8 +439,13 @@ test.describe("AppShell", () => {
     const skip = page.getByRole("link", { name: "Pular para o conteúdo" })
     await expect(skip).toBeFocused()
     await expect(skip).toBeVisible()
+    const before = page.url()
+    const steps = await page.evaluate(() => history.length)
     await page.keyboard.press("Enter")
     await expect(page.locator("main#conteudo")).toBeFocused()
+    // Sem mudar a URL: num app com hash router, #conteudo seria uma rota.
+    expect(page.url()).toBe(before)
+    expect(await page.evaluate(() => history.length)).toBe(steps)
   })
 
   test("under a title bar, h-full keeps the footer inside the window", async ({ page }) => {
