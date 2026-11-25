@@ -148,6 +148,7 @@ Mudanças que quebram:
 
 | Mudança | O que fazer |
 |---|---|
+| Tokens de status claros saem (`--status-*-bg`/`-text`/`-border`, classes `bg-status-*`, `text-status-*`, `border-status-*`) | Procure `status-` no app: a classe some sem erro de compilação. Troque por `bg-success text-success-foreground` (e `warning`, `info`, `destructive`) ou `<Badge variant="success" dot>`. |
 | `Sidebar` sai, entra `AppShell` (subpath `/app-shell`) | `items` iguais (`SidebarItem` virou `AppShellItem`, com alias). Usuário, perfil e sair vão no `footer`. O `<main>` com rolagem sai do app: o conteúdo vai como `children`. Sob outra barra fixa, `className="h-full"`. |
 | `Button` nasce `type="button"` | Ponha `type="submit"` nos botões que enviam formulário. |
 | `Badge` é `<span>` | Só muda se você estilizava `div` dentro dele. |
@@ -157,8 +158,14 @@ Mudanças que quebram:
 | `Image` com `src` vazio mostra "Sem imagem" | Não é mais erro; use `fallback` para personalizar. |
 | `addMonths` para no fim do mês | `addMonths("2024-01-31", 1)` dá 29/02/2024 (antes 02/03). Revise cálculos de vencimento que dependiam do estouro. |
 | Export da `DataTable` sem `xlsx` | Nada a fazer; se o app dependia do `xlsx` transitivo, declare-o. |
+| `lib/date` em `America/Sao_Paulo` | `formatDate("2024-01-15T14:30:00Z", "brl-full")` passa de 14:30 a 11:30. Data pura em instante UTC (`"…T00:00:00.000Z"`): passe `"UTC"` como fuso ou corte para `YYYY-MM-DD`. |
+| `DateInput` é um campo de texto | `ref` de `HTMLInputElement` (era `HTMLButtonElement`); nos testes, `getByRole("textbox")`. Texto incompleto ou inválido reporta `""`. |
+| `--accent` é o azul de seleção | Onde `bg-accent` era fundo neutro, use `bg-muted`. Todas as cores mudam de valor; `--chart-2` a `--chart-5` mudam de matiz. |
+| `--background` é só a página | Painel ou barra do app com `bg-background` passa a `bg-card border-border-strong`. |
 
-Tema escuro: opcional; ligue a classe `dark` no `<html>` quando quiser e troque cores fixas das suas telas por tokens.
+Mudanças de comportamento: o `TimePicker` reporta `""` a cada edição que deixa a hora inválida; o `Calendar` marca o hoje de São Paulo (passe `today` para outro fuso); campo somente leitura vazio não mostra placeholder; o `Schedule` mostra os eventos em `timeZone` (São Paulo) e, com SSR, precisa de `defaultDate` e `today` para o servidor mandar a agenda pronta. O passo a passo completo fica na página "Migração 0.6" do Storybook.
+
+Tema escuro: opcional; ligue a classe `dark` no `<html>` (ou numa seção) quando quiser e troque cores fixas das suas telas por tokens. Numa seção, os menus e dialogs abertos dali também saem escuros.
 
 O `@source "…/@amfernandesinc/ui/dist"` do CSS do app pode sair: na 0.6 o `styles` já o declara (deixá-lo não atrapalha).
 

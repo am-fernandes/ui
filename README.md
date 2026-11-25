@@ -10,6 +10,8 @@ bun add @amfernandesinc/ui
 
 Peer deps: `react@^19`, `react-dom@^19`, `tailwindcss@^4`.
 
+**Vindo da 0.5?** A 0.6 quebra tokens, layout e datas: siga [`src/docs/Migration.mdx`](./src/docs/Migration.mdx) (página **Migração 0.6** do Storybook) antes de atualizar.
+
 ## Setup
 
 Importe os estilos e fontes no entrypoint da app (uma vez, no `main.tsx` ou no CSS principal):
@@ -61,7 +63,7 @@ Helpers utilitários (BRL em centavos, tamanhos em bytes, `cn`, hooks) estão do
 
 - Storybook local: `bun run storybook` (http://localhost:6006).
 - Contribuição: [`CONTRIBUTING.md`](./CONTRIBUTING.md).
-- Histórico de versões: [`CHANGELOG.md`](./CHANGELOG.md).
+- Histórico de versões: [`CHANGELOG.md`](./CHANGELOG.md). Migração 0.5 → 0.6: [`src/docs/Migration.mdx`](./src/docs/Migration.mdx).
 - Skill para agentes de IA: [`skills/designing-with-amfernandesinc-ui/`](./skills/designing-with-amfernandesinc-ui/SKILL.md). Ensina setup, escolha de componentes, formulários, dinheiro, datas, tabelas, gráficos e as regras visuais; a referência de API é gerada do código. Para usar num app, copie (ou crie um link para) a pasta em `~/.claude/skills/` ou em `.claude/skills/` do projeto.
 
 ## Status

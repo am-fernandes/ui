@@ -9,3 +9,5 @@
 - Um indicador de carregamento aparece até os metadados chegarem (`aria-busy` no invólucro). Em erro de rede, arquivo ausente ou codec, aparece "Não foi possível carregar o vídeo" com o botão "Tentar de novo", no lugar do player vazio. Os textos vêm de `labels` (`error`, `invalid`, `retry`) e os estados levam o nome do vídeo.
 - Um `src` que começa recusado (prévia `blob:`) e passa a ser aceito agora carrega e entrega o `ref`.
 - Aviso em desenvolvimento para `autoPlay` + `loop` sem `controls` (sem como pausar, WCAG 2.2.2).
+
+**Como migrar:** para o corte antigo (o vídeo preenchendo a caixa), passe `objectFit="cover"`.

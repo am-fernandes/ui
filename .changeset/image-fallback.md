@@ -11,3 +11,5 @@
 - Uma imagem que já estava carregada quando o React montou (SSR com cache) aparece, em vez de ficar transparente.
 - A documentação de `allowedProtocols` dizia "opt in": ela **substitui** a lista padrão. Para acrescentar, use `[...DEFAULT_ALLOWED_RESOURCE_PROTOCOLS, "data:"]`.
 - O fade usa os tokens de movimento e some com movimento reduzido. O `ref` aponta para o `<img>` e é `null` enquanto o fallback aparece.
+
+**Como migrar:** um `src` vazio deixa de ser erro e mostra "Sem imagem"; para outra coisa no lugar, use `fallback`.
