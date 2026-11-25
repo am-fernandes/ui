@@ -116,6 +116,10 @@ const pairs: Pair[] = [
   ...SURFACES.map((s): Pair => ["muted-foreground", s, 4.5]),
   ...SURFACES.map((s): Pair => ["subtle-foreground", s, 4.5, "third text level"]),
   ["placeholder", "card", 4.5, "fields paint the card"],
+  // Reported only: a read-only field paints --muted and shows no placeholder
+  // (src/contracts/read-only-placeholder.test.tsx), because this pair misses
+  // 4.5:1 in both themes.
+  ["placeholder", "muted", null, "not drawn: read-only fields hide the placeholder"],
   ["accent-foreground", "accent", 4.5],
   ["muted-foreground", "accent", 4.5, "secondary text in a selected row"],
   ...SURFACES.map((s): Pair => ["link", s, 4.5]),

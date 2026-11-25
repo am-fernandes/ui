@@ -372,12 +372,16 @@ export function Combobox(props: ComboboxProps) {
     triggerRef.current?.focus()
   }
 
+  // Read-only, no "Selecione...": nothing is chosen here, and the hint would
+  // be drawn on the muted fill below 4.5:1.
+  const placeholderContent = readOnly ? null : (
+    <span className="text-placeholder">{resolvedPlaceholder}</span>
+  )
+
   const renderTriggerContent = () => {
     if (isMultiple) {
       const values = chosen
-      if (values.length === 0) {
-        return <span className="text-placeholder">{resolvedPlaceholder}</span>
-      }
+      if (values.length === 0) return placeholderContent
       const count = values.length
       const formatter = (props as ComboboxMultipleProps).selectedCountLabel
       const countText = formatter
@@ -388,7 +392,7 @@ export function Combobox(props: ComboboxProps) {
     const selectedLabel = singleValue ? labelOf(singleValue) : undefined
     if (selectedLabel != null) return selectedLabel
     if (creatable && singleValue) return singleValue
-    return <span className="text-placeholder">{resolvedPlaceholder}</span>
+    return placeholderContent
   }
 
   const trimmedSearch = search.trim()

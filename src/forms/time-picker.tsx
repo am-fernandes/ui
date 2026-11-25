@@ -199,7 +199,9 @@ function TimeField({
       aria-describedby={ariaDescribedBy}
       aria-required={ariaRequired ? true : undefined}
       maxLength={2}
-      placeholder="--"
+      // Read-only, no "--": nothing is typed here, and the hint would be
+      // drawn on the muted fill below 4.5:1.
+      placeholder={readOnly ? undefined : "--"}
       value={value}
       onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 2))}
       onBlur={onBlur}

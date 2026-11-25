@@ -230,7 +230,11 @@ function DateRangePicker({
       ? `${format(fromDate, "dd/MM/yyyy")} — ${format(toDate, "dd/MM/yyyy")}`
       : fromDate
         ? `${format(fromDate, "dd/MM/yyyy")} — ...`
-        : placeholder
+        : // Read-only, no "Selecione um período": nothing is chosen here, and
+          // the hint would be drawn on the muted fill below 4.5:1.
+          readOnly
+          ? ""
+          : placeholder
 
   // The name is the label (or aria-label) and then the period, so a screen
   // reader says what the field is and what it holds. An aria-label made of the

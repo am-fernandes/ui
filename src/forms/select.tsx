@@ -272,7 +272,11 @@ function Select({
             )}
           >
             <span className="min-w-0 flex-1 truncate text-left">
-              <SelectPrimitive.Value placeholder={placeholder ?? labels.placeholder} />
+              {/* Read-only, no "Selecione...": nothing is chosen here, and the
+                  hint would be drawn on the muted fill below 4.5:1. */}
+              <SelectPrimitive.Value
+                placeholder={readOnly ? "" : (placeholder ?? labels.placeholder)}
+              />
             </span>
             <SelectPrimitive.Icon asChild>
               <ChevronDown aria-hidden="true" className="opacity-50" />

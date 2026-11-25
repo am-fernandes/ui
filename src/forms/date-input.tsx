@@ -380,7 +380,9 @@ function DateInput({
           type="text"
           inputMode="numeric"
           autoComplete="off"
-          placeholder={placeholder}
+          // Read-only, no "dd/mm/aaaa": nothing is typed here, and the hint
+          // would be drawn on the muted fill below 4.5:1.
+          placeholder={readOnly ? undefined : placeholder}
           aria-label={ariaLabel ?? (hasLabel ? undefined : l.field)}
           aria-invalid={hasError ? true : undefined}
           aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}

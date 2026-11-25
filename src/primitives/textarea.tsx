@@ -225,6 +225,9 @@ function Textarea({
         className,
       )}
       {...props}
+      // Read-only, no placeholder: a hint to type in a field that takes no
+      // typing, drawn on the muted fill below 4.5:1.
+      placeholder={readOnly && !disabled ? undefined : props.placeholder}
     />
   )
 
