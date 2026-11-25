@@ -87,6 +87,8 @@ function useRovingIndex(anchor: number, resetKey: string) {
 }
 
 export interface CalendarQuickNavProps {
+  /** This year, marked in the years panel (São Paulo's, as the calendar's today). */
+  currentYear?: number
   view: CalendarQuickNavView
   /** Month currently shown in the day grid (drives the selected highlights). */
   displayedMonth: Date
@@ -129,10 +131,10 @@ export function CalendarQuickNav({
   onSelectMonth,
   onBackToYears,
   onCancel,
+  currentYear = new Date().getFullYear(),
 }: CalendarQuickNavProps) {
   const startYear = startMonth?.getFullYear() ?? DEFAULT_START_YEAR
   const endYear = endMonth?.getFullYear() ?? DEFAULT_END_YEAR
-  const currentYear = new Date().getFullYear()
   const selectedYear = displayedMonth.getFullYear()
   const selectedMonthIndex = displayedMonth.getMonth()
 

@@ -1,3 +1,5 @@
+import { todayIn } from "./date-only"
+
 /**
  * The `disabledDays` shorthand of the date fields: presets, dates and
  * predicates, turned into one predicate react-day-picker understands.
@@ -14,11 +16,13 @@ export type DisabledDays =
 
 export function resolveDisabledDays(
   input: DisabledDays | undefined,
+  /** Today, as the calendar keeps a day. São Paulo's by default, as the rest of the library. */
+  today: Date = todayIn(),
 ): ((date: Date) => boolean) | undefined {
   if (input == null) return undefined
   if (typeof input === "function") return input
 
-  const startOfToday = new Date()
+  const startOfToday = new Date(today)
   startOfToday.setHours(0, 0, 0, 0)
 
   function matchesPreset(date: Date, preset: DisabledDayPreset): boolean {

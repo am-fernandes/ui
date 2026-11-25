@@ -12,6 +12,7 @@ import { ptBR } from "react-day-picker/locale"
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "../primitives/button"
 import { CALENDAR_ROOT_CLASS } from "./_internal/calendar-root"
+import { todayIn } from "./_internal/date-only"
 import { type DisabledDays, resolveDisabledDays } from "./_internal/disabled-days"
 import {
   type CalendarLabels,
@@ -96,16 +97,24 @@ function Calendar({
   defaultMonth,
   onMonthChange,
   labels,
+  today: todayProp,
   ref,
   ...props
 }: CalendarProps) {
+  // Today in São Paulo, as the rest of the library: the same day on the
+  // server and in the browser. react-day-picker's own `today` is the
+  // machine's, which differs between 21:00 and midnight in Brasília from a
+  // server in UTC (the day marked, the month shown, the "past" preset).
+  // `today` still overrides it.
+  const [zoneToday] = React.useState(() => todayIn())
+  const today = todayProp ?? zoneToday
   const { chooseYear, chooseMonth, backToYears, ...dayPickerLabels } = labels ?? {}
   const quickNavLabels: CalendarLabels = {
     chooseYear: chooseYear ?? defaultCalendarLabels.chooseYear,
     chooseMonth: chooseMonth ?? defaultCalendarLabels.chooseMonth,
     backToYears: backToYears ?? defaultCalendarLabels.backToYears,
   }
-  const disabledFn = resolveDisabledDays(disabledDays)
+  const disabledFn = resolveDisabledDays(disabledDays, today)
   const resolvedDisabled = disabledFn ?? disabled
 
   // ── Quick nav (jump to a year/month, MUI-style) ────────────────────────────
@@ -115,14 +124,14 @@ function Calendar({
   const quickNavEnabled = captionLayout === "label"
   const [quickNavView, setQuickNavView] = React.useState<"days" | CalendarQuickNavView>("days")
   const [pendingYear, setPendingYear] = React.useState<number>(() =>
-    (month ?? defaultMonth ?? new Date()).getFullYear(),
+    (month ?? defaultMonth ?? today).getFullYear(),
   )
 
   // The displayed month becomes controllable here so a year/month pick can
   // jump the grid. A consumer-controlled `month` keeps working: picks are
   // forwarded through their `onMonthChange`.
   const [internalMonth, setInternalMonth] = React.useState<Date>(
-    () => month ?? defaultMonth ?? new Date(),
+    () => month ?? defaultMonth ?? today,
   )
   const displayedMonth = month ?? internalMonth
   const displayedMonthRef = React.useRef(displayedMonth)
@@ -253,6 +262,7 @@ function Calendar({
         startMonth={props.startMonth}
         endMonth={props.endMonth}
         numberOfMonths={props.numberOfMonths}
+        currentYear={today.getFullYear()}
         labels={quickNavLabels}
         className={className}
         onSelectYear={(year) => {
@@ -283,7 +293,8 @@ function Calendar({
       components={finalComponents}
       {...(quickNavEnabled
         ? { month: displayedMonth, onMonthChange: handleMonthChange }
-        : { month, defaultMonth, onMonthChange })}
+        : { month, defaultMonth: defaultMonth ?? today, onMonthChange })}
+      today={today}
       {...props}
     />
   )

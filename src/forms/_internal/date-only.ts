@@ -5,6 +5,10 @@
  * moves to the day before or after.
  */
 
+import { TZDate } from "@date-fns/tz"
+
+import { DEFAULT_TIME_ZONE } from "@/lib/date"
+
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})/
 
 const pad = (n: number, length = 2) => String(n).padStart(length, "0")
@@ -32,6 +36,18 @@ export function isoToDate(value: string | null | undefined): Date | undefined {
   if (iso === "") return undefined
   const [y, m, d] = iso.split("-").map(Number) as [number, number, number]
   return new Date(y, m - 1, d)
+}
+
+/**
+ * Today, as the calendar keeps a day (local midnight), in `timeZone`: the
+ * same day on the server and in the browser. The machine's clock gave
+ * another day between 21:00 and midnight in Brasília to a server in UTC: the
+ * day marked as today, the month shown and the "past"/"future" presets
+ * differed, and hydration failed.
+ */
+export function todayIn(timeZone: string = DEFAULT_TIME_ZONE): Date {
+  const now = new TZDate(Date.now(), timeZone)
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate())
 }
 
 /** The day a calendar `Date` stands for, as `"yyyy-MM-dd"`. */
