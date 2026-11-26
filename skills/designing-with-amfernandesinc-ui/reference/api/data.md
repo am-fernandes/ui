@@ -1398,7 +1398,7 @@ export type TableStyles = ReturnType<typeof tableStyles>
 | `selected` | `string` | — | Selected node id (controlled, single selection). |
 | `defaultSelected` | `string` | — | Selected node id at first render (uncontrolled). |
 | `onSelectedChange` | `(id: string) => void` | — | Called when a node is selected, with its id. |
-| `onLoadChildren` | `(node: TreeNodeData) => void` | — | Called when a node with `hasChildren` and no `children` is opened. Load its children and pass them in `data`. Closing the node and opening it again calls it again, so a load that failed can be retried. |
+| `onLoadChildren` | `(node: TreeNodeData) => void \| PromiseLike<unknown>` | — | Called when a node with `hasChildren` and no `children` is opened. Load its children and pass them in `data`. Closing the node and opening it again calls it again, so a load that failed can be retried. Return the load's promise to tell a load in progress from one that failed: while it runs, closing and opening the node does not ask a second time (an app that appends what arrives would get every child twice). The Tree only watches it end: show a failure from your own code. |
 | `maxDepth` | `number` | `DEFAULT_MAX_DEPTH` | Maximum recursion depth. Default `64`. |
 | `indentSize` | `number` | `DEFAULT_INDENT` | Horizontal indent per nesting level in pixels. Default `16`. |
 | `labels` | `Partial<TreeLabels>` | — | — |
@@ -1475,9 +1475,14 @@ export interface TreeProps
   /**
    * Called when a node with `hasChildren` and no `children` is opened. Load
    * its children and pass them in `data`. Closing the node and opening it
-   * again calls it again, so a load that failed can be retried.
+   * again calls it again, so a load that failed can be retried. Return the
+   * load's promise to tell a load in progress from one that failed: while it
+   * runs, closing and opening the node does not ask a second time (an app
+   * that appends what arrives would get every child twice). The Tree only
+   * watches it end: show a failure from your own code.
    */
-  onLoadChildren?: (node: TreeNodeData) => void
+  // biome-ignore lint/suspicious/noConfusingVoidType: a callback that returns nothing is as valid as one that returns its load.
+  onLoadChildren?: (node: TreeNodeData) => void | PromiseLike<unknown>
   /** Maximum recursion depth. Default `64`. */
   maxDepth?: number
   /** Horizontal indent per nesting level in pixels. Default `16`. */

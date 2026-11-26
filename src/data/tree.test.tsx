@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
@@ -484,4 +484,59 @@ describe("Tree: large trees", () => {
     // Mounting 2,000 items takes seconds under coverage instrumentation; the
     // assertion is about re-renders, not time.
   }, 30_000)
+})
+
+// Reopening a node whose load was still running asked again: an app that
+// appends the children it receives got every one of them twice.
+describe("Tree: a load in progress is not asked twice", () => {
+  const lazy: TreeNodeData[] = [{ id: "emp", label: "Residencial Aurora", hasChildren: true }]
+  const reopen = async () => {
+    ;(screen.getByText("Residencial Aurora").closest('[role="treeitem"]') as HTMLElement).focus()
+    await userEvent.keyboard("{ArrowLeft}{ArrowRight}")
+  }
+
+  it("while the returned promise runs, closing and opening does not ask again", async () => {
+    let finish: () => void = () => {}
+    const onLoadChildren = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve
+        }),
+    )
+    render(<Tree data={lazy} onLoadChildren={onLoadChildren} />)
+    await userEvent.click(screen.getByText("Residencial Aurora"))
+    await reopen()
+    await reopen()
+    expect(onLoadChildren).toHaveBeenCalledTimes(1)
+    await act(async () => finish())
+  })
+
+  it("a load that failed is asked again when the node is reopened", async () => {
+    let fail: () => void = () => {}
+    const onLoadChildren = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((_, reject) => {
+            fail = () => reject(new Error("rede"))
+          }),
+      )
+      .mockImplementation(() => Promise.resolve())
+    render(<Tree data={lazy} onLoadChildren={onLoadChildren} />)
+    await userEvent.click(screen.getByText("Residencial Aurora"))
+    await act(async () => {
+      fail()
+    })
+    await reopen()
+    expect(onLoadChildren).toHaveBeenCalledTimes(2)
+  })
+
+  it("a load that ended without children is asked again when the node is reopened", async () => {
+    const onLoadChildren = vi.fn(() => Promise.resolve())
+    render(<Tree data={lazy} onLoadChildren={onLoadChildren} />)
+    await userEvent.click(screen.getByText("Residencial Aurora"))
+    await act(async () => {})
+    await reopen()
+    expect(onLoadChildren).toHaveBeenCalledTimes(2)
+  })
 })

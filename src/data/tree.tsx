@@ -51,9 +51,14 @@ export interface TreeProps
   /**
    * Called when a node with `hasChildren` and no `children` is opened. Load
    * its children and pass them in `data`. Closing the node and opening it
-   * again calls it again, so a load that failed can be retried.
+   * again calls it again, so a load that failed can be retried. Return the
+   * load's promise to tell a load in progress from one that failed: while it
+   * runs, closing and opening the node does not ask a second time (an app
+   * that appends what arrives would get every child twice). The Tree only
+   * watches it end: show a failure from your own code.
    */
-  onLoadChildren?: (node: TreeNodeData) => void
+  // biome-ignore lint/suspicious/noConfusingVoidType: a callback that returns nothing is as valid as one that returns its load.
+  onLoadChildren?: (node: TreeNodeData) => void | PromiseLike<unknown>
   /** Maximum recursion depth. Default `64`. */
   maxDepth?: number
   /** Horizontal indent per nesting level in pixels. Default `16`. */
@@ -252,8 +257,10 @@ function Tree({
     })
   }, [store, expandedSet, selectedId, visible])
 
-  // Ask for the children of a node once each time it is opened.
+  // Ask for the children of a node once each time it is opened, and not again
+  // while the load it returned is still running.
   const requested = React.useRef(new Set<string>())
+  const loading = React.useRef(new Set<string>())
   React.useEffect(() => {
     if (!onLoadChildren) return
     for (const flat of visible) {
@@ -263,9 +270,17 @@ function Tree({
         requested.current.delete(node.id)
         continue
       }
-      if (!requested.current.has(node.id)) {
+      if (!requested.current.has(node.id) && !loading.current.has(node.id)) {
         requested.current.add(node.id)
-        onLoadChildren(node)
+        const load = onLoadChildren(node)
+        if (load && typeof load.then === "function") {
+          const id = node.id
+          loading.current.add(id)
+          const ended = () => {
+            loading.current.delete(id)
+          }
+          load.then(ended, ended)
+        }
       }
     }
   }, [visible, expandedSet, onLoadChildren])
