@@ -15,9 +15,17 @@ interface ListViewProps {
   headingLevel: 3 | 4 | 5 | 6
   emptyLabel: string
   todayLabel: string
+  loading: boolean
 }
 
-export function ListView({ days, events, headingLevel, emptyLabel, todayLabel }: ListViewProps) {
+export function ListView({
+  days,
+  events,
+  headingLevel,
+  emptyLabel,
+  todayLabel,
+  loading,
+}: ListViewProps) {
   const { now, locale } = React.useContext(ScheduleContext)
   const Heading = `h${headingLevel}` as const
   const idPrefix = React.useId()
@@ -29,6 +37,7 @@ export function ListView({ days, events, headingLevel, emptyLabel, todayLabel }:
     .filter((group) => group.events.length > 0)
 
   if (groups.length === 0) {
+    if (loading) return null
     return (
       <EmptyState compact icon={<CalendarDays />} title={emptyLabel} headingLevel={headingLevel} />
     )

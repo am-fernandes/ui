@@ -380,6 +380,7 @@ function Schedule({
         headingLevel={subHeading}
         emptyLabel={l.empty}
         todayLabel={l.today}
+        loading={loading}
       />
     )
   } else {

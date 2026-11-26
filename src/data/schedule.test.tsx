@@ -431,6 +431,14 @@ describe("Schedule", () => {
   })
 
   describe("list view", () => {
+    it.each([
+      [true, 0],
+      [false, 1],
+    ])("says the list is empty only when not loading (loading=%s)", (loading, times) => {
+      renderSchedule({ defaultView: "list", events: [], loading })
+      expect(screen.queryAllByText(defaultScheduleLabels.empty)).toHaveLength(times)
+    })
+
     it("groups events under day headings with per-day times", () => {
       renderSchedule({ defaultView: "list" })
       const sections = screen
