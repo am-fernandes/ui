@@ -21,7 +21,7 @@ const meta: Meta<typeof NumberInput> = {
           "**Formato brasileiro:** vírgula decimal; o ponto de milhar aparece quando o campo não tem foco (`1.250,5`) e some durante a edição. `decimals` (padrão 0) é o máximo de casas.",
           "**Digitação:** dígitos, uma vírgula (o ponto do teclado numérico vira vírgula) e o sinal de menos só quando `min` é negativo.",
           "**Colar:** segue a regra da biblioteca (a mesma do `CurrencyInput`): com vírgula, ela é decimal e os pontos são milhar; sem vírgula, um único ponto seguido de 1 ou 2 dígitos é decimal; senão, os pontos são milhar. Outros caracteres são ignorados.",
-          "**Limites:** `min`, `max` e `step` (padrão 1). Fora da faixa, o valor é ajustado quando o campo perde o foco, não durante a digitação.",
+          "**Limites:** `min` e `max`. Fora da faixa, o número fica como foi digitado, o campo mostra o erro ao sair, no Enter ou no envio, e o envio nativo é barrado. Setas e botões param nos limites. `step` (padrão 1) é o passo deles.",
           "**Teclado:** ↑ e ↓ andam um `step`; PageUp e PageDown, dez; Home e End vão a `min` e `max` quando existem. A roda do mouse nunca muda o valor.",
           "**Botões:** `steppers` mostra − e +, com 24px, que não tiram o foco do campo e repetem enquanto pressionados. Nomes em `labels` (`decrement`, `increment`).",
           "**Unidades:** `prefix` e `suffix` dentro do campo (`m²`, `andares`); o leitor de tela ouve o valor com a unidade.",

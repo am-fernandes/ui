@@ -122,16 +122,35 @@ describe("NumberInput", () => {
     expect(input).toHaveAttribute("aria-valuenow", "0.3")
   })
 
-  it("clamps out-of-range values on blur, not while typing", async () => {
+  it("keeps an out-of-range value and shows the limit when the field is left", async () => {
     const onValueChange = vi.fn()
     render(<NumberInput label="Andar" min={1} max={30} onValueChange={onValueChange} />)
-    const input = screen.getByRole("spinbutton", { name: "Andar" })
+    const input = screen.getByRole("spinbutton", { name: "Andar" }) as HTMLInputElement
     await userEvent.type(input, "45")
+    expect(screen.queryByRole("alert")).toBeNull()
+    await userEvent.tab()
     expect(input).toHaveValue("45")
     expect(onValueChange).toHaveBeenLastCalledWith(45)
+    expect(screen.getByRole("alert")).toHaveTextContent("O valor máximo é 30.")
+    expect(input).toHaveAttribute("aria-invalid", "true")
+    expect(input.validity.valid).toBe(false)
+  })
+
+  it("writes the limit with its unit, takes the text from labels and clears it in range", async () => {
+    render(
+      <NumberInput
+        label="Área"
+        suffix="m²"
+        min={10}
+        labels={{ belowMin: (min) => `Pelo menos ${min}` }}
+      />,
+    )
+    const input = screen.getByRole("spinbutton", { name: "Área" })
+    await userEvent.type(input, "5")
     await userEvent.tab()
-    expect(input).toHaveValue("30")
-    expect(onValueChange).toHaveBeenLastCalledWith(30)
+    expect(screen.getByRole("alert")).toHaveTextContent("Pelo menos 10 m²")
+    await userEvent.type(input, "0")
+    expect(screen.queryByRole("alert")).toBeNull()
   })
 
   it("shows prefix and suffix inside the field and reads them in the value text", () => {
@@ -263,11 +282,10 @@ describe("NumberInput", () => {
   })
 
   it.each([
-    ["max", "500", "50"],
-    ["min", "1", "5"],
-  ])("sends a value within %s when Enter submits the form", async (_, typed, expected) => {
+    ["max", "500", "O valor máximo é 50."],
+    ["min", "1", "O valor mínimo é 5."],
+  ])("does not submit a value past %s when Enter is pressed", async (_, typed, message) => {
     const sent = vi.fn()
-    const onValueChange = vi.fn()
     render(
       <form
         onSubmit={(event) => {
@@ -275,19 +293,17 @@ describe("NumberInput", () => {
           sent(new FormData(event.currentTarget).get("andares"))
         }}
       >
-        <NumberInput
-          label="Andares"
-          name="andares"
-          min={5}
-          max={50}
-          onValueChange={onValueChange}
-        />
+        <NumberInput label="Andares" name="andares" min={5} max={50} />
         <button type="submit">Enviar</button>
       </form>,
     )
-    await userEvent.type(screen.getByRole("spinbutton"), `${typed}{Enter}`)
-    expect(sent).toHaveBeenCalledWith(expected)
-    expect(onValueChange).toHaveBeenLastCalledWith(Number(expected))
-    expect(screen.getByRole("spinbutton")).toHaveValue(expected)
+    const input = screen.getByRole("spinbutton")
+    await userEvent.type(input, `${typed}{Enter}`)
+    expect(sent).not.toHaveBeenCalled()
+    expect(input).toHaveValue(typed)
+    expect(screen.getByRole("alert")).toHaveTextContent(message)
+    await userEvent.clear(input)
+    await userEvent.type(input, "20{Enter}")
+    expect(sent).toHaveBeenCalledWith("20")
   })
 })

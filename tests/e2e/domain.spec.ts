@@ -602,46 +602,48 @@ test.describe("CurrencyInput e PercentageInput: campo vazio", () => {
 })
 
 test.describe("CurrencyInput e PercentageInput: limites", () => {
-  test("CurrencyInput: a tecla que passaria de max é recusada e min vale ao sair do campo", async ({
+  test("CurrencyInput: fora da faixa o valor fica e o erro aparece ao sair do campo", async ({
     page,
   }) => {
     await gotoStory(page, "domain-currencyinput--min-max")
     const input = page.getByRole("textbox", { name: /Valor da parcela/ })
     const internal = page.getByText(/^Valor interno:/)
+    const alert = page.getByRole("alert")
     await input.press("End")
-    await page.keyboard.type("500000")
-    await expect(input).toHaveValue("5.000,00")
-    // Mais um dígito daria 50.000,00.
-    await page.keyboard.type("1")
-    await expect(input).toHaveValue("5.000,00")
-    await expect(internal).toHaveText("Valor interno: 5000")
+    await page.keyboard.type("500001")
+    await expect(input).toHaveValue("5.000,01")
+    await expect(alert).toHaveCount(0)
+    await page.keyboard.press("Tab")
+    await expect(alert).toHaveText("O valor máximo é R$ 5.000,00.")
+    await expect(input).toHaveValue("5.000,01")
+    await expect(internal).toHaveText("Valor interno: 5000.01")
 
     await input.press("ControlOrMeta+A")
     await page.keyboard.type("2550")
-    await expect(input).toHaveValue("25,50")
     await page.keyboard.press("Tab")
-    await expect(input).toHaveValue("100,00")
-    await expect(internal).toHaveText("Valor interno: 100")
+    await expect(input).toHaveValue("25,50")
+    await expect(alert).toHaveText("O valor mínimo é R$ 100,00.")
   })
 
-  test("PercentageInput: digitar além do teto não troca o número por 100", async ({ page }) => {
+  test("PercentageInput: digitar além do teto não troca o número", async ({ page }) => {
     await gotoStory(page, "domain-percentageinput--default")
     const input = page.getByRole("textbox", { name: /Comissão/ })
     await input.press("End")
     await page.keyboard.type("12345")
-    await expect(input).toHaveValue("12,34")
-    expect(await caretOf(input)).toBe(5)
+    await expect(input).toHaveValue("123,45")
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("alert")).toHaveText("O valor máximo é 100,00%.")
   })
 
-  test("PercentageInput: min vale ao sair do campo", async ({ page }) => {
+  test("PercentageInput: abaixo do mínimo o erro aparece ao sair do campo", async ({ page }) => {
     await gotoStory(page, "domain-percentageinput--min-max")
     const input = page.getByRole("textbox", { name: /Entrada/ })
     await input.press("End")
     await page.keyboard.type("250")
-    await expect(input).toHaveValue("2,50")
     await page.keyboard.press("Tab")
-    await expect(input).toHaveValue("10,00")
-    await expect(page.getByText(/^Valor interno:/)).toHaveText("Valor interno: 10")
+    await expect(input).toHaveValue("2,50")
+    await expect(page.getByRole("alert")).toHaveText("O valor mínimo é 10,00%.")
+    await expect(page.getByText(/^Valor interno:/)).toHaveText("Valor interno: 2.5")
   })
 })
 
@@ -706,9 +708,10 @@ test.describe("PercentageInput: casas decimais", () => {
     }
     await expect(two).toHaveValue("3,75")
     await expect(one).toHaveValue("37,5")
-    // 375 passaria de 100: o terceiro dígito é recusado.
-    await expect(none).toHaveValue("37")
-    await expect(page.getByText("Valores internos: 3.75 / 37.5 / 37")).toBeVisible()
+    await expect(none).toHaveValue("375")
+    await expect(page.getByText("Valores internos: 3.75 / 37.5 / 375")).toBeVisible()
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("alert")).toHaveText("O valor máximo é 100%.")
   })
 })
 
@@ -736,17 +739,16 @@ test.describe("PercentageInput: colar", () => {
 })
 
 test.describe("PercentageInput", () => {
-  test("never goes above max", async ({ page }) => {
+  test("keeps a value above max and marks the field invalid", async ({ page }) => {
     await gotoStory(page, "domain-percentageinput--default")
     const input = page.getByRole("textbox", { name: /Comissão/ })
     await expect(input).toHaveValue("0,00")
     await input.press("End")
     await input.pressSequentially("99999")
-    // Default max=100: the field never shows more than 100,00.
-    await expect(input).not.toHaveValue("0,00")
-    const value = await input.inputValue()
-    const numeric = Number.parseFloat(value.replace(".", "").replace(",", "."))
-    expect(numeric).toBeLessThanOrEqual(100)
+    await input.blur()
+    await expect(input).toHaveValue("999,99")
+    await expect(input).toHaveAttribute("aria-invalid", "true")
+    await expect(page.getByRole("alert")).toHaveText("O valor máximo é 100,00%.")
   })
 })
 

@@ -339,10 +339,10 @@ export function FiltroNativo({ onFilter }: { onFilter: (dados: Record<string, st
 | Dinheiro em reais | `CurrencyInput` (`allowNegative` para estorno/desconto, `min`/`max` em reais) |
 | Percentual | `PercentageInput` (`decimals` 0, 1 ou 2; padrão 2; `max` 100) |
 
-- `NumberInput` vazio é `null`, nunca `0`. Setas do teclado e PageUp/PageDown ajustam; `min`/`max` se aplicam ao sair do campo e no Enter.
+- `NumberInput` vazio é `null`, nunca `0`. Setas do teclado e PageUp/PageDown ajustam e param em `min`/`max`.
 - `CurrencyInput` guarda **reais** e arredonda para centavos. Faça contas com `toCents`/`fromCents`.
 - `emptyValue="null"` nos dois quando "não informado" é diferente de zero (ex.: desconto opcional).
-- O que for digitado que passe do `max` é recusado (o campo não mostra número que o usuário não digitou).
+- Nos três campos, um número fora de `min`/`max` não é trocado: o campo mostra o erro (`labels.belowMin`/`aboveMax`) ao sair, no Enter ou no envio, e barra o envio nativo. Com `noValidate` (comum no react-hook-form), valide os limites no app.
 
 ### CPF, CNPJ, CEP, telefone
 

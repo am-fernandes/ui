@@ -14,7 +14,7 @@ Decisões deliberadas:
 - **Defaults exportados.** Cada componente exporta também `defaultXLabels` para que consumers possam compor traduções completas a partir do default pt-BR (útil quando 90% das strings já está OK e você só quer trocar 1 ou 2).
 - **`Partial` na prop.** Você sempre passa só o que quer mudar; o componente faz `merge` interno com o default.
 
-28 objetos de `labels`, em 29 componentes (`BarChart` e `LineChart` dividem o mesmo):
+30 objetos de `labels`, em 31 componentes (`BarChart` e `LineChart` dividem o mesmo):
 
 ## Tabela de componentes localizáveis
 
@@ -24,7 +24,9 @@ Decisões deliberadas:
 |---|---|---|---:|
 | `Button` | `ButtonLabels` | `defaultButtonLabels` | 1 |
 | `Textarea` | `TextareaLabels` | `defaultTextareaLabels` | 2 |
-| `NumberInput` | `NumberInputLabels` | `defaultNumberInputLabels` | 2 |
+| `NumberInput` | `NumberInputLabels` | `defaultNumberInputLabels` | 4 |
+| `CurrencyInput` | `CurrencyInputLabels` | `defaultCurrencyInputLabels` | 2 |
+| `PercentageInput` | `PercentageInputLabels` | `defaultPercentageInputLabels` | 2 |
 | `Slider` | `SliderLabels` | `defaultSliderLabels` | 2 |
 | `Select` | `SelectLabels` | `defaultSelectLabels` | 1 |
 | `Combobox` | `ComboboxLabels` | `defaultComboboxLabels` | 9 |

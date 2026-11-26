@@ -20,8 +20,8 @@ const meta = {
           "- `defaultValue` — valor inicial quando o campo não é controlado: sem `value`, ele guarda o próprio valor.",
           "- `onValueChange` — callback `(value: number) => void` disparado a cada edição com o novo decimal.",
           '- `emptyValue` — o que vale um campo vazio. `"zero"` (padrão): o campo sempre tem um número e limpar volta a `0,00`. `"null"`: o campo pode ficar vazio, `value` aceita `null`, `onValueChange` passa a receber `number | null`, o placeholder aparece e o `required` nativo funciona.',
-          "- `max` — teto do percentual (padrão 100). A tecla (ou a colagem) que passaria dele é recusada: o campo fica com o que tinha.",
-          "- `min` — piso do percentual, aplicado quando o campo perde o foco. Com `min` negativo o campo aceita percentual negativo.",
+          "- `max` — teto do percentual (padrão 100). Acima dele o campo mostra o erro e barra o envio nativo.",
+          "- `min` — piso do percentual, com o mesmo erro. Com `min` negativo o campo aceita percentual negativo.",
           "- `decimals` — casas decimais: `2` (padrão, `12,50`), `1` (`12,5`) ou `0` (`12`).",
           "- `label` — rótulo renderizado pelo próprio componente via `FieldShell`. Prefira esta prop em vez de um `<Label>` externo.",
           "- `name` — nome no formulário nativo. O form recebe o número (`12.5`), por um input oculto.",
@@ -259,7 +259,7 @@ export const MinMax: Story = {
     docs: {
       description: {
         story:
-          "`max` é um teto: a tecla que passaria dele é recusada e o campo fica com o que tinha, sem trocar o número digitado por outro. `min` vale quando o campo perde o foco, porque durante a digitação o valor passa por números menores no caminho.",
+          "Fora da faixa, o valor fica como foi digitado: o erro aparece ao sair do campo, no Enter ou no envio, e some quando o valor volta para a faixa. O envio nativo do formulário é barrado.",
       },
     },
   },

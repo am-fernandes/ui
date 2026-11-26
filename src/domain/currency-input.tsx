@@ -2,7 +2,18 @@
 
 import { type DecimalFieldProps, DecimalInput } from "./_internal/decimal-input"
 
+export interface CurrencyInputLabels {
+  belowMin: (min: string) => string
+  aboveMax: (max: string) => string
+}
+
+export const defaultCurrencyInputLabels: CurrencyInputLabels = {
+  belowMin: (min) => `O valor mínimo é ${min}.`,
+  aboveMax: (max) => `O valor máximo é ${max}.`,
+}
+
 interface CurrencyInputBaseProps extends DecimalFieldProps {
+  labels?: Partial<CurrencyInputLabels>
   /**
    * Accepts negative values (a refund, a discount, a balance owed). The minus
    * key makes the value negative, a second one or `+` makes it positive
@@ -12,17 +23,12 @@ interface CurrencyInputBaseProps extends DecimalFieldProps {
    */
   allowNegative?: boolean
   /**
-   * Smallest value, in reais. While typing, the value passes below it on its
-   * way up, so it is applied when the field loses focus, or on Enter, after an
-   * edit: a
-   * smaller value is raised to `min`.
+   * Smallest value, in reais. A smaller value is kept as typed: the field
+   * shows `labels.belowMin` when it is left, on Enter or on submit, and is
+   * invalid for the browser, so a native submit stops on it.
    */
   min?: number
-  /**
-   * Largest value, in reais. A key (or a paste) that would take the value
-   * past it is refused: the field keeps what it had, and never shows a number
-   * the user did not type.
-   */
+  /** Largest value, in reais, as `min`, with `labels.aboveMax`. */
   max?: number
 }
 
@@ -67,6 +73,7 @@ function CurrencyInput({
   value,
   defaultValue,
   onValueChange,
+  labels,
   allowNegative = false,
   ...props
 }: CurrencyInputProps) {
@@ -86,6 +93,8 @@ function CurrencyInput({
       defaultValue={defaultValue}
       onValueChange={(next) => report?.(allowEmpty ? next : (next ?? 0))}
       allowEmpty={allowEmpty}
+      limitLabels={{ ...defaultCurrencyInputLabels, ...labels }}
+      writeLimit={(text) => `R$ ${text}`}
       allowNegative={allowNegative}
     />
   )

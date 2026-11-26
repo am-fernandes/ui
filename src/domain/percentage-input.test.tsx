@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
@@ -28,28 +28,12 @@ describe("PercentageInput", () => {
     expect(screen.getByDisplayValue("0,00")).toBeInTheDocument()
   })
 
-  // Antes o valor acima do teto era trocado por 100 em silêncio: digitar
-  // 12345 mostrava 100,00, um número que a pessoa não digitou.
-  it("does not take a value above the default max=100", () => {
-    const onValueChange = vi.fn()
-    render(<PercentageInput value={0} onValueChange={onValueChange} />)
+  it("takes a value above the default max=100 and marks the field invalid", () => {
+    render(<PercentageInput defaultValue={0} />)
     const input = screen.getByDisplayValue("0,00") as HTMLInputElement
-    // "12000" -> 120.00 -> above 100: the field keeps what it had
     fireEvent.change(input, { target: { value: "12000" } })
-    expect(onValueChange).not.toHaveBeenCalled()
-    expect(input).toHaveValue("0,00")
-    fireEvent.change(input, { target: { value: "10000" } })
-    expect(onValueChange).toHaveBeenLastCalledWith(100)
-  })
-
-  it("respects a custom max (e.g. 200)", () => {
-    const onValueChange = vi.fn()
-    render(<PercentageInput value={0} onValueChange={onValueChange} max={200} />)
-    const input = screen.getByDisplayValue("0,00") as HTMLInputElement
-    fireEvent.change(input, { target: { value: "15050" } })
-    expect(onValueChange).toHaveBeenLastCalledWith(150.5)
-    fireEvent.change(input, { target: { value: "30000" } })
-    expect(onValueChange).toHaveBeenCalledTimes(1)
+    expect(input).toHaveValue("120,00")
+    expect(input.validationMessage).toBe("O valor máximo é 100,00%.")
   })
 
   it("strips letters from typed input", () => {
@@ -585,58 +569,147 @@ describe("PercentageInput", () => {
       )
     }
 
-    it("digitar 12345 para em 12,34: o dígito que passaria de 100 é recusado", async () => {
+    function InForm({ onSend, error }: { onSend: (value: unknown) => void; error?: string }) {
+      return (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            onSend(new FormData(event.currentTarget).get("valor"))
+          }}
+        >
+          <PercentageInput name="valor" label="Valor" min={10} max={50} error={error} />
+          <button type="submit">Enviar</button>
+        </form>
+      )
+    }
+
+    it("acima do máximo, o campo guarda o que foi digitado e acusa ao sair", async () => {
       const user = userEvent.setup()
-      render(<Limited />)
+      render(<Limited max={50} />)
       const input = screen.getByRole("textbox") as HTMLInputElement
       await user.click(input)
-      await user.keyboard("{End}12345")
-      expect(input).toHaveValue("12,34")
-      expect(input.selectionStart).toBe(5)
-      expect(screen.getByTestId("value")).toHaveTextContent("12.34")
+      await user.keyboard("{End}5001")
+      expect(input).toHaveValue("50,01")
+      expect(screen.queryByRole("alert")).toBeNull()
+      await user.tab()
+      expect(screen.getByRole("alert")).toHaveTextContent("O valor máximo é 50,00%.")
+      expect(input).toHaveValue("50,01")
+      expect(input).toHaveAttribute("aria-invalid", "true")
+      expect(input.validity.valid).toBe(false)
+      expect(screen.getByTestId("value")).toHaveTextContent("50.01")
     })
 
-    it("dá para chegar exatamente a 100", async () => {
+    it("um valor colado acima do máximo entra e é acusado", async () => {
       const user = userEvent.setup()
-      render(<Limited />)
+      render(<Limited max={50} />)
       const input = screen.getByRole("textbox")
       await user.click(input)
-      await user.keyboard("{End}10000")
-      expect(input).toHaveValue("100,00")
+      await user.paste("75")
+      await user.tab()
+      expect(input).toHaveValue("75,00")
+      expect(screen.getByRole("alert")).toHaveTextContent("O valor máximo é 50,00%.")
     })
 
-    it("um valor colado acima do máximo não entra", async () => {
+    it("abaixo do mínimo, só acusa ao sair do campo e não troca o valor", async () => {
       const user = userEvent.setup()
-      render(<Limited initial={10} />)
+      render(<Limited min={10} />)
       const input = screen.getByRole("textbox")
       await user.click(input)
-      await user.paste("150")
-      expect(input).toHaveValue("10,00")
-    })
-
-    it("abaixo do mínimo é aceito enquanto se digita e corrigido ao sair do campo", async () => {
-      const user = userEvent.setup()
-      render(<Limited min={5} />)
-      const input = screen.getByRole("textbox")
-      await user.click(input)
-      await user.keyboard("{End}250")
-      expect(input).toHaveValue("2,50")
+      await user.keyboard("{End}500")
+      expect(screen.queryByRole("alert")).toBeNull()
       await user.tab()
       expect(input).toHaveValue("5,00")
+      expect(screen.getByRole("alert")).toHaveTextContent("O valor mínimo é 10,00%.")
       expect(screen.getByTestId("value")).toHaveTextContent("5")
     })
 
-    it("com min negativo, aceita percentual negativo até o mínimo", async () => {
+    it("o erro some quando o valor volta para a faixa", async () => {
+      const user = userEvent.setup()
+      render(<Limited min={10} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}500")
+      await user.tab()
+      await user.click(input)
+      await user.keyboard("{End}0")
+      expect(input).toHaveValue("50,00")
+      expect(screen.queryByRole("alert")).toBeNull()
+      expect(input.validity.valid).toBe(true)
+    })
+
+    it("fora da faixa, Enter não envia o formulário e mostra o erro", async () => {
+      const user = userEvent.setup()
+      const onSend = vi.fn()
+      render(<InForm onSend={onSend} />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.keyboard("{End}500{Enter}")
+      expect(onSend).not.toHaveBeenCalled()
+      expect(input).toHaveValue("5,00")
+      expect(screen.getByRole("alert")).toHaveTextContent("O valor mínimo é 10,00%.")
+      await user.keyboard("0{Enter}")
+      expect(onSend).toHaveBeenCalledWith("50")
+    })
+
+    it("sem edição, o envio é barrado e o erro aparece", async () => {
+      const user = userEvent.setup()
+      const onSend = vi.fn()
+      render(<InForm onSend={onSend} />)
+      await user.tab()
+      await user.tab()
+      expect(screen.queryByRole("alert")).toBeNull()
+      await user.click(screen.getByRole("button", { name: "Enviar" }))
+      expect(onSend).not.toHaveBeenCalled()
+      expect(screen.getByRole("alert")).toHaveTextContent("O valor mínimo é 10,00%.")
+    })
+
+    it("o error do app vale no lugar da mensagem de limite", async () => {
+      const user = userEvent.setup()
+      render(<InForm onSend={vi.fn()} error="Informe a parcela." />)
+      await user.click(screen.getByRole("button", { name: "Enviar" }))
+      expect(screen.getByRole("alert")).toHaveTextContent("Informe a parcela.")
+    })
+
+    it("o reset do formulário limpa o erro", async () => {
+      const user = userEvent.setup()
+      render(<InForm onSend={vi.fn()} />)
+      await user.click(screen.getByRole("button", { name: "Enviar" }))
+      act(() => (screen.getByRole("textbox") as HTMLInputElement).form?.reset())
+      expect(screen.queryByRole("alert")).toBeNull()
+    })
+
+    it.each([{ readOnly: true }, { disabled: true }])("%o não é acusado", (state) => {
+      render(<PercentageInput label="Valor" value={75} max={50} {...state} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      fireEvent.invalid(input)
+      expect(input.validationMessage).toBe("")
+      expect(screen.queryByRole("alert")).toBeNull()
+    })
+
+    it("a mensagem vem de labels", async () => {
+      const user = userEvent.setup()
+      render(
+        <PercentageInput
+          label="Valor"
+          max={50}
+          defaultValue={75}
+          labels={{ aboveMax: (max) => `Teto: ${max}` }}
+        />,
+      )
+      await user.click(screen.getByRole("textbox"))
+      await user.keyboard("{Enter}")
+      expect(screen.getByRole("alert")).toHaveTextContent("Teto: 50,00%")
+    })
+
+    it("com min negativo, aceita percentual negativo e acusa abaixo dele", async () => {
       const user = userEvent.setup()
       render(<Limited min={-10} />)
       const input = screen.getByRole("textbox")
       await user.click(input)
-      await user.keyboard("{End}-500")
-      expect(input).toHaveValue("-5,00")
-      expect(screen.getByTestId("value")).toHaveTextContent("-5")
-      await user.keyboard("0")
-      // -50,00 passaria de -10,00.
-      expect(input).toHaveValue("-5,00")
+      await user.keyboard("{End}-5000")
+      expect(input).toHaveValue("-50,00")
+      await user.tab()
+      expect(screen.getByRole("alert")).toHaveTextContent("O valor mínimo é -10,00%.")
     })
 
     it("sem min negativo o sinal é ignorado", async () => {
@@ -701,9 +774,10 @@ describe("PercentageInput", () => {
       await user.keyboard("{End}75")
       expect(input).toHaveValue("75")
       expect(screen.getByTestId("value")).toHaveTextContent("75")
-      // 750 passaria de 100.
       await user.keyboard("0")
-      expect(input).toHaveValue("75")
+      await user.tab()
+      expect(input).toHaveValue("750")
+      expect(screen.getByRole("alert")).toHaveTextContent("O valor máximo é 100%.")
     })
 
     it("o valor colado é arredondado para as casas do campo", async () => {

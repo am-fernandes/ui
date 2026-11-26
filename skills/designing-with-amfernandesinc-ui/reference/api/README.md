@@ -128,7 +128,7 @@ Todo export de `@amfernandesinc/ui`, com o arquivo desta pasta onde ele está do
 - `toBRLMoney` → [helpers.md](./helpers.md)
 - `toCents` → [helpers.md](./helpers.md)
 
-## Constantes (38)
+## Constantes (40)
 
 - `alertVariants` → [overlays.md](./overlays.md)
 - `badgeVariants` → [primitives.md](./primitives.md)
@@ -144,6 +144,7 @@ Todo export de `@amfernandesinc/ui`, com o arquivo desta pasta onde ele está do
 - `defaultChartLabels` → [data.md](./data.md)
 - `defaultComboboxLabels` → [forms.md](./forms.md)
 - `defaultCommandPaletteLabels` → [navigation.md](./navigation.md)
+- `defaultCurrencyInputLabels` → [domain.md](./domain.md)
 - `defaultDataTableLabels` → [data.md](./data.md)
 - `defaultDateInputLabels` → [forms.md](./forms.md)
 - `defaultDateRangePickerLabels` → [forms.md](./forms.md)
@@ -152,6 +153,7 @@ Todo export de `@amfernandesinc/ui`, com o arquivo desta pasta onde ele está do
 - `defaultMultiInputLabels` → [domain.md](./domain.md)
 - `defaultNumberInputLabels` → [primitives.md](./primitives.md)
 - `defaultPaginationLabels` → [navigation.md](./navigation.md)
+- `defaultPercentageInputLabels` → [domain.md](./domain.md)
 - `defaultScheduleLabels` → [data.md](./data.md)
 - `defaultSelectLabels` → [forms.md](./forms.md)
 - `defaultSkeletonLabels` → [primitives.md](./primitives.md)
@@ -169,7 +171,7 @@ Todo export de `@amfernandesinc/ui`, com o arquivo desta pasta onde ele está do
 - `toggleVariants` → [primitives.md](./primitives.md)
 - `typographyVariants` → [primitives.md](./primitives.md)
 
-## Tipos (152)
+## Tipos (154)
 
 - `AccordionItemData` → [navigation.md](./navigation.md)
 - `AccordionProps` → [navigation.md](./navigation.md)
@@ -206,6 +208,7 @@ Todo export de `@amfernandesinc/ui`, com o arquivo desta pasta onde ele está do
 - `CommandPaletteLabels` → [navigation.md](./navigation.md)
 - `CommandPaletteProps` → [navigation.md](./navigation.md)
 - `CPFInputProps` → [domain.md](./domain.md)
+- `CurrencyInputLabels` → [domain.md](./domain.md)
 - `CurrencyInputProps` → [domain.md](./domain.md)
 - `DataTableColumnKey` → [data.md](./data.md)
 - `DataTableColumnMeta` → [data.md](./data.md)
@@ -256,6 +259,7 @@ Todo export de `@amfernandesinc/ui`, com o arquivo desta pasta onde ele está do
 - `PaginationLabels` → [navigation.md](./navigation.md)
 - `PaginationProps` → [navigation.md](./navigation.md)
 - `PaginationState` → [data.md](./data.md)
+- `PercentageInputLabels` → [domain.md](./domain.md)
 - `PercentageInputProps` → [domain.md](./domain.md)
 - `PhoneInputProps` → [domain.md](./domain.md)
 - `PopoverProps` → [overlays.md](./overlays.md)

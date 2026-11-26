@@ -1,15 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { flushSync } from "react-dom"
 
 import { parseBRNumber } from "@/lib/currency"
+import { useLimitError } from "../../primitives/_internal/use-limit-error"
 import {
   type Decimals,
   MAX_UNITS,
   applyNumberEdit,
   caretBeforeDigits,
-  clampUnits,
   formatUnits,
   fromUnits,
   toUnits,
@@ -39,6 +38,8 @@ interface DecimalInputProps extends DecimalFieldProps {
   allowNegative: boolean
   min?: number
   max?: number
+  limitLabels: { belowMin: (min: string) => string; aboveMax: (max: string) => string }
+  writeLimit: (text: string) => string
 }
 
 function assignRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
@@ -65,10 +66,14 @@ function DecimalInput({
   allowNegative,
   min,
   max,
+  limitLabels,
+  writeLimit,
   ref,
   onPaste,
   onBlur,
   onKeyDown,
+  onInvalid,
+  error,
   ...props
 }: DecimalInputProps) {
   // Anything that is not a number (undefined, NaN) is an empty field, never
@@ -102,8 +107,19 @@ function DecimalInput({
   const pendingCaret = React.useRef<{ text: string; caret: number } | null>(null)
   const [, forceRender] = React.useReducer((n: number) => n + 1, 0)
   // Whether the user changed the value since the field took focus: only
-  // then is it brought inside the limits on blur.
+  // then does leaving it show the limit message.
   const editedSinceFocus = React.useRef(false)
+
+  const written = (limit: number) => writeLimit(formatUnits(limit, decimals))
+  let problem: string | null = null
+  if (!props.disabled && !props.readOnly && units != null) {
+    if (minUnits != null && units < minUnits) {
+      problem = limitLabels.belowMin(written(minUnits))
+    } else if (maxUnits != null && units > maxUnits) {
+      problem = limitLabels.aboveMax(written(maxUnits))
+    }
+  }
+  const { limitError, setShown: setLimitShown } = useLimitError(inputRef, problem)
 
   React.useLayoutEffect(() => {
     const pending = pendingCaret.current
@@ -129,6 +145,7 @@ function DecimalInput({
     if (isControlled) return
     setNegativeDraft(false)
     change(initial)
+    setLimitShown(false)
   }
   React.useEffect(() => {
     const form = inputRef.current?.form
@@ -159,8 +176,6 @@ function DecimalInput({
       inputType: (e.nativeEvent as InputEvent).inputType,
       allowNegative,
       allowEmpty,
-      min: minUnits,
-      max: maxUnits,
     })
     const refused = edit.refused
     commit(edit.units, edit.negativeDraft, (text) =>
@@ -179,29 +194,26 @@ function DecimalInput({
     if (pasted == null) return
     const next = toUnits(allowNegative ? pasted : Math.abs(pasted), decimals)
     if (next == null || Math.abs(next) > MAX_UNITS) return
-    // Past the far limit: not taken, like a key that would go past it.
-    if (maxUnits != null && next > maxUnits) return
-    if (minUnits != null && next < 0 && next < minUnits) return
     commit(next, false, (text) => text.length)
-  }
-
-  const applyLimits = () => {
-    // While typing the value passes below `min` on its way up, so the near
-    // limit is only applied when the user is done.
-    if (editedSinceFocus.current && units != null) change(clampUnits(units, minUnits, maxUnits))
-    editedSinceFocus.current = false
   }
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     onBlur?.(e)
     setNegativeDraft(false)
-    applyLimits()
+    // While typing the value passes below `min` on its way up, so the message
+    // waits until the user is done.
+    if (editedSinceFocus.current) setLimitShown(true)
+    editedSinceFocus.current = false
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     onKeyDown?.(e)
-    if (e.key !== "Enter" || e.defaultPrevented || props.readOnly) return
-    flushSync(applyLimits)
+    if (e.key === "Enter" && !e.defaultPrevented) setLimitShown(true)
+  }
+
+  const handleInvalid = (e: React.FormEvent<HTMLInputElement>) => {
+    onInvalid?.(e)
+    setLimitShown(true)
   }
 
   return (
@@ -220,6 +232,8 @@ function DecimalInput({
       onPaste={handlePaste}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
+      onInvalid={handleInvalid}
+      error={error != null && error !== "" ? error : limitError}
     />
   )
 }

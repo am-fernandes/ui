@@ -3,20 +3,28 @@
 import { formatUnits } from "./_internal/decimal-engine"
 import { type DecimalFieldProps, DecimalInput } from "./_internal/decimal-input"
 
+export interface PercentageInputLabels {
+  belowMin: (min: string) => string
+  aboveMax: (max: string) => string
+}
+
+export const defaultPercentageInputLabels: PercentageInputLabels = {
+  belowMin: (min) => `O valor mínimo é ${min}.`,
+  aboveMax: (max) => `O valor máximo é ${max}.`,
+}
+
 interface PercentageInputBaseProps extends DecimalFieldProps {
+  labels?: Partial<PercentageInputLabels>
   /**
-   * Largest percentage. A key (or a paste) that would take the value past it
-   * is refused: the field keeps what it had, and never shows a number the
-   * user did not type.
+   * Largest percentage. A larger value is kept as typed: the field shows
+   * `labels.aboveMax` when it is left, on Enter or on submit, and is invalid
+   * for the browser, so a native submit stops on it.
    * @default 100
    */
   max?: number
   /**
-   * Smallest percentage. While typing, the value passes below it on its way
-   * up, so it is applied when the field loses focus, or on Enter, after an
-   * edit: a smaller
-   * value is raised to `min`. A negative `min` lets the field take negative
-   * percentages, with the minus key.
+   * Smallest percentage, as `max`, with `labels.belowMin`. A negative `min`
+   * lets the field take negative percentages, with the minus key.
    */
   min?: number
   /**
@@ -64,6 +72,7 @@ function PercentageInput({
   value,
   defaultValue,
   onValueChange,
+  labels,
   max = 100,
   min,
   decimals = 2,
@@ -85,6 +94,8 @@ function PercentageInput({
       defaultValue={defaultValue}
       onValueChange={(next) => report?.(allowEmpty ? next : (next ?? 0))}
       allowEmpty={allowEmpty}
+      limitLabels={{ ...defaultPercentageInputLabels, ...labels }}
+      writeLimit={(text) => `${text}%`}
       allowNegative={min != null && min < 0}
       min={min}
       max={max}

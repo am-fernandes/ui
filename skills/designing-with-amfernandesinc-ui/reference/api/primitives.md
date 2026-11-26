@@ -369,8 +369,8 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
 | `defaultValue` | `number \| null` | `null` | Initial value of an uncontrolled field. |
 | `onValueChange` | `(value: number \| null) => void` | — | Called with the number, or `null` when the field is emptied. |
 | `decimals` | `number` | `0` | Decimal places allowed and shown (up to). `0` takes whole numbers only. |
-| `min` | `number` | — | Smallest value. Applied when the field loses focus and on Enter, not while typing. A negative `min` lets the minus sign be typed. |
-| `max` | `number` | — | Largest value. Applied when the field loses focus and on Enter, not while typing. |
+| `min` | `number` | — | Smallest value. A smaller number is kept as typed: the field shows `labels.belowMin` when it is left, on Enter or on submit, and is invalid for the browser, so a native submit stops on it. The arrows and the stepper buttons stop at it. A negative `min` lets the minus sign be typed. |
+| `max` | `number` | — | Largest value, as `min`, with `labels.aboveMax`. |
 | `step` | `number` | `1` | What the arrows and the stepper buttons add or take. PageUp/PageDown move ten steps. |
 | `prefix` | `React.ReactNode` | — | Fixed text before the number, inside the field. |
 | `suffix` | `React.ReactNode` | — | Unit after the number, inside the field ("m²", "andares"). |
@@ -397,6 +397,8 @@ Repassa também: atributos HTML do React (`HTMLAttributes`, `InputHTMLAttributes
 const defaultNumberInputLabels: NumberInputLabels = {
   increment: "Aumentar",
   decrement: "Diminuir",
+  belowMin: (min) => `O valor mínimo é ${min}.`,
+  aboveMax: (max) => `O valor máximo é ${max}.`,
 }
 ```
 
@@ -410,6 +412,8 @@ export interface NumberInputLabels {
   increment: string
   /** Name of the "−" stepper button. */
   decrement: string
+  belowMin: (min: string) => string
+  aboveMax: (max: string) => string
 }
 ```
 
@@ -442,11 +446,13 @@ export interface NumberInputProps
   /** Decimal places allowed and shown (up to). `0` takes whole numbers only. @default 0 */
   decimals?: number
   /**
-   * Smallest value. Applied when the field loses focus and on Enter, not while
-   * typing. A negative `min` lets the minus sign be typed.
+   * Smallest value. A smaller number is kept as typed: the field shows
+   * `labels.belowMin` when it is left, on Enter or on submit, and is invalid
+   * for the browser, so a native submit stops on it. The arrows and the
+   * stepper buttons stop at it. A negative `min` lets the minus sign be typed.
    */
   min?: number
-  /** Largest value. Applied when the field loses focus and on Enter, not while typing. */
+  /** Largest value, as `min`, with `labels.aboveMax`. */
   max?: number
   /** What the arrows and the stepper buttons add or take. PageUp/PageDown move ten steps. @default 1 */
   step?: number

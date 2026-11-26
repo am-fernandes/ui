@@ -4,7 +4,6 @@ import {
   type NumberEditInput,
   applyNumberEdit,
   caretBeforeDigits,
-  clampUnits,
   formatUnits,
   fromUnits,
   toUnits,
@@ -89,16 +88,6 @@ describe("caretBeforeDigits", () => {
 
   it("pedindo mais dígitos do que há, vai para o início", () => {
     expect(caretBeforeDigits("1,23", 9, "right")).toBe(0)
-  })
-})
-
-describe("clampUnits", () => {
-  it("traz o valor para dentro dos limites", () => {
-    expect(clampUnits(50, 100, 200)).toBe(100)
-    expect(clampUnits(250, 100, 200)).toBe(200)
-    expect(clampUnits(150, 100, 200)).toBe(150)
-    expect(clampUnits(150)).toBe(150)
-    expect(clampUnits(-500, -100)).toBe(-100)
   })
 })
 
@@ -428,67 +417,6 @@ describe("applyNumberEdit", () => {
       expect(edit({ ...negative, edited: "−0,005", caret: 6, inputType: "insertText" }).units).toBe(
         -5,
       )
-    })
-  })
-
-  describe("limites", () => {
-    it("recusa a tecla que passaria do máximo", () => {
-      const result = edit({
-        previous: 1234,
-        previousText: "12,34",
-        edited: "12,345",
-        caret: 6,
-        inputType: "insertText",
-        max: 10000,
-      })
-      expect(result.units).toBe(1234)
-      expect(result.refused).toEqual({ caret: 5 })
-    })
-
-    it("aceita chegar exatamente no máximo", () => {
-      expect(
-        edit({
-          previous: 1000,
-          previousText: "10,00",
-          edited: "10,000",
-          caret: 6,
-          inputType: "insertText",
-          max: 10000,
-        }).units,
-      ).toBe(10000)
-    })
-
-    it("um valor que já estava acima do máximo pode ser reduzido", () => {
-      // 150,00 com máximo 100: apagar um dígito dá 15,00.
-      expect(
-        edit({
-          previous: 15000,
-          previousText: "150,00",
-          edited: "150,0",
-          caret: 5,
-          inputType: "deleteContentBackward",
-          max: 10000,
-        }).units,
-      ).toBe(1500)
-    })
-
-    it("abaixo do mínimo é aceito enquanto se digita", () => {
-      // Mínimo 10,00: o caminho até 15,00 passa por 0,01 e 0,15.
-      expect(edit({ edited: "0,001", caret: 5, inputType: "insertText", min: 1000 }).units).toBe(1)
-    })
-
-    it("recusa o negativo que passaria do mínimo", () => {
-      const result = edit({
-        allowNegative: true,
-        previous: -1234,
-        previousText: "-12,34",
-        edited: "-12,345",
-        caret: 7,
-        inputType: "insertText",
-        min: -10000,
-      })
-      expect(result.units).toBe(-1234)
-      expect(result.refused).toEqual({ caret: 6 })
     })
   })
 })

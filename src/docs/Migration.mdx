@@ -31,6 +31,7 @@ Não quebram a compilação nem os tipos, mas um app pode notar.
 
 | Mudança | O que muda |
 |---|---|
+| **Número fora dos limites vira erro** <br/>`numeric-inputs-min-max` | `PercentageInput` não troca mais o valor pelo teto: fica o que foi digitado, o campo mostra o erro e barra o envio nativo. `CurrencyInput` e `NumberInput` fazem o mesmo. Com `noValidate`, valide os limites no app. |
 | **`TimePicker` reporta a cada edição** <br/>`time-picker-on-value-change` | Apagar a hora ou digitar uma fora da faixa chama `onValueChange("")` na hora, como a documentação já dizia, em vez de esperar o campo perder o foco. |
 | **`Calendar` marca o hoje de São Paulo** <br/>`calendar-today-time-zone` | O dia marcado, o mês inicial e os atalhos `"past"`, `"future"` e `"today"` de `disabledDays` seguem `America/Sao_Paulo`. Para outro fuso, passe `today`. |
 | **Campo somente leitura sem placeholder** <br/>`read-only-no-placeholder` | Vazio e com `readOnly`, nenhum campo mostra a dica. |

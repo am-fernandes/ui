@@ -22,7 +22,7 @@ const meta = {
           "- `onValueChange` — callback `(value: number) => void` disparado a cada edição com o novo valor em reais.",
           '- `emptyValue` — o que vale um campo vazio. `"zero"` (padrão): o campo sempre tem um número e limpar volta a `0,00`. `"null"`: o campo pode ficar vazio, `value` aceita `null`, `onValueChange` passa a receber `number | null`, o placeholder aparece e o `required` nativo funciona.',
           "- `allowNegative` — aceita valores negativos (estorno, desconto, saldo devedor).",
-          "- `min` / `max` — limites em reais. A tecla (ou a colagem) que passaria de `max` é recusada; um valor abaixo de `min` é corrigido quando o campo perde o foco.",
+          "- `min` / `max` — limites em reais. Fora deles o valor fica como foi digitado, o campo mostra o erro e o envio nativo é barrado.",
           "- `name` — nome no formulário nativo. O form recebe o número (`1234.56`), por um input oculto.",
           "- `size` — altura do campo: `sm` (32px), `md` (40px, padrão) ou `lg` (44px).",
           "- `readOnly` — somente leitura: o valor fica legível, recebe foco e é enviado, mas não é editável.",
@@ -296,7 +296,7 @@ export const MinMax: Story = {
     docs: {
       description: {
         story:
-          "`max` é um teto: a tecla que passaria dele é recusada e o campo fica com o que tinha, sem trocar o número digitado por outro. `min` vale quando o campo perde o foco, porque durante a digitação o valor passa por números menores no caminho.",
+          "Fora da faixa, o valor fica como foi digitado: o erro aparece ao sair do campo, no Enter ou no envio, e some quando o valor volta para a faixa. O envio nativo do formulário é barrado.",
       },
     },
   },

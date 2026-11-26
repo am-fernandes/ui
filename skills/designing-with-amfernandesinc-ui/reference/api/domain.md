@@ -180,9 +180,10 @@ As props são uma união: cada forma abaixo é um jeito de usar o componente.
 | `value` | `number` | — | The value in **float reais** (BRL), controlled. Leave it out and the field keeps its own value, starting from `defaultValue`. IMPORTANT: do not perform arithmetic on the float. Use `toCents`/`fromCents` from `@amfernandesinc/ui` for any computation (sums, percentages, multiplications). The component itself round-trips through cents — assume any value is accurate to 2 decimals only. |
 | `defaultValue` | `number` | — | Initial value of an uncontrolled field. |
 | `onValueChange` | `(value: number) => void` | — | Called with the value in reais after every edit. |
+| `labels` | `Partial<CurrencyInputLabels>` | — | — |
 | `allowNegative` | `boolean` | `false` | Accepts negative values (a refund, a discount, a balance owed). The minus key makes the value negative, a second one or `+` makes it positive again, and a pasted negative number keeps its sign. The field then opens the text keyboard on phones: the iOS numeric keypad has no minus key. |
-| `min` | `number` | — | Smallest value, in reais. While typing, the value passes below it on its way up, so it is applied when the field loses focus, or on Enter, after an edit: a smaller value is raised to `min`. |
-| `max` | `number` | — | Largest value, in reais. A key (or a paste) that would take the value past it is refused: the field keeps what it had, and never shows a number the user did not type. |
+| `min` | `number` | — | Smallest value, in reais. A smaller value is kept as typed: the field shows `labels.belowMin` when it is left, on Enter or on submit, and is invalid for the browser, so a native submit stops on it. |
+| `max` | `number` | — | Largest value, in reais, as `min`, with `labels.aboveMax`. |
 | `required` | `boolean` | — | — |
 | `size` | `ControlSize` | `"md"` | Height of the field: `sm` 32px, `md` 40px, `lg` 44px, the same as a button or select of that size. |
 | `label` | `React.ReactNode` | — | — |
@@ -203,9 +204,10 @@ Repassa também: atributos HTML do React (`Attributes`, `HTMLAttributes`, `Input
 | `value` | `number \| null` | — | The value in reais, or `null` for an empty field. |
 | `defaultValue` | `number \| null` | — | — |
 | `onValueChange` | `(value: number \| null) => void` | — | Called with the value in reais, or `null` when the field is cleared. |
+| `labels` | `Partial<CurrencyInputLabels>` | — | — |
 | `allowNegative` | `boolean` | `false` | Accepts negative values (a refund, a discount, a balance owed). The minus key makes the value negative, a second one or `+` makes it positive again, and a pasted negative number keeps its sign. The field then opens the text keyboard on phones: the iOS numeric keypad has no minus key. |
-| `min` | `number` | — | Smallest value, in reais. While typing, the value passes below it on its way up, so it is applied when the field loses focus, or on Enter, after an edit: a smaller value is raised to `min`. |
-| `max` | `number` | — | Largest value, in reais. A key (or a paste) that would take the value past it is refused: the field keeps what it had, and never shows a number the user did not type. |
+| `min` | `number` | — | Smallest value, in reais. A smaller value is kept as typed: the field shows `labels.belowMin` when it is left, on Enter or on submit, and is invalid for the browser, so a native submit stops on it. |
+| `max` | `number` | — | Largest value, in reais, as `min`, with `labels.aboveMax`. |
 | `required` | `boolean` | — | — |
 | `size` | `ControlSize` | `"md"` | Height of the field: `sm` 32px, `md` 40px, `lg` 44px, the same as a button or select of that size. |
 | `label` | `React.ReactNode` | — | — |
@@ -218,6 +220,28 @@ Repassa também: atributos HTML do React (`Attributes`, `HTMLAttributes`, `Input
 
 Repassa também: atributos HTML do React (`Attributes`, `HTMLAttributes`, `InputHTMLAttributes`).
 
+
+### defaultCurrencyInputLabels
+
+`import { defaultCurrencyInputLabels } from "@amfernandesinc/ui"` ou `"@amfernandesinc/ui/currency-input"`
+
+```ts
+const defaultCurrencyInputLabels: CurrencyInputLabels = {
+  belowMin: (min) => `O valor mínimo é ${min}.`,
+  aboveMax: (max) => `O valor máximo é ${max}.`,
+}
+```
+
+### CurrencyInputLabels
+
+`import type { CurrencyInputLabels } from "@amfernandesinc/ui"`
+
+```ts
+export interface CurrencyInputLabels {
+  belowMin: (min: string) => string
+  aboveMax: (max: string) => string
+}
+```
 
 ### CurrencyInputProps
 
@@ -744,8 +768,9 @@ As props são uma união: cada forma abaixo é um jeito de usar o componente.
 | `value` | `number` | — | The percentage (`12.5` is 12,50 %), controlled. Leave it out and the field keeps its own value, starting from `defaultValue`. |
 | `defaultValue` | `number` | — | Initial value of an uncontrolled field. |
 | `onValueChange` | `(value: number) => void` | — | Called with the percentage after every edit. |
-| `max` | `number` | `100` | Largest percentage. A key (or a paste) that would take the value past it is refused: the field keeps what it had, and never shows a number the user did not type. |
-| `min` | `number` | — | Smallest percentage. While typing, the value passes below it on its way up, so it is applied when the field loses focus, or on Enter, after an edit: a smaller value is raised to `min`. A negative `min` lets the field take negative percentages, with the minus key. |
+| `labels` | `Partial<PercentageInputLabels>` | — | — |
+| `max` | `number` | `100` | Largest percentage. A larger value is kept as typed: the field shows `labels.aboveMax` when it is left, on Enter or on submit, and is invalid for the browser, so a native submit stops on it. |
+| `min` | `number` | — | Smallest percentage, as `max`, with `labels.belowMin`. A negative `min` lets the field take negative percentages, with the minus key. |
 | `decimals` | `0 \| 1 \| 2` | `2` | Decimal places shown and kept: `2` (12,50), `1` (12,5) or `0` (12). Typed digits fill the last place first, and a value with more places is rounded. |
 | `required` | `boolean` | — | — |
 | `size` | `ControlSize` | `"md"` | Height of the field: `sm` 32px, `md` 40px, `lg` 44px, the same as a button or select of that size. |
@@ -767,8 +792,9 @@ Repassa também: atributos HTML do React (`Attributes`, `HTMLAttributes`, `Input
 | `value` | `number \| null` | — | The percentage, or `null` for an empty field. |
 | `defaultValue` | `number \| null` | — | — |
 | `onValueChange` | `(value: number \| null) => void` | — | Called with the percentage, or `null` when the field is cleared. |
-| `max` | `number` | `100` | Largest percentage. A key (or a paste) that would take the value past it is refused: the field keeps what it had, and never shows a number the user did not type. |
-| `min` | `number` | — | Smallest percentage. While typing, the value passes below it on its way up, so it is applied when the field loses focus, or on Enter, after an edit: a smaller value is raised to `min`. A negative `min` lets the field take negative percentages, with the minus key. |
+| `labels` | `Partial<PercentageInputLabels>` | — | — |
+| `max` | `number` | `100` | Largest percentage. A larger value is kept as typed: the field shows `labels.aboveMax` when it is left, on Enter or on submit, and is invalid for the browser, so a native submit stops on it. |
+| `min` | `number` | — | Smallest percentage, as `max`, with `labels.belowMin`. A negative `min` lets the field take negative percentages, with the minus key. |
 | `decimals` | `0 \| 1 \| 2` | `2` | Decimal places shown and kept: `2` (12,50), `1` (12,5) or `0` (12). Typed digits fill the last place first, and a value with more places is rounded. |
 | `required` | `boolean` | — | — |
 | `size` | `ControlSize` | `"md"` | Height of the field: `sm` 32px, `md` 40px, `lg` 44px, the same as a button or select of that size. |
@@ -782,6 +808,28 @@ Repassa também: atributos HTML do React (`Attributes`, `HTMLAttributes`, `Input
 
 Repassa também: atributos HTML do React (`Attributes`, `HTMLAttributes`, `InputHTMLAttributes`).
 
+
+### defaultPercentageInputLabels
+
+`import { defaultPercentageInputLabels } from "@amfernandesinc/ui"` ou `"@amfernandesinc/ui/percentage-input"`
+
+```ts
+const defaultPercentageInputLabels: PercentageInputLabels = {
+  belowMin: (min) => `O valor mínimo é ${min}.`,
+  aboveMax: (max) => `O valor máximo é ${max}.`,
+}
+```
+
+### PercentageInputLabels
+
+`import type { PercentageInputLabels } from "@amfernandesinc/ui"`
+
+```ts
+export interface PercentageInputLabels {
+  belowMin: (min: string) => string
+  aboveMax: (max: string) => string
+}
+```
 
 ### PercentageInputProps
 

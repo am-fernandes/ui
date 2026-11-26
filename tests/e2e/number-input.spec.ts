@@ -27,14 +27,16 @@ test.describe("NumberInput — typing", () => {
     await expect(field).toHaveAttribute("aria-valuetext", "12.509,5 m²")
   })
 
-  test("clamps on blur, not while typing", async ({ page }) => {
+  test("keeps an out-of-range value and shows the limit on blur", async ({ page }) => {
     await open(page, "floor-range")
     const field = page.getByRole("spinbutton", { name: "Andar" })
     await field.fill("")
     await field.pressSequentially("99")
-    await expect(field).toHaveValue("99")
+    await expect(page.getByRole("alert")).toHaveCount(0)
     await field.blur()
-    await expect(field).toHaveValue("40")
+    await expect(field).toHaveValue("99")
+    await expect(page.getByRole("alert")).toHaveText("O valor máximo é 40.")
+    await expect(field).toHaveAttribute("aria-invalid", "true")
   })
 
   test("pastes with the library's rule", async ({ page }) => {

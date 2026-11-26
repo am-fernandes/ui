@@ -56,9 +56,6 @@ export interface NumberEditInput {
   allowNegative: boolean
   /** `true` when an empty field is `null`; `false` when it is zero. */
   allowEmpty: boolean
-  /** Bounds in units. A key that would take the value past the far one is refused. */
-  min?: number
-  max?: number
 }
 
 export interface NumberEdit {
@@ -129,13 +126,6 @@ export function applyNumberEdit(input: NumberEditInput): NumberEdit {
   const negativeDraft = negative && magnitude === 0
   if (units != null && Object.is(units, -0)) units = 0
 
-  if (units != null) {
-    const reference = previous ?? 0
-    const pastMax = input.max != null && units >= 0 && units > input.max && units > reference
-    const pastMin = input.min != null && units < 0 && units < input.min && units < reference
-    if (pastMax || pastMin) return refuse()
-  }
-
   return { units, negativeDraft, digitsAfterCaret: after.length, stick }
 }
 
@@ -157,12 +147,4 @@ export function caretBeforeDigits(text: string, digitsAfter: number, stick: "lef
   let left = position
   while (left > 0 && !isDigit(text.charAt(left - 1))) left -= 1
   return left > 0 ? left : position
-}
-
-/** Brings `units` inside `[min, max]` (both in units). */
-export function clampUnits(units: number, min?: number, max?: number): number {
-  let clamped = units
-  if (max != null && clamped > max) clamped = max
-  if (min != null && clamped < min) clamped = min
-  return clamped
 }

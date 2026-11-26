@@ -170,7 +170,12 @@ export {
 } from "./domain/cep-input"
 export { CNPJInput, type CNPJInputProps } from "./domain/cnpj-input"
 export { CPFInput, type CPFInputProps } from "./domain/cpf-input"
-export { CurrencyInput, type CurrencyInputProps } from "./domain/currency-input"
+export {
+  CurrencyInput,
+  type CurrencyInputLabels,
+  type CurrencyInputProps,
+  defaultCurrencyInputLabels,
+} from "./domain/currency-input"
 export {
   FileUpload,
   defaultFileUploadLabels,
@@ -188,7 +193,12 @@ export {
   type MultiInputLabels,
   type MultiInputProps,
 } from "./domain/multi-input"
-export { PercentageInput, type PercentageInputProps } from "./domain/percentage-input"
+export {
+  PercentageInput,
+  type PercentageInputLabels,
+  type PercentageInputProps,
+  defaultPercentageInputLabels,
+} from "./domain/percentage-input"
 export { PhoneInput, type PhoneInputProps } from "./domain/phone-input"
 
 // Forms

@@ -7,6 +7,7 @@ import { flushSync } from "react-dom"
 import { parseBRNumber } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { useComposedRefs } from "./_internal/compose-refs"
+import { useLimitError } from "./_internal/use-limit-error"
 import { Input, type InputProps } from "./input"
 
 export interface NumberInputLabels {
@@ -14,11 +15,15 @@ export interface NumberInputLabels {
   increment: string
   /** Name of the "−" stepper button. */
   decrement: string
+  belowMin: (min: string) => string
+  aboveMax: (max: string) => string
 }
 
 export const defaultNumberInputLabels: NumberInputLabels = {
   increment: "Aumentar",
   decrement: "Diminuir",
+  belowMin: (min) => `O valor mínimo é ${min}.`,
+  aboveMax: (max) => `O valor máximo é ${max}.`,
 }
 
 export interface NumberInputProps
@@ -45,11 +50,13 @@ export interface NumberInputProps
   /** Decimal places allowed and shown (up to). `0` takes whole numbers only. @default 0 */
   decimals?: number
   /**
-   * Smallest value. Applied when the field loses focus and on Enter, not while
-   * typing. A negative `min` lets the minus sign be typed.
+   * Smallest value. A smaller number is kept as typed: the field shows
+   * `labels.belowMin` when it is left, on Enter or on submit, and is invalid
+   * for the browser, so a native submit stops on it. The arrows and the
+   * stepper buttons stop at it. A negative `min` lets the minus sign be typed.
    */
   min?: number
-  /** Largest value. Applied when the field loses focus and on Enter, not while typing. */
+  /** Largest value, as `min`, with `labels.aboveMax`. */
   max?: number
   /** What the arrows and the stepper buttons add or take. PageUp/PageDown move ten steps. @default 1 */
   step?: number
@@ -144,6 +151,8 @@ function NumberInput({
   className,
   id,
   ref,
+  error,
+  onInvalid,
   ...props
 }: NumberInputProps) {
   const labels = { ...defaultNumberInputLabels, ...labelsProp }
@@ -162,16 +171,29 @@ function NumberInput({
 
   const clamp = (n: number) => Math.min(max ?? n, Math.max(min ?? n, n))
   const plain = (n: number | null) => (n == null ? "" : format(n, places, false))
+  const written = (n: number) =>
+    [prefix, format(roundTo(n, places), places, true), suffix]
+      .filter((part) => typeof part === "string" || typeof part === "number")
+      .join(" ")
+
+  let problem: string | null = null
+  if (editable && value != null) {
+    if (min != null && value < min) problem = labels.belowMin(written(min))
+    else if (max != null && value > max) problem = labels.aboveMax(written(max))
+  }
+  const { limitError, setShown: setLimitShown } = useLimitError(inputRef, problem)
+  const editedSinceFocus = React.useRef(false)
 
   const commit = (next: number | null) => {
+    editedSinceFocus.current = true
     if (!controlled) setInnerValue(next)
     if (next !== value) onValueChange?.(next)
   }
 
   const settle = () => {
     const typed = editing != null ? parseText(editing) : value
-    const next = typed == null ? null : clamp(roundTo(typed, places))
-    commit(next)
+    const next = typed == null ? null : roundTo(typed, places)
+    if (next !== value) commit(next)
     return next
   }
 
@@ -186,6 +208,7 @@ function NumberInput({
     if (controlled) return
     setEditing(null)
     commit(initialValue.current)
+    setLimitShown(false)
   }
   React.useEffect(() => {
     const owner = inputRef.current?.form
@@ -217,12 +240,7 @@ function NumberInput({
   }
 
   const display = editing ?? (value == null ? "" : format(roundTo(value, places), places, true))
-  const valueText =
-    value == null
-      ? undefined
-      : [prefix, format(roundTo(value, places), places, true), suffix]
-          .filter((part) => typeof part === "string" || typeof part === "number")
-          .join(" ")
+  const valueText = value == null ? undefined : written(value)
 
   // Steppers repeat while held.
   const repeat = React.useRef<{ timer?: number; interval?: number }>({})
@@ -311,6 +329,7 @@ function NumberInput({
         readOnly={readOnly}
         form={form}
         value={display}
+        error={error != null && error !== "" ? error : limitError}
         leadingIcon={
           prefix != null ? <span data-slot="number-input-prefix">{prefix}</span> : undefined
         }
@@ -318,13 +337,19 @@ function NumberInput({
         // 16px on touch screens: iOS zooms into a focused field with smaller text.
         className={cn("tabular-nums pointer-coarse:text-base", className)}
         onFocus={(event) => {
+          editedSinceFocus.current = false
           setEditing(plain(value))
           onFocus?.(event)
         }}
         onBlur={(event) => {
           settle()
+          if (editedSinceFocus.current) setLimitShown(true)
           setEditing(null)
           onBlur?.(event)
+        }}
+        onInvalid={(event) => {
+          onInvalid?.(event)
+          setLimitShown(true)
         }}
         onChange={(event) => {
           const input = event.target
@@ -358,6 +383,7 @@ function NumberInput({
           if (event.defaultPrevented || !editable) return
           if (event.key === "Enter") {
             flushSync(() => setEditing(plain(settle())))
+            setLimitShown(true)
             return
           }
           const keys: Record<string, () => void> = {
