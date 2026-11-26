@@ -86,10 +86,11 @@ async function storyIds(page: Page): Promise<string[]> {
     "navigation-appshell--default",
     "navigation-tabs--default",
     "forms-calendar--single",
+    "primitives-avatar--fallback",
   ]
-  // Imagem e vídeo trocam de elementos conforme a mídia carrega (ou falha):
-  // a contagem muda entre as duas leituras por tempo, não por tema.
-  const timing = ["data-image--default", "data-video--default"]
+  // Imagem, vídeo e avatar com foto externa mudam conforme a mídia carrega (ou
+  // falha): as duas leituras diferem por tempo, não por tema.
+  const timing = ["data-image--default", "data-video--default", "primitives-avatar--default"]
   return [...new Set([...all.filter((id) => id.endsWith("--default")), ...extra])].filter(
     (id) => all.includes(id) && !timing.includes(id),
   )
