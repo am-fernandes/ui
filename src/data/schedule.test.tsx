@@ -539,6 +539,33 @@ describe("Schedule", () => {
       vi.useRealTimers()
     })
 
+    // A malformed `today` gave a period (from the fallback) but an Invalid
+    // Date to the "Hoje" button, and no day marked as today.
+    it("an invalid today counts as none: the clock gives today and the Hoje button", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      vi.setSystemTime(new Date(2026, 10, 18, 10, 0))
+      const onDateChange = vi.fn()
+      const { container } = render(
+        <Schedule
+          timeZone={LOCAL}
+          events={[]}
+          today={new Date(Number.NaN)}
+          defaultDate={new Date(2026, 9, 1)}
+          onDateChange={onDateChange}
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Hoje" }))
+      const sent = onDateChange.mock.lastCall?.[0] as Date
+      expect(Number.isNaN(sent.getTime())).toBe(false)
+      expect(screen.getByRole("heading", { name: "novembro de 2026" })).toBeInTheDocument()
+      expect(
+        container
+          .querySelector('[data-slot="schedule-day"][aria-current="date"]')
+          ?.getAttribute("data-date"),
+      ).toBe("2026-11-18")
+      vi.useRealTimers()
+    })
+
     it("starts on today's date when there is no defaultDate", () => {
       render(<Schedule timeZone={LOCAL} events={[]} today={new Date(2027, 1, 3)} />)
       expect(screen.getByRole("heading", { name: "fevereiro de 2027" })).toBeInTheDocument()

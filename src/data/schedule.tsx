@@ -211,7 +211,7 @@ function Schedule({
   date: dateProp,
   defaultDate,
   onDateChange,
-  today,
+  today: todayProp,
   timeZone = DEFAULT_TIME_ZONE,
   onEventClick,
   onSlotClick,
@@ -242,6 +242,9 @@ function Schedule({
   const zoned = React.useCallback((date: Date) => new TZDate(date.getTime(), timeZone), [timeZone])
   const plain = (date: Date) => new Date(date.getTime())
 
+  // An invalid `today` (a malformed date from the server) counts as none: it
+  // gave no period, no "today" and an Invalid Date to the "Hoje" button.
+  const today = todayProp && isValid(todayProp) ? todayProp : undefined
   // The browser's clock, read once the page is in the browser: on the server
   // and while hydrating there is no "now" (unless `today` gives one).
   const hydrated = useHydrated()
