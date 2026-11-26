@@ -24,6 +24,7 @@ Tudo o que muda para um app que atualiza da 0.5.x, numa página só, com o que f
 | **`Image` com `src` vazio** <br/>`image-fallback` | "Falha ao carregar imagem" | "Sem imagem" (não é erro) | Use `fallback` para personalizar. |
 | **`addMonths` para no fim do mês** <br/>`add-months-month-end` | `addMonths("2024-01-31", 1)` dava 02/03/2024 | 29/02/2024 | Revise cálculos de vencimento que contavam com o estouro; num carnê, some sempre a partir da data base. |
 | **Export da `DataTable` sem `xlsx`** <br/>`data-table-write-excel-file` | Usava o pacote `xlsx` (com alertas de segurança) | `write-excel-file`; datas saem no mesmo dia e hora da tabela | Nada a fazer. Se o app usava o `xlsx` que vinha junto, declare-o no app. |
+| **Tailwind 4.1 ou mais novo** <br/>`tailwind-peer` | Peer `tailwindcss@^4` | Peer `tailwindcss@^4.1`: os componentes usam as variantes `pointer-*`, que não existem no 4.0 | Atualize o `tailwindcss` e o plugin dele (`@tailwindcss/vite` ou `@tailwindcss/postcss`) do app. |
 
 ## Mudanças de comportamento
 

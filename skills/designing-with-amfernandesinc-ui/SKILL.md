@@ -42,7 +42,7 @@ No CSS de entrada do app (`src/index.css`, `app/globals.css`):
 - **Na 0.5.x, acrescente** `@source "../node_modules/@amfernandesinc/ui/dist";` (caminho relativo a esse CSS). O Tailwind v4 não lê `node_modules`; sem a linha, as classes usadas só dentro da lib não existem e Dialog, Popover, Select e DataTable aparecem sem estilo. Na 0.6 o `styles` já declara isso (a linha a mais não atrapalha).
 - **Monte `<Toaster />` uma vez**, na raiz. Sem ele, `toast(...)` não mostra nada.
 - **Tema escuro:** classe `dark` no `<html>` (ou num ancestral). Não há provider da lib; para seguir o sistema, use `next-themes` com `attribute="class"`.
-- **Peer deps:** `react@^19`, `react-dom@^19`, `tailwindcss@^4`. React 18 não funciona (`ref` como prop). `react-hook-form` e `@tanstack/react-table` (tipos de coluna) são do app.
+- **Peer deps:** `react@^19`, `react-dom@^19`, `tailwindcss@^4.1`. React 18 não funciona (`ref` como prop). `react-hook-form` e `@tanstack/react-table` (tipos de coluna) são do app.
 
 Detalhes, Next.js, Vite e verificação em [`reference/setup-and-theming.md`](reference/setup-and-theming.md).
 

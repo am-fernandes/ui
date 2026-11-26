@@ -55,6 +55,7 @@ const SKILL_TERMS: Record<string, string> = {
   "image-fallback": "Sem imagem",
   "add-months-month-end": "addMonths",
   "data-table-write-excel-file": "xlsx",
+  "tailwind-peer": "Tailwind 4.1",
 }
 
 const SUMMARY = "0-migracao-0-6"

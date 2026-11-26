@@ -162,6 +162,7 @@ Mudanças que quebram:
 | `DateInput` é um campo de texto | `ref` de `HTMLInputElement` (era `HTMLButtonElement`); nos testes, `getByRole("textbox")`. Texto incompleto ou inválido reporta `""`. |
 | `--accent` é o azul de seleção | Onde `bg-accent` era fundo neutro, use `bg-muted`. Todas as cores mudam de valor; `--chart-2` a `--chart-5` mudam de matiz. |
 | `--background` é só a página | Painel ou barra do app com `bg-background` passa a `bg-card border-border-strong`. |
+| Tailwind 4.1 ou mais novo (peer `tailwindcss@^4.1`) | Atualize o `tailwindcss` e o plugin dele (`@tailwindcss/vite` ou `@tailwindcss/postcss`) do app. |
 
 Mudanças de comportamento: o `TimePicker` reporta `""` a cada edição que deixa a hora inválida; o `Calendar` marca o hoje de São Paulo (passe `today` para outro fuso); campo somente leitura vazio não mostra placeholder; o `Schedule` mostra os eventos em `timeZone` (São Paulo) e, com SSR, precisa de `defaultDate` e `today` para o servidor mandar a agenda pronta. O passo a passo completo fica na página "Migração 0.6" do Storybook.
 
