@@ -8,7 +8,7 @@ Component library para softwares enterprise da AM Fernandes Incorporadora. React
 bun add @amfernandesinc/ui
 ```
 
-Peer deps: `react@^19`, `react-dom@^19`, `tailwindcss@^4`.
+Peer deps: `react@^19`, `react-dom@^19`, `tailwindcss@^4.1`.
 
 **Vindo da 0.5?** A 0.6 quebra tokens, layout e datas: siga [`src/docs/Migration.mdx`](./src/docs/Migration.mdx) (página **Migração 0.6** do Storybook) antes de atualizar.
 

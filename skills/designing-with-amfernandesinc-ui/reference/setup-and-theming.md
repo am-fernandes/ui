@@ -11,7 +11,7 @@ bun add react-hook-form         # se tiver formulários
 bun add @tanstack/react-table   # se tipar colunas da DataTable (ColumnDef também sai da lib)
 ```
 
-Peer deps: `react@^19`, `react-dom@^19`, `tailwindcss@^4`. A lib é ESM, com um subpath por componente.
+Peer deps: `react@^19`, `react-dom@^19`, `tailwindcss@^4.1`. A lib é ESM, com um subpath por componente.
 
 ## CSS de entrada
 
