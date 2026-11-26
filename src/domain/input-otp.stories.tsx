@@ -157,10 +157,6 @@ export const WithError: Story = {
     const [value, setValue] = useState<string>(args.value ?? "")
     return <InputOTP {...args} value={value} onValueChange={setValue} />
   },
-  parameters: {
-    // error-foreground fails 4.5:1 against background; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
-  },
 }
 
 export const Required: Story = {
@@ -187,6 +183,30 @@ export const Disabled: Story = {
     disabled: true,
   },
   render: (args) => <InputOTP {...args} />,
+}
+
+export const ReadOnly: Story = {
+  args: {
+    length: 6,
+    defaultValue: "482913",
+    label: "Código enviado ao cliente",
+    description: "Só para conferência; o cliente digita o código no app.",
+    readOnly: true,
+    name: "codigo",
+  },
+  render: (args) => (
+    <form onSubmit={(event) => event.preventDefault()}>
+      <InputOTP {...args} />
+    </form>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly`: o código aparece em caixas com fundo `muted`, sem cursor piscando; não muda por digitação, colagem ou apagar, continua focável e vai no formulário.",
+      },
+    },
+  },
 }
 
 export const OnComplete: Story = {
@@ -281,7 +301,7 @@ export const FormExample: Story = {
           </Button>
         </div>
         {submitted ? (
-          <p className="text-xs text-status-success-text">Verificado: {submitted}</p>
+          <p className="text-xs text-muted-foreground">Verificado: {submitted}</p>
         ) : null}
       </form>
     )

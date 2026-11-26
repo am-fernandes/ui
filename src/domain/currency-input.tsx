@@ -1,95 +1,102 @@
 "use client"
 
-import type * as React from "react"
+import { type DecimalFieldProps, DecimalInput } from "./_internal/decimal-input"
 
-import { centsToDisplay, fromCents, toCents } from "@/lib/currency"
-import { cn } from "@/lib/utils"
-import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
-import { useFieldIds } from "../primitives/_internal/use-field-ids"
+export interface CurrencyInputLabels {
+  belowMin: (min: string) => string
+  aboveMax: (max: string) => string
+}
 
-interface CurrencyInputProps
-  extends Omit<React.ComponentProps<"input">, "value" | "onChange" | "type"> {
+export const defaultCurrencyInputLabels: CurrencyInputLabels = {
+  belowMin: (min) => `O valor mínimo é ${min}.`,
+  aboveMax: (max) => `O valor máximo é ${max}.`,
+}
+
+interface CurrencyInputBaseProps extends DecimalFieldProps {
+  labels?: Partial<CurrencyInputLabels>
   /**
-   * The value in **float reais** (BRL).
+   * Accepts negative values (a refund, a discount, a balance owed). The minus
+   * key makes the value negative, a second one or `+` makes it positive
+   * again, and a pasted negative number keeps its sign. The field then opens
+   * the text keyboard on phones: the iOS numeric keypad has no minus key.
+   * @default false
+   */
+  allowNegative?: boolean
+  /**
+   * Smallest value, in reais. A smaller value is kept as typed: the field
+   * shows `labels.belowMin` when it is left, on Enter or on submit, and is
+   * invalid for the browser, so a native submit stops on it.
+   */
+  min?: number
+  /** Largest value, in reais, as `min`, with `labels.aboveMax`. */
+  max?: number
+}
+
+interface CurrencyInputZeroProps extends CurrencyInputBaseProps {
+  /**
+   * What an empty field is worth. `"zero"` (the default): the field always
+   * holds a number, and clearing it goes back to `0,00`. `"null"`: the field
+   * can be empty, which is `null`, different from zero; the placeholder shows
+   * and a native `required` works.
+   * @default "zero"
+   */
+  emptyValue?: "zero"
+  /**
+   * The value in **float reais** (BRL), controlled. Leave it out and the
+   * field keeps its own value, starting from `defaultValue`.
    *
    * IMPORTANT: do not perform arithmetic on the float. Use `toCents`/`fromCents`
    * from `@amfernandesinc/ui` for any computation (sums, percentages, multiplications).
    * The component itself round-trips through cents — assume any value is accurate
    * to 2 decimals only.
    */
-  value: number
-  onValueChange: (value: number) => void
-  label?: React.ReactNode
-  description?: React.ReactNode
-  error?: string
-  labelPosition?: LabelPosition
-  required?: boolean
-  ref?: React.Ref<HTMLInputElement>
+  value?: number
+  /** Initial value of an uncontrolled field. */
+  defaultValue?: number
+  /** Called with the value in reais after every edit. */
+  onValueChange?: (value: number) => void
 }
 
+interface CurrencyInputNullProps extends CurrencyInputBaseProps {
+  emptyValue: "null"
+  /** The value in reais, or `null` for an empty field. */
+  value?: number | null
+  defaultValue?: number | null
+  /** Called with the value in reais, or `null` when the field is cleared. */
+  onValueChange?: (value: number | null) => void
+}
+
+type CurrencyInputProps = CurrencyInputZeroProps | CurrencyInputNullProps
+
 function CurrencyInput({
-  className,
+  emptyValue = "zero",
   value,
+  defaultValue,
   onValueChange,
-  disabled,
-  label,
-  description,
-  error,
-  labelPosition,
-  required,
-  id,
-  ref,
+  labels,
+  allowNegative = false,
   ...props
 }: CurrencyInputProps) {
-  const ids = useFieldIds(id)
-  const hasError = error != null && error !== ""
-  const hasDescription = description != null && description !== ""
-  const display = centsToDisplay(toCents(value))
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 15)
-    const newCents = Number.parseInt(digits, 10) || 0
-    onValueChange(fromCents(newCents))
-  }
-
+  const allowEmpty = emptyValue === "null"
+  // In "zero" mode the field never reports `null`; the cast only tells the
+  // two signatures of the union apart.
+  const report = onValueChange as ((value: number | null) => void) | undefined
   return (
-    <FieldShell
-      controlId={ids.controlId}
-      labelId={ids.labelId}
-      descriptionId={ids.descriptionId}
-      errorId={ids.errorId}
-      label={label}
-      description={description}
-      error={error}
-      labelPosition={labelPosition}
-      required={required}
-      disabled={disabled}
-    >
-      <div className="relative" data-slot="currency-input">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
-          R$
-        </span>
-        <input
-          ref={ref}
-          id={ids.controlId}
-          type="text"
-          inputMode="numeric"
-          aria-invalid={hasError ? true : undefined}
-          aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
-          required={required}
-          aria-required={required ? true : undefined}
-          className={cn(
-            "flex w-full rounded-md border border-input bg-transparent pl-9 pr-3 py-2.5 text-sm tabular-nums transition-colors focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed",
-            hasError && "border-destructive focus-visible:ring-1 focus-visible:ring-destructive",
-            className,
-          )}
-          value={display}
-          onChange={handleChange}
-          disabled={disabled}
-          {...props}
-        />
-      </div>
-    </FieldShell>
+    <DecimalInput
+      // An empty field shows the format it expects.
+      placeholder={allowEmpty ? "0,00" : undefined}
+      {...props}
+      slot="currency-input"
+      leading="R$"
+      decimals={2}
+      value={value}
+      defaultValue={defaultValue}
+      onValueChange={(next) => report?.(allowEmpty ? next : (next ?? 0))}
+      allowEmpty={allowEmpty}
+      limitLabels={{ ...defaultCurrencyInputLabels, ...labels }}
+      writeLimit={(text) => `R$ ${text}`}
+      allowNegative={allowNegative}
+    />
   )
 }
 

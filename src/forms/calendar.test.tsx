@@ -20,7 +20,7 @@ describe("Calendar", () => {
   it("renders with ptBR locale by default", () => {
     render(<Calendar mode="single" defaultMonth={new Date(2025, 0, 15)} />)
     // ptBR -> Portuguese month name (January = "janeiro")
-    expect(screen.getByText(/janeiro/i)).toBeInTheDocument()
+    expect(screen.getByRole("grid", { name: /janeiro 2025/i })).toBeInTheDocument()
   })
 
   it("renders a grid", () => {
@@ -194,6 +194,57 @@ describe("Calendar", () => {
     // The dropdown layout renders <select> elements for month and year.
     const selects = document.querySelectorAll("select")
     expect(selects.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it("arrow keys, Home, End, PageUp and PageDown move the focus between days", async () => {
+    const user = userEvent.setup()
+    render(<Calendar mode="single" defaultMonth={FIXED_MONTH} />)
+    dayButton("2025-06-10")?.focus()
+    expect(dayButton("2025-06-10")).toHaveFocus()
+
+    await user.keyboard("{ArrowRight}")
+    expect(dayButton("2025-06-11")).toHaveFocus()
+    await user.keyboard("{ArrowDown}")
+    expect(dayButton("2025-06-18")).toHaveFocus()
+    await user.keyboard("{ArrowLeft}")
+    expect(dayButton("2025-06-17")).toHaveFocus()
+    await user.keyboard("{ArrowUp}")
+    expect(dayButton("2025-06-10")).toHaveFocus()
+    // Weeks start on Sunday (ptBR in react-day-picker).
+    await user.keyboard("{Home}")
+    expect(dayButton("2025-06-08")).toHaveFocus()
+    await user.keyboard("{End}")
+    expect(dayButton("2025-06-14")).toHaveFocus()
+
+    // A new month comes in and the focus goes with it, never to <body>.
+    await user.keyboard("{PageDown}")
+    expect(dayButton("2025-07-14")).toHaveFocus()
+    await user.keyboard("{PageUp}")
+    expect(dayButton("2025-06-14")).toHaveFocus()
+    expect(document.activeElement).not.toBe(document.body)
+  })
+
+  it("names the navigation and the days in Portuguese", () => {
+    render(<Calendar mode="single" defaultMonth={FIXED_MONTH} selected={new Date(2025, 5, 10)} />)
+    expect(screen.getByRole("button", { name: "Ir para o mês anterior" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Ir para o próximo mês" })).toBeInTheDocument()
+    expect(screen.getByRole("navigation", { name: "Barra de navegação" })).toBeInTheDocument()
+    expect(dayButton("2025-06-10")).toHaveAccessibleName(
+      /^terça-feira, 10 de junho de 2025, selecionado$/,
+    )
+    expect(document.body.textContent).not.toMatch(/Go to|selected|Today/)
+  })
+
+  it("announces the month when it changes (polite live region)", async () => {
+    const user = userEvent.setup()
+    render(<Calendar mode="single" defaultMonth={FIXED_MONTH} />)
+    const status = screen.getByRole("status")
+    expect(status).toHaveAttribute("aria-live", "polite")
+    expect(status).toHaveTextContent("junho 2025")
+    await user.click(screen.getByRole("button", { name: "Ir para o próximo mês" }))
+    expect(screen.getByRole("status")).toHaveTextContent("julho 2025")
+    // The caption is still the button that opens the quick navigation.
+    expect(screen.getByRole("button", { name: /julho 2025/ })).toBeInTheDocument()
   })
 
   it("lets clicks pass through the nav overlay to the caption beneath it", () => {

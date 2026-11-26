@@ -1,10 +1,196 @@
-import { render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
+import * as React from "react"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
+import { mockExitAnimation } from "./_internal/testing"
 import { AlertDialog } from "./alert-dialog"
 
+const CONTENT = '[data-slot="alert-dialog-content"]'
+
 describe("AlertDialog", () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  describe("double activation", () => {
+    // In a browser the dialog stays mounted, with its buttons under the pointer,
+    // for the 175ms of the exit animation.
+    it("confirms once when the button is clicked again while the dialog closes", async () => {
+      const exit = mockExitAnimation(CONTENT)
+      const onConfirm = vi.fn()
+      render(<AlertDialog defaultOpen title="Aprovar a proposta?" onConfirm={onConfirm} />)
+      const confirm = screen.getByRole("button", { name: "Confirmar" })
+
+      await userEvent.click(confirm)
+      expect(document.querySelector(CONTENT)).toHaveAttribute("data-state", "closed")
+      await userEvent.click(confirm)
+      fireEvent.click(confirm)
+      fireEvent.keyDown(confirm, { key: "Enter" })
+      expect(onConfirm).toHaveBeenCalledTimes(1)
+
+      exit.finish()
+      expect(document.querySelector(CONTENT)).toBeNull()
+      exit.restore()
+    })
+
+    it("cancels once too", async () => {
+      const exit = mockExitAnimation(CONTENT)
+      const onCancel = vi.fn()
+      const onOpenChange = vi.fn()
+      render(
+        <AlertDialog
+          defaultOpen
+          title="X"
+          onConfirm={() => {}}
+          onCancel={onCancel}
+          onOpenChange={onOpenChange}
+        />,
+      )
+      const cancel = screen.getByRole("button", { name: "Cancelar" })
+      await userEvent.click(cancel)
+      await userEvent.click(cancel)
+      expect(onCancel).toHaveBeenCalledTimes(1)
+      expect(onOpenChange).toHaveBeenCalledTimes(1)
+      exit.restore()
+    })
+
+    it("a click on Cancelar while it closes after a confirm does not cancel", async () => {
+      const exit = mockExitAnimation(CONTENT)
+      const onCancel = vi.fn()
+      render(<AlertDialog defaultOpen title="X" onConfirm={() => {}} onCancel={onCancel} />)
+      await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+      await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
+      expect(onCancel).not.toHaveBeenCalled()
+      exit.restore()
+    })
+
+    it("confirms again when it is opened again", async () => {
+      const exit = mockExitAnimation(CONTENT)
+      const onConfirm = vi.fn()
+      render(
+        <AlertDialog
+          trigger={<button type="button">Abrir</button>}
+          title="X"
+          onConfirm={onConfirm}
+        />,
+      )
+      const trigger = screen.getByRole("button", { name: "Abrir" })
+      await userEvent.click(trigger)
+      await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+      // Opened again before the exit animation ended: same mounted content.
+      fireEvent.click(trigger)
+      await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+      expect(onConfirm).toHaveBeenCalledTimes(2)
+      exit.restore()
+    })
+
+    it("a controlled dialog the consumer keeps open still takes every click", async () => {
+      // The consumer validates in onConfirm and decides not to close.
+      const onConfirm = vi.fn()
+      function Kept() {
+        const [open] = React.useState(true)
+        return <AlertDialog open={open} title="X" onConfirm={onConfirm} />
+      }
+      render(<Kept />)
+      await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+      await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+      expect(onConfirm).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  // `onConfirm` that returns a Promise (the request behind "Aprovar") used to
+  // close the dialog at once: no pending state, and nowhere to show a failure.
+  describe("asynchronous confirm", () => {
+    function deferred() {
+      let resolve!: () => void
+      let reject!: (reason?: unknown) => void
+      const promise = new Promise<void>((res, rej) => {
+        resolve = res
+        reject = rej
+      })
+      return { promise, resolve, reject }
+    }
+
+    it("stays open and busy while the promise runs, then closes when it resolves", async () => {
+      const request = deferred()
+      const onOpenChange = vi.fn()
+      render(
+        <AlertDialog
+          defaultOpen
+          title="Aprovar a proposta?"
+          confirmLabel="Aprovar"
+          onConfirm={() => request.promise}
+          onOpenChange={onOpenChange}
+        />,
+      )
+      const confirm = screen.getByRole("button", { name: "Aprovar" })
+      await userEvent.click(confirm)
+
+      expect(screen.getByRole("alertdialog")).toBeInTheDocument()
+      expect(onOpenChange).not.toHaveBeenCalled()
+      expect(confirm).toHaveAttribute("aria-busy", "true")
+      expect(confirm).toHaveAttribute("aria-disabled", "true")
+      // aria-disabled, not disabled: the focus stays on the button.
+      expect(confirm).not.toBeDisabled()
+      expect(confirm).toHaveFocus()
+
+      await act(async () => request.resolve())
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
+    })
+
+    it("ignores both buttons and Escape while the promise runs", async () => {
+      const request = deferred()
+      const onConfirm = vi.fn(() => request.promise)
+      const onCancel = vi.fn()
+      render(<AlertDialog defaultOpen title="X" onConfirm={onConfirm} onCancel={onCancel} />)
+      const confirm = screen.getByRole("button", { name: "Confirmar" })
+      const cancel = screen.getByRole("button", { name: "Cancelar" })
+
+      await userEvent.click(confirm)
+      await userEvent.click(confirm)
+      fireEvent.keyDown(confirm, { key: "Enter" })
+      expect(cancel).toHaveAttribute("aria-disabled", "true")
+      await userEvent.click(cancel)
+      await userEvent.keyboard("{Escape}")
+
+      expect(onConfirm).toHaveBeenCalledTimes(1)
+      expect(onCancel).not.toHaveBeenCalled()
+      expect(screen.getByRole("alertdialog")).toBeInTheDocument()
+      await act(async () => request.resolve())
+    })
+
+    it("stays open when the promise rejects, and the buttons work again", async () => {
+      const first = deferred()
+      const onConfirm = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValueOnce(undefined)
+      const onOpenChange = vi.fn()
+      render(
+        <AlertDialog defaultOpen title="X" onConfirm={onConfirm} onOpenChange={onOpenChange} />,
+      )
+      const confirm = screen.getByRole("button", { name: "Confirmar" })
+      await userEvent.click(confirm)
+      await act(async () => first.reject(new Error("falhou")))
+
+      expect(screen.getByRole("alertdialog")).toBeInTheDocument()
+      expect(onOpenChange).not.toHaveBeenCalled()
+      expect(confirm).not.toHaveAttribute("aria-busy")
+      expect(confirm).not.toHaveAttribute("aria-disabled")
+      expect(confirm).toHaveFocus()
+
+      await userEvent.click(confirm)
+      expect(onConfirm).toHaveBeenCalledTimes(2)
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+    })
+
+    it("a synchronous onConfirm still closes at once", async () => {
+      const onOpenChange = vi.fn()
+      render(<AlertDialog defaultOpen title="X" onConfirm={() => {}} onOpenChange={onOpenChange} />)
+      await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+    })
+  })
+
   it("renders title and description and confirm/cancel buttons", () => {
     render(
       <AlertDialog
@@ -43,6 +229,37 @@ describe("AlertDialog", () => {
     expect(onCancel).toHaveBeenCalled()
   })
 
+  // Escape is the keyboard's "Cancelar": it closed the dialog without telling
+  // the consumer, who was left with a half-done flow (a draft not discarded,
+  // a selection not cleared).
+  it("Escape cancels: onCancel is called once, as with the Cancelar button", async () => {
+    const onCancel = vi.fn()
+    const onOpenChange = vi.fn()
+    render(
+      <AlertDialog
+        defaultOpen
+        title="Descartar alterações?"
+        onConfirm={() => {}}
+        onCancel={onCancel}
+        onOpenChange={onOpenChange}
+      />,
+    )
+    await userEvent.keyboard("{Escape}")
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
+  })
+
+  it("a second Escape while it closes does not cancel again", async () => {
+    const exit = mockExitAnimation(CONTENT)
+    const onCancel = vi.fn()
+    render(<AlertDialog defaultOpen title="X" onConfirm={() => {}} onCancel={onCancel} />)
+    await userEvent.keyboard("{Escape}")
+    await userEvent.keyboard("{Escape}")
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    exit.restore()
+  })
+
   it("renders children above the buttons when provided", () => {
     render(
       <AlertDialog open title="X" onConfirm={() => {}}>
@@ -50,6 +267,28 @@ describe("AlertDialog", () => {
       </AlertDialog>,
     )
     expect(screen.getByTestId("extra")).toBeInTheDocument()
+  })
+
+  it("scrolls the children only: title, description and buttons stay outside the body", () => {
+    render(
+      <AlertDialog open title="Arquivar?" description="Sai da fila." onConfirm={() => {}}>
+        <p>lista longa</p>
+      </AlertDialog>,
+    )
+    const content = document.querySelector('[data-slot="alert-dialog-content"]') as HTMLElement
+    const body = document.querySelector('[data-slot="alert-dialog-body"]') as HTMLElement
+    expect(content).toHaveClass("flex", "flex-col", "max-h-[calc(100dvh-2rem)]")
+    expect(body).toHaveClass("min-h-0", "overflow-y-auto")
+    expect(body).toHaveTextContent("lista longa")
+    expect(body).not.toContainElement(screen.getByText("Arquivar?"))
+    expect(body).not.toContainElement(screen.getByText("Sai da fila."))
+    expect(body).not.toContainElement(screen.getByRole("button", { name: "Confirmar" }))
+    expect(body).not.toContainElement(screen.getByRole("button", { name: "Cancelar" }))
+  })
+
+  it("renders no body wrapper without children", () => {
+    render(<AlertDialog open title="X" onConfirm={() => {}} />)
+    expect(document.querySelector('[data-slot="alert-dialog-body"]')).toBeNull()
   })
 
   it("applies confirmVariant (destructive)", () => {

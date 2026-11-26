@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
@@ -41,15 +42,13 @@ describe("PhoneInput", () => {
     expect(onValueChange).toHaveBeenLastCalledWith("11987654321")
   })
 
-  it("strips non-digit characters from pasted input", () => {
+  it("strips non-digit characters and the country code from a value set at once", () => {
     const onValueChange = vi.fn()
     render(<PhoneInput value="" onValueChange={onValueChange} />)
     const input = screen.getByRole("textbox") as HTMLInputElement
+    // What an autofill does: the whole text arrives in one change.
     fireEvent.change(input, { target: { value: "+55 (11) 98765-4321" } })
-    // Cleaned digits are capped at 11; "+55..." prepends 5 digits before the DDD.
-    // Spec: max 11 digits after stripping.
-    const last = onValueChange.mock.calls.at(-1)?.[0]
-    expect(last).toHaveLength(11)
+    expect(onValueChange).toHaveBeenLastCalledWith("11987654321")
   })
 
   it("reformats a pasted masked landline string in a controlled wrapper", () => {
@@ -126,5 +125,346 @@ describe("PhoneInput", () => {
     render(<PhoneInput value="" onValueChange={vi.fn()} />)
     const input = screen.getByRole("textbox") as HTMLInputElement
     expect(input).toHaveAttribute("inputMode", "tel")
+  })
+
+  describe("edição no meio do valor", () => {
+    it("Backspace no meio apaga aquele dígito e o próximo entra no mesmo ponto", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPhoneInput initial="11987654321" />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "(11) 98|765-4321"
+      await user.type(input, "{Backspace}", { initialSelectionStart: 7, initialSelectionEnd: 7 })
+      expect(input).toHaveValue("(11) 9765-4321")
+      expect(input.selectionStart).toBe(6)
+      await user.keyboard("8")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(input.selectionStart).toBe(7)
+    })
+
+    it("Backspace depois do espaço do DDD apaga o segundo dígito do DDD", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPhoneInput initial="11987654321" />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "(11) |98765-4321": antes do cursor estão ")" e " ".
+      await user.type(input, "{Backspace}", { initialSelectionStart: 5, initialSelectionEnd: 5 })
+      expect(input).toHaveValue("(19) 8765-4321")
+      expect(input.selectionStart).toBe(2)
+    })
+
+    it("digitar o primeiro dígito deixa o cursor depois dele, não antes do parêntese", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPhoneInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.type(input, "119")
+      expect(input).toHaveValue("(11) 9")
+      expect(input.selectionStart).toBe(6)
+    })
+  })
+
+  // Regressão: "+55 11 98765-4321" virava "(55) 11987-6543" e passava em
+  // isValidPhone; "011 98765-4321" virava "(01) 19876-5432".
+  describe("código do país e zero de operadora", () => {
+    async function pasteInto(text: string) {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      function Harness() {
+        const [value, setValue] = React.useState("")
+        return (
+          <PhoneInput
+            value={value}
+            onValueChange={(next) => {
+              onValueChange(next)
+              setValue(next)
+            }}
+          />
+        )
+      }
+      render(<Harness />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.paste(text)
+      return { input, onValueChange }
+    }
+
+    it("tira o +55 de um celular colado", async () => {
+      const { input, onValueChange } = await pasteInto("+55 11 98765-4321")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(onValueChange).toHaveBeenLastCalledWith("11987654321")
+    })
+
+    it("tira o +55 de um fixo colado", async () => {
+      const { input, onValueChange } = await pasteInto("+55 (11) 3333-4444")
+      expect(input).toHaveValue("(11) 3333-4444")
+      expect(onValueChange).toHaveBeenLastCalledWith("1133334444")
+    })
+
+    it("tira o zero de operadora", async () => {
+      const { input, onValueChange } = await pasteInto("011 98765-4321")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(onValueChange).toHaveBeenLastCalledWith("11987654321")
+    })
+
+    it("tira o +55 e o zero juntos", async () => {
+      const { input } = await pasteInto("+55 (011) 98765-4321")
+      expect(input).toHaveValue("(11) 98765-4321")
+    })
+
+    it("não mexe num celular do DDD 55", async () => {
+      const { input, onValueChange } = await pasteInto("(55) 99876-5432")
+      expect(input).toHaveValue("(55) 99876-5432")
+      expect(onValueChange).toHaveBeenLastCalledWith("55998765432")
+    })
+
+    it("não mexe num fixo do DDD 55", async () => {
+      const { input } = await pasteInto("55 3222-1100")
+      expect(input).toHaveValue("(55) 3222-1100")
+    })
+
+    it("aceita o número com rótulo na frente", async () => {
+      const { input } = await pasteInto("Tel.: (11) 98765-4321")
+      expect(input).toHaveValue("(11) 98765-4321")
+    })
+
+    it("quem digita o 55 na frente também chega no número certo", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPhoneInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.type(input, "5511987654321")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(input.selectionStart).toBe(15)
+    })
+
+    it("quem digita o zero na frente também chega no número certo", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPhoneInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.type(input, "011987654321")
+      expect(input).toHaveValue("(11) 98765-4321")
+    })
+
+    it("mostra sem o código do país um valor que já chega com ele", () => {
+      render(<PhoneInput value="+5511987654321" onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("(11) 98765-4321")
+    })
+
+    it("não tem maxLength e ignora o 12º dígito digitado", async () => {
+      const user = userEvent.setup()
+      render(<ControlledPhoneInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).not.toHaveAttribute("maxLength")
+      await user.type(input, "119876543219")
+      expect(input).toHaveValue("(11) 98765-4321")
+    })
+  })
+
+  // Regressão: com `name`, o form nativo recebia o texto com máscara
+  // ("(11) 98765-4321") enquanto onValueChange entregava o valor limpo.
+  describe("em um formulário nativo", () => {
+    it("envia o valor limpo, não a máscara", () => {
+      const { container } = render(
+        <form>
+          <PhoneInput name="telefone" value="11987654321" onValueChange={vi.fn()} />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      const data = new FormData(form)
+      expect(data.get("telefone")).toBe("11987654321")
+      expect([...data.keys()]).toEqual(["telefone"])
+      // O campo visível mostra a máscara e não leva o name.
+      expect(screen.getByRole("textbox")).toHaveValue("(11) 98765-4321")
+      expect(screen.getByRole("textbox")).not.toHaveAttribute("name")
+    })
+
+    it("acompanha o que é digitado", async () => {
+      const user = userEvent.setup()
+      function Harness() {
+        const [value, setValue] = React.useState<string>("")
+        return (
+          <form>
+            <PhoneInput name="telefone" value={value} onValueChange={setValue} />
+          </form>
+        )
+      }
+      const { container } = render(<Harness />)
+      await user.click(screen.getByRole("textbox"))
+      await user.keyboard("{End}11987654321")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("telefone")).toBe("11987654321")
+    })
+
+    it("desabilitado, não é enviado", () => {
+      const { container } = render(
+        <form>
+          <PhoneInput name="telefone" value="11987654321" onValueChange={vi.fn()} disabled />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).has("telefone")).toBe(false)
+    })
+
+    it("sem name não cria input oculto", () => {
+      const { container } = render(<PhoneInput value="11987654321" onValueChange={vi.fn()} />)
+      expect(container.querySelector("input[type=hidden]")).toBeNull()
+    })
+
+    it("o input oculto acompanha o atributo form", () => {
+      const { container } = render(
+        <PhoneInput name="telefone" form="cadastro" value="11987654321" onValueChange={vi.fn()} />,
+      )
+      expect(container.querySelector("input[type=hidden]")).toHaveAttribute("form", "cadastro")
+    })
+  })
+
+  // Regressão: `value` nulo quebrava em `value.replace`, e sem `value` o
+  // campo não guardava nada: só existia o modo controlado.
+  describe("valor ausente e modo não controlado", () => {
+    it("value null mostra o campo vazio, sem quebrar", () => {
+      render(<PhoneInput value={null} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("")
+    })
+
+    it("value undefined mostra o campo vazio, sem quebrar", () => {
+      render(<PhoneInput value={undefined} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("")
+    })
+
+    it("um valor que não é texto é lido como texto", () => {
+      render(<PhoneInput value={11987654321 as unknown as string} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("(11) 98765-4321")
+    })
+
+    it("sem value, parte de defaultValue e guarda o que é digitado", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const { container } = render(
+        <form>
+          <PhoneInput name="campo" defaultValue="1198" onValueChange={onValueChange} />
+        </form>,
+      )
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("(11) 98")
+      await user.click(input)
+      await user.keyboard("{End}7654321")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(onValueChange).toHaveBeenLastCalledWith("11987654321")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("campo")).toBe("11987654321")
+    })
+
+    it("sem value nem defaultValue começa vazio e funciona sem onValueChange", async () => {
+      const user = userEvent.setup()
+      render(<PhoneInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("")
+      await user.type(input, "11987654321")
+      expect(input).toHaveValue("(11) 98765-4321")
+    })
+
+    it("o reset do formulário devolve o defaultValue", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const { container } = render(
+        <form>
+          <PhoneInput name="campo" defaultValue="1198" onValueChange={onValueChange} />
+          <button type="reset">Limpar</button>
+        </form>,
+      )
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}7654321")
+      expect(input).toHaveValue("(11) 98765-4321")
+      await user.click(screen.getByRole("button", { name: "Limpar" }))
+      expect(input).toHaveValue("(11) 98")
+      expect(onValueChange).toHaveBeenLastCalledWith("1198")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("campo")).toBe("1198")
+    })
+
+    it("controlado, quem manda é o value: sem atualização do pai nada muda", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<PhoneInput value="1198" defaultValue="11987654321" onValueChange={onValueChange} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("(11) 98")
+      await user.click(input)
+      await user.keyboard("{End}7654321")
+      expect(onValueChange).toHaveBeenCalled()
+      expect(input).toHaveValue("(11) 98")
+    })
+  })
+
+  // Tela de consulta: o valor fica legível e é enviado, mas não é editável.
+  // Antes só dava para fingir isso com `disabled`, a 50% de opacidade.
+  describe("somente leitura", () => {
+    it("mostra o valor, recebe foco e não aceita digitação", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(
+        <PhoneInput label="Campo" value="11987654321" onValueChange={onValueChange} readOnly />,
+      )
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveAttribute("readonly")
+      expect(input).not.toBeDisabled()
+      await user.tab()
+      expect(input).toHaveFocus()
+      await user.keyboard("{End}1{Backspace}")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("não aceita colagem", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(
+        <PhoneInput label="Campo" value="11987654321" onValueChange={onValueChange} readOnly />,
+      )
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.paste("(21) 99999-0000")
+      expect(input).toHaveValue("(11) 98765-4321")
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("continua sendo enviado no formulário", () => {
+      const { container } = render(
+        <form>
+          <PhoneInput name="campo" value="11987654321" onValueChange={vi.fn()} readOnly />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("campo")).toBe("11987654321")
+    })
+
+    it("tem aparência própria, diferente do campo editável e do desabilitado", () => {
+      const { container } = render(
+        <PhoneInput label="Campo" value="11987654321" onValueChange={vi.fn()} readOnly />,
+      )
+      expect(screen.getByRole("textbox").className).toMatch(/bg-muted/)
+      // Sem a opacidade de desabilitado no shell.
+      expect(container.querySelector("[data-slot='field-shell']")?.className).not.toMatch(
+        /opacity-50/,
+      )
+    })
+  })
+
+  // A altura vem do token de controle (32, 40 e 44px), não do padding: o
+  // campo alinha com botões e selects do mesmo tamanho. A medida em px está
+  // em tests/e2e/domain.spec.ts.
+  describe("size", () => {
+    it("usa a altura md por padrão", () => {
+      render(<PhoneInput value="11987654321" onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox").className).toMatch(/\bh-control-md\b/)
+    })
+
+    it.each(["sm", "md", "lg"] as const)(
+      "size=%s usa a altura de controle correspondente",
+      (size) => {
+        render(<PhoneInput value="11987654321" onValueChange={vi.fn()} size={size} />)
+        const input = screen.getByRole("textbox")
+        expect(input.className).toMatch(new RegExp(`\\bh-control-${size}\\b`))
+        // `size` é o tamanho do controle, não o atributo nativo de largura.
+        expect(input).not.toHaveAttribute("size")
+      },
+    )
   })
 })

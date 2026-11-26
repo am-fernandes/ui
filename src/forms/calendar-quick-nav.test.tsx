@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import type * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
 import { Calendar } from "./calendar"
+import { DateInput } from "./date-input"
 
 const JUNE_2025 = new Date(2025, 5, 15)
 
@@ -135,6 +136,99 @@ describe("Calendar quick nav", () => {
     await user.click(screen.getByRole("button", { name: "2026" }))
     expect(screen.getByRole("button", { name: /^jun/i })).toBeEnabled()
     expect(screen.getByRole("button", { name: /^jul/i })).toBeDisabled()
+  })
+
+  it("years: one tab stop for the whole grid, arrows move inside it", async () => {
+    const user = userEvent.setup({ delay: null })
+    render(<Calendar mode="single" defaultMonth={JUNE_2025} />)
+    await user.click(screen.getByRole("button", { name: /junho 2025/i }))
+    const grid = screen.getByRole("group", { name: /escolher ano/i })
+    const tabbable = Array.from(grid.querySelectorAll("button")).filter((b) => b.tabIndex === 0)
+    expect(tabbable.map((b) => b.textContent)).toEqual(["2025"])
+    expect(screen.getByRole("button", { name: "2025" })).toHaveFocus()
+
+    await user.keyboard("{ArrowRight}")
+    expect(screen.getByRole("button", { name: "2026" })).toHaveFocus()
+    await user.keyboard("{ArrowDown}")
+    expect(screen.getByRole("button", { name: "2029" })).toHaveFocus()
+    await user.keyboard("{ArrowLeft}")
+    expect(screen.getByRole("button", { name: "2028" })).toHaveFocus()
+    await user.keyboard("{ArrowUp}")
+    expect(screen.getByRole("button", { name: "2025" })).toHaveFocus()
+    await user.keyboard("{End}")
+    expect(screen.getByRole("button", { name: "2100" })).toHaveFocus()
+    await user.keyboard("{Home}")
+    expect(screen.getByRole("button", { name: "1900" })).toHaveFocus()
+    // The tab stop follows the focus.
+    expect(screen.getByRole("button", { name: "1900" })).toHaveAttribute("tabindex", "0")
+    expect(screen.getByRole("button", { name: "2025" })).toHaveAttribute("tabindex", "-1")
+
+    await user.keyboard("{Enter}")
+    expect(screen.getByRole("group", { name: /escolher mês/i })).toBeInTheDocument()
+  })
+
+  it("months: one tab stop, arrows skip the months out of range", async () => {
+    const user = userEvent.setup({ delay: null })
+    render(
+      <Calendar
+        mode="single"
+        defaultMonth={JUNE_2025}
+        startMonth={new Date(2025, 0)}
+        endMonth={new Date(2026, 5)}
+      />,
+    )
+    await user.click(screen.getByRole("button", { name: /junho 2025/i }))
+    await user.click(screen.getByRole("button", { name: "2026" }))
+    const grid = screen.getByRole("group", { name: /escolher mês/i })
+    const monthButtons = Array.from(grid.querySelectorAll("button")).filter(
+      (b) => !b.getAttribute("aria-label")?.includes("voltar"),
+    )
+    expect(monthButtons.filter((b) => b.tabIndex === 0)).toHaveLength(1)
+    expect(screen.getByRole("button", { name: /^jan/i })).toHaveFocus()
+    await user.keyboard("{End}")
+    // July to December 2026 are out of range.
+    expect(screen.getByRole("button", { name: /^jun/i })).toHaveFocus()
+    await user.keyboard("{ArrowRight}")
+    expect(screen.getByRole("button", { name: /^jun/i })).toHaveFocus()
+    await user.keyboard("{ArrowUp}")
+    expect(screen.getByRole("button", { name: /^mar/i })).toHaveFocus()
+  })
+
+  it("inside a popover, Escape closes only the quick navigation", async () => {
+    const user = userEvent.setup({ delay: null })
+    render(<DateInput label="Data" defaultValue="2025-06-15" />)
+    await user.click(screen.getByRole("button", { name: "Abrir calendário" }))
+    await user.click(await screen.findByRole("button", { name: /junho 2025/i }))
+    expect(screen.getByRole("group", { name: /escolher ano/i })).toBeInTheDocument()
+    await user.keyboard("{Escape}")
+    expect(screen.queryByRole("group", { name: /escolher ano/i })).toBeNull()
+    expect(screen.getByRole("dialog", { name: "Data" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /junho 2025/i })).toHaveFocus()
+    // A second Escape closes the popover.
+    await user.keyboard("{Escape}")
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+  })
+
+  it("its texts come from the Calendar's labels, next to react-day-picker's", async () => {
+    const user = userEvent.setup({ delay: null })
+    render(
+      <Calendar
+        mode="single"
+        defaultMonth={JUNE_2025}
+        labels={{
+          chooseYear: "Ano",
+          chooseMonth: "Mês",
+          backToYears: (year) => `Voltar aos anos (${year})`,
+          labelNext: () => "Próximo",
+        }}
+      />,
+    )
+    expect(screen.getByRole("button", { name: "Próximo" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /junho 2025/i }))
+    expect(screen.getByRole("group", { name: "Ano" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "2025" }))
+    expect(screen.getByRole("group", { name: "Mês" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Voltar aos anos (2025)" })).toBeInTheDocument()
   })
 
   it("does not activate when captionLayout is not 'label'", () => {

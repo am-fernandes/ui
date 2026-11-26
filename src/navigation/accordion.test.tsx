@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -77,6 +77,27 @@ describe("Accordion", () => {
     const disabledTrigger = screen.getByRole("button", { name: "Disabled" })
     expect(disabledTrigger).toBeDisabled()
     expect(disabledTrigger.getAttribute("data-state")).toBe("closed")
+  })
+
+  it("disabled item looks disabled: dimmed once, default cursor, no hover underline", () => {
+    const { container } = render(
+      <Accordion
+        type="single"
+        collapsible
+        items={[
+          { value: "a", title: "Enabled", content: "EC" },
+          { value: "b", title: "Disabled", content: "DC", disabled: true },
+        ]}
+      />,
+    )
+    const [enabledItem, disabledItem] = container.querySelectorAll('[data-slot="accordion-item"]')
+    expect(disabledItem).toHaveAttribute("data-disabled")
+    expect(disabledItem).toHaveClass("data-[disabled]:opacity-50")
+    const trigger = screen.getByRole("button", { name: "Disabled" })
+    expect(trigger).toHaveClass("disabled:cursor-default")
+    expect(trigger).not.toHaveClass("hover:underline")
+    expect(trigger.className).toContain("enabled:hover:underline")
+    expect(enabledItem).not.toHaveAttribute("data-disabled")
   })
 
   it("disabled item does not expand on click", async () => {
@@ -186,6 +207,90 @@ describe("Accordion", () => {
 
     await userEvent.keyboard("{ArrowDown}")
     expect(screen.getByRole("button", { name: "Third" })).toHaveFocus()
+  })
+
+  describe("keepMounted", () => {
+    const formItems = [
+      { value: "dados", title: "Dados", content: <input aria-label="Nome" /> },
+      { value: "endereco", title: "Endereço", content: <input aria-label="CEP" /> },
+    ]
+
+    it("by default unmounts a closed section", async () => {
+      render(<Accordion type="single" collapsible defaultValue="dados" items={formItems} />)
+      expect(screen.getByRole("textbox", { name: "Nome" })).toBeInTheDocument()
+      expect(screen.queryByLabelText("CEP")).not.toBeInTheDocument()
+    })
+
+    it("keeps closed sections in the DOM, hidden, with what was typed", async () => {
+      render(
+        <Accordion type="single" collapsible keepMounted defaultValue="dados" items={formItems} />,
+      )
+      expect(screen.getByLabelText("CEP")).not.toBeVisible()
+      await userEvent.type(screen.getByRole("textbox", { name: "Nome" }), "Maria")
+      await userEvent.click(screen.getByRole("button", { name: "Endereço" }))
+      expect(screen.getByRole("textbox", { name: "CEP" })).toBeVisible()
+      expect(screen.getByLabelText("Nome")).not.toBeVisible()
+      await userEvent.click(screen.getByRole("button", { name: "Dados" }))
+      expect(screen.getByRole("textbox", { name: "Nome" })).toHaveValue("Maria")
+    })
+
+    it("keeps the trigger and its region linked", async () => {
+      render(<Accordion type="multiple" keepMounted items={formItems} />)
+      const trigger = screen.getByRole("button", { name: "Endereço" })
+      expect(trigger).toHaveAttribute("aria-expanded", "false")
+      await userEvent.click(trigger)
+      expect(trigger).toHaveAttribute("aria-expanded", "true")
+      const region = screen.getByRole("region", { name: "Endereço" })
+      expect(trigger).toHaveAttribute("aria-controls", region.id)
+      expect(region).toContainElement(screen.getByLabelText("CEP"))
+    })
+
+    it("still reports changes when controlled", async () => {
+      const onValueChange = vi.fn()
+      render(
+        <Accordion
+          type="single"
+          keepMounted
+          value="dados"
+          onValueChange={onValueChange}
+          items={formItems}
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Endereço" }))
+      expect(onValueChange).toHaveBeenCalledWith("endereco")
+      // Controlled: nothing moves until the value does.
+      expect(screen.getByLabelText("CEP")).not.toBeVisible()
+    })
+  })
+
+  it("wraps each title in an h3 by default and in the heading level given", () => {
+    const items = [{ value: "a", title: "Dados do comprador", content: "x" }]
+    const { rerender } = render(<Accordion items={items} />)
+    expect(
+      screen.getByRole("heading", { level: 3, name: "Dados do comprador" }),
+    ).toBeInTheDocument()
+    rerender(<Accordion items={items} headingLevel={4} />)
+    expect(
+      screen.getByRole("heading", { level: 4, name: "Dados do comprador" }),
+    ).toBeInTheDocument()
+  })
+
+  it("keeps the action out of the heading, so it is not read as part of the title", () => {
+    render(
+      <Accordion
+        items={[
+          {
+            value: "a",
+            title: "Item A",
+            content: "x",
+            action: <button type="button">Remover Item A</button>,
+          },
+        ]}
+      />,
+    )
+    const heading = screen.getByRole("heading", { name: "Item A" })
+    expect(within(heading).queryByRole("button", { name: "Remover Item A" })).toBeNull()
+    expect(screen.getByRole("button", { name: "Remover Item A" })).toBeInTheDocument()
   })
 
   it("applies data-slot attributes", () => {

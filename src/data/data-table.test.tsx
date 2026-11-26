@@ -1,18 +1,49 @@
 import type { ColumnDef, PaginationState } from "@tanstack/react-table"
-import { render, screen } from "@testing-library/react"
+import { act, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 
-const { downloadXlsxMock } = vi.hoisted(() => ({
-  downloadXlsxMock: vi.fn(async () => undefined),
+const { downloadSheetMock } = vi.hoisted(() => ({
+  downloadSheetMock: vi.fn(
+    async (_sheet: ExportSheet, _filename: string, _sheetName: string) => {},
+  ),
 }))
 
-vi.mock("./_xlsx-export", () => ({
-  downloadXlsx: downloadXlsxMock,
+vi.mock("./_xlsx-export", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./_xlsx-export")>()),
+  downloadSheet: downloadSheetMock,
 }))
 
+/** The sheet of the nth export, also as records (header → value) and its file name. */
+function exportCall(n = 0): [Record<string, unknown>[], string, string, ExportSheet] {
+  const [sheet, filename, sheetName] = downloadSheetMock.mock.calls[n] as [
+    ExportSheet,
+    string,
+    string,
+  ]
+  const records = sheet.rows.map((row) =>
+    Object.fromEntries(sheet.headers.map((header, index) => [header, row[index]])),
+  )
+  return [records, filename, sheetName, sheet]
+}
+
+import type { ExportSheet } from "./_xlsx-export"
+import { dateColumn, formattedColumn } from "./columns"
 import { DataTable } from "./data-table"
+
+/** The page the pager marks as current and the last page it offers. */
+function pager() {
+  const nav = screen.getByRole("navigation", { name: "Paginação" })
+  const current = within(nav).getByRole("button", { current: "page" })
+  const pages = within(nav).getAllByRole("button", { name: /^Página \d+$/ })
+  return { current: current.textContent, last: pages.at(-1)?.textContent }
+}
+
+/** A control of the pager is unavailable (aria-disabled, so it keeps its focus). */
+function isUnavailable(element: HTMLElement) {
+  return element.getAttribute("aria-disabled") === "true" || (element as HTMLButtonElement).disabled
+}
 
 interface Row {
   name: string
@@ -31,6 +62,10 @@ const data: Row[] = [
 ]
 
 describe("DataTable", () => {
+  beforeEach(() => {
+    downloadSheetMock.mockClear()
+  })
+
   it("renders headers and rows", () => {
     render(<DataTable columns={columns} data={data} />)
     expect(screen.getByText("Name")).toBeInTheDocument()
@@ -42,7 +77,7 @@ describe("DataTable", () => {
 
   it("sorts when the sortable header is toggled", async () => {
     render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
-    const sortBtn = screen.getByRole("button", { name: /Ordenar por Name/i })
+    const sortBtn = screen.getByRole("button", { name: "Name" })
     await userEvent.click(sortBtn)
     const rows = screen.getAllByRole("row")
     // header row + 3 data rows
@@ -53,7 +88,7 @@ describe("DataTable", () => {
 
   it("toggles to descending sort on the second click", async () => {
     render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
-    const sortBtn = screen.getByRole("button", { name: /Ordenar por Name/i })
+    const sortBtn = screen.getByRole("button", { name: "Name" })
     await userEvent.click(sortBtn)
     await userEvent.click(sortBtn)
     const rows = screen.getAllByRole("row")
@@ -63,7 +98,7 @@ describe("DataTable", () => {
 
   it("clears sort after three clicks", async () => {
     render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
-    const sortBtn = screen.getByRole("button", { name: /Ordenar por Name/i })
+    const sortBtn = screen.getByRole("button", { name: "Name" })
     await userEvent.click(sortBtn)
     await userEvent.click(sortBtn)
     await userEvent.click(sortBtn)
@@ -76,9 +111,9 @@ describe("DataTable", () => {
     render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
     const headerCells = screen.getAllByRole("columnheader")
     expect(headerCells[0]?.getAttribute("aria-sort")).toBe("none")
-    await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
+    await userEvent.click(screen.getByRole("button", { name: "Name" }))
     expect(headerCells[0]?.getAttribute("aria-sort")).toBe("ascending")
-    await userEvent.click(screen.getByRole("button", { name: /Ordenar por Name/i }))
+    await userEvent.click(screen.getByRole("button", { name: "Name" }))
     expect(headerCells[0]?.getAttribute("aria-sort")).toBe("descending")
   })
 
@@ -93,7 +128,7 @@ describe("DataTable", () => {
   it("renders empty state with searchable enabled and no matches", async () => {
     render(<DataTable columns={columns} data={data} searchableColumns={["name"]} />)
     await userEvent.type(screen.getByPlaceholderText("Buscar..."), "zzz")
-    expect(screen.getByText("Nenhum resultado.")).toBeInTheDocument()
+    expect(screen.getByRole("cell", { name: "Nenhum resultado." })).toBeInTheDocument()
   })
 
   it("paginates rows and changes page on next click", async () => {
@@ -106,13 +141,13 @@ describe("DataTable", () => {
     expect(screen.getByText("Row 1")).toBeInTheDocument()
     expect(screen.getByText("Row 5")).toBeInTheDocument()
     expect(screen.queryByText("Row 6")).not.toBeInTheDocument()
-    expect(screen.getByText(/Página 1 de 3/)).toBeInTheDocument()
+    expect(pager()).toEqual({ current: "1", last: "3" })
 
     await userEvent.click(screen.getByRole("button", { name: "Próxima página" }))
     expect(screen.getByText("Row 6")).toBeInTheDocument()
     expect(screen.getByText("Row 10")).toBeInTheDocument()
     expect(screen.queryByText("Row 1")).not.toBeInTheDocument()
-    expect(screen.getByText(/Página 2 de 3/)).toBeInTheDocument()
+    expect(pager()).toEqual({ current: "2", last: "3" })
   })
 
   it("disables the next button on the last page", async () => {
@@ -123,7 +158,7 @@ describe("DataTable", () => {
     render(<DataTable columns={columns} data={many} pagination={{ pageSize: 5 }} />)
     const next = screen.getByRole("button", { name: "Próxima página" })
     await userEvent.click(next)
-    expect(next).toBeDisabled()
+    expect(isUnavailable(next)).toBe(true)
   })
 
   it("supports controlled pagination", async () => {
@@ -166,9 +201,9 @@ describe("DataTable", () => {
     expect(screen.queryByText("Alpha")).not.toBeInTheDocument()
   })
 
-  it("uses TanStack's default `includesString` when no searchableColumns are given", () => {
-    // Controlled globalFilter without `searchableColumns` exercises the default
-    // matcher branch (no global filter input rendered, but filter still applies).
+  it("searches every visible column when no searchableColumns are given", () => {
+    // Controlled globalFilter without `searchableColumns`: no search input is
+    // rendered, but the filter still applies to every visible column.
     render(<DataTable columns={columns} data={data} globalFilter="alp" />)
     expect(screen.getByText("Alpha")).toBeInTheDocument()
     expect(screen.queryByText("Bravo")).not.toBeInTheDocument()
@@ -261,7 +296,7 @@ describe("DataTable", () => {
     expect(screen.getByPlaceholderText("Pesquisar pessoas")).toBeInTheDocument()
     expect(screen.getByText("Mostrando 3/3")).toBeInTheDocument()
     await userEvent.type(screen.getByPlaceholderText("Pesquisar pessoas"), "zzzz")
-    expect(screen.getByText("Nenhum cadastro")).toBeInTheDocument()
+    expect(screen.getByRole("cell", { name: "Nenhum cadastro" })).toBeInTheDocument()
     expect(screen.getByText("Mostrando 0/3")).toBeInTheDocument()
   })
 
@@ -281,7 +316,7 @@ describe("DataTable", () => {
         pagination={{ pageSize: 5 }}
       />,
     )
-    expect(screen.getByText(/Página 1 de 4/)).toBeInTheDocument()
+    expect(pager()).toEqual({ current: "1", last: "4" })
     // With manualPagination, the rows array is rendered verbatim.
     expect(screen.getByText("Row 12")).toBeInTheDocument()
   })
@@ -303,15 +338,15 @@ describe("DataTable", () => {
 
   it("renders no sort button when sortableColumns is omitted", () => {
     render(<DataTable columns={columns} data={data} />)
-    expect(screen.queryByRole("button", { name: /Ordenar por/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button")).not.toBeInTheDocument()
     expect(screen.getByText("Name")).toBeInTheDocument()
     expect(screen.getByText("Age")).toBeInTheDocument()
   })
 
   it("renders sort buttons only for columns listed in sortableColumns", () => {
     render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
-    expect(screen.getByRole("button", { name: /Ordenar por Name/i })).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /Ordenar por Age/i })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Name" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Age" })).not.toBeInTheDocument()
   })
 
   it("renders an element-typed header (non-string header branch)", () => {
@@ -324,16 +359,1076 @@ describe("DataTable", () => {
     ]
     render(<DataTable columns={cols} data={data} sortableColumns={["name"]} />)
     expect(screen.getByTestId("hdr-name")).toBeInTheDocument()
-    // Sort button still rendered but its aria-label uses column id, not the JSX.
-    const btn = screen
-      .getAllByRole("button")
-      .find((b) => /Ordenar por name/i.test(b.getAttribute("aria-label") ?? ""))
-    expect(btn).toBeTruthy()
+    // The button is named by what it shows; only the hint falls back to the id.
+    expect(
+      screen.getByRole("button", { name: "Custom", description: "Ordenar por name" }),
+    ).toBeInTheDocument()
+  })
+
+  describe("table semantics", () => {
+    it("names the column header after its text, with the sort action as a description", () => {
+      render(<DataTable columns={columns} data={data} sortableColumns={["name"]} />)
+      const button = screen.getByRole("button", { name: "Name" })
+      expect(button).toHaveAccessibleDescription("Ordenar por Name")
+      expect(button).not.toHaveAttribute("aria-label")
+      expect(screen.getByRole("columnheader", { name: "Name" })).toHaveAttribute(
+        "aria-sort",
+        "none",
+      )
+    })
+
+    it("uses labels.sortBy for the description", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          sortableColumns={["name"]}
+          labels={{ sortBy: (h) => `Sort by ${h}` }}
+        />,
+      )
+      expect(screen.getByRole("button", { name: "Name" })).toHaveAccessibleDescription(
+        "Sort by Name",
+      )
+    })
+
+    it("marks every header cell as a column header (scope=col)", () => {
+      render(<DataTable columns={columns} data={data} />)
+      for (const header of screen.getAllByRole("columnheader")) {
+        expect(header).toHaveAttribute("scope", "col")
+      }
+    })
+
+    it("takes the table's name from aria-label", () => {
+      render(<DataTable columns={columns} data={data} aria-label="Contratos ativos" />)
+      expect(screen.getByRole("table", { name: "Contratos ativos" })).toBeInTheDocument()
+    })
+
+    it("takes the table's name from aria-labelledby", () => {
+      render(
+        <>
+          <h2 id="titulo-contratos">Contratos</h2>
+          <DataTable columns={columns} data={data} aria-labelledby="titulo-contratos" />
+        </>,
+      )
+      expect(screen.getByRole("table", { name: "Contratos" })).toBeInTheDocument()
+    })
+
+    it("forwards ref and the remaining props to the root", () => {
+      const ref = React.createRef<HTMLDivElement>()
+      const onKeyDown = vi.fn()
+      render(
+        <DataTable
+          ref={ref}
+          columns={columns}
+          data={data}
+          id="tabela-contratos"
+          data-testid="contratos"
+          title="Contratos"
+          onKeyDown={onKeyDown}
+        />,
+      )
+      const root = screen.getByTestId("contratos")
+      expect(ref.current).toBe(root)
+      expect(root).toHaveAttribute("data-slot", "data-table")
+      expect(root).toHaveAttribute("id", "tabela-contratos")
+      expect(root).toHaveAttribute("title", "Contratos")
+      root.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }))
+      expect(onKeyDown).toHaveBeenCalled()
+    })
+
+    it("renders a caption that names the table", () => {
+      render(<DataTable columns={columns} data={data} caption="Contratos de maio" />)
+      const table = screen.getByRole("table", { name: "Contratos de maio" })
+      expect(table.querySelector("caption")).toHaveTextContent("Contratos de maio")
+    })
+  })
+
+  describe("scroll region", () => {
+    function mockSizes(
+      sizes: Partial<
+        Record<"scrollWidth" | "clientWidth" | "scrollHeight" | "clientHeight", number>
+      >,
+    ) {
+      const originals = Object.keys(sizes).map((key) => [
+        key,
+        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
+      ])
+      for (const [key, value] of Object.entries(sizes)) {
+        Object.defineProperty(HTMLElement.prototype, key, { configurable: true, get: () => value })
+      }
+      return () => {
+        for (const [key, descriptor] of originals) {
+          if (descriptor)
+            Object.defineProperty(
+              HTMLElement.prototype,
+              key as string,
+              descriptor as PropertyDescriptor,
+            )
+          else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key as string]
+        }
+      }
+    }
+
+    it("is a focusable, named region when it scrolls", () => {
+      const restore = mockSizes({
+        scrollWidth: 900,
+        clientWidth: 300,
+        scrollHeight: 100,
+        clientHeight: 100,
+      })
+      try {
+        render(<DataTable columns={columns} data={data} aria-label="Contratos" />)
+        const region = screen.getByRole("region", { name: "Contratos" })
+        expect(region).toHaveAttribute("tabindex", "0")
+        expect(region).toHaveAttribute("data-slot", "data-table-scroll")
+      } finally {
+        restore()
+      }
+    })
+
+    it("uses labels.scrollRegion when the table has no name", () => {
+      const restore = mockSizes({
+        scrollWidth: 900,
+        clientWidth: 300,
+        scrollHeight: 100,
+        clientHeight: 100,
+      })
+      try {
+        render(<DataTable columns={columns} data={data} />)
+        expect(screen.getByRole("region", { name: "Tabela com rolagem" })).toHaveAttribute(
+          "tabindex",
+          "0",
+        )
+      } finally {
+        restore()
+      }
+    })
+
+    it("adds no tab stop when nothing scrolls", () => {
+      const { container } = render(
+        <DataTable columns={columns} data={data} aria-label="Contratos" />,
+      )
+      const scroller = container.querySelector('[data-slot="data-table-scroll"]')
+      expect(scroller).not.toHaveAttribute("tabindex")
+      expect(scroller).not.toHaveAttribute("role")
+    })
+  })
+
+  describe("sticky header", () => {
+    it("caps the body at maxHeight and keeps the header in place", () => {
+      const { container } = render(
+        <DataTable columns={columns} data={data} maxHeight={240} stickyHeader />,
+      )
+      const scroller = container.querySelector('[data-slot="data-table-scroll"]') as HTMLElement
+      expect(scroller.style.maxHeight).toBe("240px")
+      expect(container.querySelector("thead")).toHaveClass("sticky", "top-0")
+    })
+
+    it("sticks the header by default once maxHeight is set, and not without it", () => {
+      const { container, rerender } = render(
+        <DataTable columns={columns} data={data} maxHeight="50vh" />,
+      )
+      expect(
+        (container.querySelector('[data-slot="data-table-scroll"]') as HTMLElement).style.maxHeight,
+      ).toBe("50vh")
+      expect(container.querySelector("thead")).toHaveClass("sticky")
+      rerender(<DataTable columns={columns} data={data} />)
+      expect(container.querySelector("thead")).not.toHaveClass("sticky")
+    })
+  })
+
+  describe("row selection", () => {
+    interface Cliente {
+      id: string
+      nome: string
+    }
+    const clienteCols: ColumnDef<Cliente>[] = [{ accessorKey: "nome", header: "Nome" }]
+    const clientes: Cliente[] = ["Ana", "Bia", "Caio", "Davi", "Edu"].map((nome, i) => ({
+      id: `c${i + 1}`,
+      nome,
+    }))
+
+    it("adds a checkbox per row, named after the row, and a header checkbox", () => {
+      render(<DataTable columns={clienteCols} data={clientes} selectable />)
+      expect(
+        screen.getByRole("checkbox", { name: "Selecionar todas as linhas da página" }),
+      ).not.toBeChecked()
+      for (const nome of ["Ana", "Bia", "Caio"]) {
+        expect(screen.getByRole("checkbox", { name: `Selecionar ${nome}` })).not.toBeChecked()
+      }
+    })
+
+    it("selects rows, marks them and shows the bar with the count and the actions", async () => {
+      const onSelectionChange = vi.fn()
+      render(
+        <DataTable
+          columns={clienteCols}
+          data={clientes}
+          getRowId={(row) => row.id}
+          selectable
+          onSelectionChange={onSelectionChange}
+          selectionActions={(ids) => <button type="button">Arquivar {ids.join(",")}</button>}
+        />,
+      )
+      expect(screen.queryByText(/selecionad/)).not.toBeInTheDocument()
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Bia" }))
+      expect(onSelectionChange).toHaveBeenLastCalledWith(["c2"])
+      expect(screen.getByText("Bia").closest("tr")).toHaveAttribute("data-state", "selected")
+      expect(screen.getByText("1 selecionado")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Arquivar c2" })).toBeInTheDocument()
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Davi" }))
+      expect(onSelectionChange).toHaveBeenLastCalledWith(["c2", "c4"])
+      expect(screen.getByText("2 selecionados")).toBeInTheDocument()
+      await userEvent.click(screen.getByRole("button", { name: "Limpar seleção" }))
+      expect(onSelectionChange).toHaveBeenLastCalledWith([])
+      expect(screen.queryByText(/selecionad/)).not.toBeInTheDocument()
+    })
+
+    it("shows the mixed state in the header and selects the whole page from it", async () => {
+      const onSelectionChange = vi.fn()
+      render(
+        <DataTable
+          columns={clienteCols}
+          data={clientes}
+          getRowId={(row) => row.id}
+          selectable
+          onSelectionChange={onSelectionChange}
+          pagination={{ pageSize: 2 }}
+        />,
+      )
+      const all = screen.getByRole("checkbox", { name: "Selecionar todas as linhas da página" })
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Ana" }))
+      expect(all).toHaveAttribute("aria-checked", "mixed")
+      await userEvent.click(all)
+      expect(all).toBeChecked()
+      expect(onSelectionChange).toHaveBeenLastCalledWith(["c1", "c2"])
+      await userEvent.click(all)
+      expect(all).not.toBeChecked()
+      expect(onSelectionChange).toHaveBeenLastCalledWith([])
+    })
+
+    it("keeps the selection across pages, by id", async () => {
+      const onSelectionChange = vi.fn()
+      render(
+        <DataTable
+          columns={clienteCols}
+          data={clientes}
+          getRowId={(row) => row.id}
+          selectable
+          onSelectionChange={onSelectionChange}
+          pagination={{ pageSize: 2 }}
+        />,
+      )
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Ana" }))
+      await userEvent.click(screen.getByRole("button", { name: "Página 2" }))
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Caio" }))
+      expect(onSelectionChange).toHaveBeenLastCalledWith(["c1", "c3"])
+      expect(
+        screen.getByRole("checkbox", { name: "Selecionar todas as linhas da página" }),
+      ).toHaveAttribute("aria-checked", "mixed")
+      await userEvent.click(screen.getByRole("button", { name: "Página 1" }))
+      expect(screen.getByRole("checkbox", { name: "Selecionar Ana" })).toBeChecked()
+      expect(screen.getByText("2 selecionados")).toBeInTheDocument()
+    })
+
+    it("works controlled (selectedRowIds) and from defaultSelectedRowIds", async () => {
+      const onSelectionChange = vi.fn()
+      const { rerender } = render(
+        <DataTable
+          columns={clienteCols}
+          data={clientes}
+          getRowId={(row) => row.id}
+          selectable
+          selectedRowIds={["c3"]}
+          onSelectionChange={onSelectionChange}
+        />,
+      )
+      expect(screen.getByRole("checkbox", { name: "Selecionar Caio" })).toBeChecked()
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Ana" }))
+      expect(onSelectionChange).toHaveBeenLastCalledWith(["c3", "c1"])
+      // Controlled: nothing changes until the parent passes the new list.
+      expect(screen.getByRole("checkbox", { name: "Selecionar Ana" })).not.toBeChecked()
+      rerender(
+        <DataTable
+          columns={clienteCols}
+          data={clientes}
+          getRowId={(row) => row.id}
+          selectable
+          defaultSelectedRowIds={["c5"]}
+          key="uncontrolled"
+        />,
+      )
+      expect(screen.getByRole("checkbox", { name: "Selecionar Edu" })).toBeChecked()
+    })
+
+    it("does not open a clickable row from its checkbox, and keeps the row button on the data", async () => {
+      const onRowClick = vi.fn()
+      render(<DataTable columns={clienteCols} data={clientes} selectable onRowClick={onRowClick} />)
+      await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar Ana" }))
+      expect(onRowClick).not.toHaveBeenCalled()
+      expect(screen.getByRole("button", { name: "Ana" })).toBeInTheDocument()
+    })
+
+    it("leaves the checkbox column out of the export", async () => {
+      render(<DataTable columns={clienteCols} data={clientes} selectable downloadable />)
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
+      const [, , , sheet] = exportCall()
+      expect(sheet.headers).toEqual(["Nome"])
+    })
+  })
+
+  describe("pinned columns", () => {
+    interface Pedido {
+      numero: string
+      cliente: { nome: string }
+      valor: number
+    }
+    const cols: ColumnDef<Pedido>[] = [
+      { accessorKey: "valor", header: "Valor" },
+      { accessorKey: "cliente.nome", header: "Cliente" },
+      { accessorKey: "numero", header: "Número" },
+    ]
+    const pedidos = [{ numero: "P-1", cliente: { nome: "Ana" }, valor: 10 }]
+
+    it("moves the pinned columns to the left, in the order given, and keeps them sticky", () => {
+      render(
+        <DataTable
+          columns={cols}
+          data={pedidos}
+          pinnedColumns={{ left: ["numero", "cliente.nome"] }}
+        />,
+      )
+      const headers = screen.getAllByRole("columnheader")
+      expect(headers.map((th) => th.textContent)).toEqual(["Número", "Cliente", "Valor"])
+      const cells = screen.getAllByRole("cell")
+      expect(cells.map((td) => td.textContent)).toEqual(["P-1", "Ana", "10"])
+      for (const element of [headers[0], headers[1], cells[0], cells[1]]) {
+        expect(element).toHaveAttribute("data-pinned", "left")
+        expect((element as HTMLElement).style.left).toMatch(/px$/)
+      }
+      expect(headers[2]).not.toHaveAttribute("data-pinned")
+      expect(cells[2]).not.toHaveAttribute("data-pinned")
+    })
+  })
+
+  describe("shared table styles", () => {
+    it("draws rows, headers and cells with tableStyles(), so both stay alike", async () => {
+      const { tableStyles } = await import("./table-styles")
+      const t = tableStyles()
+      render(<DataTable columns={columns} data={data} />)
+      const cell = screen.getByRole("cell", { name: "Bravo" })
+      for (const token of t.cell.split(" ")) expect(cell).toHaveClass(token)
+      for (const token of t.row.split(" ")) expect(cell.closest("tr")).toHaveClass(token)
+      for (const token of t.head.split(" ")) {
+        expect(screen.getByRole("columnheader", { name: "Name" })).toHaveClass(token)
+      }
+    })
+  })
+
+  describe("column ids", () => {
+    interface Venda {
+      cliente: { nome: string; cpf: string }
+      valor: number
+    }
+    const vendaCols: ColumnDef<Venda>[] = [
+      { accessorKey: "cliente.nome", header: "Cliente" },
+      { accessorKey: "cliente.cpf", header: "CPF", meta: { exportOnly: true } },
+      { accessorKey: "valor", header: "Valor" },
+    ]
+    const vendas: Venda[] = [
+      { cliente: { nome: "Zélia", cpf: "111" }, valor: 1 },
+      { cliente: { nome: "Ana", cpf: "222" }, valor: 2 },
+    ]
+
+    it.each([["cliente.nome"], ["cliente_nome"]])(
+      "accepts %s in searchableColumns and sortableColumns",
+      async (key) => {
+        render(
+          <DataTable
+            columns={vendaCols}
+            data={vendas}
+            searchableColumns={[key]}
+            sortableColumns={[key]}
+          />,
+        )
+        await userEvent.click(screen.getByRole("button", { name: "Cliente" }))
+        expect(screen.getAllByRole("row")[1]).toHaveTextContent("Ana")
+        await userEvent.type(screen.getByRole("textbox", { name: "Buscar na tabela" }), "zelia")
+        expect(screen.getByText("Zélia")).toBeInTheDocument()
+        expect(screen.queryByText("Ana")).not.toBeInTheDocument()
+      },
+    )
+
+    it("hides an exportOnly column with a nested key, and still exports it", async () => {
+      render(<DataTable columns={vendaCols} data={vendas} downloadable />)
+      expect(screen.queryByRole("columnheader", { name: "CPF" })).not.toBeInTheDocument()
+      expect(screen.queryByText("111")).not.toBeInTheDocument()
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
+      const [, , , sheet] = exportCall()
+      expect(sheet.headers).toEqual(["Cliente", "CPF", "Valor"])
+      expect(sheet.rows[0]).toEqual(["Zélia", "111", 1])
+    })
+  })
+
+  describe("density", () => {
+    it("marks the table compact and tightens rows and the pager", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          density="compact"
+          pagination={{ pageSize: 2 }}
+          data-testid="tabela"
+        />,
+      )
+      expect(screen.getByTestId("tabela")).toHaveAttribute("data-density", "compact")
+      expect(screen.getByRole("cell", { name: "Bravo" })).toHaveClass("py-2")
+      expect(screen.getByRole("button", { name: "Próxima página" })).toHaveClass("size-control-sm")
+    })
+
+    it("keeps the default rows otherwise", () => {
+      render(<DataTable columns={columns} data={data} data-testid="tabela" />)
+      expect(screen.getByTestId("tabela")).toHaveAttribute("data-density", "default")
+      expect(screen.getByRole("cell", { name: "Bravo" })).toHaveClass("py-2.5")
+    })
+  })
+
+  describe("alignment", () => {
+    function alignOf(element: HTMLElement) {
+      return ["text-left", "text-center", "text-right"].find((c) => element.classList.contains(c))
+    }
+
+    it("applies meta.align to the header, the cells and the footer", () => {
+      const cols: ColumnDef<Row>[] = [
+        { accessorKey: "name", header: "Name" },
+        { accessorKey: "age", header: "Age", footer: "75", meta: { align: "right" } },
+      ]
+      render(<DataTable columns={cols} data={data} sortableColumns={["age"]} />)
+      expect(alignOf(screen.getByRole("columnheader", { name: "Age" }))).toBe("text-right")
+      expect(alignOf(screen.getByRole("cell", { name: "30" }))).toBe("text-right")
+      expect(alignOf(screen.getByRole("cell", { name: "75" }))).toBe("text-right")
+      expect(alignOf(screen.getByRole("columnheader", { name: "Name" }))).toBe("text-left")
+    })
+
+    it("aligns a formattedColumn of numbers (money) to the right, and one of text to the left", () => {
+      const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+      const cols: ColumnDef<Row>[] = [
+        formattedColumn<Row, string>({ accessorKey: "name", header: "Name", format: (v) => v }),
+        formattedColumn<Row, number>({ accessorKey: "age", header: "Valor", format: brl.format }),
+      ]
+      render(<DataTable columns={cols} data={data} />)
+      expect(alignOf(screen.getByRole("columnheader", { name: "Valor" }))).toBe("text-right")
+      expect(alignOf(screen.getByRole("cell", { name: brl.format(30) }))).toBe("text-right")
+      expect(alignOf(screen.getByRole("columnheader", { name: "Name" }))).toBe("text-left")
+    })
+
+    it("lets formattedColumn's align option win", () => {
+      const cols: ColumnDef<Row>[] = [
+        formattedColumn<Row, number>({ accessorKey: "age", header: "Age", align: "center" }),
+      ]
+      render(<DataTable columns={cols} data={data} />)
+      expect(alignOf(screen.getByRole("columnheader", { name: "Age" }))).toBe("text-center")
+    })
+  })
+
+  describe("footer", () => {
+    it("renders columnDef.footer in a tfoot, e.g. totals", () => {
+      const cols: ColumnDef<Row>[] = [
+        { accessorKey: "name", header: "Name", footer: "Total" },
+        {
+          accessorKey: "age",
+          header: "Age",
+          footer: ({ table }) =>
+            table
+              .getFilteredRowModel()
+              .rows.reduce((sum, row) => sum + (row.getValue("age") as number), 0),
+        },
+      ]
+      const { container } = render(<DataTable columns={cols} data={data} />)
+      const tfoot = container.querySelector("tfoot")
+      expect(tfoot).not.toBeNull()
+      const cells = within(tfoot as HTMLElement).getAllByRole("cell")
+      expect(cells.map((cell) => cell.textContent)).toEqual(["Total", "75"])
+    })
+
+    it("renders no tfoot when no column has a footer", () => {
+      const { container } = render(<DataTable columns={columns} data={data} />)
+      expect(container.querySelector("tfoot")).toBeNull()
+    })
+  })
+
+  describe("grouped headers", () => {
+    interface Venda {
+      nome: string
+      cidade: string
+      valor: number
+    }
+    const grouped: ColumnDef<Venda>[] = [
+      {
+        id: "cliente",
+        header: "Cliente",
+        columns: [
+          { accessorKey: "nome", header: "Nome" },
+          { accessorKey: "cidade", header: "Cidade" },
+        ],
+      },
+      { accessorKey: "valor", header: "Valor" },
+    ]
+    const vendas = [{ nome: "Ana", cidade: "Santos", valor: 10 }]
+
+    it("spans a group header over its columns", () => {
+      render(<DataTable columns={grouped} data={vendas} sortableColumns={["valor"]} />)
+      const [groupRow, leafRow] = screen.getAllByRole("row")
+      const groupCells = within(groupRow as HTMLElement).getAllByRole("columnheader")
+      expect(groupCells).toHaveLength(2)
+      expect(groupCells[0]).toHaveTextContent("Cliente")
+      expect(groupCells[0]).toHaveAttribute("colspan", "2")
+      expect(groupCells[0]).toHaveAttribute("scope", "colgroup")
+      // The empty cell above "Valor" is not the sortable header.
+      expect(groupCells[1]).not.toHaveAttribute("aria-sort")
+      expect(within(leafRow as HTMLElement).getAllByRole("columnheader")).toHaveLength(3)
+      expect(screen.getByRole("columnheader", { name: "Valor" })).toHaveAttribute(
+        "aria-sort",
+        "none",
+      )
+    })
+
+    it("draws one skeleton cell per leaf column", () => {
+      const { container } = render(<DataTable columns={grouped} data={[]} loading />)
+      const row = container.querySelector('[data-slot="data-table-skeleton-row"]')
+      expect(row?.querySelectorAll("td")).toHaveLength(3)
+    })
+  })
+
+  describe("pagination", () => {
+    const many: Row[] = Array.from({ length: 12 }, (_, i) => ({
+      name: `Row ${String(i + 1).padStart(2, "0")}`,
+      age: 20 + i,
+    }))
+
+    it("uses the library's Pagination, with page numbers and the range", () => {
+      render(<DataTable columns={columns} data={many} pagination={{ pageSize: 5 }} />)
+      const nav = screen.getByRole("navigation", { name: "Paginação" })
+      expect(within(nav).getByText("1–5 de 12")).toBeInTheDocument()
+      expect(pager()).toEqual({ current: "1", last: "3" })
+    })
+
+    it("goes straight to a page", async () => {
+      render(<DataTable columns={columns} data={many} pagination={{ pageSize: 5 }} />)
+      await userEvent.click(screen.getByRole("button", { name: "Página 3" }))
+      expect(screen.getByText("Row 11")).toBeInTheDocument()
+      expect(screen.queryByText("Row 01")).not.toBeInTheDocument()
+    })
+
+    it("does not freeze when only onPaginationChange is given", async () => {
+      const onPaginationChange = vi.fn()
+      render(
+        <DataTable
+          columns={columns}
+          data={many}
+          pagination={{ pageSize: 5 }}
+          onPaginationChange={onPaginationChange}
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Próxima página" }))
+      expect(screen.getByText("Row 06")).toBeInTheDocument()
+      expect(onPaginationChange).toHaveBeenLastCalledWith({ pageIndex: 1, pageSize: 5 })
+    })
+
+    it("keeps the page when a new data array arrives with the same filter and sort", async () => {
+      const { rerender } = render(
+        <DataTable columns={columns} data={many} pagination={{ pageSize: 5 }} />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Página 2" }))
+      rerender(<DataTable columns={columns} data={[...many]} pagination={{ pageSize: 5 }} />)
+      expect(pager().current).toBe("2")
+      expect(screen.getByText("Row 06")).toBeInTheDocument()
+    })
+
+    it("goes back to page 1 when the search or the sort changes", async () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={many}
+          pagination={{ pageSize: 5 }}
+          searchableColumns={["name"]}
+          sortableColumns={["name"]}
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Página 2" }))
+      await userEvent.click(screen.getByRole("button", { name: "Name" }))
+      expect(pager().current).toBe("1")
+      await userEvent.click(screen.getByRole("button", { name: "Página 2" }))
+      await userEvent.type(screen.getByRole("textbox", { name: "Buscar na tabela" }), "Row")
+      expect(pager().current).toBe("1")
+    })
+
+    it("with autoResetPage={false}, keeps the page when the sort changes", async () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={many}
+          pagination={{ pageSize: 5 }}
+          sortableColumns={["name"]}
+          autoResetPage={false}
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Página 2" }))
+      await userEvent.click(screen.getByRole("button", { name: "Name" }))
+      expect(pager().current).toBe("2")
+    })
+
+    it("moves to the last page when the data shrinks under the current one", async () => {
+      const { rerender } = render(
+        <DataTable columns={columns} data={many} pagination={{ pageSize: 5 }} />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Página 3" }))
+      rerender(<DataTable columns={columns} data={many.slice(0, 7)} pagination={{ pageSize: 5 }} />)
+      expect(pager()).toEqual({ current: "2", last: "2" })
+      expect(screen.getByText("Row 07")).toBeInTheDocument()
+    })
+
+    it("names the pager controls from DataTableLabels and labels.pagination", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={many}
+          pagination={{ pageSize: 5, pageSizeOptions: [5, 10] }}
+          labels={{
+            paginationPrevious: "Anterior",
+            paginationNext: "Seguinte",
+            pageSize: "Por página",
+            pagination: { range: (from, to, total) => `${from} a ${to} de ${total}` },
+          }}
+        />,
+      )
+      expect(screen.getByRole("button", { name: "Anterior" })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Seguinte" })).toBeInTheDocument()
+      expect(screen.getByRole("combobox", { name: "Por página" })).toBeInTheDocument()
+      expect(screen.getByText("1 a 5 de 12")).toBeInTheDocument()
+    })
+
+    it("keeps the focus on next when the page changes", async () => {
+      render(<DataTable columns={columns} data={many} pagination={{ pageSize: 5 }} />)
+      const next = screen.getByRole("button", { name: "Próxima página" })
+      next.focus()
+      await userEvent.keyboard("{Enter}")
+      await userEvent.keyboard("{Enter}")
+      expect(pager().current).toBe("3")
+      expect(next).toHaveFocus()
+    })
+  })
+
+  describe("states", () => {
+    it("announces loading through a status that is not hidden from assistive tech", () => {
+      const { rerender } = render(<DataTable columns={columns} data={data} />)
+      const status = screen.getByRole("status")
+      expect(status).toHaveTextContent("")
+      rerender(<DataTable columns={columns} data={data} loading />)
+      // Same live region, now with text: a change screen readers announce.
+      expect(screen.getByRole("status")).toBe(status)
+      expect(status).toHaveTextContent("Carregando dados…")
+      expect(status.closest("[aria-hidden='true']")).toBeNull()
+    })
+
+    it("announces an empty search through the same status, not a region born with text", async () => {
+      render(<DataTable columns={columns} data={data} searchableColumns={["name"]} />)
+      const status = screen.getByRole("status")
+      await userEvent.type(screen.getByRole("textbox", { name: "Buscar na tabela" }), "zzz")
+      expect(screen.getAllByRole("status")).toEqual([status])
+      expect(status).toHaveTextContent("Nenhum resultado.")
+      expect(screen.getByRole("cell", { name: "Nenhum resultado." })).toBeInTheDocument()
+    })
+
+    it("draws as many skeleton rows as the current page size", async () => {
+      const many: Row[] = Array.from({ length: 30 }, (_, i) => ({ name: `R${i}`, age: i }))
+      const props = {
+        columns,
+        data: many,
+        pagination: { pageSize: 5, pageSizeOptions: [5, 10] },
+      }
+      const { container, rerender } = render(<DataTable {...props} />)
+      await userEvent.selectOptions(
+        screen.getByRole("combobox", { name: "Linhas por página" }),
+        "10",
+      )
+      rerender(<DataTable {...props} loading />)
+      expect(container.querySelectorAll('[data-slot="data-table-skeleton-row"]')).toHaveLength(10)
+    })
+
+    it("shows an error instead of 'no results', with a retry button", async () => {
+      const onRetry = vi.fn()
+      render(
+        <DataTable
+          columns={columns}
+          data={[]}
+          error="Falha ao carregar contratos."
+          onRetry={onRetry}
+        />,
+      )
+      expect(screen.getByRole("alert")).toHaveTextContent("Falha ao carregar contratos.")
+      expect(screen.queryByText("Nenhum resultado.")).not.toBeInTheDocument()
+      await userEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
+      expect(onRetry).toHaveBeenCalledTimes(1)
+    })
+
+    it("uses the default error text for error={true} and labels for the button", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          error
+          onRetry={() => {}}
+          labels={{ retry: "Recarregar" }}
+        />,
+      )
+      expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar os dados.")
+      expect(screen.getByRole("button", { name: "Recarregar" })).toBeInTheDocument()
+      expect(screen.queryByText("Bravo")).not.toBeInTheDocument()
+    })
+
+    it("shows the skeleton, not the error, while retrying", () => {
+      render(<DataTable columns={columns} data={[]} error="Falhou" loading />)
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+      expect(screen.getByRole("status")).toHaveTextContent("Carregando dados…")
+    })
+  })
+
+  describe("server mode", () => {
+    const page: Row[] = Array.from({ length: 10 }, (_, i) => ({ name: `Row ${i + 1}`, age: i }))
+
+    it("shows the server total and derives the page count from rowCount", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={page}
+          manualPagination
+          rowCount={243}
+          pagination={{ pageSize: 10 }}
+          showRowCount
+        />,
+      )
+      expect(screen.getByText("243 registros")).toBeInTheDocument()
+      expect(pager()).toEqual({ current: "1", last: "25" })
+    })
+
+    it("lets pageCount win over rowCount", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={page}
+          manualPagination
+          rowCount={243}
+          pageCount={30}
+          pagination={{ pageSize: 10 }}
+        />,
+      )
+      expect(pager()).toEqual({ current: "1", last: "30" })
+    })
+
+    it("never shows a negative page count and keeps next available when the total is unknown", () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={page}
+          manualPagination
+          pagination={{ pageSize: 10 }}
+          showRowCount
+        />,
+      )
+      expect(screen.queryByText(/-1/)).not.toBeInTheDocument()
+      // The page's own 10 rows are not the total: no count is shown.
+      expect(screen.queryByText("10 registros")).not.toBeInTheDocument()
+      expect(isUnavailable(screen.getByRole("button", { name: "Próxima página" }))).toBe(false)
+    })
+
+    it("hides export scopes the table cannot fill from the server page", async () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={page}
+          manualPagination
+          rowCount={243}
+          pagination={{ pageSize: 10 }}
+          downloadable
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      expect(screen.getByRole("menuitem", { name: "Exportar página atual" })).toBeInTheDocument()
+      expect(screen.queryByRole("menuitem", { name: "Exportar todos os dados" })).toBeNull()
+      expect(screen.queryByRole("menuitem", { name: "Exportar dados filtrados" })).toBeNull()
+    })
+
+    it("offers the scopes that have a fetcher", async () => {
+      const fetchAll = vi.fn(async () => page)
+      const fetchFiltered = vi.fn(async () => page.slice(0, 2))
+      render(
+        <DataTable
+          columns={columns}
+          data={page}
+          manualPagination
+          rowCount={243}
+          pagination={{ pageSize: 10 }}
+          downloadable={{ fetchAll, fetchFiltered }}
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      expect(screen.getByRole("menuitem", { name: "Exportar todos os dados" })).toBeInTheDocument()
+      expect(screen.getByRole("menuitem", { name: "Exportar dados filtrados" })).toBeInTheDocument()
+    })
+
+    it("with server filtering only, keeps 'filtered' (the data) and hides 'all'", async () => {
+      render(<DataTable columns={columns} data={page} manualFiltering downloadable />)
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      expect(screen.getByRole("menuitem", { name: "Exportar dados filtrados" })).toBeInTheDocument()
+      expect(screen.queryByRole("menuitem", { name: "Exportar todos os dados" })).toBeNull()
+    })
+  })
+
+  describe("row identity", () => {
+    interface Cliente {
+      id: string
+      nome: string
+    }
+    const cols: ColumnDef<Cliente>[] = [
+      { accessorKey: "nome", header: "Nome" },
+      {
+        id: "nota",
+        header: "Nota",
+        cell: ({ row }) => <input aria-label={`Nota de ${row.original.nome}`} />,
+      },
+    ]
+    const page1 = [1, 2, 3].map((n) => ({ id: `c${n}`, nome: `Cliente ${n}` }))
+    const page2 = [4, 5, 6].map((n) => ({ id: `c${n}`, nome: `Cliente ${n}` }))
+
+    it("keys rows by getRowId, so what was typed in a row stays with that row", async () => {
+      const { rerender } = render(
+        <DataTable columns={cols} data={page1} getRowId={(row) => row.id} />,
+      )
+      await userEvent.type(screen.getByRole("textbox", { name: "Nota de Cliente 1" }), "ligar")
+      rerender(<DataTable columns={cols} data={page2} getRowId={(row) => row.id} />)
+      expect(screen.getByRole("textbox", { name: "Nota de Cliente 4" })).toHaveValue("")
+      rerender(
+        <DataTable
+          columns={cols}
+          data={[page1[0] as Cliente, ...page2]}
+          getRowId={(row) => row.id}
+        />,
+      )
+      expect(screen.getByRole("textbox", { name: "Nota de Cliente 4" })).toHaveValue("")
+    })
+
+    it("gives getRowId the row and its index", () => {
+      const getRowId = vi.fn((row: Cliente, index: number) => `${row.id}-${index}`)
+      render(<DataTable columns={cols} data={page1} getRowId={getRowId} />)
+      expect(getRowId).toHaveBeenCalledWith(page1[1], 1)
+    })
+  })
+
+  describe("sorting", () => {
+    interface Pessoa {
+      nome: string
+      idade?: number | null
+      nascimento?: Date
+      bloco?: string
+    }
+
+    function bodyColumn(index = 0) {
+      return screen
+        .getAllByRole("row")
+        .slice(1)
+        .map((row) => row.querySelectorAll("td")[index]?.textContent ?? "")
+    }
+
+    async function sortBy(name: string) {
+      await userEvent.click(screen.getByRole("button", { name: new RegExp(name) }))
+    }
+
+    it.each([
+      [
+        [
+          "ana",
+          "Bruno",
+          "carlos",
+          "Diego",
+          "Fábio",
+          "Gabriel",
+          "Zuleica",
+          "Álvaro",
+          "Ângela",
+          "Érica",
+          "Íris",
+          "Úrsula",
+        ],
+        [
+          "Álvaro",
+          "ana",
+          "Ângela",
+          "Bruno",
+          "carlos",
+          "Diego",
+          "Érica",
+          "Fábio",
+          "Gabriel",
+          "Íris",
+          "Úrsula",
+          "Zuleica",
+        ],
+      ],
+      [
+        ["Carlos", "Zuleica", "ana", "bruno", "Álvaro"],
+        ["Álvaro", "ana", "bruno", "Carlos", "Zuleica"],
+      ],
+    ])(
+      "sorts names in Portuguese order, ignoring accents and case (%#)",
+      async (input, expected) => {
+        render(
+          <DataTable
+            columns={[{ accessorKey: "nome", header: "Nome" }] as ColumnDef<Pessoa>[]}
+            data={input.map((nome) => ({ nome }))}
+            sortableColumns={["nome"]}
+          />,
+        )
+        await sortBy("Nome")
+        expect(bodyColumn()).toEqual(expected)
+        await sortBy("Nome")
+        expect(bodyColumn()).toEqual([...expected].reverse())
+      },
+    )
+
+    it("puts numbers inside text in numeric order", async () => {
+      render(
+        <DataTable
+          columns={[{ accessorKey: "bloco", header: "Bloco" }] as ColumnDef<Pessoa>[]}
+          data={["Bloco 10", "Bloco 2", "Bloco 1"].map((bloco) => ({ nome: bloco, bloco }))}
+          sortableColumns={["bloco"]}
+        />,
+      )
+      await sortBy("Bloco")
+      expect(bodyColumn()).toEqual(["Bloco 1", "Bloco 2", "Bloco 10"])
+    })
+
+    it("sorts numbers numerically and dates by time", async () => {
+      const cols: ColumnDef<Pessoa>[] = [
+        { accessorKey: "nome", header: "Nome" },
+        { accessorKey: "idade", header: "Idade" },
+        {
+          accessorKey: "nascimento",
+          header: "Nascimento",
+          cell: ({ row }) => row.original.nascimento?.toISOString().slice(0, 10),
+        },
+      ]
+      const rows: Pessoa[] = [
+        { nome: "B", idade: 9, nascimento: new Date(2001, 0, 1) },
+        { nome: "A", idade: 100, nascimento: new Date(1999, 11, 31) },
+        { nome: "C", idade: 10, nascimento: new Date(2000, 5, 15) },
+      ]
+      render(<DataTable columns={cols} data={rows} sortableColumns={["idade", "nascimento"]} />)
+      await sortBy("Idade")
+      await sortBy("Idade")
+      expect(bodyColumn(1)).toEqual(["9", "10", "100"])
+      await sortBy("Nascimento")
+      await sortBy("Nascimento")
+      expect(bodyColumn(0)).toEqual(["A", "C", "B"])
+    })
+
+    it("keeps a column's own sortingFn", async () => {
+      const cols: ColumnDef<Pessoa>[] = [
+        {
+          accessorKey: "nome",
+          header: "Nome",
+          // Length first: the column decides, not the default.
+          sortingFn: (a, b) => a.original.nome.length - b.original.nome.length,
+        },
+      ]
+      render(
+        <DataTable
+          columns={cols}
+          data={[{ nome: "Bia" }, { nome: "Al" }, { nome: "Carla" }]}
+          sortableColumns={["nome"]}
+        />,
+      )
+      await sortBy("Nome")
+      expect(bodyColumn()).toEqual(["Al", "Bia", "Carla"])
+    })
+  })
+
+  describe("search", () => {
+    interface Cliente {
+      nome: string
+      cpf: string
+      valor: number
+      criadoEm: string
+    }
+    const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+    const formatCpf = (cpf: string) => cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+    const clienteColumns: ColumnDef<Cliente>[] = [
+      { accessorKey: "nome", header: "Nome" },
+      formattedColumn<Cliente, string>({ accessorKey: "cpf", header: "CPF", format: formatCpf }),
+      formattedColumn<Cliente, number>({
+        accessorKey: "valor",
+        header: "Valor",
+        format: (v) => brl.format(v),
+      }),
+      dateColumn<Cliente>({ accessorKey: "criadoEm", header: "Criado em" }),
+    ]
+    const clientes: Cliente[] = [
+      { nome: "João Álvares", cpf: "12345678901", valor: 1234.5, criadoEm: "2026-05-19T14:30:00" },
+      { nome: "Maria Souza", cpf: "98765432100", valor: 99, criadoEm: "2026-02-01T09:00:00" },
+    ]
+    const searchable = ["nome", "cpf", "valor", "criadoEm"]
+
+    async function search(term: string) {
+      const input = screen.getByRole("textbox", { name: "Buscar na tabela" })
+      await userEvent.clear(input)
+      await userEvent.type(input, term)
+    }
+
+    it.each([
+      ["joao", "accent and case"],
+      ["ALVARES", "accent and case"],
+      ["123.456", "formatted CPF"],
+      ["1.234,50", "formatted money"],
+      ["19/05/2026", "formatted date"],
+    ])("finds the row by %s (%s)", async (term) => {
+      render(<DataTable columns={clienteColumns} data={clientes} searchableColumns={searchable} />)
+      await search(term)
+      expect(screen.getByText("João Álvares")).toBeInTheDocument()
+      expect(screen.queryByText("Maria Souza")).not.toBeInTheDocument()
+    })
+
+    it("does not match text the user does not see (the T of an ISO date)", async () => {
+      render(<DataTable columns={clienteColumns} data={clientes} searchableColumns={searchable} />)
+      await search("t")
+      expect(screen.getByRole("cell", { name: "Nenhum resultado." })).toBeInTheDocument()
+    })
+
+    it("uses a column's meta.searchText when it gives one", async () => {
+      const cols: ColumnDef<Cliente>[] = [
+        {
+          accessorKey: "nome",
+          header: "Nome",
+          meta: { searchText: (row: Cliente) => `${row.nome} cliente-vip` },
+        },
+      ]
+      render(<DataTable columns={cols} data={clientes} searchableColumns={["nome"]} />)
+      await search("vip")
+      expect(screen.getByText("João Álvares")).toBeInTheDocument()
+      expect(screen.getByText("Maria Souza")).toBeInTheDocument()
+    })
+
+    it("searches every visible column when searchableColumns is omitted", () => {
+      render(<DataTable columns={clienteColumns} data={clientes} globalFilter="alvares" />)
+      expect(screen.getByText("João Álvares")).toBeInTheDocument()
+      expect(screen.queryByText("Maria Souza")).not.toBeInTheDocument()
+    })
   })
 
   describe("downloadable", () => {
     beforeEach(() => {
-      downloadXlsxMock.mockClear()
+      downloadSheetMock.mockClear()
     })
 
     it("does not render the export button by default", () => {
@@ -375,12 +1470,8 @@ describe("DataTable", () => {
       )
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar dados filtrados/i }))
-      expect(downloadXlsxMock).toHaveBeenCalledTimes(1)
-      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      expect(downloadSheetMock).toHaveBeenCalledTimes(1)
+      const [records] = exportCall()
       expect(records).toHaveLength(1)
       expect(records[0]).toMatchObject({ Name: "Alpha" })
     })
@@ -389,11 +1480,7 @@ describe("DataTable", () => {
       render(<DataTable columns={columns} data={data} downloadable pagination={{ pageSize: 2 }} />)
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar página atual/i }))
-      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      const [records] = exportCall()
       expect(records).toHaveLength(2)
     })
 
@@ -410,12 +1497,158 @@ describe("DataTable", () => {
       )
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
-      const [records] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      const [records] = exportCall()
       expect(records).toHaveLength(data.length)
+    })
+
+    it("exports nested accessorKey and accessorFn values, as the cells show them", async () => {
+      interface Venda {
+        cliente: { nome: string; cidade: string }
+        valor: number
+      }
+      const cols: ColumnDef<Venda>[] = [
+        { accessorKey: "cliente.nome", header: "Cliente" },
+        { id: "cidade", accessorFn: (row) => row.cliente.cidade.toUpperCase(), header: "Cidade" },
+        { accessorKey: "valor", header: "Valor" },
+      ]
+      render(
+        <DataTable
+          columns={cols}
+          data={[{ cliente: { nome: "João", cidade: "Santos" }, valor: 10 }]}
+          downloadable
+        />,
+      )
+      expect(screen.getByText("João")).toBeInTheDocument()
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
+      const [records] = exportCall()
+      expect({ ...records[0] }).toEqual({ Cliente: "João", Cidade: "SANTOS", Valor: 10 })
+    })
+
+    async function exportScope(name: RegExp | string) {
+      await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
+      await userEvent.click(screen.getByRole("menuitem", { name }))
+    }
+
+    it("skips columns without data (actions) and keeps repeated header names apart", async () => {
+      interface Item {
+        nome: string
+        bruto: number
+        liquido: number
+      }
+      const cols: ColumnDef<Item>[] = [
+        { accessorKey: "nome", header: "Nome" },
+        { accessorKey: "bruto", header: "Valor" },
+        { accessorKey: "liquido", header: "Valor" },
+        { id: "acoes", header: "Ações", cell: () => <button type="button">Editar</button> },
+      ]
+      render(
+        <DataTable columns={cols} data={[{ nome: "A", bruto: 10, liquido: 8 }]} downloadable />,
+      )
+      await exportScope(/Exportar todos os dados/i)
+      const [, , , sheet] = exportCall()
+      expect(sheet.headers).toEqual(["Nome", "Valor", "Valor"])
+      expect(sheet.rows).toEqual([["A", 10, 8]])
+    })
+
+    it("keeps the current sort in the filtered export", async () => {
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          sortableColumns={["name"]}
+          pagination={{ pageSize: 1 }}
+          downloadable
+        />,
+      )
+      await userEvent.click(screen.getByRole("button", { name: "Name" }))
+      await exportScope(/Exportar dados filtrados/i)
+      const [, , , sheet] = exportCall()
+      expect(sheet.rows.map((row) => row[0])).toEqual(["Alpha", "Bravo", "Charlie"])
+    })
+
+    it("lets a column leave the file (meta.export: false) or give its own value", async () => {
+      const cols: ColumnDef<Row>[] = [
+        { accessorKey: "name", header: "Name", meta: { export: false } },
+        {
+          accessorKey: "age",
+          header: "Age",
+          meta: { export: (row: Row, value: unknown) => `${row.name}: ${value}` },
+        },
+      ]
+      render(<DataTable columns={cols} data={[data[0] as Row]} downloadable />)
+      await exportScope(/Exportar todos os dados/i)
+      const [, , , sheet] = exportCall()
+      expect(sheet).toEqual({ headers: ["Age"], rows: [["Bravo: 30"]] })
+    })
+
+    it("exports a dateColumn as a date, not as the ISO text", async () => {
+      interface Pedido {
+        vencimento: string
+        criadoEm: string
+      }
+      render(
+        <DataTable
+          columns={[
+            dateColumn<Pedido>({ accessorKey: "vencimento", header: "Vencimento" }),
+            dateColumn<Pedido>({ accessorKey: "criadoEm", header: "Criado em" }),
+          ]}
+          data={[{ vencimento: "2026-05-19", criadoEm: "2026-05-19T14:30:00" }]}
+          downloadable
+        />,
+      )
+      await exportScope(/Exportar todos os dados/i)
+      const [, , , sheet] = exportCall()
+      const [vencimento, criadoEm] = sheet.rows[0] as Date[]
+      expect(vencimento).toBeInstanceOf(Date)
+      expect([vencimento?.getFullYear(), vencimento?.getMonth(), vencimento?.getDate()]).toEqual([
+        2026, 4, 19,
+      ])
+      expect(vencimento?.getHours()).toBe(0)
+      expect([criadoEm?.getDate(), criadoEm?.getHours(), criadoEm?.getMinutes()]).toEqual([
+        19, 14, 30,
+      ])
+    })
+
+    it("reports a failed export to onExportError and on screen, never silently", async () => {
+      const failure = new Error("servidor fora")
+      const onExportError = vi.fn()
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          manualPagination
+          rowCount={30}
+          downloadable={{ fetchAll: () => Promise.reject(failure), onExportError }}
+        />,
+      )
+      await exportScope(/Exportar todos os dados/i)
+      expect(onExportError).toHaveBeenCalledWith(failure)
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Não foi possível exportar os dados. Tente de novo.",
+      )
+      expect(downloadSheetMock).not.toHaveBeenCalled()
+      // The trigger works again and a new attempt clears the message.
+      const trigger = screen.getByRole("button", { name: /Exportar para Excel/i })
+      expect(trigger).toBeEnabled()
+    })
+
+    it("reports a file that fails to be written", async () => {
+      downloadSheetMock.mockRejectedValueOnce(new Error("disco cheio"))
+      const onExportError = vi.fn()
+      render(
+        <DataTable
+          columns={columns}
+          data={data}
+          downloadable={{ onExportError }}
+          labels={{ exportError: "Falhou." }}
+        />,
+      )
+      await exportScope(/Exportar todos os dados/i)
+      expect(onExportError).toHaveBeenCalledWith(new Error("disco cheio"))
+      expect(await screen.findByRole("alert")).toHaveTextContent("Falhou.")
+      await exportScope(/Exportar todos os dados/i)
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument()
     })
 
     it("uses custom filename, sheetName and rowToRecord when provided", async () => {
@@ -432,11 +1665,7 @@ describe("DataTable", () => {
       )
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
-      const [records, filename, sheetName] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      const [records, filename, sheetName] = exportCall()
       expect(filename).toBe("contratos.xlsx")
       expect(sheetName).toBe("Contratos")
       expect(records[0]).toEqual({ NOME_CUSTOM: "BRAVO" })
@@ -452,11 +1681,7 @@ describe("DataTable", () => {
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: menuItem }))
       expect(filename).toHaveBeenCalledWith(scope)
-      const [, resolved] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      const [, resolved] = exportCall()
       expect(resolved).toBe(`contratos-${scope}.xlsx`)
     })
 
@@ -464,11 +1689,7 @@ describe("DataTable", () => {
       render(<DataTable columns={columns} data={data} downloadable={{ filename: () => "" }} />)
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
-      const [, resolved] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      const [, resolved] = exportCall()
       expect(resolved).toBe("export.xlsx")
     })
 
@@ -476,18 +1697,35 @@ describe("DataTable", () => {
       render(<DataTable columns={columns} data={data} downloadable={{ filename: "" }} />)
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
       await userEvent.click(screen.getByRole("menuitem", { name: /Exportar todos os dados/i }))
-      const [, resolved] = downloadXlsxMock.mock.calls[0] as unknown as [
-        Record<string, unknown>[],
-        string,
-        string,
-      ]
+      const [, resolved] = exportCall()
       expect(resolved).toBe("export.xlsx")
     })
 
     it("names the export menu after its trigger", async () => {
       render(<DataTable columns={columns} data={data} downloadable />)
       await userEvent.click(screen.getByRole("button", { name: /Exportar para Excel/i }))
-      expect(screen.getByRole("dialog", { name: "Exportar para Excel" })).toBeInTheDocument()
+      expect(screen.getByRole("menu", { name: "Exportar para Excel" })).toBeInTheDocument()
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    })
+
+    it("works as a menu from the keyboard: arrows move, Enter exports, Escape closes", async () => {
+      render(<DataTable columns={columns} data={data} downloadable />)
+      const trigger = screen.getByRole("button", { name: /Exportar para Excel/i })
+      trigger.focus()
+      await userEvent.keyboard("{Enter}")
+      const items = screen.getAllByRole("menuitem")
+      expect(items[0]).toHaveFocus()
+      await userEvent.keyboard("{ArrowDown}")
+      expect(items[1]).toHaveFocus()
+      await userEvent.keyboard("{Escape}")
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+      expect(trigger).toHaveFocus()
+
+      await userEvent.keyboard("{Enter}")
+      await userEvent.keyboard("{ArrowDown}{ArrowDown}{Enter}")
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+      const [records] = exportCall()
+      expect(records).toHaveLength(3)
     })
 
     it("replaces the export button with a skeleton when loading", () => {
@@ -512,27 +1750,93 @@ describe("DataTable", () => {
       expect(eventArg.type).toBe("click")
     })
 
-    it("fires onRowClick when Enter or Space is pressed on a focused interactive row", async () => {
+    it("keeps every row a table row with its cells", () => {
+      render(<DataTable columns={columns} data={data} onRowClick={vi.fn()} />)
+      // header row + 3 body rows, each with its two cells
+      expect(screen.getAllByRole("row")).toHaveLength(4)
+      expect(screen.getAllByRole("cell")).toHaveLength(6)
+      const row = screen.getByText("Bravo").closest("tr") as HTMLTableRowElement
+      expect(row.getAttribute("role")).toBeNull()
+      expect(row.getAttribute("tabindex")).toBeNull()
+    })
+
+    it("reaches the row action through a button in the first cell, named by its content", async () => {
       const onRowClick = vi.fn()
       render(<DataTable columns={columns} data={data} onRowClick={onRowClick} />)
-      const alphaRow = screen.getByText("Alpha").closest("tr") as HTMLTableRowElement
-      expect(alphaRow).toBeTruthy()
-      expect(alphaRow.getAttribute("role")).toBe("button")
-      expect(alphaRow.getAttribute("tabindex")).toBe("0")
+      const action = screen.getByRole("button", { name: "Alpha" })
+      expect(action.closest("td")).toBe(screen.getAllByRole("cell")[2])
 
-      alphaRow.focus()
+      await userEvent.tab()
+      await userEvent.tab()
+      expect(action).toHaveFocus()
       await userEvent.keyboard("{Enter}")
       expect(onRowClick).toHaveBeenCalledTimes(1)
       expect(onRowClick.mock.calls[0]?.[0]).toEqual({ name: "Alpha", age: 20 })
 
-      alphaRow.focus()
       await userEvent.keyboard(" ")
       expect(onRowClick).toHaveBeenCalledTimes(2)
       expect(onRowClick.mock.calls[1]?.[0]).toEqual({ name: "Alpha", age: 20 })
     })
 
-    it("does not attach interactive role/handlers when onRowClick is omitted", async () => {
+    it("never calls onRowClick from a control inside the row, and the control still works", async () => {
+      const onRowClick = vi.fn()
+      const onEdit = vi.fn()
+      const cols: ColumnDef<Row>[] = [
+        ...columns,
+        {
+          id: "acoes",
+          header: "Ações",
+          cell: ({ row }) => (
+            <>
+              <button type="button" onClick={() => onEdit(row.original.name)}>
+                Editar {row.original.name}
+              </button>
+              <a href={`#detalhe-${row.original.name}`}>Ver {row.original.name}</a>
+              <input aria-label={`Nota ${row.original.name}`} />
+            </>
+          ),
+        },
+      ]
+      render(<DataTable columns={cols} data={data} onRowClick={onRowClick} />)
+
+      const edit = screen.getByRole("button", { name: "Editar Bravo" })
+      await userEvent.click(edit)
+      edit.focus()
+      await userEvent.keyboard("{Enter}")
+      await userEvent.keyboard(" ")
+      expect(onEdit).toHaveBeenCalledTimes(3)
+
+      await userEvent.click(screen.getByRole("link", { name: "Ver Bravo" }))
+      expect(window.location.hash).toBe("#detalhe-Bravo")
+      window.location.hash = ""
+
+      const note = screen.getByRole("textbox", { name: "Nota Bravo" })
+      await userEvent.click(note)
+      await userEvent.keyboard("ok {Enter}")
+      expect(note).toHaveValue("ok ")
+
+      expect(onRowClick).not.toHaveBeenCalled()
+    })
+
+    it("ignores clicks that come from a portal rendered by a cell (menus, popovers)", async () => {
+      const onRowClick = vi.fn()
+      const { createPortal } = await import("react-dom")
+      const cols: ColumnDef<Row>[] = [
+        ...columns,
+        {
+          id: "menu",
+          header: "Menu",
+          cell: ({ row }) => createPortal(<span>Item de {row.original.name}</span>, document.body),
+        },
+      ]
+      render(<DataTable columns={cols} data={data} onRowClick={onRowClick} />)
+      await userEvent.click(screen.getByText("Item de Bravo"))
+      expect(onRowClick).not.toHaveBeenCalled()
+    })
+
+    it("does not add a row button when onRowClick is omitted", () => {
       render(<DataTable columns={columns} data={data} />)
+      expect(screen.queryByRole("button", { name: "Bravo" })).not.toBeInTheDocument()
       const row = screen.getByText("Bravo").closest("tr") as HTMLTableRowElement
       expect(row.getAttribute("role")).toBeNull()
       expect(row.getAttribute("tabindex")).toBeNull()
@@ -550,16 +1854,16 @@ describe("DataTable", () => {
       // Start on page 1 of 3 — previous should be disabled.
       const prev = screen.getByRole("button", { name: "Página anterior" })
       const next = screen.getByRole("button", { name: "Próxima página" })
-      expect(prev).toBeDisabled()
-      expect(screen.getByText(/Página 1 de 3/)).toBeInTheDocument()
+      expect(isUnavailable(prev)).toBe(true)
+      expect(pager()).toEqual({ current: "1", last: "3" })
 
       // Advance to page 2, then go back via "Previous".
       await userEvent.click(next)
-      expect(screen.getByText(/Página 2 de 3/)).toBeInTheDocument()
-      expect(prev).not.toBeDisabled()
+      expect(pager()).toEqual({ current: "2", last: "3" })
+      expect(isUnavailable(prev)).toBe(false)
 
       await userEvent.click(prev)
-      expect(screen.getByText(/Página 1 de 3/)).toBeInTheDocument()
+      expect(pager()).toEqual({ current: "1", last: "3" })
       expect(screen.getByText("Row 1")).toBeInTheDocument()
       expect(screen.queryByText("Row 3")).not.toBeInTheDocument()
     })
@@ -610,8 +1914,8 @@ describe("DataTable", () => {
       render(<DataTable columns={columns} data={data} loading pagination={{ pageSize: 2 }} />)
       const prev = screen.getByRole("button", { name: /Página anterior/i })
       const next = screen.getByRole("button", { name: /Próxima página/i })
-      expect(prev).toBeDisabled()
-      expect(next).toBeDisabled()
+      expect(isUnavailable(prev)).toBe(true)
+      expect(isUnavailable(next)).toBe(true)
     })
 
     it("sets aria-busy on the wrapper while loading", () => {
@@ -694,13 +1998,13 @@ describe("DataTable", () => {
       const nextBtn = screen.getByRole("button", { name: "Próxima página" })
       await userEvent.click(nextBtn)
       await userEvent.click(nextBtn)
-      expect(screen.getByText(/Página 3 de 6/)).toBeInTheDocument()
+      expect(pager()).toEqual({ current: "3", last: "6" })
 
       const select = screen.getByRole("combobox", { name: /Linhas por página/i })
       await userEvent.selectOptions(select, "20")
 
       // After resize, cursor MUST be back on page 1 (not preserved at row 21).
-      expect(screen.getByText(/Página 1 de 3/)).toBeInTheDocument()
+      expect(pager()).toEqual({ current: "1", last: "3" })
       expect(screen.getByText("Row 1")).toBeInTheDocument()
       expect(screen.getByText("Row 20")).toBeInTheDocument()
       expect(screen.queryByText("Row 21")).not.toBeInTheDocument()
@@ -773,8 +2077,8 @@ describe("DataTable", () => {
       expect(onPaginationChange).not.toHaveBeenCalled()
     })
 
-    it("renders a skeleton in place of the select while loading", () => {
-      const { container } = render(
+    it("keeps the select in place but unavailable while loading", () => {
+      render(
         <DataTable
           columns={columns}
           data={makeMany(20)}
@@ -782,8 +2086,7 @@ describe("DataTable", () => {
           pagination={{ pageSize: 10, pageSizeOptions: [10, 20] }}
         />,
       )
-      expect(screen.queryByRole("combobox", { name: /Linhas por página/i })).not.toBeInTheDocument()
-      expect(container.querySelector('[data-slot="data-table-page-size-skeleton"]')).toBeTruthy()
+      expect(screen.getByRole("combobox", { name: /Linhas por página/i })).toBeDisabled()
     })
 
     it("uses custom labels.pageSize for the visible label (and accessible name)", () => {
@@ -802,5 +2105,189 @@ describe("DataTable", () => {
       expect(select).toBeInTheDocument()
       expect(select.getAttribute("aria-label")).toBeNull()
     })
+  })
+})
+
+// The page came from the URL and the rows from a fetch: the clamp to the
+// last page ran on the empty first render and moved a deep link to page 1.
+describe("DataTable: a controlled page and rows still on their way", () => {
+  const rows: Row[] = Array.from({ length: 30 }, (_, i) => ({ name: `Row ${i + 1}`, age: i }))
+
+  function FromUrl({ data, loading }: { data: Row[]; loading?: boolean }) {
+    const [page, setPage] = React.useState(3)
+    return (
+      <DataTable
+        columns={columns}
+        data={data}
+        loading={loading}
+        pagination={{ pageSize: 5 }}
+        pageIndex={page}
+        onPaginationChange={(next) => {
+          const value = typeof next === "function" ? next({ pageIndex: page, pageSize: 5 }) : next
+          setPage(value.pageIndex)
+        }}
+      />
+    )
+  }
+
+  it("keeps page 4 while the data is empty, and shows it when the rows arrive", () => {
+    const onPaginationChange = vi.fn()
+    const { rerender } = render(
+      <DataTable
+        columns={columns}
+        data={[]}
+        pagination={{ pageSize: 5 }}
+        pageIndex={3}
+        onPaginationChange={onPaginationChange}
+      />,
+    )
+    rerender(
+      <DataTable
+        columns={columns}
+        data={rows}
+        pagination={{ pageSize: 5 }}
+        pageIndex={3}
+        onPaginationChange={onPaginationChange}
+      />,
+    )
+    expect(onPaginationChange).not.toHaveBeenCalled()
+    expect(pager().current).toBe("4")
+    expect(screen.getByText("Row 16")).toBeInTheDocument()
+  })
+
+  it("with the page in the parent's state: a deep link opens on its page", () => {
+    const { rerender } = render(<FromUrl data={[]} />)
+    rerender(<FromUrl data={rows} />)
+    expect(pager().current).toBe("4")
+  })
+
+  it("does not clamp while loading, even with stale rows that are fewer", () => {
+    const { rerender } = render(<FromUrl data={rows.slice(0, 5)} loading />)
+    rerender(<FromUrl data={rows} />)
+    expect(pager().current).toBe("4")
+  })
+
+  it("a refetch that empties the data keeps the page", () => {
+    const { rerender } = render(<FromUrl data={rows} />)
+    expect(pager().current).toBe("4")
+    rerender(<FromUrl data={[]} />)
+    rerender(<FromUrl data={rows} />)
+    expect(pager().current).toBe("4")
+  })
+
+  it("still moves to the last page when loaded rows shrink under it", () => {
+    const { rerender } = render(<FromUrl data={rows} />)
+    rerender(<FromUrl data={rows.slice(0, 12)} />)
+    expect(pager()).toEqual({ current: "3", last: "3" })
+  })
+})
+
+// While a file was being made, the export menu opened again and a second
+// export started: two fetches, two downloads, and the spinner gone early.
+describe("DataTable: one export at a time", () => {
+  beforeAll(() => {
+    const proto = Element.prototype as unknown as Record<string, unknown>
+    proto.hasPointerCapture ??= () => false
+    proto.setPointerCapture ??= () => {}
+    proto.releasePointerCapture ??= () => {}
+  })
+
+  it("the busy trigger does not open the menu again, and fetchAll runs once", async () => {
+    downloadSheetMock.mockClear()
+    let finish: (rows: Row[]) => void = () => {}
+    const fetchAll = vi.fn(
+      () =>
+        new Promise<Row[]>((resolve) => {
+          finish = resolve
+        }),
+    )
+    const user = userEvent.setup()
+    render(<DataTable columns={columns} data={data} downloadable={{ fetchAll }} />)
+    const trigger = screen.getByRole("button", { name: /Exportar para Excel/ })
+    await user.click(trigger)
+    await user.click(screen.getByRole("menuitem", { name: "Exportar todos os dados" }))
+    expect(trigger).toHaveAttribute("aria-busy", "true")
+
+    for (const open of [
+      () => user.click(trigger),
+      async () => {
+        trigger.focus()
+        await user.keyboard("{Enter}")
+      },
+      async () => {
+        trigger.focus()
+        await user.keyboard("{ArrowDown}")
+      },
+    ]) {
+      await open()
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+    }
+    expect(fetchAll).toHaveBeenCalledTimes(1)
+
+    await act(async () => finish(data))
+    expect(downloadSheetMock).toHaveBeenCalledTimes(1)
+    expect(trigger).not.toHaveAttribute("aria-busy")
+    // Free again: the next export goes.
+    await user.click(trigger)
+    expect(screen.getByRole("menu")).toBeInTheDocument()
+  })
+})
+
+describe("DataTable: empty cells in the default order", () => {
+  type Item = { id: string; valor?: string | null }
+  const items: Item[] = [
+    { id: "A", valor: "banana" },
+    { id: "B", valor: null },
+    { id: "C" },
+    { id: "D", valor: "abacate" },
+    { id: "E", valor: "" },
+  ]
+  const order = () =>
+    screen
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => within(row).getAllByRole("cell")[0]?.textContent)
+      .join("")
+  const columns: ColumnDef<Item>[] = [
+    { accessorKey: "id", header: "Linha" },
+    { accessorKey: "valor", header: "Valor" },
+  ]
+
+  it("keeps null, undefined and empty text together, first ascending and last descending", async () => {
+    render(<DataTable columns={columns} data={items} sortableColumns={["valor"]} />)
+    const header = screen.getByRole("button", { name: /Valor/ })
+    await userEvent.click(header)
+    expect(order()).toBe("BCEDA")
+    await userEvent.click(header)
+    expect(order()).toBe("ADBCE")
+  })
+
+  it("still keeps undefined away from a column's own sortingFn", async () => {
+    const seen: unknown[] = []
+    render(
+      <DataTable
+        data={items}
+        sortableColumns={["valor"]}
+        columns={[
+          columns[0] as ColumnDef<Item>,
+          {
+            header: "Grupo",
+            columns: [
+              {
+                accessorKey: "valor",
+                header: "Valor",
+                sortingFn: (a, b) => {
+                  seen.push(a.original.valor, b.original.valor)
+                  return 0
+                },
+              },
+            ],
+          },
+        ]}
+      />,
+    )
+    await userEvent.click(screen.getByRole("button", { name: /Valor/ }))
+    expect(seen.length).toBeGreaterThan(0)
+    expect(seen).not.toContain(undefined)
   })
 })

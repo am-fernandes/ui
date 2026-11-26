@@ -10,73 +10,37 @@ A filosofia é simples: cada propriedade visual do design system passa por um to
 
 ## Radius
 
-A lib é intencionalmente **chata** (flat). Todos os utilitários `rounded-*` do Tailwind resolvem para o mesmo valor — **4 px**. Isso reflete a decisão de design "enterprise robusto": sem cantos exageradamente arredondados, sem variação por componente.
+Três níveis, por papel: `--radius-inner` (4px), `--radius-element` (8px) e `--radius-container` (12px), com os utilitários `rounded-inner`, `rounded-element` e `rounded-container`. A escala do Tailwind cai neles: `rounded-xs`/`rounded-sm` → inner, `rounded-md` → element, `rounded-lg` até `rounded-4xl` → container.
 
-```css
---radius: 0.25rem; /* base, 4 px */
+A explicação completa, a lista por componente e a regra do concêntrico estão em [Radius](?path=/docs/foundations-radius--docs).
 
---radius-sm:  var(--radius);
---radius-md:  var(--radius);
---radius-lg:  var(--radius);
---radius-xl:  var(--radius);
---radius-2xl: var(--radius);
---radius-3xl: var(--radius);
---radius-4xl: var(--radius);
-```
+## Motion
 
-| Utilitário Tailwind | Token CSS | Valor |
+Durações e curvas copiadas do Astryx. A duração segue o **peso visual** do que se move, em três faixas; cada faixa tem um mínimo e um máximo. Tudo que **sai** usa `--duration-exit` (a faixa rápida) com a curva que acelera: a saída é sempre mais curta que a entrada.
+
+| Token | Valor | Onde |
 |---|---|---|
-| `rounded-sm`  | `--radius-sm`  | 4 px |
-| `rounded-md`  | `--radius-md`  | 4 px |
-| `rounded-lg`  | `--radius-lg`  | 4 px |
-| `rounded-xl`  | `--radius-xl`  | 4 px |
-| `rounded-2xl` | `--radius-2xl` | 4 px |
-| `rounded-3xl` | `--radius-3xl` | 4 px |
-| `rounded-4xl` | `--radius-4xl` | 4 px |
+| `--duration-fast-min` | `130ms` | |
+| `--duration-fast` | `175ms` | hover e pressed (padrão de todo `transition`), Tooltip, DropdownMenu, Accordion, Collapsible |
+| `--duration-fast-max` | `230ms` | |
+| `--duration-medium-min` | `310ms` | Popover, Tour (entrada) |
+| `--duration-medium` | `410ms` | Sheet, menu mobile do AppShell (entrada e saída) |
+| `--duration-medium-max` | `550ms` | Dialog, AlertDialog e o backdrop (entrada) |
+| `--duration-slow-min` | `730ms` | |
+| `--duration-slow` | `975ms` | movimento contínuo |
+| `--duration-slow-max` | `1300ms` | |
+| `--duration-exit` | `= --duration-fast` | toda saída |
 
-Para shapes circulares (avatares, dots) use `rounded-full` — esse continua sendo um valor padrão do Tailwind (`9999px`).
-
-export const RadiusSwatch = ({ name }) => (
-  <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 6, margin: 8 }}>
-    <div
-      style={{
-        width: 56,
-        height: 56,
-        background: "var(--primary)",
-        borderRadius: `var(--radius-${name})`,
-      }}
-    />
-    <code style={{ fontSize: 11, color: "var(--muted-foreground)" }}>rounded-{name}</code>
-  </div>
-)
-
-<div style={{ display: "flex", flexWrap: "wrap", padding: 8 }}>
-  <RadiusSwatch name="sm" />
-  <RadiusSwatch name="md" />
-  <RadiusSwatch name="lg" />
-  <RadiusSwatch name="xl" />
-  <RadiusSwatch name="2xl" />
-  <RadiusSwatch name="3xl" />
-  <RadiusSwatch name="4xl" />
-</div>
-
-## Motion durations
-
-Quatro durações cobrem todos os componentes animados. A regra é: **abertura e fechamento usam a mesma duração** — assimetria visual é fonte recorrente de bug perceptivo.
-
-| Token | Valor | Componentes |
+| Curva | Valor | Uso |
 |---|---|---|
-| `--motion-fast`    | `100ms` | Tooltip |
-| `--motion-default` | `150ms` | Popover, Combobox, DateInput, DateRangePicker |
-| `--motion-slow`    | `200ms` | Dialog, AlertDialog, CommandPalette, backdrops |
-| `--motion-slowest` | `300ms` | Sheet (abertura + fechamento simétricos) |
+| `--ease-standard` | `cubic-bezier(0.24, 1, 0.4, 1)` | entradas e mudanças de estado (desacelera) |
+| `--ease-exit` | `cubic-bezier(0.3, 0, 0.6, 0.6)` | saídas (acelera) |
 
-```css
---motion-fast: 100ms;
---motion-default: 150ms;
---motion-slow: 200ms;
---motion-slowest: 300ms;
-```
+As curvas vêm junto com as durações porque uma não funciona sem a outra: a `--ease-standard` anda quase tudo no começo e passa o resto assentando, então 550ms ainda parecem rápidos.
+
+No Tailwind: `duration-(--duration-fast) ease-(--ease-standard)`. Os overlays usam as combinações prontas de `src/overlays/_internal/animations.ts` (`motionTooltip`, `motionMenu`, `motionPopover`, `motionDialog`, `motionSheet`).
+
+`--motion-fast`, `--motion-default`, `--motion-slow` e `--motion-slowest` continuam definidos por uma versão, apontando para o token novo de cada papel, e estão **deprecated**.
 
 ### `prefers-reduced-motion`
 
@@ -92,6 +56,71 @@ No fim de `tokens.css` há um override global que respeita `@media (prefers-redu
   }
 }
 ```
+
+## Foco
+
+Dois visuais, os dois copiados do Astryx: um anel para os controles e um visual próprio para os campos.
+
+### Controles
+
+**Um anel só** para botões, checkbox, switch, abas e links: contorno de **2px** sólido na cor `--ring` (o azul funcional: marinho-500 no claro, marinho-300 no escuro), **3px** afastado da borda, só em `:focus-visible` (quem usa o teclado vê; um clique de mouse num botão não acende o anel).
+
+```css
+--focus-outline-width: 2px;
+--focus-outline-style: solid;
+--focus-outline-color: var(--ring);
+--focus-outline-offset: 3px;
+```
+
+| Utilitário | Uso |
+|---|---|
+| `focus-visible:focus-outline` | botões, checkbox, switch, abas, links |
+| `focus-visible:focus-outline-inset` | células, linhas e itens dentro de um contêiner que cortaria o anel de fora |
+
+O mesmo anel é o padrão de qualquer elemento focável (`:focus-visible` no `@layer base`), então um link ou um botão do app consumidor já sai igual. Dentro de um fundo de status (um `Alert` de erro, por exemplo) o anel usa a cor do texto dele, porque o azul não teria contraste ali.
+
+### Campos
+
+Input, Textarea, os inputs brasileiros, MultiInput, TimePicker, os selects de paginação e os gatilhos de Combobox, DateInput e DateRangePicker usam o visual de campo do Astryx (`field-states`), em qualquer foco, inclusive com clique:
+
+| Estado | Visual |
+|---|---|
+| repouso | borda sólida `--input` |
+| hover (só com mouse, nunca desabilitado) | anel interno de 2px na cor da borda a 30% |
+| foco | borda `--ring` e anel interno de 2px dela a 20% (`--field-focus-ring`; 25% no escuro) |
+| erro (`border-destructive-text field-error`) | borda vermelha, também no foco; hover com o vermelho a 30% |
+
+O `field-states` vai no elemento que desenha a borda: a caixa, quando o `<input>` fica dentro dela, ou o próprio `<input>`. Com toque, a troca é instantânea (sem fade enquanto o teclado sobe).
+
+## Estados
+
+Hover e pressed são uma **camada translúcida** da cor do texto do próprio controle, pintada por cima do fundo. A mesma regra serve para qualquer variante: escurece um fundo claro e clareia um fundo escuro.
+
+```css
+--state-hover-opacity: 5%;
+--state-pressed-opacity: 10%;
+```
+
+| Utilitário | Uso |
+|---|---|
+| `state-layer` | hover (só em dispositivo com mouse) e pressed; nunca num controle desabilitado |
+| `state-hover` / `state-pressed` | a mesma camada para estados que não são o ponteiro: `focus:state-hover` num item de menu, `aria-selected:state-hover` num item de combobox |
+
+O **botão principal** é a exceção: em vez da camada, ele troca de tom (`--primary-hover` e `--primary-pressed`), porque 5% de branco sobre o marinho-950 quase não aparece. No claro, os dois tons caminham para o marinho das marcas.
+
+Pressed também encolhe o botão para 98% (`motion-safe:pointer-fine:active:scale-[0.98]`): só com mouse, nunca no toque nem com movimento reduzido. **Desabilitado** é `opacity-50` com cursor normal (`cursor-default`), sem reação a hover ou clique.
+
+## Bordas
+
+Dois níveis da cor primária, translúcidos, que leem igual sobre qualquer superfície e acompanham o tema sozinhos:
+
+| Token | Valor | Uso |
+|---|---|---|
+| `--border` | 10% da primária | divisores de dentro de uma superfície: linhas de tabela, separadores de menu |
+| `--border-strong` | 18% da primária | molduras que separam camadas: card, tabela, menu, popover, dialog, menu lateral |
+| `--input` | sólida, 3:1 ou mais | borda de campo, checkbox e radio desmarcados, trilho do switch desligado |
+
+Sem sombra, é a borda forte que separa um menu aberto do conteúdo. `--input` é sólida e mais escura porque o contorno é o que identifica um campo (WCAG 1.4.11).
 
 ## Z-index scale
 

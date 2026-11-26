@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, userEvent, waitFor, within } from "@storybook/test"
+import { useState } from "react"
 
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
@@ -24,7 +25,7 @@ const meta: Meta<typeof Sheet> = {
           "- `children?: ReactNode` — body.",
           "- `footer?: ReactNode` — rodapé (`mt-auto`, justify-end).",
           "- `side?: 'top' | 'right' | 'bottom' | 'left'` — borda de origem. Default `'right'`.",
-          "- `closeLabel?: string` — `aria-label` do X. Default `'Close'`.",
+          "- `closeLabel?: string` — `aria-label` do X. Default `'Fechar'`.",
           "- `hideCloseButton?: boolean` — esconde o X.",
           "- `open` / `onOpenChange` — controlled mode.",
           "",
@@ -63,11 +64,7 @@ export const Right: Story = {
     title: "Detalhes do item",
     description: "Painel padrão deslizando da direita.",
     side: "right",
-    children: (
-      <div className="py-4 text-sm">
-        <p>Conteúdo do painel lateral.</p>
-      </div>
-    ),
+    children: <p className="text-sm">Conteúdo do painel lateral.</p>,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
@@ -88,14 +85,14 @@ export const Left: Story = {
     description: "Navegação principal.",
     side: "left",
     children: (
-      <nav className="flex flex-col gap-2 py-4 text-sm">
-        <a href="/" className="rounded-md px-2 py-1 hover:bg-accent">
+      <nav className="flex flex-col gap-2 text-sm">
+        <a href="/" className="rounded-md px-2 py-1 hover:bg-muted">
           Home
         </a>
-        <a href="/" className="rounded-md px-2 py-1 hover:bg-accent">
+        <a href="/" className="rounded-md px-2 py-1 hover:bg-muted">
           Projetos
         </a>
-        <a href="/" className="rounded-md px-2 py-1 hover:bg-accent">
+        <a href="/" className="rounded-md px-2 py-1 hover:bg-muted">
           Configurações
         </a>
       </nav>
@@ -110,7 +107,7 @@ export const Top: Story = {
     description: "Painel deslizando do topo.",
     side: "top",
     children: (
-      <ul className="flex flex-col gap-2 py-4 text-sm">
+      <ul className="flex flex-col gap-2 text-sm">
         <li>Nova mensagem de @joao</li>
         <li>Deploy concluído</li>
       </ul>
@@ -125,7 +122,7 @@ export const Bottom: Story = {
     description: "Estilo bottom sheet mobile.",
     side: "bottom",
     children: (
-      <div className="grid grid-cols-3 gap-2 py-4">
+      <div className="grid grid-cols-3 gap-2">
         <Button variant="outline">Compartilhar</Button>
         <Button variant="outline">Duplicar</Button>
         <Button variant="outline">Arquivar</Button>
@@ -140,17 +137,107 @@ export const WithFooter: Story = {
     title: "Editar projeto",
     description: "Clique em Salvar para confirmar.",
     children: (
-      <div className="flex flex-col gap-3 py-4">
+      <div className="flex flex-col gap-3">
         <Input label="Nome do projeto" placeholder="Meu app" />
         <Textarea label="Descrição" autoResize />
       </div>
     ),
-    footer: (
+    footer: ({ close }) => (
       <>
-        <Button variant="outline">Cancelar</Button>
+        <Button variant="outline" onClick={close}>
+          Cancelar
+        </Button>
         <Button>Salvar</Button>
       </>
     ),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "O rodapé fica no fim do painel, qualquer que seja a altura do conteúdo.",
+      },
+    },
+  },
+}
+
+const leadFields = [
+  "Nome completo",
+  "CPF",
+  "E-mail",
+  "Telefone",
+  "Origem",
+  "Corretor",
+  "Empreendimento",
+  "Unidade",
+  "Renda mensal",
+  "Entrada",
+  "Banco",
+  "CEP",
+  "Logradouro",
+  "Número",
+  "Complemento",
+  "Bairro",
+  "Cidade",
+  "UF",
+  "Observações",
+]
+
+export const LongForm: Story = {
+  args: {
+    trigger: <Button>Formulário longo</Button>,
+    title: "Novo lead",
+    description: "Dados de contato e de interesse.",
+    children: (
+      <form id="lead" className="flex flex-col gap-3" onSubmit={(e) => e.preventDefault()}>
+        {leadFields.map((label) => (
+          <Input key={label} label={label} />
+        ))}
+      </form>
+    ),
+    footer: ({ close }) => (
+      <>
+        <Button variant="outline" onClick={close}>
+          Cancelar
+        </Button>
+        <Button type="submit" form="lead">
+          Salvar
+        </Button>
+      </>
+    ),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Conteúdo mais alto que a tela: título e descrição ficam no topo, o rodapé fica embaixo e só o corpo rola.",
+      },
+    },
+  },
+}
+
+export const BottomLong: Story = {
+  args: {
+    trigger: <Button>Abrir (bottom, longo)</Button>,
+    title: "Histórico do lead",
+    description: "Do mais recente para o mais antigo.",
+    side: "bottom",
+    children: (
+      <ul className="flex flex-col gap-2 text-sm">
+        {Array.from({ length: 40 }).map((_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static story content
+          <li key={i}>Contato {40 - i}: ligação registrada pelo corretor.</li>
+        ))}
+      </ul>
+    ),
+    footer: <Button variant="outline">Fechar</Button>,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Painéis de cima e de baixo crescem com o conteúdo até a altura da tela (menos 2rem); daí em diante o corpo rola.",
+      },
+    },
   },
 }
 
@@ -160,18 +247,20 @@ export const WithForm: Story = {
       trigger={<Button>Cadastrar contato</Button>}
       title="Novo contato"
       description="Preencha os dados para criar um contato."
-      footer={
+      footer={({ close }) => (
         <>
-          <Button variant="outline">Cancelar</Button>
+          <Button variant="outline" onClick={close}>
+            Cancelar
+          </Button>
           <Button type="submit" form="contact-form">
             Salvar
           </Button>
         </>
-      }
+      )}
     >
       <form
         id="contact-form"
-        className="flex flex-col gap-3 py-4"
+        className="flex flex-col gap-3"
         onSubmit={(e) => {
           e.preventDefault()
           console.log("submitted")
@@ -194,12 +283,100 @@ export const WithForm: Story = {
   },
 }
 
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex gap-2">
+      {(["sm", "md", "lg"] as const).map((size) => (
+        <Sheet
+          key={size}
+          size={size}
+          trigger={<Button variant="outline">Painel {size}</Button>}
+          title={`Painel ${size}`}
+          description="Largura do painel lateral a partir do breakpoint sm."
+        >
+          <Input label="Nome" />
+        </Sheet>
+      ))}
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` muda a largura dos painéis laterais: `sm` 320px, `md` 384px (o padrão) e `lg` 672px, para detalhes com formulário em duas colunas. No celular o painel ocupa 3/4 da tela em qualquer tamanho.",
+      },
+    },
+  },
+}
+
+export const NonDismissible: Story = {
+  render: () => {
+    const [open, setOpen] = useState(false)
+    return (
+      <>
+        <Button onClick={() => setOpen(true)}>Importar planilha</Button>
+        <Sheet
+          open={open}
+          onOpenChange={setOpen}
+          dismissible={false}
+          title="Importando 1.240 leads"
+          description="Não feche a página enquanto a importação corre."
+          footer={<Button onClick={() => setOpen(false)}>Concluir</Button>}
+        >
+          <p className="text-sm text-muted-foreground">
+            O painel só fecha pelo botão do rodapé: o Esc e o clique fora não fazem nada.
+          </p>
+        </Sheet>
+      </>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`dismissible={false}`: sem X, e o Esc e o clique fora não fecham. Para uma etapa que precisa terminar num botão do rodapé.",
+      },
+    },
+  },
+}
+
 export const HideClose: Story = {
   args: {
     trigger: <Button>Abrir sem X</Button>,
     title: "Sem botão X",
     description: "Escape e click fora seguem funcionando.",
     hideCloseButton: true,
-    children: <p className="text-sm py-4">Pressione Escape para fechar.</p>,
+    children: <p className="text-sm">Pressione Escape para fechar.</p>,
+  },
+}
+
+export const ControlledOpen: Story = {
+  render: () => {
+    const [open, setOpen] = useState(false)
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          Abrir programaticamente
+        </Button>
+        <p className="text-sm text-muted-foreground">open = {String(open)}</p>
+        <Sheet
+          open={open}
+          onOpenChange={setOpen}
+          title="Sheet controlado"
+          description="Estado gerenciado externamente."
+          footer={<Button onClick={() => setOpen(false)}>Fechar painel</Button>}
+        >
+          <p className="text-sm">Sem `trigger`: ao fechar, o foco volta para o botão que abriu.</p>
+        </Sheet>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Modo controlled via `open` + `onOpenChange`. Sem `trigger`, ao fechar o foco volta para o elemento que o tinha quando o painel abriu.",
+      },
+    },
   },
 }

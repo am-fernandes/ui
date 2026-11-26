@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
@@ -18,7 +18,7 @@ function Controlled({
   return (
     <TimePicker
       value={value}
-      onChange={(v) => {
+      onValueChange={(v) => {
         onChangeSpy?.(v)
         setValue(v)
       }}
@@ -108,21 +108,83 @@ describe("TimePicker", () => {
     expect(document.activeElement).toBe(minute)
   })
 
-  it("colon key is ignored when hour has fewer than 2 digits (prevents 1 -> 01 padding)", async () => {
+  it("typing 9:30 gives 09:30: the colon pads the hour and moves to the minutes", async () => {
     const spy = vi.fn()
     render(<Controlled onChangeSpy={spy} />)
     const hour = screen.getByLabelText("Horas") as HTMLInputElement
-    const minute = screen.getByLabelText("Minutos")
-    // Type a single digit then press the colon shortcut with focus on hour.
-    setInputValue(hour, "1")
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
+    await userEvent.type(hour, "9:30")
+    expect(hour).toHaveValue("09")
+    expect(minute).toHaveValue("30")
+    expect(spy).toHaveBeenLastCalledWith("09:30")
+    await userEvent.tab()
+    expect(hour).toHaveValue("09")
+    expect(minute).toHaveValue("30")
+    expect(spy).toHaveBeenLastCalledWith("09:30")
+  })
+
+  it("the colon with an empty hour moves to the minutes, and is ignored in the minutes", async () => {
+    render(<Controlled />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
     hour.focus()
     await userEvent.keyboard(":")
-    // Focus stays on hour; no padding/jump.
-    expect(document.activeElement).toBe(hour)
-    expect(hour.value).toBe("1")
+    expect(minute).toHaveFocus()
+    await userEvent.keyboard(":4:5")
+    expect(minute).toHaveValue("45")
+    expect(hour).toHaveValue("")
+  })
+
+  it("an invalid hour is cleared on blur without erasing the minutes", async () => {
+    const spy = vi.fn()
+    render(<Controlled initial="14:30" onChangeSpy={spy} />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
+    setInputValue(hour, "30")
+    fireEvent.blur(hour)
+    expect(hour).toHaveValue("")
+    expect(minute).toHaveValue("30")
+    expect(spy).toHaveBeenLastCalledWith("")
+    // Typing a valid hour completes the time again.
+    setInputValue(hour, "15")
+    expect(spy).toHaveBeenLastCalledWith("15:30")
+  })
+
+  it("an invalid minute is cleared on blur without erasing the hour", () => {
+    const spy = vi.fn()
+    render(<Controlled initial="14:30" onChangeSpy={spy} />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
+    setInputValue(minute, "75")
+    fireEvent.blur(minute)
     expect(minute).toHaveValue("")
-    // No emit fired with a padded "01" hour either.
-    expect(spy.mock.calls.some(([v]) => typeof v === "string" && v.startsWith("01"))).toBe(false)
+    expect(hour).toHaveValue("14")
+    expect(spy).toHaveBeenLastCalledWith("")
+  })
+
+  it("pasting a whole time (14:30, 9h30, 1430) fills both fields, in either field", () => {
+    const spy = vi.fn()
+    render(<Controlled onChangeSpy={spy} />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
+    const paste = (el: HTMLInputElement, text: string) => {
+      el.focus()
+      fireEvent.paste(el, { clipboardData: { getData: () => text } })
+    }
+    paste(hour, "14:30")
+    expect(hour).toHaveValue("14")
+    expect(minute).toHaveValue("30")
+    expect(spy).toHaveBeenLastCalledWith("14:30")
+    paste(minute, "Início às 9h05")
+    expect(hour).toHaveValue("09")
+    expect(minute).toHaveValue("05")
+    expect(spy).toHaveBeenLastCalledWith("09:05")
+    paste(hour, "1745")
+    expect(spy).toHaveBeenLastCalledWith("17:45")
+    // Not a time: nothing changes.
+    paste(hour, "25:99")
+    expect(hour).toHaveValue("17")
+    expect(spy).toHaveBeenLastCalledWith("17:45")
   })
 
   it("hour ArrowUp wraps modular: 23 -> 0", async () => {
@@ -167,8 +229,9 @@ describe("TimePicker", () => {
     const hour = screen.getByLabelText("Horas")
     hour.focus()
     await userEvent.keyboard("{ArrowUp}")
-    // hour="01", minute=""; emit drops to "" because minute is empty.
-    expect(spy).toHaveBeenLastCalledWith("")
+    // hour="01", minute="": still no time, and it was already "" — nothing to report.
+    expect(hour).toHaveValue("01")
+    expect(spy).not.toHaveBeenCalled()
   })
 
   it("minute ArrowUp on empty starts from 0 -> 1 (emits empty because hour is empty)", async () => {
@@ -177,7 +240,8 @@ describe("TimePicker", () => {
     const minute = screen.getByLabelText("Minutos")
     minute.focus()
     await userEvent.keyboard("{ArrowUp}")
-    expect(spy).toHaveBeenLastCalledWith("")
+    expect(minute).toHaveValue("01")
+    expect(spy).not.toHaveBeenCalled()
   })
 
   it("Backspace in empty minute returns focus to the hour field", () => {
@@ -192,7 +256,7 @@ describe("TimePicker", () => {
 
   it("blurring an out-of-range hour (>23) clears the hour and emits empty", () => {
     const spy = vi.fn()
-    render(<Controlled onChangeSpy={spy} />)
+    render(<Controlled initial="10:00" onChangeSpy={spy} />)
     const hour = screen.getByLabelText("Horas") as HTMLInputElement
     // Two-digit typing path: 30 is a valid 2-digit number but out of hour range.
     // The inline emit does NOT fire because isInRange is false, so the draft
@@ -296,6 +360,135 @@ describe("TimePicker", () => {
     expect(hadInvalid).toBe(false)
   })
 
+  it("size sets the box's height from the control sizes (md by default)", () => {
+    const { rerender } = render(<TimePicker value="" />)
+    const box = () => screen.getByRole("group")
+    expect(box().className).toContain("h-control-md")
+    expect(box().className).not.toMatch(/\bpy-3\b/)
+    rerender(<TimePicker value="" size="sm" />)
+    expect(box().className).toContain("h-control-sm")
+    rerender(<TimePicker value="" size="lg" />)
+    expect(box().className).toContain("h-control-lg")
+  })
+
+  it("the field names come from labels, and Backspace still goes back to the hour", () => {
+    render(
+      <TimePicker
+        defaultValue="14:30"
+        labels={{ hours: "Hora", minutes: "Minuto", group: "Hora" }}
+      />,
+    )
+    const hour = screen.getByRole("textbox", { name: "Hora" })
+    const minute = screen.getByRole("textbox", { name: "Minuto" }) as HTMLInputElement
+    expect(screen.getByRole("group", { name: "Hora" })).toBeInTheDocument()
+    setInputValue(minute, "")
+    fireEvent.keyDown(minute, { key: "Backspace" })
+    expect(hour).toHaveFocus()
+  })
+
+  it("required: both fields say so with aria-required", () => {
+    render(<TimePicker value="" label="Início" required />)
+    expect(screen.getByLabelText("Horas")).toHaveAttribute("aria-required", "true")
+    expect(screen.getByLabelText("Minutos")).toHaveAttribute("aria-required", "true")
+  })
+
+  it("reports through onValueChange, and still through the deprecated onChange", () => {
+    const onValueChange = vi.fn()
+    const onChange = vi.fn()
+    render(<TimePicker value="10:00" onValueChange={onValueChange} onChange={onChange} />)
+    setInputValue(screen.getByLabelText("Minutos") as HTMLInputElement, "45")
+    expect(onValueChange).toHaveBeenLastCalledWith("10:45")
+    expect(onChange).toHaveBeenLastCalledWith("10:45")
+  })
+
+  it("without value, starts from defaultValue and goes back to it when its form is reset", async () => {
+    const onValueChange = vi.fn()
+    const { container } = render(
+      <form>
+        <TimePicker defaultValue="08:15" onValueChange={onValueChange} />
+      </form>,
+    )
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
+    expect(hour).toHaveValue("08")
+    expect(minute).toHaveValue("15")
+    setInputValue(hour, "11")
+    expect(onValueChange).toHaveBeenLastCalledWith("11:15")
+    ;(container.querySelector("form") as HTMLFormElement).reset()
+    await waitFor(() => expect(hour).toHaveValue("08"))
+    expect(minute).toHaveValue("15")
+  })
+
+  it("name: a native form receives HH:MM, or nothing while incomplete", () => {
+    const { container } = render(
+      <form>
+        <TimePicker name="inicio" defaultValue="" />
+      </form>,
+    )
+    const data = () => new FormData(container.querySelector("form") as HTMLFormElement)
+    expect(screen.getByLabelText("Horas")).not.toHaveAttribute("name")
+    expect(data().get("inicio")).toBe("")
+    setInputValue(screen.getByLabelText("Horas") as HTMLInputElement, "9")
+    expect(data().get("inicio")).toBe("")
+    setInputValue(screen.getByLabelText("Horas") as HTMLInputElement, "09")
+    setInputValue(screen.getByLabelText("Minutos") as HTMLInputElement, "05")
+    expect(data().get("inicio")).toBe("09:05")
+  })
+
+  it("readOnly: focusable and readable; typing, arrows and paste change nothing", async () => {
+    const spy = vi.fn()
+    render(<TimePicker value="14:30" readOnly onValueChange={spy} />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    const minute = screen.getByLabelText("Minutos") as HTMLInputElement
+    expect(hour).toHaveAttribute("readonly")
+    expect(minute).toHaveAttribute("readonly")
+    hour.focus()
+    await userEvent.keyboard("{ArrowUp}{ArrowDown}9:")
+    fireEvent.paste(hour, { clipboardData: { getData: () => "08:00" } })
+    fireEvent.blur(hour)
+    expect(hour).toHaveValue("14")
+    expect(minute).toHaveValue("30")
+    expect(spy).not.toHaveBeenCalled()
+    expect(screen.getByRole("group").className).toContain("bg-muted")
+  })
+
+  it("onBlur: once, when the focus leaves both fields, after the time is reported", async () => {
+    const calls: string[] = []
+    render(
+      <>
+        <TimePicker
+          defaultValue=""
+          onValueChange={(v) => calls.push(`value:${v}`)}
+          onBlur={() => calls.push("blur")}
+        />
+        <button type="button">Fora</button>
+      </>,
+    )
+    const hour = screen.getByLabelText("Horas")
+    await userEvent.type(hour, "9:3")
+    expect(screen.getByLabelText("Minutos")).toHaveFocus()
+    expect(calls).not.toContain("blur")
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(calls).toEqual(["value:09:03", "blur"])
+  })
+
+  it("the group is named by its label, also a non-text one, with the required mark", () => {
+    render(
+      <TimePicker
+        value=""
+        required
+        label={
+          <span>
+            Início <em>do expediente</em>
+          </span>
+        }
+      />,
+    )
+    const group = screen.getByRole("group")
+    expect(group).toHaveAccessibleName(/^Início do expediente\s*obrigatório$/)
+    expect(group).not.toHaveAttribute("aria-label")
+  })
+
   it("forwards ref to the hour input", () => {
     const ref = React.createRef<HTMLInputElement>()
     render(<TimePicker value="" ref={ref} />)
@@ -316,5 +509,61 @@ describe("TimePicker", () => {
   it("respects consumer-provided id on the hour input", () => {
     render(<TimePicker id="my-time" value="" />)
     expect(screen.getByLabelText("Horas")).toHaveAttribute("id", "my-time")
+  })
+})
+
+// The time on screen and the time reported were two: an hour left
+// incomplete or out of range reported nothing, so the app kept the old time.
+describe("TimePicker: the reported time is the one on screen", () => {
+  // A single digit is already an hour ("9" is 09, as the form receives it).
+  it('an hour erased reports "" at once, and the full time again when fixed', () => {
+    const spy = vi.fn()
+    render(<TimePicker defaultValue="08:15" onValueChange={spy} />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    setInputValue(hour, "")
+    expect(spy).toHaveBeenLastCalledWith("")
+    setInputValue(hour, "09")
+    expect(spy).toHaveBeenLastCalledWith("09:15")
+    expect(spy).toHaveBeenCalledTimes(2)
+  })
+
+  it('an hour out of range (25) reports "" before the field is left', () => {
+    const spy = vi.fn()
+    render(<TimePicker defaultValue="08:15" onValueChange={spy} />)
+    setInputValue(screen.getByLabelText("Horas") as HTMLInputElement, "25")
+    expect(spy).toHaveBeenLastCalledWith("")
+  })
+
+  it('a minute erased or out of range reports "" at once', () => {
+    const spy = vi.fn()
+    render(<TimePicker defaultValue="08:15" onValueChange={spy} />)
+    setInputValue(screen.getByLabelText("Minutos") as HTMLInputElement, "75")
+    expect(spy).toHaveBeenLastCalledWith("")
+  })
+
+  it("does not report the same time twice", () => {
+    const spy = vi.fn()
+    render(<TimePicker defaultValue="08:15" onValueChange={spy} />)
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    setInputValue(hour, "")
+    setInputValue(hour, "25")
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it("after a form reset, editing back to the edited time reports it again", async () => {
+    const spy = vi.fn()
+    const { container } = render(
+      <form>
+        <TimePicker defaultValue="08:15" onValueChange={spy} />
+      </form>,
+    )
+    const hour = screen.getByLabelText("Horas") as HTMLInputElement
+    setInputValue(hour, "09")
+    expect(spy).toHaveBeenLastCalledWith("09:15")
+    act(() => (container.querySelector("form") as HTMLFormElement).reset())
+    await waitFor(() => expect(hour).toHaveValue("08"))
+    expect(spy).toHaveBeenLastCalledWith("08:15")
+    setInputValue(hour, "09")
+    expect(spy).toHaveBeenLastCalledWith("09:15")
   })
 })

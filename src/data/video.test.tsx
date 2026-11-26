@@ -1,4 +1,5 @@
-import { act, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
+import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
 import { Video } from "./video"
@@ -38,7 +39,7 @@ describe("Video", () => {
     expect(tracks[0]?.getAttribute("kind")).toBe("captions")
   })
 
-  it("auto-enables crossOrigin when captions are present", () => {
+  it("leaves crossOrigin unset with captions, so a host without CORS still plays", () => {
     const { container } = render(
       <Video
         src="/clip.mp4"
@@ -46,8 +47,20 @@ describe("Video", () => {
         captions={[{ src: "/en.vtt", srcLang: "en", label: "English" }]}
       />,
     )
-    const video = container.querySelector("video")
-    expect(video?.getAttribute("crossorigin")).toBe("anonymous")
+    expect(container.querySelector("video")).not.toHaveAttribute("crossorigin")
+  })
+
+  it("warns when caption files come from another origin without crossOrigin", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    render(
+      <Video
+        src="/clip.mp4"
+        aria-label="Demo"
+        captions={[{ src: "https://cdn.example.com/pt.vtt", srcLang: "pt-BR", label: "Português" }]}
+      />,
+    )
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('crossOrigin="anonymous"'))
+    warn.mockRestore()
   })
 
   it("forces muted when autoPlay is set", () => {
@@ -196,4 +209,106 @@ describe("Video", () => {
       ;(globalThis as unknown as { URL: typeof URL }).URL = OriginalURL
     }
   })
+
+  it("contains the frame by default, so a vertical video is not cropped", () => {
+    const { container, rerender } = render(<Video src="/tour.mp4" aria-label="Tour do imóvel" />)
+    expect(container.querySelector("video")).toHaveClass("object-contain")
+    rerender(<Video src="/tour.mp4" aria-label="Tour do imóvel" objectFit="cover" />)
+    expect(container.querySelector("video")).toHaveClass("object-cover")
+  })
+
+  it("names the invalid-source fallback after the video and shows the text", () => {
+    render(
+      <Video
+        src="ftp://x/y.mp4"
+        aria-label="Tour do imóvel"
+        labels={{ invalid: "Fonte recusada" }}
+      />,
+    )
+    expect(screen.getByRole("group", { name: "Tour do imóvel" })).toHaveTextContent(
+      "Fonte recusada",
+    )
+  })
+
+  it("shows the error state on a media error, and tries again from the button", () => {
+    const load = vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => {})
+    const { container } = render(<Video src="/quebrado.mp4" aria-label="Tour do imóvel" />)
+    const video = container.querySelector("video") as HTMLVideoElement
+    fireEvent.error(video)
+    const fallback = screen.getByRole("group", { name: "Tour do imóvel" })
+    expect(fallback).toHaveTextContent("Não foi possível carregar o vídeo")
+    expect(video).toHaveClass("invisible")
+    fireEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
+    expect(load).toHaveBeenCalled()
+    expect(screen.queryByRole("group")).toBeNull()
+    expect(container.querySelector('[data-slot="video"]')).toHaveAttribute("aria-busy", "true")
+    load.mockRestore()
+  })
+
+  it("shows a loading state from loadstart to loadedmetadata", () => {
+    withVisibleObserver()
+    const { container } = render(<Video src="/clip.mp4" aria-label="Demo" />)
+    const video = container.querySelector("video") as HTMLVideoElement
+    const wrapper = container.querySelector('[data-slot="video"]') as HTMLElement
+    fireEvent(video, new Event("loadstart"))
+    expect(wrapper).toHaveAttribute("data-state", "loading")
+    expect(container.querySelector('[data-slot="video-loading"]')).toBeInTheDocument()
+    fireEvent(video, new Event("loadedmetadata"))
+    expect(wrapper).toHaveAttribute("data-state", "ready")
+    expect(container.querySelector('[data-slot="video-loading"]')).toBeNull()
+    restoreObserver()
+  })
+
+  it("lazy-loads and hands over the ref when a refused src becomes valid", () => {
+    withVisibleObserver()
+    const ref = React.createRef<HTMLVideoElement>()
+    const { rerender, container } = render(
+      <Video src="blob:preview" aria-label="Prévia" ref={ref} />,
+    )
+    expect(ref.current).toBeNull()
+    rerender(<Video src="https://cdn.example.com/tour.mp4" aria-label="Prévia" ref={ref} />)
+    expect(ref.current).toBe(container.querySelector("video"))
+    expect(ref.current).toHaveAttribute("src", "https://cdn.example.com/tour.mp4")
+    restoreObserver()
+  })
+
+  it("starts over when src changes after an error", () => {
+    const { container, rerender } = render(<Video src="/a.mp4" aria-label="Demo" />)
+    fireEvent.error(container.querySelector("video") as HTMLVideoElement)
+    expect(screen.getByRole("group", { name: "Demo" })).toBeInTheDocument()
+    rerender(<Video src="/b.mp4" aria-label="Demo" />)
+    expect(screen.queryByRole("group")).toBeNull()
+    expect(container.querySelector("video")).not.toHaveClass("invisible")
+  })
+
+  it("warns when autoPlay and loop leave no way to pause", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    render(<Video src="/clip.mp4" aria-label="Demo" autoPlay loop controls={false} />)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("WCAG 2.2.2"))
+    warn.mockRestore()
+  })
 })
+
+// An IntersectionObserver that reports the element as visible on observe.
+let savedObserver: unknown
+function withVisibleObserver() {
+  savedObserver = (globalThis as { IntersectionObserver: unknown }).IntersectionObserver
+  class Visible {
+    constructor(private callback: IntersectionObserverCallback) {}
+    observe() {
+      this.callback(
+        [{ isIntersecting: true } as IntersectionObserverEntry],
+        this as unknown as IntersectionObserver,
+      )
+    }
+    disconnect() {}
+    unobserve() {}
+    takeRecords() {
+      return []
+    }
+  }
+  ;(globalThis as { IntersectionObserver: unknown }).IntersectionObserver = Visible
+}
+function restoreObserver() {
+  ;(globalThis as { IntersectionObserver: unknown }).IntersectionObserver = savedObserver
+}

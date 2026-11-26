@@ -1,91 +1,105 @@
 "use client"
 
-import type * as React from "react"
+import { formatUnits } from "./_internal/decimal-engine"
+import { type DecimalFieldProps, DecimalInput } from "./_internal/decimal-input"
 
-import { centsToDisplay, fromCents, toCents } from "@/lib/currency"
-import { cn } from "@/lib/utils"
-import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
-import { useFieldIds } from "../primitives/_internal/use-field-ids"
-
-interface PercentageInputProps
-  extends Omit<React.ComponentProps<"input">, "value" | "onChange" | "type"> {
-  value: number
-  onValueChange: (value: number) => void
-  /** Maximum percentage allowed. Default 100. */
-  max?: number
-  label?: React.ReactNode
-  description?: React.ReactNode
-  error?: string
-  labelPosition?: LabelPosition
-  required?: boolean
-  ref?: React.Ref<HTMLInputElement>
+export interface PercentageInputLabels {
+  belowMin: (min: string) => string
+  aboveMax: (max: string) => string
 }
 
+export const defaultPercentageInputLabels: PercentageInputLabels = {
+  belowMin: (min) => `O valor mínimo é ${min}.`,
+  aboveMax: (max) => `O valor máximo é ${max}.`,
+}
+
+interface PercentageInputBaseProps extends DecimalFieldProps {
+  labels?: Partial<PercentageInputLabels>
+  /**
+   * Largest percentage. A larger value is kept as typed: the field shows
+   * `labels.aboveMax` when it is left, on Enter or on submit, and is invalid
+   * for the browser, so a native submit stops on it.
+   * @default 100
+   */
+  max?: number
+  /**
+   * Smallest percentage, as `max`, with `labels.belowMin`. A negative `min`
+   * lets the field take negative percentages, with the minus key.
+   */
+  min?: number
+  /**
+   * Decimal places shown and kept: `2` (12,50), `1` (12,5) or `0` (12).
+   * Typed digits fill the last place first, and a value with more places is
+   * rounded.
+   * @default 2
+   */
+  decimals?: 0 | 1 | 2
+}
+
+interface PercentageInputZeroProps extends PercentageInputBaseProps {
+  /**
+   * What an empty field is worth. `"zero"` (the default): the field always
+   * holds a number, and clearing it goes back to `0,00`. `"null"`: the field
+   * can be empty, which is `null`, different from zero; the placeholder shows
+   * and a native `required` works.
+   * @default "zero"
+   */
+  emptyValue?: "zero"
+  /**
+   * The percentage (`12.5` is 12,50 %), controlled. Leave it out and the
+   * field keeps its own value, starting from `defaultValue`.
+   */
+  value?: number
+  /** Initial value of an uncontrolled field. */
+  defaultValue?: number
+  /** Called with the percentage after every edit. */
+  onValueChange?: (value: number) => void
+}
+
+interface PercentageInputNullProps extends PercentageInputBaseProps {
+  emptyValue: "null"
+  /** The percentage, or `null` for an empty field. */
+  value?: number | null
+  defaultValue?: number | null
+  /** Called with the percentage, or `null` when the field is cleared. */
+  onValueChange?: (value: number | null) => void
+}
+
+type PercentageInputProps = PercentageInputZeroProps | PercentageInputNullProps
+
 function PercentageInput({
-  className,
+  emptyValue = "zero",
   value,
+  defaultValue,
   onValueChange,
-  disabled,
+  labels,
   max = 100,
-  label,
-  description,
-  error,
-  labelPosition,
-  required,
-  id,
-  ref,
+  min,
+  decimals = 2,
   ...props
 }: PercentageInputProps) {
-  const ids = useFieldIds(id)
-  const hasError = error != null && error !== ""
-  const hasDescription = description != null && description !== ""
-  const display = centsToDisplay(toCents(value))
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 15)
-    const newHundredths = Number.parseInt(digits, 10) || 0
-    const next = fromCents(newHundredths)
-    onValueChange(next > max ? max : next)
-  }
-
+  const allowEmpty = emptyValue === "null"
+  // In "zero" mode the field never reports `null`; the cast only tells the
+  // two signatures of the union apart.
+  const report = onValueChange as ((value: number | null) => void) | undefined
   return (
-    <FieldShell
-      controlId={ids.controlId}
-      labelId={ids.labelId}
-      descriptionId={ids.descriptionId}
-      errorId={ids.errorId}
-      label={label}
-      description={description}
-      error={error}
-      labelPosition={labelPosition}
-      required={required}
-      disabled={disabled}
-    >
-      <div className="relative" data-slot="percentage-input">
-        <input
-          ref={ref}
-          id={ids.controlId}
-          type="text"
-          inputMode="numeric"
-          aria-invalid={hasError ? true : undefined}
-          aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
-          required={required}
-          aria-required={required ? true : undefined}
-          className={cn(
-            "flex w-full rounded-md border border-input bg-transparent px-3 pr-8 py-2.5 text-sm tabular-nums transition-colors focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed",
-            hasError && "border-destructive focus-visible:ring-1 focus-visible:ring-destructive",
-            className,
-          )}
-          value={display}
-          onChange={handleChange}
-          disabled={disabled}
-          {...props}
-        />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
-          %
-        </span>
-      </div>
-    </FieldShell>
+    <DecimalInput
+      // An empty field shows the format it expects.
+      placeholder={allowEmpty ? formatUnits(0, decimals) : undefined}
+      {...props}
+      slot="percentage-input"
+      trailing="%"
+      decimals={decimals}
+      value={value}
+      defaultValue={defaultValue}
+      onValueChange={(next) => report?.(allowEmpty ? next : (next ?? 0))}
+      allowEmpty={allowEmpty}
+      limitLabels={{ ...defaultPercentageInputLabels, ...labels }}
+      writeLimit={(text) => `${text}%`}
+      allowNegative={min != null && min < 0}
+      min={min}
+      max={max}
+    />
   )
 }
 

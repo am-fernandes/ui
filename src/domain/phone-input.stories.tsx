@@ -14,7 +14,7 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Input controlado para **telefone brasileiro**. A máscara se ajusta automaticamente:",
+          "Input para **telefone brasileiro**. A máscara se ajusta automaticamente:",
           "- 10 dígitos (fixo) → `(00) 0000-0000`",
           "- 11 dígitos (celular) → `(00) 00000-0000`",
           "",
@@ -25,6 +25,10 @@ const meta = {
           "- `onValueChange` — callback `(value: string) => void` que recebe os dígitos limpos a cada edição.",
           "- `label` — rótulo renderizado pelo próprio componente via `FieldShell`.",
           "- `disabled` — desabilita a edição.",
+          "- `defaultValue` — valor inicial (sem máscara) quando o campo não é controlado: sem `value`, ele guarda o próprio valor.",
+          "- `name` — nome no formulário nativo. O form recebe o valor **sem máscara**, por um input oculto.",
+          "- `size` — altura do campo: `sm` (32px), `md` (40px, padrão) ou `lg` (44px), a mesma de botões e selects do mesmo tamanho.",
+          "- `readOnly` — somente leitura: o valor fica legível, recebe foco e é enviado, mas não é editável. Use em tela de consulta, no lugar de `disabled`.",
           "- Demais props do `<input>` (exceto `value`, `onChange`, `type`) são repassadas.",
           "",
           "**Validação:** o componente é apenas um formatador. Para validar use `isValidPhone` de `@amfernandesinc/ui/lib/brazil`.",
@@ -188,5 +192,47 @@ export const WithValidationFeedback: Story = {
         </p>
       </div>
     )
+  },
+}
+
+export const ReadOnly: Story = {
+  args: {},
+  render: () => (
+    <div className="flex w-80 flex-col gap-4">
+      <PhoneInput id="phone-editable" label="Telefone (editável)" defaultValue={"11987654321"} />
+      <PhoneInput
+        id="phone-readonly"
+        label="Telefone (somente leitura)"
+        defaultValue={"11987654321"}
+        readOnly
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` é o estado de tela de consulta: fundo esmaecido, sem reação ao hover, com o valor legível, focável e enviado no formulário. `disabled` (50% de opacidade, fora do Tab e do envio) é para o campo que não se aplica.",
+      },
+    },
+  },
+}
+
+export const Sizes: Story = {
+  args: {},
+  render: () => (
+    <div className="flex w-80 flex-col gap-4">
+      <PhoneInput id="phone-sm" label="Telefone (sm)" size="sm" defaultValue={"11987654321"} />
+      <PhoneInput id="phone-md" label="Telefone (md)" size="md" defaultValue={"11987654321"} />
+      <PhoneInput id="phone-lg" label="Telefone (lg)" size="lg" defaultValue={"11987654321"} />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` define a altura da caixa inteira, borda incluída: 32, 40 e 44px. É o mesmo token de `Button` e dos demais controles, então campo e botão do mesmo tamanho ficam alinhados numa linha.",
+      },
+    },
   },
 }

@@ -10,8 +10,8 @@ Toda a documentação aqui é a regra prática — se algo diverge do que está 
 `@amfernandesinc/ui` é o design system interno da **AM Fernandes & Associados** (incorporadora). Empacota componentes React/TypeScript prontos para uso em todas as apps internas (ex.: `requerimento-contratos-pf`, `assistencia-tecnica`) e substitui as cópias locais de shadcn/ui por uma fonte única versionada.
 
 - **Stack**: React 19, TypeScript, Tailwind CSS v4 (`@theme inline`), Radix UI, Storybook 10, Vitest, Playwright, Biome.
-- **Runtime**: Bun (ver `CLAUDE.md`).
-- **Distribuição**: registro privado (`@amfernandesinc` no GitHub Packages). Cada componente tem um subpath export em `package.json`.
+- **Runtime**: Bun.
+- **Distribuição**: npm público (`@amfernandesinc/ui`). Cada componente tem um subpath export em `package.json`.
 - **Mantenedores**: equipe de engenharia AM Fernandes. PRs externos só após convite.
 - **Cultura**: pt-BR first (strings de UI em pt-BR, código e identificadores em inglês).
 
@@ -47,23 +47,22 @@ Antes de qualquer push: `bun run typecheck && bun run test && bun run build`.
 
 Estas decisões são deliberadas. Não as questione num PR sem antes abrir issue separada.
 
-- **Light only.** Sem dark mode, sem theme switching. Apps internas, contexto controlado.
-- **Flat.** Sem shadows, sem elevation tokens. Hierarquia é dada por borda, espaço e tipografia.
-- **Radius uniforme.** `--radius: 0.25rem` (4px) para *todas* as escalas (`rounded-sm` até `rounded-4xl` apontam para o mesmo valor — ver `src/styles/tokens.css`).
+- **Claro e escuro.** Os dois temas usam os mesmos papéis de cor; o escuro liga com a classe `dark` no `<html>` (ou num ancestral). Componentes não usam `dark:`: quem muda são os tokens de `src/styles/tokens.css` (`:root` e `.dark`). Toda cor nova entra nos dois blocos e passa em `bun run audit:contrast`.
+- **Flat.** Sem shadows, sem elevation tokens. Hierarquia é dada por borda, espaço e tipografia. A borda tem dois níveis da cor primária, translúcidos: `--border` (10%) para divisores e `--border-strong` (18%) para molduras; a dos campos (`--input`) é sólida, a 3:1 ou mais.
+- **Raio por papel, três níveis.** `inner` 4px (peças dentro de um controle e peças baixas, como Badge e Token), `element` 8px (o controle), `container` 12px (superfícies que agrupam ou flutuam). Use `rounded-inner`, `rounded-element` e `rounded-container`; a escala do Tailwind cai nos três. Peça dentro de peça segue a conta do concêntrico (raio de dentro = raio de fora − espaço). `rounded-full` só para círculo. Detalhes e a lista por componente em Foundations/Radius.
 - **Densidade enterprise.**
   - Body: `text-sm`.
-  - Inputs: `py-3` vertical, `px-3` horizontal (altura sai do padding, sem `h-*` fixo).
+  - Controles (botões, campos, gatilhos): altura fixa pelo `size` — `sm` 32px, `md` 40px (padrão), `lg` 44px, borda incluída — com `controlHeight`/`controlPaddingX` de `src/primitives/_internal/control-size.ts` (`h-control-*`). A altura não sai do padding: um campo e um botão do mesmo tamanho se alinham.
   - Linhas de tabela: `py-2.5 px-3`.
-  - Menus / tabs / sidebar / tree: `py-1.5`.
+  - Menus / tabs / tree: `py-1.5`.
 - **Cursor pointer em tudo clicável.** Botões, triggers de Radix, ícones interativos.
-- **Foco em 2 tiers.**
-  - **Tier 1 (fields)** — `focus-within:border-primary focus-within:ring-1 focus-within:ring-ring` (sem offset, ring colado na borda). Estado de erro substitui o ring por `ring-destructive`.
-  - **Tier 2 (controles ativos: buttons, checkbox, switch, links)** — `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`.
-- **Disabled.** `opacity-50` no shell + `cursor-not-allowed` no controle. Não duplique opacidade dentro do `FieldShell` (ver commit `944211f`).
-- **Motion tokens.** `--motion-fast` (100ms), `--motion-default` (150ms), `--motion-slow` (200ms), `--motion-slowest` (300ms). Use o token apropriado para a categoria do componente.
+- **Foco (do Astryx).** Controles: um anel só, contorno de 2px na cor `--ring`, 3px afastado, em `:focus-visible` (`focus-visible:focus-outline`; `focus-visible:focus-outline-inset` onde um contêiner cortaria o anel). Campos: visual de campo (`field-states` no elemento que desenha a borda): borda `--primary` + anel interno de 2px da primária a 20% em qualquer foco, anel interno da borda a 30% no hover. Erro: `border-destructive-text field-error`. Nada de `ring-*` para foco.
+- **Estados (do Astryx).** Hover e pressed são `state-layer`: uma camada da cor do texto do controle (5% e 10%) por cima do fundo, em qualquer variante. Estados que não são o ponteiro usam `state-hover` com a variante certa (`focus:state-hover` em item de menu). Pressed encolhe para 98% só com mouse e sem movimento reduzido: `motion-safe:pointer-fine:active:scale-[0.98]`. Não use `hover:bg-*/90` nem `hover:bg-accent` para hover.
+- **Disabled.** `opacity-50` no shell + `cursor-default` no controle, sem reação a hover ou clique. Não duplique opacidade dentro do `FieldShell` (ver commit `944211f`).
+- **Motion tokens (do Astryx).** `--duration-fast` (175ms), `--duration-medium-min/medium/medium-max` (310/410/550ms) e `--duration-exit` para toda saída, com `--ease-standard` na entrada e `--ease-exit` na saída. Overlays usam as combinações de `src/overlays/_internal/animations.ts`.
 - **Z-index tokens.** `--z-overlay` (40), `--z-modal` (50), `--z-popover` (60), `--z-tooltip` (70), `--z-toast` (80). Nunca use `z-[999...]`.
-- **WCAG AA** é o mínimo. Contraste verificado via `scripts/oklch-contrast.ts` e Storybook `addon-a11y`.
-- **pt-BR nas strings.** Mensagens default ("obrigatório", "Carregando dados…", etc.) em pt-BR. A médio prazo serão extraídas via prop `labels`.
+- **WCAG AA** é o mínimo, nos dois temas. Contraste dos tokens em `bun run audit:contrast` (`scripts/contrast-audit.ts`); o test-runner do Storybook roda o axe em cada story no claro e no escuro.
+- **pt-BR nas strings, trocáveis.** Todo texto visível ou lido pelo leitor de tela sai de `labels` (com `defaultXLabels` exportado) ou de uma prop de texto, com padrão pt-BR. Nada de texto fixo no JSX. Ver Foundations/i18n.
 
 ---
 
@@ -114,7 +113,7 @@ Biome cuida de tudo (`bun run lint`). Configuração em `biome.json`:
 | `src/primitives/` | Átomos visuais. | `button`, `input`, `checkbox`, `badge`, `typography`. |
 | `src/forms/` | Widgets compostos de formulário (calendário, combobox, pickers). | `combobox`, `date-input`, `time-picker`. |
 | `src/overlays/` | Componentes que portalizam via Radix. | `dialog`, `popover`, `tooltip`, `sheet`. |
-| `src/navigation/` | Estrutura de navegação. | `sidebar`, `tabs`, `breadcrumb`, `command-palette`. |
+| `src/navigation/` | Estrutura de navegação. | `app-shell`, `tabs`, `breadcrumb`, `command-palette`. |
 | `src/data/` | Exibição de dados. | `data-table`, `tree`, `card`, `image`. |
 | `src/domain/` | Coisas específicas do Brasil ou do negócio. | `currency-input` (BRL), `cpf-input`, `percentage-input`. |
 
@@ -147,7 +146,7 @@ Se for um **field** (label, description, error, required), embrulhe em `FieldShe
 
 ### Passo 5. Story
 
-Variantes obrigatórias: `Default`, `WithError` (ou `Error`), `Disabled`, `Required`. Para fields, inclua também `WithDescription`. Use `play` functions quando faz sentido validar interações.
+Variantes obrigatórias: `Default`, `WithError` (ou `Error`), `Disabled`, `Required`. Para fields, inclua também `WithDescription` e `ReadOnly`. Use `play` functions quando faz sentido validar interações — mas os testes de navegador (Passo 6) não abrem stories com `play`: crie uma story sem `play` para eles.
 
 ### Passo 6. Teste
 
@@ -159,6 +158,9 @@ Cobertura mínima:
 5. `required` mostra o asterisco (ou `aria-required`).
 6. Keyboard (Tab/Enter/Space conforme aplicável).
 7. `ref` é encaminhado para o elemento DOM correto.
+8. `readOnly` (fields): mostra o valor, recebe foco, não muda e vai no formulário.
+
+E um teste de navegador em `tests/e2e/<nome>.spec.ts` (Playwright, contra o Storybook em `localhost:6006`): teclado de verdade, axe (WCAG 2.1 AA) nas stories, 360px de largura sem rolagem lateral, e cores forçadas quando uma cor carrega informação. O que só o navegador vê — altura medida, foco, `FormData`, contraste calculado — fica aqui, não no jsdom. Rode com `bun run test:e2e`.
 
 ### Passo 7. Expor no barrel + subpath
 
@@ -181,9 +183,17 @@ Adicione em `package.json` `exports`:
 
 ```bash
 bun run typecheck && bun run test && bun run build
+bun run test:e2e   # com o Storybook rodando
 ```
 
 Build deve sair sem warnings. Se aparecer warning de tsup, investigue antes de commitar.
+
+### Passo 9. Atualizar a skill de agentes
+
+A skill `skills/designing-with-amfernandesinc-ui/` ensina agentes (Claude Code e outros) a usar a lib nos apps. Ela tem duas partes:
+
+- `reference/api/`: **gerada** dos tipos e do JSDoc de `src/`. Depois de mudar props, JSDoc, `labels` ou exports, rode `bun run skill:api` e commite o resultado. O teste `scripts/lib/skill-api.test.ts` falha enquanto ela estiver velha.
+- `SKILL.md` e os demais guias de `reference/`: escritos à mão. Componente novo entra no mapa de componentes do `SKILL.md` e no guia da sua família. Todo bloco ` ```tsx ` dos guias é compilado contra a lib (`scripts/lib/skill-examples.test.ts`): um exemplo que não compila reprova o teste. Blocos que mostram o jeito errado começam com `// ❌`; os que dependem de um pacote do app que o repositório não tem (`next`, `zod`), com `// fora da verificação: <motivo>`.
 
 ---
 
@@ -197,14 +207,17 @@ Cole no corpo do PR e marque conforme avança:
 - [ ] `displayName` setado
 - [ ] Story com variantes `Default`, `Error`, `Disabled`, `Required` (`Description` quando aplicável)
 - [ ] Teste cobrindo smoke + state + keyboard + ARIA wiring
+- [ ] Teste de navegador em `tests/e2e/` com axe, teclado e 360px
 - [ ] Cobertura local ≥95% (`bun run sync:coverage`)
 - [ ] `bun run typecheck` limpo
 - [ ] `bun run test` 100% pass
 - [ ] `bun run build` sem warnings
-- [ ] Strings em pt-BR (futuro: extrair via prop `labels`)
-- [ ] Sem shadow, sem dark mode (filosofia)
+- [ ] Textos em `labels` (ou prop de texto) com padrão pt-BR, `defaultXLabels` exportado
+- [ ] Sem shadow; cores só por tokens (claro e escuro), sem `dark:` no componente
+- [ ] `readOnly` e `disabled` em todo field
 - [ ] Subpath export adicionado em `package.json` `exports`
 - [ ] Adicionado em `src/index.ts` (barrel)
+- [ ] `bun run skill:api` rodado; componente novo no `SKILL.md` e no guia da família em `skills/designing-with-amfernandesinc-ui/reference/`
 - [ ] Commits no padrão Conventional (`feat:`, `fix:`, etc.) — um por mudança lógica
 - [ ] Trailer `Co-Authored-By:` quando trabalho foi assistido por agente
 
@@ -216,25 +229,28 @@ Definidos em `src/styles/tokens.css` dentro de `@theme inline`. Os mais usados:
 
 | Token | Valor | Quando usar |
 |---|---|---|
-| `--radius` | `0.25rem` (4px) | Cantos. Use sempre via `rounded-md` (ou qualquer alias — todos apontam para o mesmo valor). |
-| `--motion-fast` | 100ms | Tooltip. |
-| `--motion-default` | 150ms | Popover, dropdown, transições padrão. |
-| `--motion-slow` | 200ms | Dialog, AlertDialog, backdrops. |
-| `--motion-slowest` | 300ms | Sheet (entrada e saída simétricas). |
+| `--radius-inner` / `--radius-element` / `--radius-container` | `4px` / `8px` / `12px` | Cantos por papel: `rounded-inner`, `rounded-element`, `rounded-container`. Ver Foundations/Radius. |
+| `--duration-fast` | 175ms | Hover, Tooltip, DropdownMenu, Accordion, Collapsible; padrão de todo `transition*`. |
+| `--duration-medium-min` | 310ms | Popover, Tour (entrada). |
+| `--duration-medium` | 410ms | Sheet, menu mobile do AppShell. |
+| `--duration-medium-max` | 550ms | Dialog, AlertDialog e backdrop (entrada). |
+| `--duration-exit` | = `--duration-fast` | Toda saída, com `--ease-exit`. |
 | `--z-overlay` | 40 | Backdrop de modal. |
 | `--z-modal` | 50 | Dialog, AlertDialog, Sheet, CommandPalette. |
 | `--z-popover` | 60 | Popover, Combobox, DateInput, DateRangePicker. |
 | `--z-tooltip` | 70 | Tooltip. |
 | `--z-toast` | 80 | Toaster (Sonner). |
-| `--color-primary` | preto | CTA primário. |
-| `--color-destructive` | vermelho ≥4.5:1 | Erros, ações destrutivas. |
-| `--color-success` / `--color-warning` / `--color-info` | WCAG AA | Estados não-erro. |
-| `--color-muted-foreground` | — | Texto secundário (description, captions). |
-| `--color-input` / `--color-border` | — | Borda e placeholder de fields. |
+| `--color-background` / `--color-card` / `--color-popover` | página / superfície / camada flutuante | A página é só a área de conteúdo; card, campo e botão outline pintam `card`; menu e dialog, `popover`. |
+| `--color-primary` | marinho-950 | CTA primário, checkbox marcado. Hover e pressed: `--color-primary-hover` e `--color-primary-pressed`. |
+| `--color-link` / `--color-ring` | azul funcional | Link, anel de foco, marcador do item ativo. |
+| `--color-destructive` | fundo forte | Erros, ações destrutivas. Texto de erro sobre superfície: `--color-destructive-text`. |
+| `--color-success` / `--color-warning` / `--color-info` | fundo forte | Estados não-erro. Sempre com o `-foreground` do token; não existe versão de fundo claro. |
+| `--color-muted-foreground` / `--color-subtle-foreground` | — | Texto de apoio (description, captions) e terceiro nível (placeholder, dica). |
+| `--color-input` / `--color-border` / `--color-border-strong` | — | Borda de campo, divisor e moldura. |
 | `--font-sans` | Geist | Texto. |
 | `--font-mono` | Geist Mono | Campos numéricos, código, IDs (`tabular-nums`). |
 
-Auditoria de contraste: `bun scripts/oklch-contrast.ts` (utilitário OKLCH → WCAG, ver commit `19281a9`).
+Auditoria de cor: `bun run audit:contrast` (contraste WCAG dos pares que os componentes desenham e distância entre status, categorias e séries de gráfico sob daltonismo simulado; falha se algum não passar).
 
 ---
 
@@ -276,7 +292,7 @@ A versionagem e o `CHANGELOG.md` são gerenciados via [changesets](https://githu
 A CI roda no GitHub Actions. Três workflows:
 
 ### `.github/workflows/ci.yml` — em todo PR e merge para `main`
-Sete jobs em paralelo:
+Oito jobs em paralelo:
 
 | Job | Comando | Falha bloqueia merge? |
 |---|---|---|
@@ -286,6 +302,7 @@ Sete jobs em paralelo:
 | **Build** | `bun run build` | sim |
 | **Build Storybook** | `bun run build-storybook` | sim |
 | **Visual regression** | `bunx playwright install chromium && bun run test:visual` | sim |
+| **E2E (Playwright)** | `bun run build-storybook` + `bun run test:e2e:ci` (os specs de `tests/e2e/` contra o Storybook estático, desktop + mobile + tablet, menos o visual) | sim |
 | **Storybook tests (interaction + a11y)** | `bun run build-storybook` + `bun run test:storybook:ci` | sim |
 
 Local equivalente: `bun run ci:local` roda todos exceto o visual (que precisa do Chromium headful).

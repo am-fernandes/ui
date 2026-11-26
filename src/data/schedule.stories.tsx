@@ -1,0 +1,347 @@
+import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, fn, userEvent, waitFor, within } from "@storybook/test"
+import * as React from "react"
+
+import { TZDate } from "@date-fns/tz"
+
+import { Schedule, type ScheduleEvent } from "./schedule"
+
+/**
+ * A time in São Paulo, the schedule's zone. Built there (not with the
+ * machine's `new Date(y, m, d, h)`), the stories show the same hours on any
+ * machine: in CI's UTC and on a laptop in Brasília.
+ */
+const SP = "America/Sao_Paulo"
+const inSaoPaulo = (day: number, hour: number, minute = 0) =>
+  new Date(new TZDate(2026, 10, day, hour, minute, SP).getTime())
+
+/** Wednesday, 18 Nov 2026, 10:30 — fixed so every render is identical. */
+const TODAY = inSaoPaulo(18, 10, 30)
+
+const at = inSaoPaulo
+
+const events: ScheduleEvent[] = [
+  {
+    id: "visita-1",
+    title: "Visita à obra — Torre A",
+    start: at(16, 9),
+    end: at(16, 11),
+    color: "orange",
+  },
+  {
+    id: "cliente-1",
+    title: "Reunião com cliente",
+    start: at(17, 14),
+    end: at(17, 15),
+    color: "blue",
+  },
+  {
+    id: "daily",
+    title: "Daily de engenharia",
+    start: at(18, 9),
+    end: at(18, 9, 30),
+    color: "teal",
+  },
+  {
+    id: "proposta",
+    title: "Revisão de proposta",
+    start: at(18, 9, 15),
+    end: at(18, 10, 30),
+    color: "purple",
+  },
+  {
+    id: "almoco",
+    title: "Almoço com fornecedor",
+    start: at(18, 12),
+    end: at(18, 13, 30),
+    color: "green",
+  },
+  { id: "vistoria", title: "Vistoria Caixa", start: at(18, 10), end: at(18, 11), color: "red" },
+  {
+    id: "assinatura",
+    title: "Assinatura de contrato",
+    start: at(18, 16),
+    end: at(18, 17),
+    color: "pink",
+  },
+  {
+    id: "feriado",
+    title: "Dia da Consciência Negra",
+    start: at(20, 0),
+    end: at(20, 0),
+    allDay: true,
+    color: "gray",
+  },
+  {
+    id: "treinamento",
+    title: "Treinamento NR-35",
+    start: at(23, 0),
+    end: at(25, 0),
+    allDay: true,
+    color: "yellow",
+  },
+  {
+    id: "concretagem",
+    title: "Concretagem — laje 12",
+    start: at(19, 22),
+    end: at(20, 4),
+    color: "orange",
+  },
+  {
+    id: "entrega",
+    title: "Entrega de chaves — Residencial Ipê",
+    start: at(27, 10),
+    end: at(27, 12),
+    color: "green",
+  },
+  { id: "comite", title: "Comitê de obras", start: at(3, 15), end: at(3, 16, 30), color: "blue" },
+]
+
+const meta = {
+  title: "Data/Schedule",
+  component: Schedule,
+  tags: ["autodocs"],
+  parameters: {
+    docs: {
+      description: {
+        component: [
+          "Calendário de eventos com visões de **mês**, **semana**, **dia** e **lista**.",
+          "",
+          "- Data-driven: passe `events` com `start`/`end` em `Date` (hora local). `allDay` vira barra sem horário.",
+          "- Eventos de dia inteiro e que atravessam a meia-noite viram barras que se estendem pelos dias; horários que se sobrepõem ficam lado a lado.",
+          "- No mês, cada dia mostra até 3 linhas; o resto vira **+N mais**, que abre a lista do dia.",
+          "- Semana e dia têm a linha da hora atual e começam rolados em `scrollToHour` (8h).",
+          "- `renderEventDetails` abre um popover ao clicar no evento; `onEventClick` só avisa o clique.",
+          "- `today` fixa o que conta como hoje — use em testes e capturas.",
+        ].join("\n"),
+      },
+    },
+  },
+  args: {
+    events,
+    today: TODAY,
+    defaultDate: TODAY,
+    onEventClick: fn(),
+  },
+} satisfies Meta<typeof Schedule>
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const Month: Story = {}
+
+export const Week: Story = {
+  args: { defaultView: "week" },
+}
+
+export const Day: Story = {
+  args: { defaultView: "day" },
+}
+
+export const List: Story = {
+  args: { defaultView: "list" },
+}
+
+const corretores = ["Ana", "Bruno", "Camila", "Diego", "Elisa", "Fábio", "Gabi"]
+
+export const ManyAtOnce: Story = {
+  name: "Many At Once",
+  args: {
+    defaultView: "week",
+    events: corretores.map((nome, i) => ({
+      id: `visita-${i}`,
+      title: `Visita — ${nome}`,
+      start: at(19, 10),
+      end: at(19, 11, 30),
+      color: "blue" as const,
+    })),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Sete visitas no mesmo horário. Na semana cabem até três lado a lado (`maxColumns`); a terceira coluna vira "+5 mais", que abre a lista. Assim nenhum bloco fica estreito demais para ler.',
+      },
+    },
+  },
+}
+
+export const NewEventOnSlot: Story = {
+  name: "New Event On Slot",
+  render: (args) => {
+    const [slot, setSlot] = React.useState<Date | null>(null)
+    const [range, setRange] = React.useState("")
+    return (
+      <div className="flex flex-col gap-3">
+        <Schedule
+          {...args}
+          defaultView="week"
+          onSlotClick={setSlot}
+          onRangeChange={({ start, end }) =>
+            setRange(
+              `${start.toLocaleDateString("pt-BR", { timeZone: SP })} até ${end.toLocaleDateString("pt-BR", { timeZone: SP })}`,
+            )
+          }
+        />
+        <p data-testid="slot" className="text-sm">
+          Agendar visita em:{" "}
+          {slot
+            ? slot.toLocaleString("pt-BR", { dateStyle: "full", timeStyle: "short", timeZone: SP })
+            : "clique num horário vazio"}
+        </p>
+        <p data-testid="range" className="text-sm text-muted-foreground">
+          Buscando eventos de {range}
+        </p>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`onSlotClick` recebe o horário clicado na grade (arredondado para a meia hora) ou o dia, no mês. Pelo teclado, o número de cada dia vira um botão "Novo evento em …". `onRangeChange` informa o período na tela para buscar os eventos no servidor.',
+      },
+    },
+  },
+}
+
+export const English: Story = {
+  args: {
+    defaultView: "week",
+    locale: "en-US",
+    labels: {
+      today: "Today",
+      allDay: "All day",
+      viewSwitcher: "View",
+      views: { month: "Month", week: "Week", day: "Day", list: "List" },
+      previous: {
+        month: "Previous month",
+        week: "Previous week",
+        day: "Previous day",
+        list: "Previous period",
+      },
+      next: { month: "Next month", week: "Next week", day: "Next day", list: "Next period" },
+      more: (count) => `+${count} more`,
+      empty: "No events in this period",
+      loading: "Loading…",
+      newEvent: (day) => `New event on ${day}`,
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`locale` muda os nomes de dias e meses e a ordem das datas; os textos fixos vêm de `labels`.",
+      },
+    },
+  },
+}
+
+export const WithEventDetails: Story = {
+  args: {
+    defaultView: "week",
+    events: events.map((event) =>
+      event.id === "proposta"
+        ? { ...event, description: "Conferir planilha de custos e prazos antes de enviar." }
+        : event,
+    ),
+    renderEventDetails: (event) => (
+      <div className="flex flex-col gap-1">
+        <p className="font-semibold">{event.title}</p>
+        <p className="text-xs text-muted-foreground">
+          {event.allDay
+            ? "Dia inteiro"
+            : `${event.start.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: SP })} – ${event.end.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: SP })}`}
+        </p>
+        {event.description ? <p className="text-sm">{event.description}</p> : null}
+      </div>
+    ),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com `renderEventDetails`, o clique no evento abre um popover com o conteúdo que você montar.",
+      },
+    },
+  },
+}
+
+export const BusinessHours: Story = {
+  args: { defaultView: "week", weekStartsOn: 1, minHour: 7, maxHour: 19, scrollToHour: 7 },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Semana começando na segunda (`weekStartsOn={1}`) e só o horário comercial (`minHour`/`maxHour`).",
+      },
+    },
+  },
+}
+
+export const OnlyMonthAndList: Story = {
+  args: { views: ["month", "list"] },
+}
+
+export const Loading: Story = {
+  args: { loading: true },
+}
+
+export const EmptyList: Story = {
+  args: { defaultView: "list", events: [] },
+}
+
+function ControlledSchedule() {
+  const [date, setDate] = React.useState(TODAY)
+  const [view, setView] = React.useState<"month" | "week" | "day" | "list">("week")
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs text-muted-foreground">
+        Estado no app: {view} · {date.toLocaleDateString("pt-BR", { timeZone: SP })}
+      </p>
+      <Schedule
+        events={events}
+        today={TODAY}
+        date={date}
+        onDateChange={setDate}
+        view={view}
+        onViewChange={setView}
+      />
+    </div>
+  )
+}
+
+export const Controlled: Story = {
+  render: () => <ControlledSchedule />,
+}
+
+export const Interaction: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Teste de interação: navega para o próximo mês e volta com “Hoje”, troca para a semana e abre o “+N mais” de um dia cheio.",
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(document.body)
+    await expect(canvas.getByRole("heading", { name: "novembro de 2026" })).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole("button", { name: "Próximo mês" }))
+    await expect(canvas.getByRole("heading", { name: "dezembro de 2026" })).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole("button", { name: "Hoje" }))
+    await expect(canvas.getByRole("heading", { name: "novembro de 2026" })).toBeInTheDocument()
+
+    const more = canvas.getByRole("button", { name: /mais, quarta-feira, 18 de novembro/ })
+    await userEvent.click(more)
+    const popover = await body.findByRole("dialog", { name: "quarta-feira, 18 de novembro" })
+    await expect(within(popover).getAllByRole("button")).toHaveLength(5)
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() => expect(document.querySelector('[data-slot="popover-content"]')).toBeNull())
+
+    await userEvent.click(canvas.getByRole("radio", { name: "Semana" }))
+    await expect(
+      canvas.getByRole("heading", { name: "15 – 21 de nov. de 2026" }),
+    ).toBeInTheDocument()
+  },
+}

@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, userEvent, within } from "@storybook/test"
 import { useState } from "react"
+import { Controller, useForm } from "react-hook-form"
 
 import { DateInput } from "./date-input"
 
@@ -12,13 +14,16 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Input de data com popover `Calendar` integrado. Exibição em formato **pt-BR** (`DD/MM/AAAA`) e valor sempre como string **ISO** (`YYYY-MM-DD`) — fácil de serializar e enviar para API.",
+          "Campo de data **digitável** (`dd/mm/aaaa`, as barras entram sozinhas) com um botão de calendário no fim. Exibição em **pt-BR** e valor sempre como string **ISO** (`YYYY-MM-DD`) — fácil de serializar e enviar para API.",
+          "",
+          "Uma data inteira e válida reporta o ISO. Enquanto o texto está incompleto ou não é uma data aceita (`31/02/2026`, fora de `min`/`max`), o campo reporta `''` e o texto fica na tela para ser corrigido; o erro aparece ao sair do campo. Num `<form>` nativo, um texto que não é data deixa o campo inválido para o navegador: Enter não envia a data anterior. Colar `15/03/1990` ou `1990-03-15` preenche o campo.",
           "",
           "**Props principais:**",
           "- `value` — string ISO (`YYYY-MM-DD`) ou vazio.",
-          "- `onChange(value)` — recebe nova string ISO ou `''` ao limpar.",
-          "- `placeholder` — texto exibido quando `value` está vazio.",
-          "- `disabled` — alterna para um `Input` somente leitura com fundo `muted`.",
+          "- `onValueChange(value)` — recebe nova string ISO ou `''` ao limpar (`onChange` segue funcionando, obsoleto).",
+          "- `placeholder` — texto exibido com o campo vazio.",
+          "- `disabled` — desabilita o campo e o botão do calendário.",
+          "- `labels` — textos do botão e do erro de data inválida.",
           "- `label` — rótulo renderizado pelo próprio componente (via `FieldShell`). Use em vez de envolver com `<Label>` externo.",
           "",
           "**Exemplo de uso:**",
@@ -33,8 +38,7 @@ const meta = {
           '  id="birth"',
           '  label="Data de nascimento"',
           "  value={value}",
-          "  onChange={setValue}",
-          '  placeholder="DD/MM/AAAA"',
+          "  onValueChange={setValue}",
           "/>",
           "```",
         ].join("\n"),
@@ -54,13 +58,13 @@ const meta = {
     },
     disabled: {
       control: "boolean",
-      description: "Desabilita o trigger e renderiza um Input somente leitura.",
+      description: "Desabilita o campo e o botão do calendário.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     id: {
       control: "text",
       description:
-        "ID do trigger. `FieldShell` deriva o `htmlFor` do label interno a partir disso.",
+        "ID do campo de texto. `FieldShell` deriva o `htmlFor` do label interno a partir disso.",
       table: { type: { summary: "string" } },
     },
     label: {
@@ -68,7 +72,8 @@ const meta = {
       description: "Rótulo renderizado pelo componente. Use em vez de `<Label>` externo.",
       table: { type: { summary: "ReactNode" } },
     },
-    onChange: { control: false, table: { category: "Eventos" } },
+    onValueChange: { control: false, table: { category: "Eventos" } },
+    onChange: { control: false, table: { category: "Eventos", disable: true } },
   },
 } satisfies Meta<typeof DateInput>
 
@@ -78,7 +83,7 @@ type Story = StoryObj<typeof meta>
 export const Playground: Story = {
   args: {
     value: "",
-    placeholder: "DD/MM/AAAA",
+    placeholder: "dd/mm/aaaa",
     disabled: false,
     id: "playground-date",
     label: "Data",
@@ -91,7 +96,7 @@ export const Playground: Story = {
           id={args.id}
           label={args.label}
           value={value}
-          onChange={setValue}
+          onValueChange={setValue}
           placeholder={args.placeholder}
           disabled={args.disabled}
         />
@@ -107,14 +112,244 @@ export const Default: Story = {
     const [value, setValue] = useState("")
     return (
       <div className="flex w-[280px] flex-col gap-2">
+        <DateInput id="birth" label="Data de nascimento" value={value} onValueChange={setValue} />
+        <span className="text-xs text-muted-foreground">ISO: {value || "(vazio)"}</span>
+      </div>
+    )
+  },
+}
+
+export const WithError: Story = {
+  name: "With Error",
+  args: { value: "" },
+  render: () => {
+    const [value, setValue] = useState("")
+    return (
+      <div className="w-[280px]">
         <DateInput
-          id="birth"
-          label="Data de nascimento"
+          label="Data de assinatura"
+          error="Informe a data de assinatura do contrato."
           value={value}
-          onChange={setValue}
-          placeholder="DD/MM/AAAA"
+          onValueChange={setValue}
         />
       </div>
+    )
+  },
+}
+
+export const Disabled: Story = {
+  args: { value: "" },
+  render: () => (
+    <div className="w-[280px]">
+      <DateInput label="Data de entrega" value="2025-03-14" disabled />
+    </div>
+  ),
+}
+
+export const Required: Story = {
+  args: { value: "" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`required` marca o rótulo, põe `aria-required` no campo e não deixa desmarcar o dia no calendário.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState("")
+    return (
+      <div className="w-[280px]">
+        <DateInput label="Data de nascimento" required value={value} onValueChange={setValue} />
+      </div>
+    )
+  },
+}
+
+export const ReadOnly: Story = {
+  name: "Read Only",
+  args: { value: "" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` mostra a data num fundo esmaecido, sem reação ao hover e sem o botão do calendário: o campo recebe foco, pode ser copiado e vai junto no envio do formulário, mas não aceita digitação nem colagem.",
+      },
+    },
+  },
+  render: () => (
+    <div className="w-[280px]">
+      <DateInput label="Data de nascimento" value="1990-03-15" readOnly />
+    </div>
+  ),
+}
+
+export const Sizes: Story = {
+  args: { value: "" },
+  parameters: {
+    docs: {
+      description: {
+        story: "`size` dá a altura do campo: `sm` 32 px, `md` 40 px (padrão) e `lg` 44 px.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex w-[280px] flex-col gap-4">
+      {(["sm", "md", "lg"] as const).map((size) => (
+        <DateInput key={size} size={size} label={`Tamanho ${size}`} defaultValue="2025-03-14" />
+      ))}
+    </div>
+  ),
+}
+
+export const MinMax: Story = {
+  name: "Min Max",
+  args: { value: "" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`min` e `max` (ISO) valem para o calendário (dias fora ficam inativos e a navegação para nos limites) e para a data digitada: fora do intervalo, nada é reportado e, ao sair, o campo diz o limite. `disabledDays` funciona do mesmo jeito.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState("2025-06-15")
+    return (
+      <div className="flex w-[280px] flex-col gap-2">
+        <DateInput
+          label="Data da vistoria"
+          description="Entre 01/06/2025 e 31/12/2025, em dia útil."
+          min="2025-06-01"
+          max="2025-12-31"
+          disabledDays="weekends"
+          value={value}
+          onValueChange={setValue}
+        />
+        <span className="text-xs text-muted-foreground">ISO: {value || "(vazio)"}</span>
+      </div>
+    )
+  },
+}
+
+export const Typing: Story = {
+  args: { value: "" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Digitar `15031990` mostra `15/03/1990` e reporta `1990-03-15`. Ao sair com uma data que não existe, o campo diz que ela é inválida e reporta `''`.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState("")
+    return (
+      <div className="flex w-[280px] flex-col gap-2">
+        <DateInput label="Data da visita" value={value} onValueChange={setValue} />
+        <span className="text-xs text-muted-foreground">ISO: {value || "(vazio)"}</span>
+      </div>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const field = canvas.getByRole("textbox", { name: "Data da visita" })
+    await userEvent.type(field, "15031990")
+    await expect(field).toHaveValue("15/03/1990")
+    await expect(canvas.getByText("ISO: 1990-03-15")).toBeInTheDocument()
+
+    await userEvent.clear(field)
+    await userEvent.type(field, "31022026")
+    await userEvent.tab()
+    await userEvent.tab()
+    await expect(canvas.getByRole("alert")).toHaveTextContent("Data inválida")
+    await expect(canvas.getByText("ISO: (vazio)")).toBeInTheDocument()
+  },
+}
+
+export const NativeForm: Story = {
+  args: { value: "" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Num `<form>` nativo, `name` faz o `FormData` receber o ISO. Com o texto incompleto ou inválido, o campo fica inválido para o navegador: Enter (que envia sem tirar o foco) para nele e mostra o erro, em vez de enviar a data que estava antes.",
+      },
+    },
+  },
+  render: () => {
+    const [sent, setSent] = useState<string | null>(null)
+    return (
+      <form
+        className="flex w-[280px] flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault()
+          setSent(String(new FormData(e.currentTarget).get("vencimento")))
+        }}
+      >
+        <DateInput label="Vencimento" name="vencimento" defaultValue="2024-05-10" />
+        <button
+          type="submit"
+          className="rounded-element border border-input bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+        >
+          Enviar
+        </button>
+        <output data-testid="form-data" className="text-xs text-muted-foreground">
+          {sent == null ? "" : `Enviado: ${sent || "(vazio)"}`}
+        </output>
+      </form>
+    )
+  },
+}
+
+export const WithRHF: Story = {
+  name: "react-hook-form integration",
+  args: { value: "" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Com `<Controller>`: `field.value`, `field.onChange` em `onValueChange` e `field.onBlur` em `onBlur`. Com `mode: "onBlur"`, a validação roda quando o foco sai do campo inteiro; ir ao botão do calendário ou abrir o calendário não conta.',
+      },
+    },
+  },
+  render: () => {
+    type FormValues = { nascimento: string }
+    const { control, handleSubmit } = useForm<FormValues>({
+      mode: "onBlur",
+      defaultValues: { nascimento: "" },
+    })
+    const [sent, setSent] = useState<FormValues | null>(null)
+    return (
+      <form
+        className="flex w-[280px] flex-col gap-3"
+        onSubmit={handleSubmit((data) => setSent(data))}
+      >
+        <Controller
+          name="nascimento"
+          control={control}
+          rules={{ required: "Informe a data de nascimento" }}
+          render={({ field, fieldState }) => (
+            <DateInput
+              label="Data de nascimento"
+              required
+              value={field.value}
+              onValueChange={field.onChange}
+              onBlur={field.onBlur}
+              error={fieldState.error?.message}
+            />
+          )}
+        />
+        <button
+          type="submit"
+          className="rounded-element border border-input bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+        >
+          Enviar
+        </button>
+        {sent ? (
+          <p className="text-xs text-muted-foreground">Enviado: {JSON.stringify(sent)}</p>
+        ) : null}
+      </form>
     )
   },
 }

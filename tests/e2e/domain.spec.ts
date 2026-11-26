@@ -1,34 +1,760 @@
-import { expect, test } from "@playwright/test"
+import { type Locator, type Page, expect, test } from "@playwright/test"
+import { expectNoA11yViolations } from "./a11y"
 
 const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
 
+/**
+ * Opens a story and waits until it is mounted. Storybook's dev server may
+ * still be compiling on the first hit, and on a busy machine that takes longer
+ * than the 5s an assertion waits.
+ */
+async function gotoStory(page: Page, id: string) {
+  await page.goto(story(id))
+  await page.waitForFunction(
+    () =>
+      document.body.classList.contains("sb-show-main") &&
+      !document.body.classList.contains("sb-show-preparing-story") &&
+      !!document.getElementById("storybook-root")?.firstChild,
+    null,
+    { timeout: 30_000 },
+  )
+}
+
+/** Puts the caret where a click would, without depending on glyph widths. */
+async function caretAt(input: Locator, position: number) {
+  await input.evaluate((el: HTMLInputElement, pos) => {
+    el.focus()
+    el.setSelectionRange(pos, pos)
+  }, position)
+}
+
+const caretOf = (input: Locator) => input.evaluate((el: HTMLInputElement) => el.selectionStart)
+
+/** A real paste: the text goes to the clipboard and Ctrl+V brings it in. */
+async function paste(page: Page, text: string) {
+  await page.evaluate((value) => navigator.clipboard.writeText(value), text)
+  await page.keyboard.press("ControlOrMeta+V")
+}
+
+// jsdom cannot prove where a real browser leaves the caret after React
+// rewrites the value, so the masked inputs are edited here with real keys.
+test.describe("Campos com máscara: editar no meio", () => {
+  test("CPF: Backspace no meio apaga aquele dígito e o próximo entra no mesmo ponto", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-cpfinput--with-validation-feedback")
+    const input = page.getByRole("textbox", { name: "CPF" })
+    await input.pressSequentially("52998224725")
+    await expect(input).toHaveValue("529.982.247-25")
+
+    await caretAt(input, 2)
+    await page.keyboard.press("Backspace")
+    await expect(input).toHaveValue("599.822.472-5")
+    expect(await caretOf(input)).toBe(1)
+
+    await page.keyboard.type("2")
+    await expect(input).toHaveValue("529.982.247-25")
+    expect(await caretOf(input)).toBe(2)
+    await expect(page.getByText("válido: true")).toBeVisible()
+  })
+
+  test("CPF: Backspace logo depois do ponto apaga o dígito antes dele", async ({ page }) => {
+    await gotoStory(page, "domain-cpfinput--filled")
+    const input = page.getByRole("textbox", { name: "CPF" })
+    await expect(input).toHaveValue("123.456.789-09")
+    // "123.|456.789-09"
+    await caretAt(input, 4)
+    await page.keyboard.press("Backspace")
+    await expect(input).toHaveValue("124.567.890-9")
+    expect(await caretOf(input)).toBe(2)
+  })
+
+  test("CPF: Delete logo antes do ponto apaga o dígito depois dele", async ({ page }) => {
+    await gotoStory(page, "domain-cpfinput--filled")
+    const input = page.getByRole("textbox", { name: "CPF" })
+    await expect(input).toHaveValue("123.456.789-09")
+    // "123|.456.789-09"
+    await caretAt(input, 3)
+    await page.keyboard.press("Delete")
+    await expect(input).toHaveValue("123.567.890-9")
+    expect(await caretOf(input)).toBe(3)
+  })
+
+  const middleEdits = [
+    {
+      name: "CNPJ",
+      id: "domain-cnpjinput--filled",
+      label: "CNPJ",
+      initial: "11.222.333/0001-81",
+      // "11.2|22.333/0001-81"
+      caret: 4,
+      afterBackspace: "11.223.330/0018-1",
+      caretAfterBackspace: 3,
+      retype: "2",
+      caretAfterRetype: 4,
+    },
+    {
+      name: "CEP",
+      id: "domain-cepinput--filled",
+      label: "CEP",
+      initial: "01310-100",
+      // "01|310-100"
+      caret: 2,
+      afterBackspace: "03101-00",
+      caretAfterBackspace: 1,
+      retype: "1",
+      caretAfterRetype: 2,
+    },
+    {
+      name: "Telefone",
+      id: "domain-phoneinput--filled",
+      label: "Telefone",
+      initial: "(11) 98765-4321",
+      // "(11|) 98765-4321"
+      caret: 3,
+      afterBackspace: "(19) 8765-4321",
+      caretAfterBackspace: 2,
+      retype: "1",
+      caretAfterRetype: 3,
+    },
+  ]
+
+  for (const edit of middleEdits) {
+    test(`${edit.name}: o cursor fica no lugar ao apagar e redigitar no meio`, async ({ page }) => {
+      await gotoStory(page, edit.id)
+      const input = page.getByRole("textbox", { name: edit.label })
+      await expect(input).toHaveValue(edit.initial)
+
+      await caretAt(input, edit.caret)
+      await page.keyboard.press("Backspace")
+      await expect(input).toHaveValue(edit.afterBackspace)
+      expect(await caretOf(input)).toBe(edit.caretAfterBackspace)
+
+      await page.keyboard.type(edit.retype)
+      await expect(input).toHaveValue(edit.initial)
+      expect(await caretOf(input)).toBe(edit.caretAfterRetype)
+    })
+  }
+})
+
+// A synthetic paste event does not go through the browser's own handling of
+// maxLength and of the selection, which is where the digits were lost.
+test.describe("Campos com máscara: colar", () => {
+  test.beforeEach(async ({ context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"])
+  })
+
+  const pastes = [
+    {
+      name: "CPF com espaço na frente",
+      id: "domain-cpfinput--with-validation-feedback",
+      label: "CPF",
+      text: " 529.982.247-25",
+      shown: "529.982.247-25",
+      digits: "52998224725",
+    },
+    {
+      name: "CPF com rótulo na frente",
+      id: "domain-cpfinput--with-validation-feedback",
+      label: "CPF",
+      text: "CPF: 529.982.247-25",
+      shown: "529.982.247-25",
+      digits: "52998224725",
+    },
+    {
+      name: "CNPJ com rótulo e espaço na frente",
+      id: "domain-cnpjinput--with-validation-feedback",
+      label: "CNPJ",
+      text: " CNPJ: 11.222.333/0001-81",
+      shown: "11.222.333/0001-81",
+      digits: "11222333000181",
+    },
+    {
+      name: "CEP no fim de um endereço",
+      id: "domain-cepinput--with-validation-feedback",
+      label: "CEP",
+      text: "Av. Paulista, 1578 - Bela Vista, São Paulo - SP, 01310-200",
+      shown: "01310-200",
+      digits: "01310200",
+    },
+    {
+      name: "telefone com +55",
+      id: "domain-phoneinput--with-validation-feedback",
+      label: "Telefone",
+      text: "+55 11 98765-4321",
+      shown: "(11) 98765-4321",
+      digits: "11987654321",
+    },
+    {
+      name: "telefone com zero de operadora",
+      id: "domain-phoneinput--with-validation-feedback",
+      label: "Telefone",
+      text: "011 98765-4321",
+      shown: "(11) 98765-4321",
+      digits: "11987654321",
+    },
+  ]
+
+  for (const item of pastes) {
+    test(`${item.name}: o número colado entra inteiro`, async ({ page }) => {
+      await gotoStory(page, item.id)
+      const input = page.getByRole("textbox", { name: item.label })
+      await input.click()
+      await paste(page, item.text)
+      await expect(input).toHaveValue(item.shown)
+      await expect(page.getByText(`Dígitos: ${item.digits} — válido: true`)).toBeVisible()
+    })
+  }
+
+  test("um CPF completo colado substitui o que já estava no campo", async ({ page }) => {
+    await gotoStory(page, "domain-cpfinput--filled")
+    const input = page.getByRole("textbox", { name: "CPF" })
+    await expect(input).toHaveValue("123.456.789-09")
+    await input.click()
+    await paste(page, "529.982.247-25")
+    await expect(input).toHaveValue("529.982.247-25")
+  })
+
+  test("um pedaço colado entra no ponto do cursor", async ({ page }) => {
+    await gotoStory(page, "domain-cpfinput--with-validation-feedback")
+    const input = page.getByRole("textbox", { name: "CPF" })
+    await input.pressSequentially("529247")
+    await expect(input).toHaveValue("529.247")
+    // "529|.247"
+    await caretAt(input, 3)
+    await paste(page, "982")
+    await expect(input).toHaveValue("529.982.247")
+    expect(await caretOf(input)).toBe(7)
+  })
+
+  test("digitar num campo cheio não troca nenhum dígito", async ({ page }) => {
+    await gotoStory(page, "domain-cpfinput--filled")
+    const input = page.getByRole("textbox", { name: "CPF" })
+    await expect(input).toHaveValue("123.456.789-09")
+    await caretAt(input, 2)
+    await page.keyboard.type("7")
+    await expect(input).toHaveValue("123.456.789-09")
+    expect(await caretOf(input)).toBe(2)
+  })
+})
+
+test.describe("Tamanho dos campos", () => {
+  const stories = [
+    { name: "CPFInput", id: "domain-cpfinput--sizes", label: "CPF" },
+    { name: "CNPJInput", id: "domain-cnpjinput--sizes", label: "CNPJ" },
+    { name: "CEPInput", id: "domain-cepinput--sizes", label: "CEP" },
+    { name: "PhoneInput", id: "domain-phoneinput--sizes", label: "Telefone" },
+    { name: "CurrencyInput", id: "domain-currencyinput--sizes", label: "Valor" },
+    { name: "PercentageInput", id: "domain-percentageinput--sizes", label: "Taxa" },
+  ]
+
+  for (const item of stories) {
+    test(`${item.name}: sm, md e lg medem 32, 40 e 44px`, async ({ page }) => {
+      await gotoStory(page, item.id)
+      const heights: Record<string, number> = {}
+      for (const size of ["sm", "md", "lg"]) {
+        const box = await page
+          .getByRole("textbox", { name: `${item.label} (${size})` })
+          .boundingBox()
+        heights[size] = box?.height ?? 0
+      }
+      expect(heights).toEqual({ sm: 32, md: 40, lg: 44 })
+    })
+  }
+
+  test("o texto fixo (R$ e %) não fica por cima do valor em nenhum tamanho", async ({ page }) => {
+    for (const [id, text] of [
+      ["domain-currencyinput--sizes", "R$"],
+      ["domain-percentageinput--sizes", "%"],
+    ] as const) {
+      await gotoStory(page, id)
+      const wrappers = page.locator(
+        `[data-slot="${id.includes("currency") ? "currency" : "percentage"}-input"]`,
+      )
+      await expect(wrappers).toHaveCount(3)
+      for (let i = 0; i < 3; i++) {
+        const wrapper = wrappers.nth(i)
+        const adornment = await wrapper.getByText(text, { exact: true }).boundingBox()
+        // Where the value text starts and ends inside the input.
+        const value = await wrapper.locator("input[type=text]").evaluate((el: HTMLInputElement) => {
+          const style = getComputedStyle(el)
+          const rect = el.getBoundingClientRect()
+          return {
+            start: rect.left + Number.parseFloat(style.paddingLeft),
+            end: rect.right - Number.parseFloat(style.paddingRight),
+          }
+        })
+        if (!adornment) throw new Error("sem caixa para medir")
+        if (text === "R$") expect(adornment.x + adornment.width).toBeLessThanOrEqual(value.start)
+        else expect(adornment.x).toBeGreaterThanOrEqual(value.end)
+      }
+    }
+  })
+})
+
+// iOS zooms the page in when a focused input has text under 16px.
+test.describe("Ponteiro grosso (toque): texto de 16px", () => {
+  test.use({ hasTouch: true, isMobile: true })
+
+  const fields = [
+    { id: "domain-cpfinput--sizes", name: "CPF (sm)" },
+    { id: "domain-cnpjinput--sizes", name: "CNPJ (md)" },
+    { id: "domain-cepinput--sizes", name: "CEP (lg)" },
+    { id: "domain-phoneinput--sizes", name: "Telefone (md)" },
+    { id: "domain-currencyinput--sizes", name: "Valor (md)" },
+    { id: "domain-percentageinput--sizes", name: "Taxa (md)" },
+    { id: "domain-multiinput--sizes", name: "Tags (md)" },
+  ]
+  for (const field of fields) {
+    test(`${field.name}: o campo de digitação usa 16px`, async ({ page }) => {
+      await gotoStory(page, field.id)
+      expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true)
+      await expect(page.getByRole("textbox", { name: field.name })).toHaveCSS("font-size", "16px")
+    })
+  }
+
+  test("a altura dos campos não muda com o texto maior", async ({ page }) => {
+    const sizes = [
+      ["sm", 32],
+      ["md", 40],
+      ["lg", 44],
+    ] as const
+    await gotoStory(page, "domain-cpfinput--sizes")
+    for (const [size, height] of sizes) {
+      const box = await page.getByRole("textbox", { name: `CPF (${size})` }).boundingBox()
+      expect(box?.height).toBe(height)
+    }
+    await gotoStory(page, "domain-multiinput--sizes")
+    for (const [size, height] of sizes) {
+      const box = await page.getByRole("group", { name: `Tags (${size})` }).boundingBox()
+      expect(box?.height).toBe(height)
+    }
+  })
+})
+
+test.describe("Ponteiro fino (mouse): texto de 14px", () => {
+  test("os campos continuam com 14px", async ({ page }) => {
+    await gotoStory(page, "domain-cpfinput--sizes")
+    await expect(page.getByRole("textbox", { name: "CPF (md)" })).toHaveCSS("font-size", "14px")
+  })
+})
+
+// Looks are measured here: jsdom has no stylesheet.
+test.describe("Somente leitura", () => {
+  const stories = [
+    { name: "CPFInput", id: "domain-cpfinput--read-only", label: "CPF", shown: "529.982.247-25" },
+    {
+      name: "CurrencyInput",
+      id: "domain-currencyinput--read-only",
+      label: "Valor do contrato",
+      shown: "1.234,56",
+    },
+  ]
+
+  // "none", or a ring whose colour is fully transparent.
+  const hasVisibleRing = (input: Locator) =>
+    input.evaluate((el) => {
+      const shadow = getComputedStyle(el).boxShadow
+      if (shadow === "none") return false
+      return !/rgba\(\s*0,\s*0,\s*0,\s*0\)|\/\s*0\)|transparent/.test(shadow)
+    })
+
+  for (const item of stories) {
+    test(`${item.name}: parece diferente do editável, não reage ao hover e não edita`, async ({
+      page,
+    }) => {
+      await gotoStory(page, item.id)
+      const editable = page.getByRole("textbox", { name: `${item.label} (editável)` })
+      const readOnly = page.getByRole("textbox", { name: `${item.label} (somente leitura)` })
+      await expect(readOnly).toHaveValue(item.shown)
+
+      const background = (input: Locator) =>
+        input.evaluate((el) => getComputedStyle(el).backgroundColor)
+      expect(await background(readOnly)).not.toBe(await background(editable))
+
+      // Not the disabled look: the field is fully opaque.
+      const opacity = await readOnly.evaluate((el) => {
+        let value = 1
+        for (let node: Element | null = el; node; node = node.parentElement) {
+          value *= Number(getComputedStyle(node).opacity)
+        }
+        return value
+      })
+      expect(opacity).toBe(1)
+
+      await editable.hover()
+      await expect.poll(() => hasVisibleRing(editable)).toBe(true)
+      await readOnly.hover()
+      await expect.poll(() => hasVisibleRing(readOnly)).toBe(false)
+
+      // Focusable, and the keyboard does not change it.
+      await editable.focus()
+      await page.keyboard.press("Tab")
+      await expect(readOnly).toBeFocused()
+      await expect.poll(() => hasVisibleRing(readOnly)).toBe(true)
+      await page.keyboard.press("End")
+      await page.keyboard.type("9")
+      await page.keyboard.press("Backspace")
+      await expect(readOnly).toHaveValue(item.shown)
+    })
+  }
+})
+
+test.describe("CEPInput: consulta de endereço", () => {
+  test("o oitavo dígito dispara a consulta e o indicador aparece dentro do campo", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-cepinput--address-lookup")
+    const input = page.getByRole("textbox", { name: "CEP" })
+    const spinner = page.locator('[data-slot="cep-input-spinner"]')
+    const address = page.getByTestId("address")
+
+    await input.pressSequentially("0131010")
+    await expect(spinner).toHaveCount(0)
+    await expect(address).toHaveText("Endereço: (informe o CEP)")
+
+    await input.pressSequentially("0")
+    await expect(input).toHaveValue("01310-100")
+    await expect(spinner).toBeVisible()
+    await expect(input).toHaveAttribute("aria-busy", "true")
+    await expect(page.getByRole("status")).toHaveText("Buscando endereço…")
+
+    // O indicador fica dentro da caixa do campo, não ao lado dela.
+    const field = await input.boundingBox()
+    const icon = await spinner.boundingBox()
+    if (!field || !icon) throw new Error("sem caixa para medir")
+    expect(icon.x).toBeGreaterThan(field.x)
+    expect(icon.x + icon.width).toBeLessThan(field.x + field.width)
+    expect(icon.y).toBeGreaterThan(field.y)
+    expect(icon.y + icon.height).toBeLessThan(field.y + field.height)
+
+    await expect(address).toHaveText("Avenida Paulista, Bela Vista, São Paulo - SP")
+    await expect(spinner).toHaveCount(0)
+    await expect(input).not.toHaveAttribute("aria-busy", "true")
+  })
+
+  test("corrigir o CEP durante a consulta dispara outra", async ({ page }) => {
+    await gotoStory(page, "domain-cepinput--address-lookup")
+    const input = page.getByRole("textbox", { name: "CEP" })
+    await input.pressSequentially("01310100")
+    await expect(page.locator('[data-slot="cep-input-spinner"]')).toBeVisible()
+    // O campo não trava enquanto carrega.
+    await page.keyboard.press("Backspace")
+    await page.keyboard.type("9")
+    await expect(input).toHaveValue("01310-109")
+    await expect(page.getByTestId("address")).toHaveText("CEP não encontrado")
+  })
+})
+
+test.describe("CNPJInput: CNPJ alfanumérico", () => {
+  test("aceita o exemplo oficial digitado, em maiúsculas, e ele valida", async ({ page }) => {
+    await gotoStory(page, "domain-cnpjinput--with-validation-feedback")
+    const input = page.getByRole("textbox", { name: "CNPJ" })
+    await input.pressSequentially("12abc34501de35")
+    await expect(input).toHaveValue("12.ABC.345/01DE-35")
+    await expect(page.getByText("Dígitos: 12ABC34501DE35 — válido: true")).toBeVisible()
+  })
+
+  test("aceita o exemplo oficial colado com rótulo", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"])
+    await gotoStory(page, "domain-cnpjinput--with-validation-feedback")
+    const input = page.getByRole("textbox", { name: "CNPJ" })
+    await input.click()
+    await paste(page, "CNPJ: 12.ABC.345/01DE-35")
+    await expect(input).toHaveValue("12.ABC.345/01DE-35")
+    await expect(page.getByText("Dígitos: 12ABC34501DE35 — válido: true")).toBeVisible()
+  })
+
+  test("pede teclado de texto com maiúsculas", async ({ page }) => {
+    await gotoStory(page, "domain-cnpjinput--alphanumeric")
+    const input = page.getByRole("textbox", { name: "CNPJ" })
+    await expect(input).toHaveValue("12.ABC.345/01DE-35")
+    await expect(input).toHaveAttribute("inputmode", "text")
+    await expect(input).toHaveAttribute("autocapitalize", "characters")
+  })
+})
+
 test.describe("CurrencyInput", () => {
   test("typing digits formats to BRL display", async ({ page }) => {
-    await page.goto(story("domain-currencyinput--controlled"))
-    const input = page.getByRole("textbox").first()
-    await input.fill("")
-    await input.type("123456")
+    // `Playground` has no play function; `Default` types by itself and would race.
+    await gotoStory(page, "domain-currencyinput--playground")
+    const input = page.getByRole("textbox", { name: /Valor do contrato/ })
+    await expect(input).toHaveValue("0,00")
+    // A scripted focus leaves the caret at the start; a person types at the end.
+    await input.press("End")
+    await input.pressSequentially("123456")
     // Display formatted as 1.234,56
     await expect(input).toHaveValue("1.234,56")
   })
 })
 
+test.describe("CurrencyInput: editar no meio", () => {
+  test("com o campo em zero, o cursor no início não muda o que a digitação produz", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-currencyinput--playground")
+    const input = page.getByRole("textbox", { name: /Valor do contrato/ })
+    await expect(input).toHaveValue("0,00")
+    // Onde um foco por script (autoFocus, setFocus do formulário) pode deixar
+    // o cursor: antes dos zeros que só preenchem a exibição.
+    await caretAt(input, 0)
+    await page.keyboard.type("123456")
+    await expect(input).toHaveValue("1.234,56")
+    expect(await caretOf(input)).toBe(8)
+  })
+
+  test("o cursor fica no lugar ao inserir e apagar um dígito no meio", async ({ page }) => {
+    await gotoStory(page, "domain-currencyinput--playground")
+    const input = page.getByRole("textbox", { name: /Valor do contrato/ })
+    await input.pressSequentially("123456")
+    await expect(input).toHaveValue("1.234,56")
+
+    // "1.2|34,56" → digita 9 → "12.9|34,56"
+    await caretAt(input, 3)
+    await page.keyboard.type("9")
+    await expect(input).toHaveValue("12.934,56")
+    expect(await caretOf(input)).toBe(4)
+
+    // Backspace desfaz: "1.2|34,56"
+    await page.keyboard.press("Backspace")
+    await expect(input).toHaveValue("1.234,56")
+    expect(await caretOf(input)).toBe(3)
+    await expect(page.getByText("Valor interno: 1234.56", { exact: true })).toBeVisible()
+  })
+
+  test("Backspace logo depois do ponto de milhar apaga o dígito antes dele", async ({ page }) => {
+    await gotoStory(page, "domain-currencyinput--playground")
+    const input = page.getByRole("textbox", { name: /Valor do contrato/ })
+    await input.pressSequentially("123456")
+    // "1.|234,56"
+    await caretAt(input, 2)
+    await page.keyboard.press("Backspace")
+    await expect(input).toHaveValue("234,56")
+    expect(await caretOf(input)).toBe(0)
+  })
+})
+
+test.describe("CurrencyInput: valores negativos", () => {
+  test("com allowNegative, digitar -50 num campo limpo dá -0,50", async ({ page }) => {
+    await gotoStory(page, "domain-currencyinput--negative")
+    const input = page.getByRole("textbox", { name: /Ajuste de saldo/ })
+    await expect(input).toHaveValue("-150,00")
+    await input.press("ControlOrMeta+A")
+    await input.press("Delete")
+    await expect(input).toHaveValue("0,00")
+    await page.keyboard.type("-50")
+    await expect(input).toHaveValue("-0,50")
+    await expect(page.getByText("Valor interno: -0.5", { exact: true })).toBeVisible()
+  })
+
+  test("um valor negativo continua negativo ao receber mais um dígito", async ({ page }) => {
+    await gotoStory(page, "domain-currencyinput--negative")
+    const input = page.getByRole("textbox", { name: /Ajuste de saldo/ })
+    await input.press("End")
+    await page.keyboard.type("5")
+    await expect(input).toHaveValue("-1.500,05")
+    // O sinal de novo volta a positivo.
+    await page.keyboard.type("-")
+    await expect(input).toHaveValue("1.500,05")
+  })
+
+  test("sem allowNegative o sinal é ignorado", async ({ page }) => {
+    await gotoStory(page, "domain-currencyinput--playground")
+    const input = page.getByRole("textbox", { name: /Valor do contrato/ })
+    await input.press("End")
+    await page.keyboard.type("-50")
+    await expect(input).toHaveValue("0,50")
+  })
+})
+
+test.describe("CurrencyInput e PercentageInput: campo vazio", () => {
+  const stories = [
+    { name: "CurrencyInput", id: "domain-currencyinput--empty", label: /Valor de entrada/ },
+    { name: "PercentageInput", id: "domain-percentageinput--empty", label: /Desconto/ },
+  ]
+
+  for (const item of stories) {
+    test(`${item.name}: com emptyValue="null" o campo começa vazio, aceita zero e volta a vazio`, async ({
+      page,
+    }) => {
+      await gotoStory(page, item.id)
+      const input = page.getByRole("textbox", { name: item.label })
+      const internal = page.getByText(/^Valor interno:/)
+      await expect(input).toHaveValue("")
+      await expect(input).toHaveAttribute("placeholder", "0,00")
+      await expect(internal).toHaveText("Valor interno: null")
+
+      await input.pressSequentially("125")
+      await expect(input).toHaveValue("1,25")
+      await expect(internal).toHaveText("Valor interno: 1.25")
+
+      // Três Backspaces levam a zero, que é um valor; o quarto esvazia.
+      await page.keyboard.press("Backspace")
+      await page.keyboard.press("Backspace")
+      await page.keyboard.press("Backspace")
+      await expect(input).toHaveValue("0,00")
+      await expect(internal).toHaveText("Valor interno: 0")
+      await page.keyboard.press("Backspace")
+      await expect(input).toHaveValue("")
+      await expect(internal).toHaveText("Valor interno: null")
+    })
+  }
+})
+
+test.describe("CurrencyInput e PercentageInput: limites", () => {
+  test("CurrencyInput: fora da faixa o valor fica e o erro aparece ao sair do campo", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-currencyinput--min-max")
+    const input = page.getByRole("textbox", { name: /Valor da parcela/ })
+    const internal = page.getByText(/^Valor interno:/)
+    const alert = page.getByRole("alert")
+    await input.press("End")
+    await page.keyboard.type("500001")
+    await expect(input).toHaveValue("5.000,01")
+    await expect(alert).toHaveCount(0)
+    await page.keyboard.press("Tab")
+    await expect(alert).toHaveText("O valor máximo é R$ 5.000,00.")
+    await expect(input).toHaveValue("5.000,01")
+    await expect(internal).toHaveText("Valor interno: 5000.01")
+
+    await input.press("ControlOrMeta+A")
+    await page.keyboard.type("2550")
+    await page.keyboard.press("Tab")
+    await expect(input).toHaveValue("25,50")
+    await expect(alert).toHaveText("O valor mínimo é R$ 100,00.")
+  })
+
+  test("PercentageInput: digitar além do teto não troca o número", async ({ page }) => {
+    await gotoStory(page, "domain-percentageinput--default")
+    const input = page.getByRole("textbox", { name: /Comissão/ })
+    await input.press("End")
+    await page.keyboard.type("12345")
+    await expect(input).toHaveValue("123,45")
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("alert")).toHaveText("O valor máximo é 100,00%.")
+  })
+
+  test("PercentageInput: abaixo do mínimo o erro aparece ao sair do campo", async ({ page }) => {
+    await gotoStory(page, "domain-percentageinput--min-max")
+    const input = page.getByRole("textbox", { name: /Entrada/ })
+    await input.press("End")
+    await page.keyboard.type("250")
+    await page.keyboard.press("Tab")
+    await expect(input).toHaveValue("2,50")
+    await expect(page.getByRole("alert")).toHaveText("O valor mínimo é 10,00%.")
+    await expect(page.getByText(/^Valor interno:/)).toHaveText("Valor interno: 2.5")
+  })
+})
+
+test.describe("CurrencyInput: colar", () => {
+  test.beforeEach(async ({ context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"])
+  })
+
+  const pastes = [
+    { text: "1500", shown: "1.500,00", value: "1500" },
+    { text: "1.500", shown: "1.500,00", value: "1500" },
+    { text: "350.000", shown: "350.000,00", value: "350000" },
+    { text: "1500,5", shown: "1.500,50", value: "1500.5" },
+    { text: "2350.9", shown: "2.350,90", value: "2350.9" },
+    { text: "1.500,00", shown: "1.500,00", value: "1500" },
+    { text: "1500.00", shown: "1.500,00", value: "1500" },
+    { text: "R$ 2.350,90", shown: "2.350,90", value: "2350.9" },
+  ]
+
+  for (const item of pastes) {
+    test(`"${item.text}" colado vira ${item.shown}`, async ({ page }) => {
+      await gotoStory(page, "domain-currencyinput--playground")
+      const input = page.getByRole("textbox", { name: /Valor do contrato/ })
+      await input.click()
+      await paste(page, item.text)
+      await expect(input).toHaveValue(item.shown)
+      await expect(page.getByText(`Valor interno: ${item.value}`, { exact: true })).toBeVisible()
+    })
+  }
+})
+
+test.describe("PercentageInput: editar no meio", () => {
+  test("o cursor fica no lugar ao apagar e redigitar um dígito no meio", async ({ page }) => {
+    await gotoStory(page, "domain-percentageinput--default")
+    const input = page.getByRole("textbox", { name: /Comissão/ })
+    await input.pressSequentially("1234")
+    await expect(input).toHaveValue("12,34")
+    // "1|2,34" → Backspace → "|2,34" → digita 3 → "3|2,34"
+    await caretAt(input, 1)
+    await page.keyboard.press("Backspace")
+    await expect(input).toHaveValue("2,34")
+    expect(await caretOf(input)).toBe(0)
+    await page.keyboard.type("3")
+    await expect(input).toHaveValue("32,34")
+    expect(await caretOf(input)).toBe(1)
+  })
+})
+
+test.describe("PercentageInput: casas decimais", () => {
+  test("cada campo mostra e preenche as casas que tem", async ({ page }) => {
+    await gotoStory(page, "domain-percentageinput--decimals")
+    const two = page.getByRole("textbox", { name: "Duas casas" })
+    const one = page.getByRole("textbox", { name: "Uma casa" })
+    const none = page.getByRole("textbox", { name: "Sem casas" })
+    await expect(two).toHaveValue("12,50")
+    await expect(one).toHaveValue("12,5")
+    await expect(none).toHaveValue("12")
+
+    for (const input of [two, one, none]) {
+      await input.press("ControlOrMeta+A")
+      await page.keyboard.type("375")
+    }
+    await expect(two).toHaveValue("3,75")
+    await expect(one).toHaveValue("37,5")
+    await expect(none).toHaveValue("375")
+    await expect(page.getByText("Valores internos: 3.75 / 37.5 / 375")).toBeVisible()
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("alert")).toHaveText("O valor máximo é 100%.")
+  })
+})
+
+test.describe("PercentageInput: colar", () => {
+  test.beforeEach(async ({ context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"])
+  })
+
+  const pastes = [
+    { text: "12,5", shown: "12,50" },
+    { text: "12.5", shown: "12,50" },
+    { text: "7", shown: "7,00" },
+    { text: "33,33%", shown: "33,33" },
+  ]
+
+  for (const item of pastes) {
+    test(`"${item.text}" colado vira ${item.shown}`, async ({ page }) => {
+      await gotoStory(page, "domain-percentageinput--default")
+      const input = page.getByRole("textbox", { name: /Comissão/ })
+      await input.click()
+      await paste(page, item.text)
+      await expect(input).toHaveValue(item.shown)
+    })
+  }
+})
+
 test.describe("PercentageInput", () => {
-  test("clamps value above max", async ({ page }) => {
-    await page.goto(story("domain-percentageinput--clamp-demo"))
-    const input = page.getByRole("textbox").first()
-    await input.fill("")
-    await input.type("99999")
-    // Default max=100 → clamp to 100,00
-    const value = await input.inputValue()
-    const numeric = Number.parseFloat(value.replace(".", "").replace(",", "."))
-    expect(numeric).toBeLessThanOrEqual(100)
+  test("keeps a value above max and marks the field invalid", async ({ page }) => {
+    await gotoStory(page, "domain-percentageinput--default")
+    const input = page.getByRole("textbox", { name: /Comissão/ })
+    await expect(input).toHaveValue("0,00")
+    await input.press("End")
+    await input.pressSequentially("99999")
+    await input.blur()
+    await expect(input).toHaveValue("999,99")
+    await expect(input).toHaveAttribute("aria-invalid", "true")
+    await expect(page.getByRole("alert")).toHaveText("O valor máximo é 100,00%.")
   })
 })
 
 test.describe("MultiInput", () => {
   test("Enter commits a tag", async ({ page }) => {
-    await page.goto(story("domain-multiinput--string-tags"))
+    await gotoStory(page, "domain-multiinput--string-tags")
     const input = page.getByRole("textbox").first()
     await input.fill("playwright")
     await input.press("Enter")
@@ -37,7 +763,7 @@ test.describe("MultiInput", () => {
   })
 
   test("Backspace removes last tag from empty input", async ({ page }) => {
-    await page.goto(story("domain-multiinput--string-tags"))
+    await gotoStory(page, "domain-multiinput--string-tags")
     const input = page.getByRole("textbox").first()
     await input.fill("removeme")
     await input.press("Enter")
@@ -48,9 +774,303 @@ test.describe("MultiInput", () => {
   })
 })
 
+test.describe("MultiInput: nome acessível e teclado", () => {
+  test("o rótulo visível nomeia o campo de texto e o grupo", async ({ page }) => {
+    await gotoStory(page, "domain-multiinput--string-tags")
+    await expect(page.locator('[data-slot="multi-input"]')).toMatchAriaSnapshot(`
+      - group "Tags do processo":
+        - text: urgente
+        - button "Remover urgente"
+        - text: fiscal
+        - button "Remover fiscal"
+        - textbox "Tags do processo"
+    `)
+  })
+
+  test("Enter e Espaço no botão de remover tiram o item e o foco segue para o vizinho", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-multiinput--string-tags")
+    const group = page.getByRole("group", { name: "Tags do processo" })
+    await page.keyboard.press("Tab")
+    await expect(group.getByRole("button", { name: "Remover urgente" })).toBeFocused()
+
+    await page.keyboard.press("Enter")
+    await expect(group.getByText("urgente")).toHaveCount(0)
+    await expect(group.getByRole("button", { name: "Remover fiscal" })).toBeFocused()
+
+    await page.keyboard.press("Space")
+    await expect(group.getByRole("button")).toHaveCount(0)
+    await expect(page.getByRole("textbox", { name: "Tags do processo" })).toBeFocused()
+  })
+
+  test("Backspace e Delete no botão de remover também tiram o item", async ({ page }) => {
+    await gotoStory(page, "domain-multiinput--string-tags")
+    const group = page.getByRole("group", { name: "Tags do processo" })
+    await page.keyboard.press("Tab")
+    await page.keyboard.press("Tab")
+    await expect(group.getByRole("button", { name: "Remover fiscal" })).toBeFocused()
+
+    await page.keyboard.press("Backspace")
+    await expect(group.getByText("fiscal")).toHaveCount(0)
+    await expect(group.getByRole("button", { name: "Remover urgente" })).toBeFocused()
+
+    await page.keyboard.press("Delete")
+    await expect(group.getByRole("button")).toHaveCount(0)
+    await expect(page.getByRole("textbox", { name: "Tags do processo" })).toBeFocused()
+  })
+
+  test("o clique no × remove o item sem tirar o foco do campo de texto", async ({ page }) => {
+    await gotoStory(page, "domain-multiinput--string-tags")
+    const input = page.getByRole("textbox", { name: "Tags do processo" })
+    await input.click()
+    await input.pressSequentially("pendente")
+    await page.getByRole("button", { name: "Remover urgente" }).click()
+    await expect(page.getByRole("button", { name: "Remover urgente" })).toHaveCount(0)
+    // O texto em digitação continua no campo, sem virar item.
+    await expect(input).toBeFocused()
+    await expect(input).toHaveValue("pendente")
+    await expect(page.getByRole("button", { name: "Remover pendente" })).toHaveCount(0)
+  })
+})
+
+test.describe("MultiInput: alvo de remover", () => {
+  test("o × tem área de toque de pelo menos 24 por 24 px, sem crescer o item", async ({ page }) => {
+    await gotoStory(page, "domain-multiinput--string-tags")
+    const remove = page.getByRole("button", { name: "Remover urgente" })
+    const chip = page.locator('[data-slot="multi-input-item"]').first()
+    const chipHeightBefore = (await chip.boundingBox())?.height ?? 0
+    const box = await remove.boundingBox()
+    if (box == null) throw new Error("botão de remover sem caixa")
+    const cx = box.x + box.width / 2
+    const cy = box.y + box.height / 2
+    // Os quatro cantos de um quadrado de 24px em volta do centro caem no botão.
+    const hits = await page.evaluate(
+      ({ cx, cy }) =>
+        [
+          [cx - 11.5, cy - 11.5],
+          [cx + 11.5, cy - 11.5],
+          [cx - 11.5, cy + 11.5],
+          [cx + 11.5, cy + 11.5],
+        ].map(([x, y]) => {
+          const el = document.elementFromPoint(x as number, y as number)
+          return el?.closest("button")?.getAttribute("aria-label") ?? null
+        }),
+      { cx, cy },
+    )
+    expect(hits).toEqual(Array(4).fill("Remover urgente"))
+    // O ícone continua pequeno e o item tem a altura de antes.
+    expect(box.width).toBeLessThanOrEqual(16)
+    expect(chipHeightBefore).toBeLessThanOrEqual(24)
+
+    // Um clique no canto da área remove o item.
+    await page.mouse.click(cx + 11, cy - 11)
+    await expect(remove).toHaveCount(0)
+  })
+})
+
+test.describe("MultiInput: tamanho", () => {
+  test("sm, md e lg medem 32, 40 e 44px com uma linha, e crescem com mais itens", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-multiinput--sizes")
+    const heights: Record<string, number> = {}
+    for (const size of ["sm", "md", "lg"]) {
+      const box = await page.getByRole("group", { name: `Tags (${size})` }).boundingBox()
+      heights[size] = box?.height ?? 0
+    }
+    expect(heights).toEqual({ sm: 32, md: 40, lg: 44 })
+
+    // Vazia, a caixa tem a mesma altura.
+    await page.getByRole("button", { name: "Remover urgente" }).first().click()
+    expect((await page.getByRole("group", { name: "Tags (sm)" }).boundingBox())?.height).toBe(32)
+
+    const input = page.getByRole("textbox", { name: "Tags (md)" })
+    await input.fill("um, dois, tres, quatro, cinco, seis, sete, oito, nove, dez")
+    await input.press("Enter")
+    const grown = (await page.getByRole("group", { name: "Tags (md)" }).boundingBox())?.height
+    expect(grown).toBeGreaterThan(40)
+  })
+})
+
+test.describe("MultiInput: limite de itens", () => {
+  test("com a lista cheia, o item novo é recusado e os antigos ficam", async ({ page }) => {
+    await gotoStory(page, "domain-multiinput--max-items-3")
+    const group = page.getByRole("group", { name: "Top 3 prioridades" })
+    const input = page.getByRole("textbox", { name: "Top 3 prioridades" })
+    await input.fill("tres")
+    await input.press("Enter")
+    await expect(group.getByRole("button", { name: /^Remover / })).toHaveCount(3)
+
+    await input.fill("quatro")
+    await input.press("Enter")
+    await expect(group.getByRole("button", { name: /^Remover / })).toHaveCount(3)
+    for (const item of ["um", "dois", "tres"]) {
+      await expect(group.getByRole("button", { name: `Remover ${item}` })).toBeVisible()
+    }
+    // O texto recusado continua no campo e o motivo aparece no aviso.
+    await expect(input).toHaveValue("quatro")
+    await expect(page.getByText("Limite de 3 itens atingido.")).toBeVisible()
+  })
+})
+
+test.describe("MultiInput: modo número", () => {
+  test("número malformado é recusado inteiro e fica no campo", async ({ page }) => {
+    await gotoStory(page, "domain-multiinput--number-list")
+    const group = page.getByRole("group", { name: "Páginas relevantes" })
+    const input = page.getByRole("textbox", { name: "Páginas relevantes" })
+    await expect(page.getByText("Array: [35, 10, 22]")).toBeVisible()
+
+    for (const text of ["10.000", "3,5", "12x"]) {
+      await input.fill(text)
+      await input.press("Enter")
+      await expect(input).toHaveValue(text)
+      await expect(group.getByRole("button", { name: /^Remover / })).toHaveCount(3)
+    }
+
+    await input.fill("7, 40")
+    await input.press("Enter")
+    await expect(input).toHaveValue("")
+    await expect(page.getByText("Array: [7, 10, 22, 35, 40]")).toBeVisible()
+  })
+})
+
+test.describe("FileUpload: teclado e leitor de tela", () => {
+  test("Tab para na dropzone uma vez só; o input de arquivo oculto não recebe foco", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-fileupload--with-camera")
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("button", { name: "Fotografar documento" })).toBeFocused()
+    // A próxima parada é o botão da câmera, não o <input type="file"> de 1×1 px.
+    await page.keyboard.press("Tab")
+    await expect(page.getByRole("button", { name: "Capturar foto" })).toBeFocused()
+    const fileInputIsTabbable = await page
+      .locator('[data-slot="file-upload"] input[type=file]')
+      .evaluate((el: HTMLInputElement) => el.tabIndex >= 0)
+    expect(fileInputIsTabbable).toBe(false)
+  })
+
+  test("a dropzone é nomeada pelo rótulo e descrita pela dica e pelo erro", async ({ page }) => {
+    await gotoStory(page, "domain-fileupload--multiple-with-limit")
+    await expect(page.locator('[data-slot="file-upload"]')).toMatchAriaSnapshot(`
+      - button "Comprovantes"
+    `)
+    const dropzone = page.getByRole("button", { name: "Comprovantes" })
+    await expect(dropzone).toHaveAccessibleDescription(
+      "Até 3 arquivos · imagem ou PDF · 5 MB cada.",
+    )
+
+    await gotoStory(page, "domain-fileupload--with-error")
+    await expect(
+      page.getByRole("button", { name: "Documentos obrigatórios" }),
+    ).toHaveAccessibleDescription("Pelo menos um documento é obrigatório.")
+  })
+
+  for (const id of [
+    "domain-fileupload--default",
+    "domain-fileupload--with-error",
+    "domain-fileupload--read-only",
+    "domain-fileupload--append-only",
+  ]) {
+    test(`${id}: sem violação de acessibilidade, com todas as regras ligadas`, async ({ page }) => {
+      await gotoStory(page, id)
+      await expectNoA11yViolations(page, "#storybook-root")
+    })
+  }
+})
+
+test.describe("FileUpload: arquivo recusado", () => {
+  test("sem onReject, o motivo da recusa aparece embaixo da dropzone", async ({ page }) => {
+    await gotoStory(page, "domain-fileupload--image-only")
+    const input = page.locator('[data-slot="file-upload"] input[type=file]')
+    await input.setInputFiles([
+      { name: "contrato.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4") },
+      { name: "planta.png", mimeType: "image/png", buffer: Buffer.alloc(3 * 1024 * 1024) },
+    ])
+    const reasons = page.locator('[data-slot="file-upload-rejections"]')
+    await expect(reasons.getByRole("listitem")).toHaveText([
+      "contrato.pdf: tipo de arquivo não aceito",
+      /^planta\.png: maior que 2,0 MB$/,
+    ])
+    // Fica logo abaixo da dropzone, e a descreve para o leitor de tela.
+    const dropzone = page.getByRole("button", { name: "Imagens do imóvel" })
+    await expect(dropzone).toHaveAccessibleDescription(/contrato\.pdf: tipo de arquivo não aceito/)
+    const dropzoneBox = await dropzone.boundingBox()
+    const reasonsBox = await reasons.boundingBox()
+    expect(reasonsBox?.y ?? 0).toBeGreaterThanOrEqual(
+      (dropzoneBox?.y ?? 0) + (dropzoneBox?.height ?? 0),
+    )
+    await expectNoA11yViolations(page, "#storybook-root")
+
+    // A próxima escolha aceita limpa o aviso.
+    await input.setInputFiles({
+      name: "fachada.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("png"),
+    })
+    await expect(reasons).toHaveCount(0)
+    await expect(page.getByText("fachada.png")).toBeVisible()
+  })
+})
+
+test.describe("FileUpload: abrir um arquivo da lista", () => {
+  const fileInput = (page: Page) => page.locator('[data-slot="file-upload"] input[type=file]')
+
+  test("um .html escolhido é baixado e o script dele não roda na origem da aplicação", async ({
+    page,
+    context,
+  }) => {
+    await gotoStory(page, "domain-fileupload--default")
+    await page.evaluate(() => localStorage.setItem("segredo", "token-da-sessao"))
+    await fileInput(page).setInputFiles({
+      name: "relatorio.html",
+      mimeType: "text/html",
+      buffer: Buffer.from(
+        "<script>document.title = 'leu: ' + localStorage.getItem('segredo')</script>",
+      ),
+    })
+    await expect(page.getByRole("button", { name: /em nova aba/ })).toHaveCount(0)
+
+    const download = page.waitForEvent("download")
+    await page.getByRole("button", { name: "Baixar relatorio.html" }).click()
+    expect((await download).suggestedFilename()).toBe("relatorio.html")
+    // Nenhuma aba foi aberta com o conteúdo do arquivo.
+    expect(context.pages()).toHaveLength(1)
+  })
+
+  test("um PDF abre em outra aba", async ({ page, context }) => {
+    await gotoStory(page, "domain-fileupload--default")
+    await fileInput(page).setInputFiles({
+      name: "contrato.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("%PDF-1.4\n%%EOF"),
+    })
+    // The headless browser has no PDF viewer, so the new tab may stay blank:
+    // what is checked is that a tab opens, and with what address.
+    await page.evaluate(() => {
+      const open = window.open.bind(window)
+      const opened: string[] = []
+      Object.assign(window, { openedUrls: opened })
+      window.open = (url, ...rest) => {
+        opened.push(String(url))
+        return open(url, ...rest)
+      }
+    })
+    const popup = context.waitForEvent("page")
+    await page.getByRole("button", { name: "Abrir contrato.pdf em nova aba" }).click()
+    await popup
+    const opened = await page.evaluate(
+      () => (window as unknown as { openedUrls: string[] }).openedUrls,
+    )
+    expect(opened).toHaveLength(1)
+    expect(opened[0]).toMatch(/^blob:/)
+  })
+})
+
 test.describe("InputOTP", () => {
   test("typing 6 digits fires onComplete", async ({ page }) => {
-    await page.goto(story("domain-inputotp--default"))
+    await gotoStory(page, "domain-inputotp--default")
     // input-otp library renders an invisible input that captures keystrokes
     const input = page.getByRole("textbox").first()
     await input.fill("123456")
@@ -59,5 +1079,231 @@ test.describe("InputOTP", () => {
     // First slot has "1"
     await expect(slots.nth(0)).toContainText("1")
     await expect(slots.nth(5)).toContainText("6")
+  })
+})
+
+/** The opacity a pixel of `el` ends up with: the product of every ancestor's. */
+const effectiveOpacity = (el: Locator) =>
+  el.evaluate((node) => {
+    let opacity = 1
+    for (let n: Element | null = node; n; n = n.parentElement) {
+      opacity *= Number.parseFloat(getComputedStyle(n).opacity)
+    }
+    return opacity
+  })
+
+test.describe("InputOTP: desabilitado e erro", () => {
+  test("desabilitado, o campo esmaece uma vez só (0,5), não duas", async ({ page }) => {
+    await gotoStory(page, "domain-inputotp--disabled")
+    const slot = page.locator('[data-slot="input-otp-slot"]').first()
+    await expect(slot).toBeVisible()
+    expect(await effectiveOpacity(slot)).toBeCloseTo(0.5, 2)
+    // O rótulo esmaece junto, do mesmo tanto.
+    expect(await effectiveOpacity(page.getByText("Código verificado"))).toBeCloseTo(0.5, 2)
+  })
+  test("com erro, as caixas ficam com a borda vermelha do erro", async ({ page }) => {
+    await gotoStory(page, "domain-inputotp--with-error")
+    const message = page.getByRole("alert")
+    const errorColor = await message.evaluate((el) => getComputedStyle(el).color)
+    const slots = page.locator('[data-slot="input-otp-slot"]')
+    await expect(slots).toHaveCount(6)
+    for (const i of [0, 3, 5]) {
+      await expect(slots.nth(i)).toHaveCSS("border-top-color", errorColor)
+      await expect(slots.nth(i)).toHaveCSS("border-bottom-color", errorColor)
+    }
+    await expect(slots.first()).toHaveCSS("border-left-color", errorColor)
+    await expect(slots.last()).toHaveCSS("border-right-color", errorColor)
+  })
+})
+
+// These stories had axe's color-contrast rule switched off. It is on again:
+// every rule the Storybook test-runner enforces, in both themes.
+test.describe("Acessibilidade sem regra desligada, nos dois temas", () => {
+  for (const id of [
+    "domain-multiinput--with-error",
+    "domain-multiinput--disabled",
+    "domain-inputotp--with-error",
+  ]) {
+    test(`${id}: sem violação no tema claro e no escuro`, async ({ page }) => {
+      await gotoStory(page, id)
+      await expectNoA11yViolations(page, "#storybook-root")
+      await page.evaluate(() => {
+        const style = document.createElement("style")
+        style.textContent = "*,*::before,*::after{transition:none!important}"
+        document.head.append(style)
+        document.documentElement.classList.add("dark")
+      })
+      await expectNoA11yViolations(page, "#storybook-root")
+    })
+  }
+})
+
+test.describe("FileUpload: form nativo", () => {
+  const id = "domain-fileupload--native-form"
+  const picker = 'input[type="file"]:not([name])'
+
+  test("o FormData recebe os arquivos da lista, e não os removidos", async ({ page }) => {
+    await gotoStory(page, id)
+    await page.locator(picker).setInputFiles([
+      { name: "contrato.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4") },
+      { name: "planta.png", mimeType: "image/png", buffer: Buffer.from("png") },
+    ])
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByTestId("form-data")).toHaveText("contrato.pdf, planta.png")
+
+    await page.getByRole("button", { name: "Remover contrato.pdf" }).click()
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByTestId("form-data")).toHaveText("planta.png")
+  })
+
+  test("required: vazio, o form não é enviado, o aviso aparece e a dropzone fica com o foco", async ({
+    page,
+  }) => {
+    await gotoStory(page, id)
+    await page.getByRole("button", { name: "Enviar" }).click()
+    const dropzone = page.getByRole("button", { name: "Anexar documentos (obrigatório)" })
+    await expect(dropzone).toBeFocused()
+    await expect(page.getByText("Selecione um arquivo.")).toBeVisible()
+    await expect(dropzone).toHaveAccessibleDescription(/Selecione um arquivo\./)
+    await expect(page.getByTestId("form-data")).toHaveText("")
+
+    await page.locator(picker).setInputFiles({
+      name: "contrato.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("%PDF-1.4"),
+    })
+    await expect(page.getByText("Selecione um arquivo.")).toHaveCount(0)
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByTestId("form-data")).toHaveText("contrato.pdf")
+  })
+})
+
+// O reset do formulário esvazia todo <input type="file">. A lista do
+// FileUpload ficava na tela e o envio seguinte saía sem nenhum arquivo.
+test.describe("FileUpload: reset do formulário", () => {
+  const picker = 'input[type="file"]:not([name])'
+  const files = [
+    { name: "contrato.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4") },
+    { name: "planta.png", mimeType: "image/png", buffer: Buffer.from("png") },
+  ]
+
+  test("não controlado: a lista esvazia junto com o form, e o required volta a valer", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-fileupload--native-form")
+    await page.locator(picker).setInputFiles(files)
+    await expect(page.getByRole("button", { name: "Remover contrato.pdf" })).toBeVisible()
+
+    await page.getByRole("button", { name: "Limpar" }).click()
+    await expect(page.getByRole("button", { name: "Remover contrato.pdf" })).toHaveCount(0)
+    expect(
+      await page
+        .locator('input[name="anexos"]')
+        .evaluate((el) => (el as HTMLInputElement).files?.length),
+    ).toBe(0)
+
+    // Vazia de verdade: o required barra o envio.
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByText("Selecione um arquivo.")).toBeVisible()
+    await expect(page.getByTestId("form-data")).toHaveText("")
+
+    // E um arquivo novo vai sozinho, sem sobras da lista anterior.
+    await page.locator(picker).setInputFiles(files[1] as (typeof files)[number])
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByTestId("form-data")).toHaveText("planta.png")
+  })
+
+  test("form.reset() chamado por código também esvazia", async ({ page }) => {
+    await gotoStory(page, "domain-fileupload--native-form")
+    await page.locator(picker).setInputFiles(files)
+    await page.locator("form").evaluate((form) => (form as HTMLFormElement).reset())
+    await expect(page.getByRole("button", { name: "Remover contrato.pdf" })).toHaveCount(0)
+  })
+
+  test("controlado: a lista continua e o FormData leva os arquivos da tela", async ({ page }) => {
+    await gotoStory(page, "domain-fileupload--native-form-controlled")
+    await page.locator(picker).setInputFiles(files)
+    await page.getByRole("button", { name: "Redefinir outros campos" }).click()
+    await expect(page.getByRole("button", { name: "Remover contrato.pdf" })).toBeVisible()
+    await page.getByRole("button", { name: "Enviar" }).click()
+    await expect(page.getByTestId("form-data")).toHaveText("contrato.pdf, planta.png")
+  })
+})
+
+test.describe("FileUpload: hover na miniatura", () => {
+  const cases = [
+    { id: "domain-fileupload--read-only", tile: "Abrir contrato.pdf em nova aba" },
+    { id: "domain-fileupload--with-download", tile: "Ampliar foto.png" },
+  ]
+  for (const item of cases) {
+    test(`${item.tile}: o hover pinta uma camada por cima, sem apagar a miniatura`, async ({
+      page,
+    }) => {
+      await gotoStory(page, item.id)
+      const tile = page.getByRole("button", { name: item.tile })
+      const layer = tile.locator('[data-slot="file-upload-tile-layer"]')
+      await expect(layer).toHaveCSS("background-image", "none")
+      await tile.hover()
+      // Antes o hover baixava a opacidade da miniatura inteira para 0,8.
+      await expect(tile).toHaveCSS("opacity", "1")
+      await expect(layer).not.toHaveCSS("background-image", "none")
+      // A camada cobre a miniatura toda, imagem incluída.
+      const [tileBox, layerBox] = await Promise.all([tile.boundingBox(), layer.boundingBox()])
+      expect(layerBox).toEqual(tileBox)
+    })
+  }
+})
+
+test.describe("Campos somente leitura", () => {
+  test("MultiInput: focável, sem ×, nada entra pelo teclado, e a lista vai no formulário", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-multiinput--read-only")
+    const input = page.getByRole("textbox", { name: "Áreas de atuação" })
+    await input.focus()
+    await expect(input).toBeFocused()
+    await page.keyboard.type("penal")
+    await page.keyboard.press("Enter")
+    await page.keyboard.press("Backspace")
+    await expect(page.locator('[data-slot="multi-input-item"]')).toHaveCount(3)
+    await expect(page.locator('[data-slot="multi-input-remove"]')).toHaveCount(0)
+    const sent = await page.evaluate(() =>
+      new FormData(document.querySelector("form") as HTMLFormElement).get("areas"),
+    )
+    expect(sent).toBe("civil,trabalhista,tributário")
+    await expectNoA11yViolations(page, "#storybook-root")
+  })
+
+  test("InputOTP: o código não muda ao digitar ou apagar, e vai no formulário", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-inputotp--read-only")
+    const input = page.locator('[data-slot="input-otp"]')
+    await input.focus()
+    await page.keyboard.press("Backspace")
+    await page.keyboard.type("111")
+    await expect(input).toHaveValue("482913")
+    const sent = await page.evaluate(() =>
+      new FormData(document.querySelector("form") as HTMLFormElement).get("codigo"),
+    )
+    expect(sent).toBe("482913")
+    await expectNoA11yViolations(page, "#storybook-root")
+  })
+
+  test("FileUpload: sem dropzone nem remover, abre o arquivo e mostra a lista vazia", async ({
+    page,
+  }) => {
+    await gotoStory(page, "domain-fileupload--read-only")
+    await expect(page.getByRole("button", { name: /Arraste|Clique|Selecione/ })).toHaveCount(0)
+    await expect(page.getByRole("button", { name: /Remover/ })).toHaveCount(0)
+    await expect(page.getByRole("list", { name: "Anexos do processo" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Abrir contrato.pdf em nova aba" })).toBeVisible()
+    await expect(page.getByText("Nenhum arquivo.")).toBeVisible()
+    const sent = await page.evaluate(() =>
+      new FormData(document.querySelector("form") as HTMLFormElement)
+        .getAll("anexos")
+        .map((f) => (f as File).name),
+    )
+    expect(sent).toEqual(["contrato.pdf"])
   })
 })

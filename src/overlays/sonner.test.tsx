@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { Toaster, toast } from "./sonner"
 
@@ -98,6 +98,75 @@ describe("Toaster", () => {
     expect(toastEl).toHaveAttribute("data-rich-colors", "true")
   })
 
+  it("maps Sonner's status colours to the strong fills of the palette", async () => {
+    render(<Toaster richColors />)
+    toast.success("fill-msg")
+    const text = await screen.findByText("fill-msg")
+    const toaster = text.closest("[data-sonner-toaster]") as HTMLElement
+    expect(toaster.style.getPropertyValue("--success-bg")).toBe("var(--success)")
+    expect(toaster.style.getPropertyValue("--success-text")).toBe("var(--success-foreground)")
+    expect(toaster.style.getPropertyValue("--warning-text")).toBe("var(--warning-foreground)")
+    expect(toaster.style.getPropertyValue("--error-bg")).toBe("var(--destructive)")
+    expect(toaster.style.getPropertyValue("--info-bg")).toBe("var(--info)")
+  })
+
+  // The consumer's props used to replace the library's: one `toastOptions`
+  // and the toast lost `group/toast`, which is what colours its icon.
+  describe("consumer props are merged with the library's", () => {
+    const toastOf = async (message: string) =>
+      (await screen.findByText(message)).closest("[data-sonner-toast]") as HTMLElement
+    const toasterOf = (toastElement: HTMLElement) =>
+      toastElement.closest("[data-sonner-toaster]") as HTMLElement
+
+    it("toastOptions without classNames keeps the library's toast class", async () => {
+      render(<Toaster richColors toastOptions={{ duration: 8000 }} />)
+      toast.success("merge-duration")
+      expect(await toastOf("merge-duration")).toHaveClass("group/toast")
+    })
+
+    it("toastOptions.classNames adds to the library's classes, part by part", async () => {
+      render(
+        <Toaster
+          toastOptions={{ classNames: { toast: "meu-toast", description: "minha-descricao" } }}
+        />,
+      )
+      toast("merge-classes", { description: "detalhe" })
+      const element = await toastOf("merge-classes")
+      expect(element).toHaveClass("group/toast", "meu-toast")
+      expect(screen.getByText("detalhe")).toHaveClass("minha-descricao")
+    })
+
+    it("style adds to the library's variables and wins where both set one", async () => {
+      render(
+        <Toaster style={{ "--width": "420px", "--normal-bg": "tomato" } as React.CSSProperties} />,
+      )
+      toast("merge-style")
+      const toaster = toasterOf(await toastOf("merge-style"))
+      expect(toaster.style.getPropertyValue("--width")).toBe("420px")
+      expect(toaster.style.getPropertyValue("--normal-bg")).toBe("tomato")
+      // Untouched ones are still the library's.
+      expect(toaster.style.getPropertyValue("--normal-text")).toBe("var(--popover-foreground)")
+      expect(toaster.style.getPropertyValue("--error-bg")).toBe("var(--destructive)")
+      expect(toaster.style.zIndex).toBe("var(--z-toast)")
+    })
+
+    it("icons replaces only the icons it names", async () => {
+      render(<Toaster icons={{ success: <span data-testid="meu-icone" /> }} />)
+      toast.success("merge-icon-success")
+      toast.error("merge-icon-error")
+      const success = await toastOf("merge-icon-success")
+      const error = await toastOf("merge-icon-error")
+      expect(success.querySelector('[data-testid="meu-icone"]')).not.toBeNull()
+      expect(error.querySelector("svg.lucide-octagon-x")).not.toBeNull()
+    })
+
+    it("className adds to the library's", async () => {
+      render(<Toaster className="meu-toaster" />)
+      toast("merge-class")
+      expect(toasterOf(await toastOf("merge-class"))).toHaveClass("toaster", "group", "meu-toaster")
+    })
+  })
+
   it("dismisses a toast by id via toast.dismiss(id)", async () => {
     render(<Toaster />)
     let id: string | number = ""
@@ -113,12 +182,119 @@ describe("Toaster", () => {
     })
   })
 
+  // An error vanished after Sonner's 4s, before it could be read or acted on,
+  // and a toast had no close button unless the consumer asked for one; the
+  // labels were Sonner's English ones.
+  describe("errors stay, every toast can be closed, labels in Portuguese", () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    /** Lets Sonner's timers run past its 4s lifetime and the exit animation. */
+    const waitPastLifetime = () =>
+      act(async () => {
+        await vi.advanceTimersByTimeAsync(10_000)
+      })
+
+    it("toast.error stays until it is closed; the other types still expire", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      render(<Toaster />)
+      act(() => {
+        toast.error("erro-fica")
+        toast.success("sucesso-sai")
+      })
+      await screen.findByText("erro-fica")
+      await screen.findByText("sucesso-sai")
+      await waitPastLifetime()
+      expect(screen.getByText("erro-fica")).toBeInTheDocument()
+      expect(screen.queryByText("sucesso-sai")).not.toBeInTheDocument()
+    })
+
+    it("an explicit duration on toast.error still wins", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      render(<Toaster />)
+      act(() => {
+        toast.error("erro-com-prazo", { duration: 3000 })
+      })
+      await screen.findByText("erro-com-prazo")
+      await waitPastLifetime()
+      expect(screen.queryByText("erro-com-prazo")).not.toBeInTheDocument()
+    })
+
+    it("the error of toast.promise stays too, its success does not", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      render(<Toaster />)
+      act(() => {
+        toast.promise(Promise.reject(new Error("x")), {
+          loading: "enviando-1",
+          error: (e: Error) => `falhou-${e.message}`,
+        })
+        toast.promise(Promise.resolve("ok"), { loading: "enviando-2", success: "foi" })
+      })
+      await screen.findByText("falhou-x")
+      await screen.findByText("foi")
+      await waitPastLifetime()
+      expect(screen.getByText("falhou-x")).toBeInTheDocument()
+      expect(screen.queryByText("foi")).not.toBeInTheDocument()
+    })
+
+    it("an extended error result of toast.promise keeps its own options", async () => {
+      render(<Toaster />)
+      act(() => {
+        toast.promise(Promise.reject(new Error("x")), {
+          loading: "enviando-3",
+          error: { message: "falhou-estendido", description: "detalhe-estendido" },
+        })
+      })
+      expect(await screen.findByText("falhou-estendido")).toBeInTheDocument()
+      expect(screen.getByText("detalhe-estendido")).toBeInTheDocument()
+    })
+
+    it("shows a close button by default, labelled in Portuguese", async () => {
+      render(<Toaster />)
+      toast("com-x")
+      await screen.findByText("com-x")
+      expect(screen.getByRole("button", { name: "Fechar notificação" })).toBeInTheDocument()
+      expect(screen.queryByLabelText("Close toast")).not.toBeInTheDocument()
+    })
+
+    it("closeButton={false} still hides it", async () => {
+      render(<Toaster closeButton={false} />)
+      toast("sem-x")
+      await screen.findByText("sem-x")
+      expect(screen.queryByRole("button", { name: "Fechar notificação" })).not.toBeInTheDocument()
+    })
+
+    it("names the notification region in Portuguese, with the shortcut", async () => {
+      render(<Toaster />)
+      toast("regiao")
+      await screen.findByText("regiao")
+      const region = document.querySelector("section[aria-live]") as HTMLElement
+      expect(region.getAttribute("aria-label")).toMatch(/^Notificações /)
+      expect(region.getAttribute("aria-label")).not.toMatch(/Notifications/)
+    })
+
+    it("the labels can still be changed", async () => {
+      render(
+        <Toaster
+          containerAriaLabel="Avisos"
+          toastOptions={{ closeButtonAriaLabel: "Dispensar aviso" }}
+        />,
+      )
+      toast("rotulos")
+      await screen.findByText("rotulos")
+      expect(screen.getByRole("button", { name: "Dispensar aviso" })).toBeInTheDocument()
+      expect(document.querySelector("section[aria-live]")?.getAttribute("aria-label")).toMatch(
+        /^Avisos /,
+      )
+    })
+  })
+
   it("renders a close button when closeButton is enabled and clicking it dismisses", async () => {
     render(<Toaster closeButton />)
     toast("with-close")
     await screen.findByText("with-close")
-    // Sonner's close button carries an aria-label of "Close toast" by default.
-    const closeBtn = await screen.findByLabelText("Close toast")
+    const closeBtn = await screen.findByLabelText("Fechar notificação")
     // Use fireEvent.click here so we skip the pointerdown phase — sonner calls
     // event.target.setPointerCapture() which is not implemented in jsdom and
     // would otherwise raise an unhandled exception (harmless but noisy).

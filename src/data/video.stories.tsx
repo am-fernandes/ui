@@ -24,6 +24,10 @@ const meta = {
           "- `loop` — repete em loop.",
           '- `captions: VideoCaptionTrack[]` — legendas com `{ src, srcLang, label, default? }`. Renderiza um `<track kind="captions">` por entrada.',
           "- `preload` — `'none'`, `'metadata'` (default) ou `'auto'`. Aplicado apenas quando o vídeo entra no viewport.",
+          "- `objectFit` — `'contain'` (default: mostra o quadro inteiro, sem cortar vídeo vertical de celular), `'cover'` ou `'fill'`. O `className` vai para o invólucro.",
+          '- `crossOrigin` — não é definido por padrão, então um vídeo em servidor sem cabeçalhos CORS toca. Legendas de outra origem precisam de `crossOrigin="anonymous"` e CORS no servidor delas (há um aviso em desenvolvimento).',
+          "- Estados: um indicador de carregamento até os metadados chegarem; em erro de rede ou codec, a mensagem de `labels.error` e o botão `labels.retry`. Com `src` recusado, `labels.invalid`. Os dois estados levam o nome do vídeo.",
+          '- `allowedProtocols` **substitui** a lista padrão (`http:`, `https:`). Para uma prévia `blob:`, use `[...DEFAULT_ALLOWED_RESOURCE_PROTOCOLS, "blob:"]`.',
           "",
           "**Exemplo de uso:**",
           "",
@@ -105,7 +109,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const SAMPLE = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+const SAMPLE = "https://samplelib.com/mp4/sample-5s.mp4"
 const POSTER = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800"
 
 export const Default: Story = {
@@ -143,4 +147,47 @@ export const AutoPlayMuted: Story = {
       <Video {...args} />
     </div>
   ),
+}
+
+export const VerticalVideo: Story = {
+  name: "Vertical video (contain × cover)",
+  args: { src: SAMPLE, "aria-label": "Tour do imóvel", aspectRatio: 9 / 16 },
+  render: (args) => (
+    <div className="flex gap-4">
+      <div className="w-[200px]">
+        <Video {...args} />
+      </div>
+      <div className="w-[200px]">
+        <Video {...args} aria-label="Tour do imóvel, cortado" objectFit="cover" />
+      </div>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com o padrão `contain` o quadro aparece inteiro, com faixas; `cover` preenche a caixa e corta as bordas. Para o tour vertical gravado no celular, deixe `contain`.",
+      },
+    },
+  },
+}
+
+export const ErrorState: Story = {
+  args: {
+    src: "https://example.com/does-not-exist.mp4",
+    "aria-label": "Tour do imóvel",
+  },
+  render: (args) => (
+    <div className="w-[560px]">
+      <Video {...args} />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Falha de rede, arquivo ausente ou codec não suportado: mensagem e botão para tentar de novo, no lugar do player vazio.",
+      },
+    },
+  },
 }

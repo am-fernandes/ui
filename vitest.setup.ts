@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest"
 
 // jsdom does not implement matchMedia. Stub it for components that rely on
-// media-query hooks (e.g. useIsMobile -> Sidebar).
+// media-query hooks (e.g. useIsMobile -> AppShell).
 if (typeof window !== "undefined" && !window.matchMedia) {
   Object.defineProperty(window, "matchMedia", {
     writable: true,

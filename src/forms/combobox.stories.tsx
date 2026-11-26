@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { useState } from "react"
+import { expect, userEvent, within } from "@storybook/test"
+import { useEffect, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 
+import { matchesSearch } from "../lib/text"
 import { Dialog } from "../overlays/dialog"
 import { Button } from "../primitives/button"
 import { Combobox, type ComboboxOption } from "./combobox"
@@ -206,10 +208,6 @@ export const WithError: Story = {
       </div>
     )
   },
-  parameters: {
-    // error-text foreground fails 4.5:1 against background; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
-  },
 }
 
 export const MultiSelect: Story = {
@@ -294,6 +292,53 @@ export const Disabled: Story = {
   ),
 }
 
+export const ReadOnly: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` mostra a escolha num fundo esmaecido, sem reação ao hover: o gatilho recebe foco e é lido, mas a lista não abre, não há botão de limpar nem × nos itens, e o valor vai junto no envio do formulário. Para tela de consulta; `disabled` é para campo que não se aplica.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex w-[320px] flex-col gap-4">
+      <Combobox options={plainOptions} label="Status" value="aprovado" readOnly />
+      <Combobox
+        multiple
+        options={sampleOptions}
+        label="Áreas"
+        value={["advocacia", "consultoria"]}
+        readOnly
+      />
+    </div>
+  ),
+}
+
+export const Sizes: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` dá a altura do gatilho: `sm` 32 px, `md` 40 px (padrão) e `lg` 44 px, a mesma de um botão ou campo do mesmo tamanho.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex w-[320px] flex-col gap-4">
+      {(["sm", "md", "lg"] as const).map((size) => (
+        <Combobox
+          key={size}
+          size={size}
+          options={plainOptions}
+          label={`Tamanho ${size}`}
+          defaultValue="pendente"
+        />
+      ))}
+    </div>
+  ),
+}
+
 export const EmptyOptions: Story = {
   render: () => {
     const [value, setValue] = useState<string | undefined>()
@@ -337,19 +382,199 @@ export const LongList: Story = {
   },
 }
 
+export const OpensOnChosen: Story = {
+  name: "Opens on the chosen option",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A lista abre com a opção escolhida destacada e rolada até a vista; Enter logo depois de abrir mantém o valor. A escolhida é anunciada como marcada (`aria-checked`), separada do destaque do teclado.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState<string | undefined>("option-30")
+    return (
+      <div className="w-[320px]">
+        <Combobox
+          options={longOptions}
+          label="Opção"
+          value={value}
+          onValueChange={setValue}
+          placeholder="Selecione"
+        />
+      </div>
+    )
+  },
+}
+
+export const UncontrolledInForm: Story = {
+  name: "Uncontrolled, in a native form",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Sem `value`, o campo guarda a própria escolha a partir de `defaultValue`. Com `name`, um `<input type="hidden">` leva o valor bruto ao formulário nativo (no modo múltiplo, os valores separados por vírgula), e o reset do formulário volta ao padrão.',
+      },
+    },
+  },
+  render: () => {
+    const [sent, setSent] = useState<string | null>(null)
+    return (
+      <form
+        className="flex w-[320px] flex-col gap-3"
+        onSubmit={(event) => {
+          event.preventDefault()
+          const data = new FormData(event.currentTarget)
+          setSent(`status=${data.get("status")}; areas=${data.getAll("areas").join(" | ")}`)
+        }}
+      >
+        <Combobox name="status" options={plainOptions} label="Status" defaultValue="pendente" />
+        <Combobox
+          multiple
+          name="areas"
+          options={sampleOptions}
+          label="Áreas"
+          defaultValue={["advocacia"]}
+        />
+        <div className="flex gap-2">
+          <Button type="submit">Enviar</Button>
+          <Button type="reset" variant="outline">
+            Restaurar
+          </Button>
+        </div>
+        {sent ? <p className="text-xs text-muted-foreground">Enviado: {sent}</p> : null}
+      </form>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(canvas.getByRole("combobox", { name: "Status" }))
+    await userEvent.click(await body.findByRole("option", { name: "Aprovado" }))
+    await expect(canvas.getByRole("combobox", { name: "Status" })).toHaveTextContent("Aprovado")
+    await userEvent.click(canvas.getByRole("button", { name: "Enviar" }))
+    await expect(canvas.getByText("Enviado: status=aprovado; areas=advocacia")).toBeInTheDocument()
+  },
+}
+
+const thousandsOfOptions: ComboboxOption[] = Array.from({ length: 2000 }, (_, i) => ({
+  value: String(i + 1),
+  label: `Unidade ${i + 1}`,
+}))
+
+export const ManyOptions: Story = {
+  name: "Many options (2.000)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com milhares de opções, só as primeiras 100 que casam com a busca ficam na tela (`maxVisibleOptions`), mais a escolhida; uma linha diz quantas ficaram de fora e pede para continuar digitando. Abrir e digitar continuam rápidos.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState<string | undefined>()
+    return (
+      <div className="w-[320px]">
+        <Combobox
+          options={thousandsOfOptions}
+          label="Unidade"
+          value={value}
+          onValueChange={setValue}
+          placeholder="Selecione uma unidade"
+        />
+      </div>
+    )
+  },
+}
+
+const cities = [
+  "São Paulo",
+  "Rio de Janeiro",
+  "Belo Horizonte",
+  "Brasília",
+  "Salvador",
+  "Fortaleza",
+  "Curitiba",
+  "Recife",
+  "Porto Alegre",
+  "Goiânia",
+  "Belém",
+  "Manaus",
+  "Campinas",
+  "São Luís",
+  "Maceió",
+  "Natal",
+  "Florianópolis",
+  "João Pessoa",
+  "Ribeirão Preto",
+  "Uberlândia",
+].map((city, i) => ({ value: String(i + 1), label: city }))
+
+/** Stands in for an API: answers after a short delay. */
+function useCitySearch(search: string) {
+  const [options, setOptions] = useState<ComboboxOption[]>(cities.slice(0, 8))
+  const [loading, setLoading] = useState(false)
+  useEffect(() => {
+    setLoading(true)
+    const timer = setTimeout(() => {
+      setOptions(cities.filter((city) => matchesSearch(city.label, search)).slice(0, 8))
+      setLoading(false)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [search])
+  return { options, loading }
+}
+
+export const ServerSearch: Story = {
+  name: "Server search",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Busca no servidor: `onSearchChange` recebe o termo, as opções que voltam vão em `options` e `shouldFilter={false}` desliga o filtro local. Enquanto `loading`, a lista diz que está carregando em vez de dizer que nada foi encontrado. A escolha mantém o nome no gatilho mesmo quando a próxima busca não a traz.",
+      },
+    },
+  },
+  render: () => {
+    const [search, setSearch] = useState("")
+    const [value, setValue] = useState<string | undefined>()
+    const { options, loading } = useCitySearch(search)
+    return (
+      <div className="w-[320px]">
+        <Combobox
+          options={options}
+          shouldFilter={false}
+          onSearchChange={setSearch}
+          loading={loading}
+          label="Cidade"
+          value={value}
+          onValueChange={setValue}
+          placeholder="Selecione uma cidade"
+          searchPlaceholder="Buscar cidade..."
+        />
+      </div>
+    )
+  },
+}
+
 export const WithRHF: Story = {
   name: "react-hook-form integration",
   parameters: {
     docs: {
       description: {
         story:
-          "Integração com `react-hook-form` via `<Controller>`. O Combobox é controlado, então mapeie `field.value`/`field.onChange` direto e use `fieldState.error?.message` para o erro.",
+          'Integração com `react-hook-form` via `<Controller>`: mapeie `field.value`, `field.onChange` e `field.onBlur` direto e use `fieldState.error?.message` para o erro. Com `mode: "onBlur"`, a validação roda quando o foco sai do campo inteiro (abrir a lista não conta).',
       },
     },
   },
   render: () => {
     type FormValues = { area: string }
     const { control, handleSubmit, formState } = useForm<FormValues>({
+      // Validates on leaving the field: Combobox calls onBlur when the focus
+      // leaves it as a whole, not when it moves into its list.
+      mode: "onBlur",
       defaultValues: { area: "" },
     })
     const [submitted, setSubmitted] = useState<FormValues | null>(null)
@@ -369,6 +594,7 @@ export const WithRHF: Story = {
               required
               value={field.value}
               onValueChange={field.onChange}
+              onBlur={field.onBlur}
               error={fieldState.error?.message}
               placeholder="Selecione"
             />

@@ -17,14 +17,17 @@ test.setTimeout(60_000)
  * Snapshots live in `tests/e2e/visual.spec.ts-snapshots/`.
  *
  * Excluded by design:
- *   - Stories that portalize (Dialog, Sheet, Popover, Tooltip, AlertDialog):
+ *   - Stories that portalize (Dialog, Sheet, Popover, Tooltip, AlertDialog,
+ *     DropdownMenu — its geometry is asserted in overlays.spec.ts):
  *     portaled content lives outside the iframe body, producing flaky frames.
  *   - Calendar / date pickers: snapshot churns every day.
  *   - Sonner (Toaster): renders only on user action.
- *   - Sidebar (relies on a parent SidebarProvider context with non-trivial chrome).
+ *   - AppShell's mobile menu (portaled drawer) — its geometry is asserted in
+ *     mobile.spec.ts instead.
  */
 
-const story = (id: string) => `/iframe.html?id=${id}&viewMode=story`
+const story = (id: string, theme?: "Escuro") =>
+  `/iframe.html?id=${id}&viewMode=story${theme ? `&globals=theme:${theme}` : ""}`
 
 // Force system fonts everywhere during visual tests so we don't race
 // against Geist (loaded from @fontsource at runtime). Geist's font-loaded
@@ -46,14 +49,23 @@ const KILL_ANIMATIONS = `
 }
 `
 
-async function snapshot(page: import("@playwright/test").Page, id: string, file: string) {
-  await page.goto(story(id), { waitUntil: "domcontentloaded" })
+async function snapshot(
+  page: import("@playwright/test").Page,
+  id: string,
+  file: string,
+  theme?: "Escuro",
+) {
+  await page.goto(story(id, theme), { waitUntil: "domcontentloaded" })
   // Wait for Storybook to flip from "preparing" to "main" (story mounted)
   // OR for storybook-root to have a rendered child. Either is a strong signal
   // the story has been hydrated.
+  // Both conditions, and not "preparing": while Storybook recompiles (HMR)
+  // the root can still hold a stale child under the loading spinner, and a
+  // small component against a blank frame stays under the 2% diff budget.
   await page.waitForFunction(
     () =>
-      document.body.classList.contains("sb-show-main") ||
+      document.body.classList.contains("sb-show-main") &&
+      !document.body.classList.contains("sb-show-preparing-story") &&
       !!document.getElementById("storybook-root")?.firstChild,
     null,
     { timeout: 30_000 },
@@ -133,6 +145,9 @@ test.describe("Visual: Primitives — Badge", () => {
   })
   test("all-variants", async ({ page }) => {
     await snapshot(page, "primitives-badge--all-variants", "badge-all-variants.png")
+  })
+  test("dot in a table", async ({ page }) => {
+    await snapshot(page, "primitives-badge--dot-in-table", "badge-dot-in-table.png")
   })
 })
 
@@ -320,4 +335,132 @@ test.describe("Visual: Domain — InputOTP", () => {
   test("default", async ({ page }) => {
     await snapshot(page, "domain-inputotp--default", "inputotp-default.png")
   })
+})
+
+test.describe("Visual: Navigation — AppShell", () => {
+  test("default (expanded, navbar, footer)", async ({ page }) => {
+    await snapshot(page, "navigation-appshell--default", "appshell-default.png")
+  })
+  test("collapsed rail", async ({ page }) => {
+    await snapshot(page, "navigation-appshell--collapsed", "appshell-collapsed.png")
+  })
+  test("only items", async ({ page }) => {
+    await snapshot(page, "navigation-appshell--only-items", "appshell-only-items.png")
+  })
+})
+
+test.describe("Visual: Primitives — IconButton", () => {
+  test("variants", async ({ page }) => {
+    await snapshot(page, "primitives-iconbutton--variants", "iconbutton-variants.png")
+  })
+  test("sizes", async ({ page }) => {
+    await snapshot(page, "primitives-iconbutton--sizes", "iconbutton-sizes.png")
+  })
+  test("next to Button", async ({ page }) => {
+    await snapshot(page, "primitives-iconbutton--next-to-button", "iconbutton-next-to-button.png")
+  })
+})
+
+test.describe("Visual: Primitives — SegmentedControl", () => {
+  test("default", async ({ page }) => {
+    await snapshot(page, "primitives-segmentedcontrol--default", "segmentedcontrol-default.png")
+  })
+  test("with icons", async ({ page }) => {
+    await snapshot(
+      page,
+      "primitives-segmentedcontrol--with-icons",
+      "segmentedcontrol-with-icons.png",
+    )
+  })
+  test("small", async ({ page }) => {
+    await snapshot(page, "primitives-segmentedcontrol--small", "segmentedcontrol-small.png")
+  })
+})
+
+test.describe("Visual: Data — EmptyState", () => {
+  test("default", async ({ page }) => {
+    await snapshot(page, "data-emptystate--default", "emptystate-default.png")
+  })
+  test("compact", async ({ page }) => {
+    await snapshot(page, "data-emptystate--compact", "emptystate-compact.png")
+  })
+})
+
+test.describe("Visual: Primitives — Token", () => {
+  test("colors", async ({ page }) => {
+    await snapshot(page, "primitives-token--colors", "token-colors.png")
+  })
+  test("sizes", async ({ page }) => {
+    await snapshot(page, "primitives-token--sizes", "token-sizes.png")
+  })
+  test("token-vs-badge", async ({ page }) => {
+    await snapshot(page, "primitives-token--token-vs-badge", "token-token-vs-badge.png")
+  })
+})
+
+test.describe("Visual: Navigation — Pagination", () => {
+  test("many-pages", async ({ page }) => {
+    await snapshot(page, "navigation-pagination--many-pages", "pagination-many-pages.png")
+  })
+  test("with-totals", async ({ page }) => {
+    await snapshot(page, "navigation-pagination--with-totals", "pagination-with-totals.png")
+  })
+  test("small", async ({ page }) => {
+    await snapshot(page, "navigation-pagination--small", "pagination-small.png")
+  })
+  test("compact", async ({ page }) => {
+    await snapshot(page, "navigation-pagination--compact", "pagination-compact.png")
+  })
+})
+
+test.describe("Visual: Navigation — Stepper", () => {
+  test("default", async ({ page }) => {
+    await snapshot(page, "navigation-stepper--default", "stepper-default.png")
+  })
+  test("with-status", async ({ page }) => {
+    await snapshot(page, "navigation-stepper--with-status", "stepper-with-status.png")
+  })
+  test("completed", async ({ page }) => {
+    await snapshot(page, "navigation-stepper--completed", "stepper-completed.png")
+  })
+  test("vertical", async ({ page }) => {
+    await snapshot(page, "navigation-stepper--vertical", "stepper-vertical.png")
+  })
+  test("narrow-container", async ({ page }) => {
+    await snapshot(page, "navigation-stepper--narrow-container", "stepper-narrow-container.png")
+  })
+})
+
+test.describe("Visual: Data — Schedule", () => {
+  test("month", async ({ page }) => {
+    await snapshot(page, "data-schedule--month", "schedule-month.png")
+  })
+  test("week", async ({ page }) => {
+    await snapshot(page, "data-schedule--week", "schedule-week.png")
+  })
+  test("list", async ({ page }) => {
+    await snapshot(page, "data-schedule--list", "schedule-list.png")
+  })
+})
+
+// The dark theme (Storybook's "Escuro" toolbar global puts `dark` on <html>).
+// One story per family, so a token that goes wrong in `.dark` shows up here.
+test.describe("Visual: Dark theme", () => {
+  const cases: Array<[id: string, file: string]> = [
+    ["primitives-button--all-variants", "dark-button-all-variants.png"],
+    ["primitives-badge--all-variants", "dark-badge-all-variants.png"],
+    ["primitives-input--with-error", "dark-input-with-error.png"],
+    ["primitives-token--colors", "dark-token-colors.png"],
+    ["navigation-appshell--default", "dark-appshell-default.png"],
+    ["data-card--with-footer", "dark-card-with-footer.png"],
+    ["data-schedule--week", "dark-schedule-week.png"],
+    ["navigation-stepper--with-status", "dark-stepper-with-status.png"],
+    ["overlays-alert--all-variants", "dark-alert-all-variants.png"],
+    ["primitives-badge--dot-in-table", "dark-badge-dot-in-table.png"],
+  ]
+  for (const [id, file] of cases) {
+    test(id, async ({ page }) => {
+      await snapshot(page, id, file, "Escuro")
+    })
+  }
 })

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
+import { MOBILE_QUERY } from "../hooks/use-is-mobile"
 import { DateRangePicker, type DateRangeValue } from "./date-range-picker"
 
 function Controlled({
@@ -88,6 +89,240 @@ describe("DateRangePicker", () => {
     // The Calendar (DayPicker) renders a grid role (one per visible month).
     const grids = await screen.findAllByRole("grid")
     expect(grids.length).toBeGreaterThan(0)
+  })
+
+  it("opens on the month of the saved range, not on the current month", async () => {
+    render(<Controlled initial={{ from: "2025-01-01", to: "2025-01-31" }} />)
+    const trigger = screen.getByText(/01\/01\/2025/).closest("button")
+    if (!trigger) throw new Error("trigger not found")
+    await userEvent.click(trigger)
+    expect(await screen.findByRole("grid", { name: /janeiro 2025/i })).toBeInTheDocument()
+  })
+
+  it("shows one month below the md breakpoint", async () => {
+    const original = window.matchMedia
+    window.matchMedia = ((query: string) => ({
+      matches: query === MOBILE_QUERY,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia
+    try {
+      render(<Controlled />)
+      const trigger = screen.getByText("Selecione um período").closest("button")
+      if (!trigger) throw new Error("trigger not found")
+      await userEvent.click(trigger)
+      expect(await screen.findAllByRole("grid")).toHaveLength(1)
+    } finally {
+      window.matchMedia = original
+    }
+  })
+
+  it("the action texts come from labels", async () => {
+    render(
+      <DateRangePicker
+        label="Período"
+        value={{ from: "", to: "" }}
+        onValueChange={() => {}}
+        labels={{ clear: "Apagar", confirm: "Aplicar" }}
+      />,
+    )
+    const trigger = screen.getByText("Selecione um período").closest("button")
+    if (!trigger) throw new Error("trigger not found")
+    await userEvent.click(trigger)
+    expect(await screen.findByRole("button", { name: "Apagar" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Aplicar" })).toBeInTheDocument()
+  })
+
+  it("the trigger's name is the label plus the period, not the label alone", () => {
+    render(
+      <DateRangePicker
+        label={
+          <span>
+            Período <em>de vigência</em>
+          </span>
+        }
+        required
+        value={{ from: "2025-01-01", to: "2025-01-31" }}
+        onValueChange={() => {}}
+      />,
+    )
+    const trigger = screen.getByRole("button", { name: /01\/01\/2025.*31\/01\/2025/ })
+    expect(trigger).toHaveAccessibleName(/Período de vigência.*obrigatório.*01\/01\/2025/)
+    expect(trigger).not.toHaveAttribute("aria-label")
+  })
+
+  it("without a period, the name is the label and leaves the placeholder out", () => {
+    render(
+      <DateRangePicker label="Período" value={{ from: "", to: "" }} onValueChange={() => {}} />,
+    )
+    expect(screen.getByRole("button")).toHaveAccessibleName("Período")
+  })
+
+  it("a consumer aria-label or the fallback names the trigger, with the period", () => {
+    const { rerender } = render(
+      <DateRangePicker
+        aria-label="Vigência"
+        value={{ from: "2025-01-01", to: "2025-01-31" }}
+        onValueChange={() => {}}
+      />,
+    )
+    expect(screen.getByRole("button")).toHaveAccessibleName(/^Vigência 01\/01\/2025/)
+    rerender(<DateRangePicker value={{ from: "", to: "" }} onValueChange={() => {}} />)
+    expect(screen.getByRole("button")).toHaveAccessibleName("Período")
+    rerender(
+      <DateRangePicker
+        label="Outro rótulo"
+        aria-label="Vigência"
+        value={{ from: "", to: "" }}
+        onValueChange={() => {}}
+      />,
+    )
+    expect(screen.getByRole("button")).toHaveAccessibleName("Vigência")
+  })
+
+  it("min, max and disabledDays turn days off in the calendar", async () => {
+    render(
+      <DateRangePicker
+        label="Período"
+        numberOfMonths={1}
+        value={{ from: "2025-03-10", to: "2025-03-12" }}
+        onValueChange={() => {}}
+        min="2025-03-05"
+        max="2025-03-25"
+        disabledDays="weekends"
+      />,
+    )
+    await userEvent.click(screen.getByRole("button", { name: /Período/ }))
+    await screen.findByRole("grid")
+    const day = (iso: string) => document.querySelector(`button[data-day="${iso}"]`)
+    expect(day("2025-03-04")).toBeDisabled()
+    expect(day("2025-03-26")).toBeDisabled()
+    // 08/03/2025 is a Saturday.
+    expect(day("2025-03-08")).toBeDisabled()
+    expect(day("2025-03-07")).not.toBeDisabled()
+    expect(screen.getByRole("button", { name: "Ir para o mês anterior" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    )
+  })
+
+  it("without value, it keeps its own period, starting from defaultValue", async () => {
+    const onValueChange = vi.fn()
+    render(
+      <DateRangePicker
+        label="Período"
+        numberOfMonths={1}
+        defaultValue={{ from: "2025-03-10", to: "2025-03-12" }}
+        onValueChange={onValueChange}
+      />,
+    )
+    const trigger = screen.getByRole("button", { name: /Período/ })
+    expect(trigger).toHaveTextContent("10/03/2025 — 12/03/2025")
+    await userEvent.click(trigger)
+    await screen.findByRole("grid")
+    const day = (iso: string) => document.querySelector(`button[data-day="${iso}"]`) as HTMLElement
+    await userEvent.click(day("2025-03-20"))
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+    expect(onValueChange).toHaveBeenLastCalledWith({ from: "2025-03-10", to: "2025-03-20" })
+    expect(trigger).toHaveTextContent("10/03/2025 — 20/03/2025")
+  })
+
+  it("an uncontrolled picker goes back to defaultValue when its form is reset", async () => {
+    const { container } = render(
+      <form>
+        <DateRangePicker label="Período" defaultValue={{ from: "2025-03-10", to: "2025-03-12" }} />
+      </form>,
+    )
+    const trigger = screen.getByRole("button", { name: /Período/ })
+    await userEvent.click(trigger)
+    await userEvent.click(await screen.findByRole("button", { name: "Limpar" }))
+    expect(trigger).toHaveTextContent("Selecione um período")
+    ;(container.querySelector("form") as HTMLFormElement).reset()
+    await waitFor(() => expect(trigger).toHaveTextContent("10/03/2025 — 12/03/2025"))
+  })
+
+  it("name: a native form receives <name>-from and <name>-to", () => {
+    const { container, rerender } = render(
+      <form>
+        <DateRangePicker
+          label="Período"
+          name="vigencia"
+          value={{ from: "2025-03-10", to: "2025-03-12" }}
+        />
+      </form>,
+    )
+    const data = () => new FormData(container.querySelector("form") as HTMLFormElement)
+    expect(data().get("vigencia-from")).toBe("2025-03-10")
+    expect(data().get("vigencia-to")).toBe("2025-03-12")
+    rerender(
+      <form>
+        <DateRangePicker
+          label="Período"
+          name="vigencia"
+          value={{ from: "2025-03-10", to: "2025-03-12" }}
+          disabled
+        />
+      </form>,
+    )
+    expect(data().has("vigencia-from")).toBe(false)
+  })
+
+  it("readOnly: readable and focusable, opens nothing, and is submitted", async () => {
+    const { container } = render(
+      <form>
+        <DateRangePicker
+          label="Período"
+          name="vigencia"
+          value={{ from: "2025-03-10", to: "2025-03-12" }}
+          readOnly
+        />
+      </form>,
+    )
+    const trigger = screen.getByRole("button", { name: /Período/ })
+    expect(trigger).not.toBeDisabled()
+    expect(trigger).not.toHaveAttribute("aria-haspopup")
+    await userEvent.click(trigger)
+    expect(trigger).toHaveFocus()
+    await userEvent.keyboard("{Enter}")
+    expect(screen.queryByRole("grid")).toBeNull()
+    expect(
+      new FormData(container.querySelector("form") as HTMLFormElement).get("vigencia-to"),
+    ).toBe("2025-03-12")
+  })
+
+  it("size sets the trigger's height from the control sizes (md by default)", () => {
+    const props = { label: "Período", value: { from: "", to: "" } }
+    const { rerender } = render(<DateRangePicker {...props} />)
+    expect(screen.getByRole("button").className).toContain("h-control-md")
+    rerender(<DateRangePicker {...props} size="sm" />)
+    expect(screen.getByRole("button").className).toContain("h-control-sm")
+    rerender(<DateRangePicker {...props} size="lg" />)
+    expect(screen.getByRole("button").className).toContain("h-control-lg")
+  })
+
+  it("onBlur: when the focus leaves the field, not when it goes into the calendar", async () => {
+    const onBlur = vi.fn()
+    render(
+      <>
+        <DateRangePicker label="Período" onBlur={onBlur} numberOfMonths={1} />
+        <button type="button">Fora</button>
+      </>,
+    )
+    const trigger = screen.getByRole("button", { name: /Período/ })
+    await userEvent.click(trigger)
+    await screen.findByRole("grid")
+    // Into the calendar and its buttons.
+    await userEvent.click(screen.getByRole("button", { name: "Ir para o próximo mês" }))
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+    await waitFor(() => expect(trigger).toHaveFocus())
+    expect(onBlur).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(onBlur).toHaveBeenCalledTimes(1)
   })
 
   it("does not open the popover when disabled", async () => {

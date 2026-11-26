@@ -204,3 +204,132 @@ describe("Popover", () => {
     expect(content).toHaveClass("custom-popover")
   })
 })
+
+// Complement of the Chromium test (overlays.spec.ts, "tall content stops at
+// the room left on screen"): the content takes Radix's available height.
+describe("Popover height", () => {
+  it("is capped at the room Radix measures, and scrolls", () => {
+    render(
+      <Popover open trigger={<button type="button">Abrir</button>} aria-label="Colunas">
+        conteúdo
+      </Popover>,
+    )
+    expect(screen.getByRole("dialog", { name: "Colunas" })).toHaveClass(
+      "max-h-(--radix-popover-content-available-height)",
+      "overflow-y-auto",
+    )
+  })
+})
+
+// `trigger` is optional, but without it the content had nothing to point at:
+// Radix left it at translate(0, -200%), above the screen, and focused it.
+describe("Popover anchor", () => {
+  it("renders the anchor element in place, with no trigger behaviour", async () => {
+    const onOpenChange = vi.fn()
+    render(
+      <Popover
+        open={false}
+        onOpenChange={onOpenChange}
+        anchor={<span data-testid="ancora">Unidade 101</span>}
+        aria-label="Detalhes"
+      >
+        conteúdo
+      </Popover>,
+    )
+    const anchor = screen.getByTestId("ancora")
+    expect(anchor).toHaveTextContent("Unidade 101")
+    expect(anchor).not.toHaveAttribute("aria-haspopup")
+    await userEvent.click(anchor)
+    expect(onOpenChange).not.toHaveBeenCalled()
+  })
+
+  it("opens by `open` next to the anchor", () => {
+    render(
+      <Popover open anchor={<span>Unidade 101</span>} aria-label="Detalhes">
+        conteúdo
+      </Popover>,
+    )
+    expect(screen.getByRole("dialog", { name: "Detalhes" })).toHaveTextContent("conteúdo")
+  })
+
+  it("warns in development when there is neither trigger nor anchor", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    render(
+      <Popover open aria-label="Solto">
+        conteúdo
+      </Popover>,
+    )
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("[Popover]"))
+    warn.mockRestore()
+  })
+
+  it("does not warn with a trigger", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    render(
+      <Popover open trigger={<button type="button">Abrir</button>} aria-label="Ok">
+        conteúdo
+      </Popover>,
+    )
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining("[Popover]"))
+    warn.mockRestore()
+  })
+})
+
+// The content is a role="dialog", and a dialog needs a name; nothing asked
+// for one.
+describe("Popover name", () => {
+  it("without a name of its own, it is named by its trigger", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    render(
+      <Popover open trigger={<button type="button">Filtros</button>}>
+        conteúdo
+      </Popover>,
+    )
+    expect(screen.getByRole("dialog", { name: "Filtros" })).toBeInTheDocument()
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it("keeps a trigger's own id", () => {
+    render(
+      <Popover
+        open
+        trigger={
+          <button type="button" id="meu-gatilho">
+            Filtros
+          </button>
+        }
+      >
+        conteúdo
+      </Popover>,
+    )
+    expect(screen.getByRole("button", { name: "Filtros" })).toHaveAttribute("id", "meu-gatilho")
+    expect(screen.getByRole("dialog")).toHaveAttribute("aria-labelledby", "meu-gatilho")
+  })
+
+  it.each([
+    [{ "aria-label": "Cidades" }, "Cidades"],
+    [{ "aria-labelledby": "titulo" }, "Título"],
+  ])("its own name wins (%o)", (name, expected) => {
+    render(
+      <>
+        <h2 id="titulo">Título</h2>
+        <Popover open trigger={<button type="button">Abrir</button>} {...name}>
+          conteúdo
+        </Popover>
+      </>,
+    )
+    expect(screen.getByRole("dialog", { name: expected })).toBeInTheDocument()
+  })
+
+  it("warns in development when there is neither a name nor a trigger", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    render(
+      <Popover open anchor={<span>Unidade 101</span>}>
+        conteúdo
+      </Popover>,
+    )
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("aria-label"))
+    warn.mockRestore()
+  })
+})

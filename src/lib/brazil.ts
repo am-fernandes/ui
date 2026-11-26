@@ -7,9 +7,12 @@
  *     11..2 para o segundo). Resto < 2 → DV = 0, caso contrário 11 - resto.
  *   - CNPJ: módulo 11 sobre pesos `[5,4,3,2,9,8,7,6,5,4,3,2]` (primeiro DV)
  *     e `[6,5,4,3,2,9,8,7,6,5,4,3,2]` (segundo DV). Mesma regra do resto.
+ *     No CNPJ alfanumérico (IN RFB 2.229/2024) as doze primeiras posições
+ *     aceitam letras maiúsculas e cada caractere vale o código ASCII menos
+ *     48: "0" é 0, "9" é 9, "A" é 17.
  *
- * Todos os helpers normalizam o input removendo caracteres não numéricos
- * antes de validar.
+ * Os helpers normalizam o input antes de validar: CPF, CEP e telefone ficam
+ * só com os dígitos; o CNPJ fica com dígitos e letras, em maiúsculas.
  */
 
 /** Remove tudo que não for dígito. */
@@ -17,12 +20,21 @@ function digitsOnly(value: string): string {
   return value.replace(/\D/g, "")
 }
 
+/** Mantém dígitos e letras sem acento, em maiúsculas (CNPJ alfanumérico). */
+function alphanumericOnly(value: string): string {
+  return value.replace(/[^0-9a-z]/gi, "").toUpperCase()
+}
+
 /** Verdadeiro se a string tem todos os dígitos iguais (ex.: "11111111111"). */
 function allSameDigits(value: string): boolean {
   return value.length > 0 && /^(\d)\1+$/.test(value)
 }
 
-/** Lê o dígito em `digits[index]` como número (0 se fora do range). */
+/**
+ * Lê o caractere em `digits[index]` como número: código ASCII menos 48
+ * (0 se fora do range). Para dígitos dá 0 a 9; para as letras do CNPJ
+ * alfanumérico, 17 ("A") a 42 ("Z").
+ */
 function digitAt(digits: string, index: number): number {
   const ch = digits.charAt(index)
   if (ch === "") return 0
@@ -60,12 +72,18 @@ export function isValidCPF(value: string): boolean {
 }
 
 /**
- * Valida um CNPJ (14 dígitos) usando o algoritmo oficial de DV.
- * Rejeita strings de dígitos repetidos.
+ * Valida um CNPJ (14 caracteres) usando o algoritmo oficial de DV. Aceita o
+ * formato numérico e o alfanumérico: doze posições com dígitos ou letras e
+ * dois dígitos verificadores numéricos. Letras minúsculas são lidas como
+ * maiúsculas. Rejeita strings de dígitos repetidos.
+ *
+ * Qualquer letra conta como parte do número: `"CNPJ 11.222.333/0001-81"` não
+ * é um CNPJ válido, `"11.222.333/0001-81"` é.
+ * @example isValidCNPJ("12.ABC.345/01DE-35") → true
  */
 export function isValidCNPJ(value: string): boolean {
-  const digits = digitsOnly(value)
-  if (digits.length !== 14) return false
+  const digits = alphanumericOnly(value)
+  if (!/^[0-9A-Z]{12}\d{2}$/.test(digits)) return false
   if (allSameDigits(digits)) return false
 
   const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] as const

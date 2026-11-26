@@ -1,11 +1,24 @@
 "use client"
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { XIcon } from "lucide-react"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useComposedRefs } from "../primitives/_internal/compose-refs"
 import { dialogContentBase, overlayBase } from "./_internal/animations"
+import type { OverlayContentProps } from "./_internal/content-props"
+import { useLayerTheme } from "./_internal/layer-theme"
+import { modalBodyClass } from "./_internal/modal-body"
+import { DEFAULT_CLOSE_LABEL, ModalCloseButton, titleBesideClose } from "./_internal/modal-close"
+import {
+  type ModalFooter,
+  renderModalFooter,
+  useModalOpen,
+  useReturnFocus,
+} from "./_internal/modal-state"
+import { OverlayContainerProvider, useOverlayContainerState } from "./_internal/overlay-container"
+import { isToastFocused, isToastPress } from "./_internal/toasts"
+import { asTriggerElement } from "./_internal/trigger-child"
 
 export interface DialogProps {
   /** Element that opens the dialog. Omit for fully controlled use. */
@@ -13,10 +26,28 @@ export interface DialogProps {
   /** Required for a11y (Radix logs a warning otherwise). */
   title: React.ReactNode
   description?: React.ReactNode
-  /** Body content (renders between header and footer). */
+  /**
+   * Body content, between the header and the footer. The dialog never grows
+   * past the screen: when the body is taller than the room left, it scrolls
+   * and title, description and footer stay in place.
+   */
   children?: React.ReactNode
-  /** Footer slot (renders flex-end justify with gap-2). */
-  footer?: React.ReactNode
+  /**
+   * Footer slot (renders flex-end justify with gap-2). Stays at the bottom.
+   *
+   * Also takes a function, which receives `close`: the way an uncontrolled
+   * modal closes from "Cancelar".
+   *
+   * ```tsx
+   * footer={({ close }) => (
+   *   <>
+   *     <Button variant="outline" onClick={close}>Cancelar</Button>
+   *     <Button type="submit" form="proposta">Salvar</Button>
+   *   </>
+   * )}
+   * ```
+   */
+  footer?: ModalFooter
   open?: boolean
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
@@ -27,13 +58,28 @@ export interface DialogProps {
    */
   dismissible?: boolean
   hideCloseButton?: boolean
+  /** Name of the X. @default "Fechar" */
   closeLabel?: string
   /** Handler do auto-focus do Radix ao abrir (ex.: direcionar o foco inicial). */
   onOpenAutoFocus?: (event: Event) => void
+  /**
+   * Handler do foco ao fechar. Por padrão o foco volta para o `trigger`; sem
+   * `trigger` (aberto por `open`, a partir de um botão da página ou de um item
+   * de menu), volta para o elemento que tinha o foco quando o diálogo abriu.
+   * Chame `event.preventDefault()` para mandar o foco para outro lugar.
+   */
+  onCloseAutoFocus?: (event: Event) => void
   /** Visual size of the modal. */
   size?: "sm" | "md" | "lg" | "xl"
   /** Extra class on the content element. */
   className?: string
+  /** The content panel (`[data-slot="dialog-content"]`). */
+  ref?: React.Ref<HTMLDivElement>
+  /**
+   * Attributes for the content panel: `id`, `data-*`, `aria-*`, handlers.
+   * The overlay's own props win over these.
+   */
+  contentProps?: OverlayContentProps
 }
 
 const SIZE_CLASSES = {
@@ -42,51 +88,6 @@ const SIZE_CLASSES = {
   lg: "max-w-2xl",
   xl: "max-w-4xl",
 } as const
-
-// Nested Radix poppers (Combobox/Select/DropdownMenu/DateInput) live in
-// their own portal OUTSIDE the Dialog's DOM tree. When the user clicks
-// an option, the option's onSelect triggers setOpen(false) on the
-// popper, which unmounts the option element synchronously — so by the
-// time the Dialog's outside detection fires, e.target is already the
-// document/HTML and `closest()` finds nothing. Three complementary
-// signals catch this:
-//
-//   1. `e.detail.originalEvent.target` — Radix stores the underlying
-//      PointerEvent in the synthetic outside event's detail.
-//   2. A capture-phase `pointerdown` listener that remembers the last
-//      real target before the popper unmounts.
-//   3. Any popper-content wrapper still mounted in the DOM at the
-//      moment the outside event fires (React batches state updates,
-//      so the portal is still there during the synchronous handler).
-//
-// Any of them is enough to recognise "this click came from a nested
-// popper" and keep the parent Dialog open.
-const NESTED_OVERLAY_SELECTOR =
-  '[data-radix-popper-content-wrapper], [role="grid"], .rdp, .rdp-root, [cmdk-list], [cmdk-root]'
-
-let lastPointerDownTarget: HTMLElement | null = null
-if (typeof window !== "undefined") {
-  document.addEventListener(
-    "pointerdown",
-    (ev) => {
-      lastPointerDownTarget = ev.target as HTMLElement | null
-    },
-    true,
-  )
-}
-
-function isFromNestedPopper(e: {
-  detail?: { originalEvent?: { target?: EventTarget | null } }
-  target: EventTarget | null
-}): boolean {
-  const orig = e.detail?.originalEvent?.target as HTMLElement | null
-  if (orig?.closest?.(NESTED_OVERLAY_SELECTOR)) return true
-  if (lastPointerDownTarget?.closest?.(NESTED_OVERLAY_SELECTOR)) return true
-  if (typeof document !== "undefined" && document.querySelector(NESTED_OVERLAY_SELECTOR)) {
-    return true
-  }
-  return false
-}
 
 function Dialog({
   trigger,
@@ -99,74 +100,96 @@ function Dialog({
   onOpenChange,
   dismissible = true,
   hideCloseButton = false,
-  closeLabel = "Close",
+  closeLabel = DEFAULT_CLOSE_LABEL,
   onOpenAutoFocus,
+  onCloseAutoFocus,
   size = "md",
   className,
+  ref,
+  contentProps,
 }: DialogProps) {
   const showCloseButton = dismissible && !hideCloseButton
+  const [isOpen, setOpen] = useModalOpen({ open, defaultOpen, onOpenChange })
+  // Without a `trigger`, focus goes back to where it was when the dialog opened.
+  const returnFocus = useReturnFocus({
+    open: isOpen,
+    hasTrigger: Boolean(trigger),
+    onCloseAutoFocus,
+  })
+  // The popovers, menus and tooltips opened inside the dialog render into its
+  // content element (see `OverlayContainerProvider`).
+  const [overlayContainer, contentRef] = useOverlayContainerState()
+  // Opened from a dark part of the page, the modal and its backdrop are dark too.
+  const theme = useLayerTheme()
+  const composedContentRef = useComposedRefs(contentRef, theme.contentRef, ref)
+  const footerContent = renderModalFooter(footer, () => setOpen(false))
 
   return (
-    <DialogPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root open={isOpen} onOpenChange={setOpen}>
       {trigger ? (
-        <DialogPrimitive.Trigger asChild data-slot="dialog-trigger">
-          {trigger}
+        <DialogPrimitive.Trigger asChild data-slot="dialog-trigger" ref={theme.anchorRef}>
+          {asTriggerElement(trigger)}
         </DialogPrimitive.Trigger>
       ) : null}
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay data-slot="dialog-overlay" className={overlayBase} />
+        <DialogPrimitive.Overlay
+          data-slot="dialog-overlay"
+          className={cn(overlayBase, theme.className)}
+        />
         <DialogPrimitive.Content
+          {...contentProps}
+          ref={composedContentRef}
           data-slot="dialog-content"
-          className={cn(dialogContentBase, SIZE_CLASSES[size], className)}
+          // Without a description Radix still points here, at an id no element
+          // has: leave the attribute out.
+          {...(description ? {} : { "aria-describedby": undefined })}
+          className={cn(dialogContentBase, SIZE_CLASSES[size], theme.className, className)}
           onOpenAutoFocus={onOpenAutoFocus}
+          onCloseAutoFocus={returnFocus}
           onEscapeKeyDown={(e) => {
-            if (!dismissible) e.preventDefault()
+            if (!dismissible || isToastFocused()) e.preventDefault()
           }}
+          // What is "outside" is Radix's call, and it follows the React tree:
+          // a press in a popover, menu, calendar or list opened from the
+          // dialog (they also render inside its content) is a press inside.
+          // The dialog used to add guesses of its own, down to "is there a
+          // grid anywhere in the document", and stopped closing on a page
+          // with a table, a date field or a command list. The one exception
+          // is a toast: it floats above the dialog and belongs to no modal.
           onPointerDownOutside={(e) => {
-            if (!dismissible) {
-              e.preventDefault()
-              return
-            }
-            if (isFromNestedPopper(e)) e.preventDefault()
+            if (!dismissible || isToastPress(e)) e.preventDefault()
           }}
           onInteractOutside={(e) => {
-            if (!dismissible) {
-              e.preventDefault()
-              return
-            }
-            if (isFromNestedPopper(e)) e.preventDefault()
+            if (!dismissible || isToastPress(e)) e.preventDefault()
           }}
         >
-          <DialogPrimitive.Title
-            data-slot="dialog-title"
-            className="text-lg font-semibold leading-none"
-          >
-            {title}
-          </DialogPrimitive.Title>
-          {description ? (
-            <DialogPrimitive.Description
-              data-slot="dialog-description"
-              className="text-sm text-muted-foreground"
+          <OverlayContainerProvider container={overlayContainer}>
+            <DialogPrimitive.Title
+              data-slot="dialog-title"
+              className={cn("shrink-0 text-lg font-semibold", showCloseButton && titleBesideClose)}
             >
-              {description}
-            </DialogPrimitive.Description>
-          ) : null}
-          {children ? <div data-slot="dialog-body">{children}</div> : null}
-          {footer ? (
-            <div data-slot="dialog-footer" className="flex justify-end gap-2">
-              {footer}
-            </div>
-          ) : null}
-          {showCloseButton ? (
-            <DialogPrimitive.Close
-              data-slot="dialog-close"
-              aria-label={closeLabel}
-              className="absolute right-4 top-4 cursor-pointer rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none"
-            >
-              <XIcon className="size-4" />
-              <span className="sr-only">{closeLabel}</span>
-            </DialogPrimitive.Close>
-          ) : null}
+              {title}
+            </DialogPrimitive.Title>
+            {description ? (
+              <DialogPrimitive.Description
+                data-slot="dialog-description"
+                className="shrink-0 text-sm text-muted-foreground"
+              >
+                {description}
+              </DialogPrimitive.Description>
+            ) : null}
+            {children ? (
+              <div data-slot="dialog-body" className={modalBodyClass(className)}>
+                {children}
+              </div>
+            ) : null}
+            {footerContent ? (
+              <div data-slot="dialog-footer" className="flex shrink-0 justify-end gap-2">
+                {footerContent}
+              </div>
+            ) : null}
+            {showCloseButton ? <ModalCloseButton label={closeLabel} slot="dialog-close" /> : null}
+          </OverlayContainerProvider>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

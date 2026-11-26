@@ -3,6 +3,7 @@ import { expect, fn, userEvent, within } from "@storybook/test"
 import { EyeIcon, EyeOffIcon, MailIcon, SearchIcon } from "lucide-react"
 import { useState } from "react"
 
+import { Button } from "./button"
 import { Input } from "./input"
 
 const meta: Meta<typeof Input> = {
@@ -11,11 +12,6 @@ const meta: Meta<typeof Input> = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
-    a11y: {
-      // Placeholder + label-left + helper text use muted-foreground that falls just under 4.5:1.
-      // Tracked in design-tokens roadmap.
-      config: { rules: [{ id: "color-contrast", enabled: false }] },
-    },
     docs: {
       description: {
         component: [
@@ -23,6 +19,9 @@ const meta: Meta<typeof Input> = {
           "",
           "**Posições do label:** `up` (default), `left`, `hidden` (sr-only para a11y sem visual).",
           "**Slots:** `leadingIcon` (esquerda) e `trailingIcon` (direita).",
+          "**Tamanhos:** `size` — `sm` (32px), `md` (40px, padrão) ou `lg` (44px). É a altura da caixa com a borda, igual à de um `Button` do mesmo tamanho.",
+          "**Classes:** `className` vai no `<input>` (alinhamento, `tabular-nums`); `wrapperClassName` na caixa com a borda e o fundo; `fieldClassName` no campo inteiro, com rótulo e mensagens (largura, margens). Para um ícone dentro da caixa use `leadingIcon` ou `trailingIcon`, não `pl-*` no `className`.",
+          "**Somente leitura:** `readOnly` mostra um valor que não se edita (calculado, travado, já enviado). O campo ganha fundo `muted` e perde o anel de hover, mas continua focável, copiável e vai no envio do formulário. Não use `disabled` para isso: o valor sai do `FormData` e fica apagado.",
         ].join("\n"),
       },
     },
@@ -33,6 +32,12 @@ const meta: Meta<typeof Input> = {
     description: { control: "text" },
     error: { control: "text" },
     required: { control: "boolean" },
+    size: {
+      control: "inline-radio",
+      options: ["sm", "md", "lg"],
+      description: "Altura da caixa, borda incluída: 32, 40 ou 44px.",
+      table: { type: { summary: "'sm' | 'md' | 'lg'" }, defaultValue: { summary: "'md'" } },
+    },
     type: {
       control: "select",
       options: ["text", "email", "password", "number", "tel", "url", "search", "date"],
@@ -78,6 +83,36 @@ export const LabelLeft: Story = {
   args: { label: "Nome", labelPosition: "left", placeholder: "Layout inline" },
 }
 
+export const LabelLeftWithMessages: Story = {
+  render: () => (
+    <div className="flex w-[28rem] flex-col gap-4 [--field-label-width:7rem]">
+      <Input
+        label="Nome"
+        labelPosition="left"
+        size="sm"
+        description="Como no documento."
+        placeholder="sm"
+      />
+      <Input
+        label="E-mail"
+        labelPosition="left"
+        description="Usado para o login."
+        error="Formato inválido"
+        defaultValue="ana@"
+      />
+      <Input label="Telefone" labelPosition="left" size="lg" error="Obrigatório" />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Com `labelPosition="left"` o rótulo fica na altura da caixa, não no meio do bloco com descrição e erro. Para alinhar os rótulos de um formulário numa coluna, defina `--field-label-width` num contêiner (aqui `[--field-label-width:7rem]`).',
+      },
+    },
+  },
+}
+
 export const LabelHidden: Story = {
   args: { label: "Buscar", labelPosition: "hidden", placeholder: "Buscar..." },
   parameters: {
@@ -113,11 +148,12 @@ export const PasswordToggle: Story = {
         type={show ? "text" : "password"}
         placeholder="Digite a senha"
         trailingIcon={
+          // 24 by 24px: the minimum target (WCAG 2.2, SC 2.5.8), around a 16px icon.
           <button
             type="button"
             onClick={() => setShow(!show)}
             aria-label={show ? "Ocultar senha" : "Mostrar senha"}
-            className="cursor-pointer"
+            className="-mr-1 inline-flex size-6 cursor-pointer items-center justify-center rounded-inner state-layer focus-visible:focus-outline"
           >
             {show ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
           </button>
@@ -126,7 +162,12 @@ export const PasswordToggle: Story = {
     )
   },
   parameters: {
-    docs: { description: { story: "Pattern para mostrar/ocultar senha via `trailingIcon`." } },
+    docs: {
+      description: {
+        story:
+          "Pattern para mostrar/ocultar senha via `trailingIcon`. O botão tem 24 por 24px em volta do ícone de 16px: o alvo mínimo de toque (WCAG 2.2, SC 2.5.8).",
+      },
+    },
   },
 }
 
@@ -136,6 +177,46 @@ export const Disabled: Story = {
 
 export const ReadOnly: Story = {
   args: { label: "ID", readOnly: true, value: "user-123456" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Fundo `muted` e sem anel de hover: o valor se lê, se copia e vai no envio, mas não se edita. Compare com o editável e o desabilitado em `ReadOnlyComparison`.",
+      },
+    },
+  },
+}
+
+export const ReadOnlyComparison: Story = {
+  render: () => (
+    <div className="flex w-80 flex-col gap-3">
+      <Input label="Editável" defaultValue="R$ 1.250.000,00" />
+      <Input label="Somente leitura" readOnly defaultValue="R$ 1.250.000,00" />
+      <Input label="Desabilitado" disabled defaultValue="R$ 1.250.000,00" />
+    </div>
+  ),
+}
+
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex w-80 flex-col gap-3">
+      <Input label="sm · 32px" size="sm" placeholder="Filtro de tabela" />
+      <Input label="md · 40px" size="md" placeholder="Formulário" />
+      <Input label="lg · 44px" size="lg" placeholder="Alvo de toque" />
+      <div className="flex items-end gap-2">
+        <Input label="Busca" size="sm" leadingIcon={<SearchIcon className="size-4" />} />
+        <Button size="sm">Buscar</Button>
+      </div>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` define a altura da caixa com a borda. Um `Input` e um `Button` do mesmo tamanho ficam alinhados na mesma linha.",
+      },
+    },
+  },
 }
 
 export const Types: Story = {

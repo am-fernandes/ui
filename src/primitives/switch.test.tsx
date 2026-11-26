@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
@@ -72,14 +72,17 @@ describe("Switch", () => {
   })
 
   it("renders the required asterisk inside the label when required=true", () => {
-    render(<Switch label="Obrigatório" required />)
-    const asterisk = screen.getByLabelText("obrigatório")
+    render(<Switch label="Aceitar termos" required />)
+    const asterisk = document.querySelector('[data-slot="label-required"]')
     expect(asterisk).toHaveTextContent("*")
+    expect(asterisk?.closest("label")).toBe(screen.getByText("Aceitar termos"))
   })
 
-  it("sets aria-required on the control when required=true", () => {
-    render(<Switch label="R" required />)
-    expect(screen.getByRole("switch", { name: /R/ })).toHaveAttribute("aria-required", "true")
+  it("is required once: aria-required says it, the asterisk only shows it", () => {
+    render(<Switch label="Aceitar termos" required />)
+    const control = screen.getByRole("switch", { name: "Aceitar termos" })
+    expect(control).toHaveAttribute("aria-required", "true")
+    expect(control).toHaveAccessibleName("Aceitar termos")
   })
 
   it("wires aria-describedby to the description element", () => {
@@ -164,5 +167,76 @@ describe("Switch", () => {
   it("applies a custom className to the switch root", () => {
     render(<Switch label="Cls" className="my-switch" />)
     expect(screen.getByRole("switch", { name: "Cls" })).toHaveClass("my-switch")
+  })
+
+  // Radix Checkbox goes back on a form reset and Radix Switch does not: the
+  // switch stayed on and "notificar=on" was still in the FormData.
+  describe("form reset", () => {
+    it("goes back to its initial state, on screen and in the FormData", async () => {
+      const user = userEvent.setup()
+      render(
+        <form data-testid="form">
+          <Switch label="Notificar" name="notificar" />
+          <button type="reset">Limpar</button>
+        </form>,
+      )
+      const form = screen.getByTestId("form") as HTMLFormElement
+      const control = screen.getByRole("switch", { name: "Notificar" })
+      await user.click(control)
+      expect(control).toHaveAttribute("aria-checked", "true")
+      expect(new FormData(form).get("notificar")).toBe("on")
+
+      await user.click(screen.getByRole("button", { name: "Limpar" }))
+      await waitFor(() => expect(control).toHaveAttribute("aria-checked", "false"))
+      expect(new FormData(form).get("notificar")).toBeNull()
+    })
+
+    it("goes back to defaultChecked, not to off", async () => {
+      const user = userEvent.setup()
+      render(
+        <form data-testid="form">
+          <Switch label="Notificar" name="notificar" defaultChecked />
+        </form>,
+      )
+      const control = screen.getByRole("switch", { name: "Notificar" })
+      await user.click(control)
+      expect(control).toHaveAttribute("aria-checked", "false")
+      act(() => (screen.getByTestId("form") as HTMLFormElement).reset())
+      await waitFor(() => expect(control).toHaveAttribute("aria-checked", "true"))
+    })
+
+    it("asks a controlled parent for its initial state, as Radix Checkbox does", async () => {
+      const user = userEvent.setup()
+      const reported: boolean[] = []
+      function Controlled() {
+        const [on, setOn] = React.useState(false)
+        return (
+          <form data-testid="form">
+            <Switch
+              label="Notificar"
+              checked={on}
+              onCheckedChange={(next) => {
+                reported.push(next)
+                setOn(next)
+              }}
+            />
+          </form>
+        )
+      }
+      render(<Controlled />)
+      const control = screen.getByRole("switch", { name: "Notificar" })
+      await user.click(control)
+      expect(control).toHaveAttribute("aria-checked", "true")
+      act(() => (screen.getByTestId("form") as HTMLFormElement).reset())
+      await waitFor(() => expect(control).toHaveAttribute("aria-checked", "false"))
+      expect(reported).toEqual([true, false])
+    })
+  })
+
+  it("shows the description and describes the switch with it when there is no label", () => {
+    render(<Switch aria-label="Notificar" description="Por e-mail, uma vez por dia" />)
+    const control = screen.getByRole("switch", { name: "Notificar" })
+    expect(screen.getByText("Por e-mail, uma vez por dia")).toBeInTheDocument()
+    expect(control).toHaveAccessibleDescription("Por e-mail, uma vez por dia")
   })
 })

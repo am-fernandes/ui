@@ -1,0 +1,221 @@
+import { Meta } from "@storybook/addon-docs/blocks"
+import {
+  ConeChart,
+  ConfusionPairs,
+  ContrastByVision,
+  HueRows,
+  StatusTokens,
+  VisionTable,
+  redRows,
+} from "./_color-vision"
+
+<Meta title="Foundations/Color Vision" />
+
+# Visão de cores e daltonismo
+
+Cerca de **1 em cada 12 homens** e 1 em cada 200 mulheres enxerga as cores de um jeito diferente da maioria. Num sistema interno usado o dia inteiro, isso é alguém em quase toda equipe. Esta página explica o que muda para essas pessoas, com mais detalhe na **protanopia**, e as regras que a lib segue por causa disso.
+
+Todas as figuras são calculadas na hora, com a simulação descrita na seção **Como medimos**.
+
+## Como o olho vê cor
+
+A retina tem três tipos de cone. Cada um responde a uma faixa larga da luz, com um pico diferente:
+
+| Cone | Responde mais a | Pico aproximado |
+|---|---|---|
+| **S** (ondas curtas) | azul-violeta | 420 a 440 nm |
+| **M** (ondas médias) | verde | 530 nm |
+| **L** (ondas longas) | amarelo-esverdeado; é o único que ainda responde bem ao vermelho | 560 nm |
+
+<ConeChart />
+
+Nenhum cone "vê uma cor". O cérebro compara os três sinais e monta três canais:
+
+- **Claro-escuro**: a soma de L e M. É o canal da forma, do texto e do contraste.
+- **Vermelho-verde**: a diferença entre L e M.
+- **Azul-amarelo**: o S contra a soma de L e M.
+
+As curvas de L e M ficam quase sobrepostas, a uns 30 nm uma da outra. O canal vermelho-verde depende da diferença entre dois sinais muito parecidos, e por isso é o primeiro a falhar.
+
+## Os tipos de daltonismo
+
+Quando um cone falta, a pessoa é **dicromata** (o sufixo é *-opia*). Quando ele existe mas com o pico deslocado, é **tricromata anômala** (*-omalia*): vê as mesmas confusões, mais fracas.
+
+| Tipo | O que acontece | Homens | O que muda |
+|---|---|---|---|
+| **Protanopia** | cone L ausente | cerca de 1% | confunde vermelho e verde, **e vê o vermelho mais escuro** |
+| Protanomalia | cone L deslocado | cerca de 1% | o mesmo, mais leve |
+| **Deuteranopia** | cone M ausente | cerca de 1% | confunde vermelho e verde; o brilho não muda |
+| Deuteranomalia | cone M deslocado | cerca de 5% | a forma mais comum; mais leve |
+| Tritanopia | cone S ausente | menos de 0,01% | confunde azul com verde e amarelo com rosa |
+
+Os genes dos cones L e M ficam no cromossomo X. Homens têm um X só, então um gene alterado já basta: daí os 8% entre homens contra 0,5% entre mulheres (números de populações de origem europeia; em outras a proporção é um pouco menor). O gene do cone S fica no cromossomo 7, e a tritanopia atinge os dois sexos igualmente.
+
+O mesmo arco de cores de tela, para cada visão:
+
+<HueRows />
+
+Repare em três coisas: na protanopia e na deuteranopia só sobram azul, amarelo e cinza; os dois têm um ponto cinza no meio do verde-azulado; e só na protanopia a ponta do vermelho escurece.
+
+## Protanopia a fundo
+
+<ConeChart vision="protan" />
+
+### 1. Vermelho e verde viram a mesma cor
+
+Sem o cone L, o canal vermelho-verde não existe. Sobram o claro-escuro e o azul-amarelo, e toda cor vira um tom de **azul**, de **amarelo** ou de **cinza**:
+
+- vermelho, laranja, amarelo e verde-folha caem todos no lado amarelo: ocre, oliva, mostarda;
+- azul e roxo caem no azul, porque o vermelho que faz o roxo ser roxo não é percebido;
+- verde-água e rosa caem perto do cinza.
+
+Existe um comprimento de onda, perto de 492 nm (um verde-azulado), que o protanope vê como cinza puro: o **ponto neutro**. Cores de um lado dele parecem azuladas; do outro, amareladas.
+
+Os pares abaixo são bem diferentes para a visão típica e quase idênticos na protanopia:
+
+<ConfusionPairs
+  vision="protan"
+  pairs={[
+    [
+      { label: "vermelho", hex: "#d0312d" },
+      { label: "verde", hex: "#435f2f" },
+    ],
+    [
+      { label: "laranja", hex: "#e07b1a" },
+      { label: "verde-claro", hex: "#5a9313" },
+    ],
+    [
+      { label: "rosa", hex: "#d9739f" },
+      { label: "azul-acinzentado", hex: "#77889f" },
+    ],
+    [
+      { label: "roxo", hex: "#7b4fb5" },
+      { label: "azul", hex: "#065bb5" },
+    ],
+    [
+      { label: "verde-água", hex: "#2f9c95" },
+      { label: "cinza", hex: "#959595" },
+    ],
+    [
+      { label: "vinho", hex: "#7a1212" },
+      { label: "marrom", hex: "#492b0f" },
+    ],
+  ]}
+/>
+
+### 2. O vermelho escurece
+
+É o que separa a protanopia da deuteranopia. O cone L responde por boa parte do **brilho** da luz de onda longa. Sem ele, o vermelho não perde só a cor: perde luz. O pico de sensibilidade ao brilho sai de 555 nm e vai para perto de 540 nm, e um vermelho puro pode parecer marrom-escuro ou quase preto.
+
+A consequência prática: o contraste calculado para a visão típica **superestima** o que o protanope vê sempre que há vermelho na conta. A tabela mostra o mesmo par nas três visões:
+
+<ContrastByVision rows={redRows()} />
+
+O vermelho sobre fundo escuro perde contraste na protanopia; na deuteranopia, não. Sobre fundo claro acontece o contrário: como o protanope vê o vermelho mais escuro, o texto branco sobre ele ganha contraste.
+
+Daí saem três cuidados:
+
+- vermelho sobre fundo escuro nunca é o único sinal de nada;
+- no tema escuro, o texto de erro usa um vermelho clareado, não o mesmo do tema claro;
+- vermelho contra preto não codifica diferença. Um valor negativo em vermelho ao lado de positivos em preto precisa também do sinal de menos.
+
+### 3. O que continua funcionando
+
+O canal claro-escuro (com a ressalva do vermelho) e o canal azul-amarelo. É com esses dois que a paleta trabalha.
+
+## Deuteranopia e tritanopia, em resumo
+
+<ConeChart vision="deutan" />
+
+**Deuteranopia.** As confusões são quase as mesmas da protanopia, sem o escurecimento do vermelho; o ponto neutro fica perto de 498 nm. Somada à forma leve, é a deficiência mais comum (6% dos homens), então é ela que define o caso típico: **duas cores com a mesma luminosidade que só diferem no eixo vermelho-verde ficam idênticas.**
+
+**Tritanopia.** Rara de nascença. Mas o cristalino amarelado pela idade, o glaucoma e o diabetes causam perdas parecidas no eixo azul-amarelo, e o filtro noturno das telas reduz o azul para todo mundo. Azul e verde se aproximam, e também amarelo e rosa-claro.
+
+## As regras da lib
+
+| Regra | O que diz |
+|---|---|
+| **1** | **A cor nunca é a única pista.** Status leva ícone e rótulo; erro de campo tem mensagem; link no meio de um texto é sublinhado; série de gráfico tem legenda. É o critério 1.4.1 da WCAG. |
+| **2** | **Cores que precisam ser distinguidas diferem em luminosidade ou no eixo azul-amarelo**, nunca só no vermelho-verde. |
+| **3** | **O verde que se opõe a um vermelho puxa para o azul.** Ele cai perto do ponto neutro e vira cinza, enquanto o vermelho vira ocre: os dois deixam de cair na mesma cor. |
+| **4** | **O vermelho não carrega contraste sozinho**, principalmente sobre fundo escuro. |
+| **5** | **Mede-se; não se confere no olho.** Quem enxerga as cores não consegue ver o problema. |
+
+### Um exemplo das regras 2 e 3
+
+Um vermelho e um ocre com a mesma luminosidade parecem seguros. Na deuteranopia, são a mesma cor:
+
+<VisionTable
+  samples={[
+    { label: "Erro", hex: "#c93125" },
+    { label: "Alerta", hex: "#906f2b" },
+  ]}
+/>
+
+Clareando o alerta para um ouro (com texto escuro, porque branco deixa de dar contraste), os dois passam a diferir em luminosidade para qualquer visão:
+
+<VisionTable
+  samples={[
+    { label: "Erro", hex: "#c93125" },
+    { label: "Alerta", hex: "#bd8700", fg: "#031120" },
+  ]}
+/>
+
+Com o verde é a mesma lógica. Um verde-oliva fica quase igual ao vermelho na protanopia:
+
+<VisionTable
+  samples={[
+    { label: "Erro", hex: "#c93125" },
+    { label: "Sucesso", hex: "#3f4f06" },
+  ]}
+/>
+
+Um verde puxado para o azul vira cinza e se separa:
+
+<VisionTable
+  samples={[
+    { label: "Erro", hex: "#c93125" },
+    { label: "Sucesso", hex: "#137b5e" },
+  ]}
+/>
+
+## Como medimos
+
+- **Simulação.** O modelo de Machado, Oliveira e Fernandes (2009), na severidade 1 (dicromacia completa), aplicado em RGB linear. É o pior caso: quem tem a forma leve enxerga mais do que a simulação mostra.
+- **Distância.** A distância euclidiana entre as duas cores no espaço OKLab, depois de simuladas. 0 é idêntico.
+
+| Distância | Leitura |
+|---|---|
+| 0,08 ou mais | alvo: as duas cores se distinguem sozinhas |
+| 0,06 a 0,08 | só funciona com uma segunda pista (ícone, rótulo, forma) |
+| menos de 0,06 | as duas cores se confundem |
+
+A simulação mostra a cor que uma pessoa de visão típica veria como parecida com a que o dicromata vê. É uma aproximação boa para comparar pares, não uma reprodução exata da experiência de ninguém.
+
+`bun run audit:contrast` aplica esses limites aos tokens: os quatro status e os nove pontos de categoria precisam de 0,08 ou mais em qualquer par, e as séries de gráfico vizinhas também. Abaixo disso, o comando falha.
+
+## Os status desta versão da lib
+
+As tabelas abaixo leem os quatro tokens de status em `src/styles/tokens.css` e aplicam a simulação. Elas acompanham qualquer mudança de paleta.
+
+<StatusTokens theme="light" />
+
+<StatusTokens theme="dark" />
+
+Mesmo dentro do alvo, vale a regra 1: o `Alert` mostra um ícone diferente em cada variante e o `Badge` sempre tem rótulo. Na tritanopia, que é rara, sucesso e informação ficam próximos no tema escuro; é o ícone e o rótulo que os separam.
+
+## Como testar uma tela
+
+- **Chrome e Edge**: DevTools → menu ⋮ → More tools → Rendering → *Emulate vision deficiencies*. Há protanopia, deuteranopia, tritanopia e acromatopsia.
+- **Firefox**: DevTools → Accessibility → *Simulate*.
+- **Sem ferramenta**: veja a tela em tons de cinza. Tudo que só a cor distinguia some.
+
+Teste nos dois temas. O que passa no claro pode falhar no escuro, como mostra a tabela do vermelho.
+
+## Referências
+
+- Machado, G. M., Oliveira, M. M. e Fernandes, L. A. F. (2009). A physiologically-based model for simulation of color vision deficiency. *IEEE Transactions on Visualization and Computer Graphics*, 15(6), 1291-1298.
+- Brettel, H., Viénot, F. e Mollon, J. D. (1997). Computerized simulation of color appearance for dichromats. *Journal of the Optical Society of America A*, 14(10), 2647-2655.
+- Birch, J. (2012). Worldwide prevalence of red-green color deficiency. *Journal of the Optical Society of America A*, 29(3), 313-320.
+- Ottosson, B. (2020). A perceptual color space for image processing (OKLab).
+- W3C. *Web Content Accessibility Guidelines 2.2*: critérios 1.4.1 (uso de cor), 1.4.3 (contraste) e 1.4.11 (contraste sem texto).

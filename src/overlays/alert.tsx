@@ -18,15 +18,20 @@ const alertVariants = cva(
   // so the old direct-child selector never matched and lucide icons
   // rendered at their intrinsic 24px — visually off centre from the
   // 16px title baseline.
-  "relative w-full rounded-lg border p-4 [&_svg]:size-4 [&_svg]:shrink-0",
+  "relative w-full rounded-container border p-4 [print-color-adjust:exact] [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-background text-foreground",
-        info: "border-status-info-border bg-status-info-bg text-status-info-text",
-        success: "border-status-success-border bg-status-success-bg text-status-success-text",
-        warning: "border-status-warning-border bg-status-warning-bg text-status-warning-text",
-        destructive: "border-destructive/50 bg-destructive/10 text-destructive",
+        default: "border-border-strong bg-card text-card-foreground",
+        // One strong fill per status. The transparent border is what a
+        // forced-colors mode draws; a focus ring inside takes the text colour.
+        info: "border-transparent bg-info text-info-foreground [--focus-outline-color:currentColor]",
+        success:
+          "border-transparent bg-success text-success-foreground [--focus-outline-color:currentColor]",
+        warning:
+          "border-transparent bg-warning text-warning-foreground [--focus-outline-color:currentColor]",
+        destructive:
+          "border-transparent bg-destructive text-destructive-foreground [--focus-outline-color:currentColor]",
       },
     },
     defaultVariants: { variant: "default" },
@@ -71,7 +76,10 @@ function Alert({
   return (
     <div
       ref={ref}
-      role="alert"
+      // Only what needs the user now interrupts the screen reader (an error,
+      // a warning); the rest is read when it is free. `role` in the props
+      // still wins.
+      role={variant === "destructive" || variant === "warning" ? "alert" : "status"}
       data-slot="alert"
       data-variant={variant}
       className={cn(

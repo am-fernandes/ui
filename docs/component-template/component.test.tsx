@@ -13,8 +13,9 @@ import { Component } from "./component"
  *   3. Renderiza error e seta aria-invalid="true" + role="alert".
  *   4. Encaminha ref para o elemento DOM correto.
  *   5. Disabled bloqueia interação.
- *   6. Required mostra o asterisco (aria-label="obrigatório").
+ *   6. Required mostra o asterisco, sem repetir "obrigatório" no nome.
  *   7. Keyboard / change handlers funcionam.
+ *   8. Somente leitura recebe foco, não muda e vai no formulário.
  */
 describe("Component", () => {
   it("renders with label associated to control", () => {
@@ -59,9 +60,27 @@ describe("Component", () => {
     expect(control.value).toBe("")
   })
 
+  it("keeps a read-only value focusable and unchanged", async () => {
+    const user = userEvent.setup()
+    render(<Component label="Campo" name="campo" defaultValue="fixo" readOnly />)
+    const control = screen.getByLabelText("Campo") as HTMLInputElement
+    await user.tab()
+    await user.keyboard("abc")
+    expect(control).toHaveFocus()
+    expect(control.value).toBe("fixo")
+    expect(control).not.toHaveAttribute("placeholder")
+  })
+
+  it("takes its texts from labels", () => {
+    render(<Component label="Campo" labels={{ placeholder: "Nome completo" }} />)
+    expect(screen.getByLabelText("Campo")).toHaveAttribute("placeholder", "Nome completo")
+  })
+
   it("renders the required asterisk and aria-required", () => {
     render(<Component label="Campo" required />)
-    expect(screen.getByLabelText("obrigatório")).toBeInTheDocument()
-    expect(screen.getByLabelText("Campo")).toHaveAttribute("aria-required", "true")
+    const control = screen.getByRole("textbox")
+    expect(control).toBeRequired()
+    expect(control).toHaveAccessibleName("Campo")
+    expect(document.querySelector('[data-slot="label-required"]')).toHaveTextContent("*")
   })
 })

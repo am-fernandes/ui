@@ -10,6 +10,15 @@ describe("Avatar", () => {
     expect(screen.getByText("AM")).toBeInTheDocument()
   })
 
+  // `alt` is required, and it was dropped as soon as the fallback showed:
+  // "Ana Souza" was nowhere in the page, and a screen reader read "AS".
+  it("is named by alt when the fallback shows, not by the initials", () => {
+    render(<Avatar alt="Ana Souza" fallback="AS" />)
+    const avatar = screen.getByRole("img", { name: "Ana Souza" })
+    expect(avatar).toHaveAttribute("data-slot", "avatar")
+    expect(screen.getByText("AS")).toHaveAttribute("aria-hidden", "true")
+  })
+
   it("renders a ReactNode fallback (e.g. icon)", () => {
     render(<Avatar alt="Anônimo" fallback={<UserIcon data-testid="icon" />} />)
     expect(screen.getByTestId("icon")).toBeInTheDocument()
@@ -50,7 +59,7 @@ describe("Avatar", () => {
         public complete = false
         public naturalWidth = 0
         private _src = ""
-        private listeners: Record<string, Array<() => void>> = {}
+        private listeners: Record<string, Array<(event: { currentTarget: MockImage }) => void>> = {}
         get src() {
           return this._src
         }
@@ -59,14 +68,15 @@ describe("Avatar", () => {
           this.complete = true
           this.naturalWidth = 1
           queueMicrotask(() => {
-            for (const cb of this.listeners.load ?? []) cb()
+            // Radix Avatar 1.2 reads event.currentTarget, as a real load event has it.
+            for (const cb of this.listeners.load ?? []) cb({ currentTarget: this })
           })
         }
-        addEventListener(name: string, cb: () => void) {
+        addEventListener(name: string, cb: (event: { currentTarget: MockImage }) => void) {
           if (!this.listeners[name]) this.listeners[name] = []
           this.listeners[name]?.push(cb)
         }
-        removeEventListener(name: string, cb: () => void) {
+        removeEventListener(name: string, cb: (event: { currentTarget: MockImage }) => void) {
           this.listeners[name] = (this.listeners[name] ?? []).filter((x) => x !== cb)
         }
       }
@@ -87,8 +97,11 @@ describe("Avatar", () => {
         expect(img).toBeInTheDocument()
       })
       const img = container.querySelector('[data-slot="avatar-image"]')
-      expect(img).toHaveAttribute("alt", "User avatar")
       expect(img).toHaveAttribute("src", "https://example.com/avatar.png")
+      // The name is on the avatar: the photo inside does not repeat it.
+      expect(img).toHaveAttribute("alt", "")
+      expect(screen.getAllByRole("img")).toHaveLength(1)
+      expect(screen.getByRole("img")).toHaveAccessibleName("User avatar")
     })
   })
 

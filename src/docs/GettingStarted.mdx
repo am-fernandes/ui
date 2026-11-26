@@ -4,34 +4,28 @@ import { Meta } from "@storybook/addon-docs/blocks"
 
 # @amfernandesinc/ui
 
-Design system oficial da AM Fernandes — 46 componentes React acessíveis, theming em OKLCH, fonte Geist self-hosted, light-only.
+Design system oficial da AM Fernandes — 61 componentes React acessíveis, theming em OKLCH, tema claro e escuro, fonte Geist self-hosted.
+
+> **Vindo da 0.5?** A 0.6 quebra tokens, layout e datas. Siga a página **Migração 0.6** antes de atualizar.
 
 ## Pré-requisitos
 
 - **Node ≥ 20** ou **Bun ≥ 1.1**
 - **React 19**
-- **Tailwind CSS v4**
+- **Tailwind CSS 4.1 ou mais novo**
 
 ## Filosofia
 
-- **Light only.** Sem dark mode por escolha de produto — não há toggle, classe `.dark` ou variantes invertidas.
+- **Claro e escuro.** O tema escuro liga com a classe `dark` no `<html>`. Os componentes são os mesmos; quem muda são os tokens de cor.
 - **Flat.** Sem `box-shadow`, sem elevação. Hierarquia se faz com cor, peso e espaço.
-- **Raio uniforme de 4px** (`--radius: 0.25rem`). Toda a escala de tokens (`--radius-sm`, `--radius-md`, `--radius-lg`) deriva desse mesmo valor.
+- **Raio por papel, em três níveis:** `inner` 4px, `element` 8px e `container` 12px (veja [Radius](?path=/docs/foundations-radius--docs)).
 - **Densidade enterprise.** Default é `text-sm` (14px) e `py-3`. Pensado para apps internos com formulários longos e tabelas densas.
 - **Acessibilidade ≥ WCAG AA.** Contraste, foco visível, ARIA correta, suporte a `prefers-reduced-motion`.
 - **Cursor pointer em tudo clicável.** Botões, links, rows interativas, tabs — sempre `cursor: pointer` (não `default`).
 
 ## Instalação
 
-1. **Configure o registro privado** (uma vez por máquina):
-
-```bash
-# ~/.npmrc
-@amfernandesinc:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-```
-
-2. **Adicione o package:**
+O pacote é publicado no npm público: não há registro nem token para configurar. Se o seu `.npmrc` aponta o escopo `@amfernandesinc` para outro registro, apague essas linhas.
 
 ```bash
 bun add @amfernandesinc/ui
@@ -49,7 +43,9 @@ No CSS de entrada da app:
 @import "@amfernandesinc/ui/styles";
 ```
 
-Pronto. Tokens, paleta e fonte ficam ativos globalmente.
+Pronto. Tokens, paleta e fonte ficam ativos globalmente. O `styles` já importa o Tailwind (não repita `@import "tailwindcss"`) e declara o `@source` da lib, então as classes usadas só dentro dos componentes são geradas sem configuração no app.
+
+> **Na 0.5.x**, acrescente `@source "../node_modules/@amfernandesinc/ui/dist";` no CSS de entrada (caminho relativo a ele). Sem essa linha, o Tailwind v4 não lê `node_modules` e Dialog, Popover e Select aparecem sem estilo.
 
 > **Fontes self-hosted.** Geist e Geist Mono são distribuídas via `@fontsource/geist` e `@fontsource/geist-mono` — dependências automáticas do package. Sem Google Fonts CDN, sem render-blocking, sem GDPR risk. O import `@amfernandesinc/ui/fonts` resolve os arquivos `.woff2` direto de `node_modules`.
 
@@ -64,7 +60,19 @@ import { Button } from "@amfernandesinc/ui/button"
 import { isValidCPF } from "@amfernandesinc/ui/lib/brazil"
 ```
 
-O `exports` map do package expõe 53 entradas — uma para cada componente, mais subpaths utilitários (`lib/brazil`, `lib/currency`, `lib/size`, `hooks/*`). Tanto o barrel quanto os subpaths apontam para os mesmos chunks; o subpath é só uma garantia extra de tree-shaking quando o bundler não consegue eliminar exports não usados via análise estática do barrel.
+O `exports` map do package expõe 78 entradas — uma para cada componente, mais subpaths utilitários (`lib/brazil`, `lib/currency`, `lib/date`, `lib/format`, `lib/size`, `lib/text`, `lib/url`, `hooks/*`) e os CSS (`styles`, `fonts`). Tanto o barrel quanto os subpaths apontam para os mesmos chunks; o subpath é só uma garantia extra de tree-shaking quando o bundler não consegue eliminar exports não usados via análise estática do barrel.
+
+## Tema escuro
+
+Ponha a classe `dark` no `<html>` (ou em qualquer ancestral da parte que deve ficar escura). Os tokens de `tokens.css` trocam sozinhos e o `color-scheme` acompanha, então barras de rolagem e campos nativos também escurecem.
+
+```html
+<html lang="pt-BR" class="dark">
+```
+
+Para seguir o sistema operacional ou guardar a escolha do usuário, use um gerenciador de tema que alterne essa classe (com `next-themes`: `<ThemeProvider attribute="class">`). No Storybook, o seletor **Claro / Escuro** fica na barra de ferramentas.
+
+Nas suas próprias telas, use os tokens e não cores fixas: assim elas acompanham o tema. A página é `bg-background`; o que fica sobre ela (um painel, uma barra de filtros) é `bg-card` com `border-border-strong`; texto de apoio é `text-muted-foreground`. Se precisar de um ajuste só no escuro, a variante `dark:` do Tailwind já está configurada.
 
 ## Primeiro componente
 
@@ -87,7 +95,7 @@ export function Demo() {
 - **Acessibilidade ≥ AA.** Componentes seguem padrões ARIA; status badges, contraste e foco validados via `addon-a11y` no Storybook e `injectAxe`/`checkA11y` em CI.
 - **API plana por padrão.** Cada componente expõe um único export com `title`/`description`/`children` (overlays) ou `items` (navegação). Slots `headerAction`/`footer`/`trigger`/`action` cobrem os edge cases sem expor subcomponentes Radix.
 - **Forms sem wrapper.** Combine os controles (`Combobox`, `DateInput`, `Calendar`, etc.) com `react-hook-form` direto — todos eles aceitam `label`/`description`/`error` nativamente. `react-hook-form` é uma **devDependency**: o consumer instala a própria versão.
-- **i18n por componente.** `DataTable`, `FileUpload` e `CommandPalette` aceitam `labels?: Partial<XLabels>` com defaults em pt-BR. Veja a aba **Hooks** para o pattern de override.
+- **i18n por componente.** Todo texto que um componente escreve sozinho sai de `labels?: Partial<XLabels>`, com padrão em pt-BR (28 objetos, `defaultXLabels` exportados). Veja **Foundations/i18n**.
 
 ## Testes
 
@@ -101,11 +109,11 @@ bun run test
 
 | Categoria | Count | Conteúdo |
 |---|---|---|
-| **Primitives** | 11 | Avatar, Badge, Button, Checkbox, Input, RadioGroup, Separator, Skeleton, Switch, Textarea, Typography |
-| **Overlays** | 9 | Alert, AlertDialog, Collapsible, Dialog, Popover, Progress, Sheet, Toaster (Sonner), Tooltip |
-| **Navigation** | 5 | Accordion, Breadcrumb, CommandPalette, Sidebar, Tabs |
-| **Forms** | 5 | Calendar, Combobox, DateInput, DateRangePicker, TimePicker |
-| **Data** | 7 | Card, DataTable, Image, ScrollArea, Tree, Video, (table primitives) |
+| **Primitives** | 17 | Avatar, Badge, Button, Checkbox, IconButton, Input, NumberInput, RadioGroup, SegmentedControl, Separator, Skeleton, Slider, Switch, Textarea, Toggle, Token, Typography |
+| **Overlays** | 11 | Alert, AlertDialog, Collapsible, Dialog, DropdownMenu, Popover, Progress, Sheet, Toaster (Sonner), Tooltip, Tour |
+| **Navigation** | 7 | Accordion, AppShell, Breadcrumb, CommandPalette, Pagination, Stepper, Tabs |
+| **Forms** | 6 | Calendar, Combobox, DateInput, DateRangePicker, Select, TimePicker |
+| **Data** | 11 | BarChart, Card, DataTable, EmptyState, Image, LineChart, Schedule, ScrollArea, Sparkline, Tree, Video, (table primitives) |
 | **Domain** | 9 | CEPInput, CNPJInput, CPFInput, CurrencyInput, FileUpload, InputOTP, MultiInput, PercentageInput, PhoneInput |
 | **Hooks** | — | `useIsMobile`, `useComboboxOptions`, helpers de className, BRL, bytes, validadores brasileiros |
 | **Foundations** | — | Cores, tipografia, espaçamento, iconografia, motion, z-index |
@@ -131,8 +139,8 @@ Para apps internas que já usam cópias shadcn locais:
 
 **Gotchas conhecidas:**
 - `Button` não tem mais flow de confirmação embutido — use `AlertDialog` quando precisar confirmar.
-- Sem dark mode. Remova qualquer toggle de classe `.dark` que ainda exista.
-- `Chart*`, `Form`/`Field`/`FieldGroup`/`FormField`, `DropdownMenu` foram removidos antes do release público. Use `recharts` direto para gráficos, `react-hook-form` direto para forms, e `Popover` + `Button` para menus de ação.
+- O tema escuro usa a mesma classe `.dark` do shadcn: um toggle existente continua funcionando.
+- `Chart*` do shadcn não existe: os gráficos são `BarChart`, `LineChart` e `Sparkline` (sem recharts). `Form`/`Field`/`FieldGroup`/`FormField` também não: use `react-hook-form` direto. O `DropdownMenu` existe, mas data-driven: as linhas vêm em `items`, sem os subcomponentes do shadcn.
 - Helpers `toCents`, `fromCents`, `centsToDisplay`, `percentOfTotal`, `percentFromValue`, `formatBRL` são exportados — delete `lib/currency.ts` locais. Veja a aba **Hooks** para a lista completa.
 - Validadores brasileiros (`isValidCPF`, `isValidCNPJ`, `isValidCEP`, `isValidPhone`) e os respectivos inputs (`CPFInput`, `CNPJInput`, `CEPInput`, `PhoneInput`) substituem implementações locais de máscaras/validação.
 

@@ -4,26 +4,75 @@ import { Command as CommandPrimitive } from "cmdk"
 import { Check, ChevronsUpDown, SearchIcon, X } from "lucide-react"
 import * as React from "react"
 
+import { matchesSearch, normalizeText } from "@/lib/text"
 import { cn } from "@/lib/utils"
 import { Popover } from "../overlays/popover"
-import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
+import type { ControlSize } from "../primitives/_internal/control-size"
+import {
+  FieldShell,
+  type LabelPosition,
+  fieldTriggerSizeClass,
+} from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
 import { Badge } from "../primitives/badge"
-import { Button } from "../primitives/button"
+import { assignRef } from "./_internal/assign-ref"
 
 const CREATE_ACTION_VALUE = "__create_action__"
 
-function normalizeSearch(text: string) {
-  return text
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
+// The search looks at what the user reads (the label) and at the option's
+// keywords, never at `value`: with numeric ids, "10" would match id 101.
+function optionMatches(option: ComboboxOption, search: string) {
+  return (
+    matchesSearch(option.label, search) ||
+    (option.keywords ?? []).some((keyword) => matchesSearch(keyword, search))
+  )
 }
 
-function filterOption(value: string, search: string, keywords?: string[]) {
-  if (value === CREATE_ACTION_VALUE) return 1
-  const haystack = normalizeSearch([value, ...(keywords ?? [])].join(" "))
-  return haystack.includes(normalizeSearch(search)) ? 1 : 0
+const countFormatter = new Intl.NumberFormat("pt-BR")
+
+// The clear button sits over a spacer in the trigger, just before the
+// chevron: the trigger's padding, the chevron (16px) and the gap (8px).
+const clearOffset: Record<ControlSize, string> = {
+  sm: "right-8.5",
+  md: "right-9",
+  lg: "right-10",
+}
+
+export interface ComboboxLabels {
+  /** The trigger with nothing chosen. `placeholder` wins over it. */
+  placeholder: string
+  /** The search box of the list. `searchPlaceholder` wins over it. */
+  search: string
+  /** Accessible name of the list of options. */
+  list: string
+  /** When nothing matches the search. `emptyMessage` wins over it. */
+  empty: string
+  /** The button that clears the choice. */
+  clear: string
+  /** The × of a chosen item, in multiple mode. Receives the item's label. */
+  remove: (label: string) => string
+  /** The option that uses the typed text, with `creatable`. */
+  create: (term: string) => string
+  /** Shown instead of the empty message while `loading`. */
+  loading: string
+  /**
+   * The line under a long list, when only the first `maxVisibleOptions`
+   * matches are on screen. Receives how many are left out.
+   */
+  hiddenOptions: (count: number) => string
+}
+
+export const defaultComboboxLabels: ComboboxLabels = {
+  placeholder: "Selecione...",
+  search: "Buscar...",
+  list: "Opções",
+  empty: "Nenhuma opção encontrada.",
+  clear: "Limpar seleção",
+  remove: (label) => `Remover ${label}`,
+  create: (term) => `Usar: “${term}”`,
+  loading: "Carregando…",
+  hiddenOptions: (count) =>
+    `${countFormatter.format(count)} ${count === 1 ? "opção a mais" : "opções a mais"}. Continue digitando para filtrar.`,
 }
 
 function toArray<T>(v: T | T[] | undefined | null): T[] {
@@ -35,6 +84,11 @@ export interface ComboboxOption {
   value: string
   label: string
   disabled?: boolean
+  /**
+   * Other words that find this option in the search, besides its label (a
+   * code, an old name, a synonym). The search never looks at `value`.
+   */
+  keywords?: string[]
 }
 
 interface ComboboxBaseProps {
@@ -52,18 +106,74 @@ interface ComboboxBaseProps {
   labelPosition?: LabelPosition
   required?: boolean
   id?: string
+  /**
+   * Called with the search text as the user types (and with `""` when the
+   * list closes). For a search on the server, pass the results in `options`
+   * and turn the local filter off with `shouldFilter={false}`.
+   */
+  onSearchChange?: (search: string) => void
+  /** The options are being fetched: the list says so instead of "nothing found". */
+  loading?: boolean
+  /**
+   * `false` shows `options` exactly as given, without filtering them by the
+   * search: for options that already come filtered from the server.
+   * @default true
+   */
+  shouldFilter?: boolean
+  /**
+   * Most options rendered at once. With a long list only the first matches
+   * are on screen (plus the chosen ones), and a line says how many were left
+   * out and asks to keep typing. Opening and typing stay fast with thousands
+   * of options.
+   * @default 100
+   */
+  maxVisibleOptions?: number
+  /**
+   * Name of the field in a native form. The form receives the raw value
+   * (the option's `value`), carried by a hidden input. In multiple mode there
+   * is one entry per value: read them with `FormData.getAll`. With nothing
+   * chosen, a single field sends `""` and a multiple one sends no entry, as a
+   * native `<select multiple>` (`getAll` gives `[]`, `get` gives `null`).
+   */
+  name?: string
+  /**
+   * Shows the choice without letting it change: the trigger stays readable
+   * and focusable, the list does not open, there is no clear button and the
+   * value is submitted with the form. For a view-only screen; `disabled` is
+   * for a field that does not apply.
+   */
+  readOnly?: boolean
+  /**
+   * Height of the trigger: `sm` 32px, `md` 40px, `lg` 44px, the same as a
+   * button or input of that size.
+   * @default "md"
+   */
+  size?: ControlSize
+  /**
+   * Called when the focus leaves the field as a whole. Moving between the
+   * trigger, the clear and remove buttons and the open list does not count.
+   */
+  onBlur?: (event: React.FocusEvent<HTMLElement>) => void
+  /** Texts of the list. Defaults in `defaultComboboxLabels`. */
+  labels?: Partial<ComboboxLabels>
   ref?: React.Ref<HTMLButtonElement>
 }
 
 interface ComboboxSingleProps extends ComboboxBaseProps {
   multiple?: false
+  /** The chosen value, controlled. Leave it out to let the field keep its own. */
   value?: string
+  /** Initial value of an uncontrolled field. */
+  defaultValue?: string
   onValueChange?: (value: string) => void
 }
 
 interface ComboboxMultipleProps extends ComboboxBaseProps {
   multiple: true
+  /** The chosen values, controlled. Leave it out to let the field keep its own. */
   value?: string[]
+  /** Initial values of an uncontrolled field. */
+  defaultValue?: string[]
   onValueChange?: (value: string[]) => void
   maxBadges?: number
   /**
@@ -100,79 +210,180 @@ export function Combobox(props: ComboboxProps) {
     labelPosition,
     required,
     id,
+    onSearchChange,
+    loading = false,
+    shouldFilter = true,
+    maxVisibleOptions = 100,
+    name,
+    onBlur,
+    readOnly = false,
+    size = "md",
     ref,
   } = props
+  const l: ComboboxLabels = { ...defaultComboboxLabels, ...props.labels }
 
-  const resolvedPlaceholder = placeholder ?? "Selecione..."
-  const resolvedSearchPlaceholder = searchPlaceholder ?? "Buscar..."
-  const resolvedEmptyMessage = emptyMessage ?? "Nenhuma opção encontrada."
+  const resolvedPlaceholder = placeholder ?? l.placeholder
+  const resolvedSearchPlaceholder = searchPlaceholder ?? l.search
+  const resolvedEmptyMessage = emptyMessage ?? l.empty
 
   const ids = useFieldIds(id)
-  const listboxId = `${ids.controlId}-listbox`
+  const triggerRef = React.useRef<HTMLButtonElement | null>(null)
+  const setTriggerRef = React.useCallback(
+    (node: HTMLButtonElement | null) => {
+      triggerRef.current = node
+      assignRef(ref, node)
+    },
+    [ref],
+  )
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
+  // The highlighted option (cmdk's value), which Enter would choose.
+  const [highlight, setHighlight] = React.useState("")
+  const listRef = React.useRef<HTMLDivElement | null>(null)
+  // cmdk gives the list its own id; read it from the element, so the
+  // trigger's aria-controls points to something that exists.
+  const [listId, setListId] = React.useState<string | undefined>()
+  const setListRef = React.useCallback((node: HTMLDivElement | null) => {
+    listRef.current = node
+    setListId(node?.id || undefined)
+  }, [])
+  const fieldRef = React.useRef<HTMLDivElement>(null)
+  const commandRef = React.useRef<HTMLDivElement>(null)
+  // Whether the option being chosen was clicked, not picked with Enter.
+  const pickedWithPointer = React.useRef(false)
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
 
   const isMultiple = props.multiple === true
+  // Controlled with `value`; otherwise the field keeps its own choice,
+  // starting from `defaultValue`. Either way it is a list here: one value or
+  // none in single mode.
+  const isControlled = props.value !== undefined
+  const initialValue = (): string[] => toArray(props.defaultValue).filter((v) => v !== "")
+  const [internalValue, setInternalValue] = React.useState(initialValue)
+  const controlledValue = props.value
+  const chosen = React.useMemo(
+    () => (isControlled ? toArray(controlledValue).filter((v) => v !== "") : internalValue),
+    [isControlled, controlledValue, internalValue],
+  )
+  const singleValue = chosen[0] ?? ""
+
+  const emit = (next: string[]) => {
+    if (!isControlled) setInternalValue(next)
+    if (props.multiple === true) props.onValueChange?.(next)
+    else props.onValueChange?.(next[0] ?? "")
+  }
+
+  // An uncontrolled field goes back to `defaultValue` when its form is reset,
+  // like a native one. Read through a ref, so the listener is attached once.
+  const onFormReset = React.useRef(() => {})
+  onFormReset.current = () => {
+    if (!isControlled) setInternalValue(initialValue())
+  }
+  React.useEffect(() => {
+    const form = triggerRef.current?.form
+    if (form == null) return
+    const reset = () => onFormReset.current()
+    form.addEventListener("reset", reset)
+    return () => form.removeEventListener("reset", reset)
+  }, [])
+
+  // Labels of the options seen so far, so a choice keeps its name in the
+  // trigger and chips after a server search replaces `options`.
+  const seenLabels = React.useRef(new Map<string, string>())
+  for (const option of options) seenLabels.current.set(option.value, option.label)
+  const labelOf = (value: string) => seenLabels.current.get(value)
+
+  const changeSearch = (next: string) => {
+    setSearch(next)
+    onSearchChange?.(next)
+  }
+
+  // Only the first matches are rendered: mounting thousands of options made
+  // opening and every key take hundreds of milliseconds. The chosen ones are
+  // always kept, so the list can open on them.
+  const { visibleOptions, hiddenCount } = React.useMemo(() => {
+    const matches =
+      shouldFilter && search.trim() !== ""
+        ? options.filter((option) => optionMatches(option, search))
+        : options
+    const chosenSet = new Set(chosen)
+    const visible = matches.filter(
+      (option, index) => index < maxVisibleOptions || chosenSet.has(option.value),
+    )
+    return { visibleOptions: visible, hiddenCount: matches.length - visible.length }
+  }, [options, search, shouldFilter, maxVisibleOptions, chosen])
+
+  // The list opens on the chosen option (the first one, in multiple mode),
+  // so Enter right after opening keeps the value instead of taking the first
+  // option of the list.
+  const openList = () => {
+    setHighlight(chosen[0] ?? "")
+    setOpen(true)
+  }
+
+  React.useEffect(() => {
+    if (!open) return
+    // The options mount in the popover's portal after this render.
+    const frame = requestAnimationFrame(() => {
+      const list = listRef.current
+      const item = list?.querySelector<HTMLElement>('[cmdk-item][aria-selected="true"]')
+      if (!list || !item) return
+      const listBox = list.getBoundingClientRect()
+      const itemBox = item.getBoundingClientRect()
+      list.scrollTop += itemBox.top - listBox.top - (listBox.height - itemBox.height) / 2
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [open])
 
   const handleSingleSelect = (currentValue: string) => {
-    if (!isMultiple && props.onValueChange) {
-      props.onValueChange(currentValue === props.value ? "" : currentValue)
-    }
+    const byPointer = pickedWithPointer.current
+    pickedWithPointer.current = false
+    if (currentValue !== singleValue) emit([currentValue])
+    // A click on the chosen option of an optional field clears it, as
+    // before. Enter on it (where the list opens) and a required field keep it.
+    else if (byPointer && !required) emit([])
     setOpen(false)
   }
 
   const handleMultipleSelect = (currentValue: string) => {
-    if (isMultiple && props.onValueChange) {
-      const currentValues = toArray(props.value)
-      const newValues = currentValues.includes(currentValue)
-        ? currentValues.filter((v) => v !== currentValue)
-        : [...currentValues, currentValue]
-      props.onValueChange(newValues)
-    }
+    emit(
+      chosen.includes(currentValue)
+        ? chosen.filter((v) => v !== currentValue)
+        : [...chosen, currentValue],
+    )
   }
 
   const handleCreate = (createdValue: string) => {
     const trimmed = createdValue.trim()
     if (!trimmed) return
-    if (isMultiple) {
-      if (props.onValueChange) {
-        const currentValues = toArray(props.value)
-        if (!currentValues.includes(trimmed)) {
-          props.onValueChange([...currentValues, trimmed])
-        }
-      }
-    } else if (props.onValueChange) {
-      props.onValueChange(trimmed)
-    }
+    if (!isMultiple) emit([trimmed])
+    else if (!chosen.includes(trimmed)) emit([...chosen, trimmed])
     setOpen(false)
-    setSearch("")
+    changeSearch("")
   }
 
   const handleRemoveValue = (valueToRemove: string, e: React.SyntheticEvent) => {
     e.stopPropagation()
-    if (isMultiple && props.onValueChange) {
-      const currentValues = toArray(props.value)
-      props.onValueChange(currentValues.filter((v) => v !== valueToRemove))
-    }
+    emit(chosen.filter((v) => v !== valueToRemove))
   }
 
-  const handleClearAll = (e: React.SyntheticEvent) => {
-    e.stopPropagation()
-    if (isMultiple && props.onValueChange) {
-      props.onValueChange([])
-    } else if (!isMultiple && props.onValueChange) {
-      props.onValueChange("")
-    }
+  const handleClearAll = () => {
+    emit([])
+    // The clear button goes away with the value: keep the focus in the field.
+    triggerRef.current?.focus()
   }
+
+  // Read-only, no "Selecione...": nothing is chosen here, and the hint would
+  // be drawn on the muted fill below 4.5:1.
+  const placeholderContent = readOnly ? null : (
+    <span className="text-placeholder">{resolvedPlaceholder}</span>
+  )
 
   const renderTriggerContent = () => {
     if (isMultiple) {
-      const values = toArray(props.value)
-      if (values.length === 0) {
-        return <span className="text-placeholder">{resolvedPlaceholder}</span>
-      }
+      const values = chosen
+      if (values.length === 0) return placeholderContent
       const count = values.length
       const formatter = (props as ComboboxMultipleProps).selectedCountLabel
       const countText = formatter
@@ -180,25 +391,25 @@ export function Combobox(props: ComboboxProps) {
         : `${count} ${count === 1 ? "selecionado" : "selecionados"}`
       return <span className="text-foreground">{countText}</span>
     }
-    const selectedOption = options.find((o) => o.value === props.value)
-    if (selectedOption) return selectedOption.label
-    if (creatable && props.value) return props.value
-    return <span className="text-placeholder">{resolvedPlaceholder}</span>
+    const selectedLabel = singleValue ? labelOf(singleValue) : undefined
+    if (selectedLabel != null) return selectedLabel
+    if (creatable && singleValue) return singleValue
+    return placeholderContent
   }
 
   const trimmedSearch = search.trim()
   const showCreateOption =
     creatable &&
     trimmedSearch.length > 0 &&
-    !options.some((o) => normalizeSearch(o.value) === normalizeSearch(trimmedSearch)) &&
-    !options.some((o) => normalizeSearch(o.label) === normalizeSearch(trimmedSearch))
+    !options.some((o) => normalizeText(o.value) === normalizeText(trimmedSearch)) &&
+    !options.some((o) => normalizeText(o.label) === normalizeText(trimmedSearch))
 
-  const hasValue = isMultiple ? toArray(props.value).length > 0 : Boolean(props.value)
+  const hasValue = chosen.length > 0
 
   const multiBadges = (() => {
     if (!isMultiple) return null
     if ((props as ComboboxMultipleProps).showBadges === false) return null
-    const values = toArray(props.value)
+    const values = chosen
     if (values.length === 0) return null
     const maxBadges = (props as ComboboxMultipleProps).maxBadges ?? 2
     const visibleValues = values.slice(0, maxBadges)
@@ -206,31 +417,33 @@ export function Combobox(props: ComboboxProps) {
     return (
       <div className="flex flex-wrap gap-1 items-center" data-slot="combobox-badges">
         {visibleValues.map((val) => {
-          const option = options.find((o) => o.value === val)
-          const labelText = option?.label || val
+          const labelText = labelOf(val) || val
           return (
             <Badge
               key={val}
               variant="outline"
-              className="rounded-md px-1.5 py-0.5 font-normal bg-muted text-foreground border-border inline-flex items-center gap-1"
+              className="rounded-inner px-1.5 py-0.5 font-normal bg-muted text-foreground border-border inline-flex items-center gap-1"
               aria-label={labelText}
             >
               {labelText}
-              <button
-                type="button"
-                aria-label={`Remover ${labelText}`}
-                className="rounded-sm outline-none cursor-pointer transition-colors hover:bg-secondary-foreground/20"
-                onClick={(e) => handleRemoveValue(val, e)}
-              >
-                <X className="h-3 w-3 text-muted-foreground" />
-              </button>
+              {readOnly || disabled ? null : (
+                <button
+                  type="button"
+                  aria-label={l.remove(labelText)}
+                  // The icon stays 12px; the hit area around it is 24px.
+                  className="relative cursor-pointer rounded-inner state-layer focus-visible:focus-outline before:absolute before:-inset-1.5"
+                  onClick={(e) => handleRemoveValue(val, e)}
+                >
+                  <X className="h-3 w-3 text-muted-foreground" />
+                </button>
+              )}
             </Badge>
           )
         })}
         {remainingCount > 0 ? (
           <Badge
             variant="outline"
-            className="rounded-md px-1.5 py-0.5 font-normal bg-muted text-foreground border-border"
+            className="rounded-inner px-1.5 py-0.5 font-normal bg-muted text-foreground border-border"
           >
             +{remainingCount}
           </Badge>
@@ -239,50 +452,73 @@ export function Combobox(props: ComboboxProps) {
     )
   })()
 
+  // Clearing is a separate button next to the trigger, never inside it: a
+  // control nested in a <button> is unreachable for some screen readers and
+  // stays focusable while the trigger is disabled.
+  const showClear = hasValue && !disabled && !readOnly
+
   const trigger = (
-    <Button
-      ref={ref}
+    <button
+      type="button"
+      ref={setTriggerRef}
       id={ids.controlId}
-      variant="outline"
       // biome-ignore lint/a11y/useSemanticElements: combobox button pattern (WAI-ARIA listbox combobox)
       role="combobox"
       aria-expanded={open}
       aria-haspopup="listbox"
-      aria-controls={listboxId}
-      aria-autocomplete="list"
+      // Only while the list is on screen; Radix would point to the popover
+      // content, which does not exist while closed.
+      aria-controls={open ? listId : undefined}
       aria-invalid={hasError ? true : undefined}
+      aria-required={required ? true : undefined}
+      aria-readonly={readOnly ? true : undefined}
       aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
       disabled={disabled}
+      onKeyDown={(e) => {
+        if (open || disabled || readOnly) return
+        // As in a native select: the arrows open the list, and a typed
+        // character opens it with that character already in the search.
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault()
+          openList()
+        } else if (e.key.length === 1 && e.key !== " " && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault()
+          changeSearch(e.key)
+          openList()
+        }
+      }}
       className={cn(
-        "w-full justify-between min-h-10 h-auto overflow-hidden",
+        fieldTriggerSizeClass(size),
+        "justify-between overflow-hidden",
         !hasValue && "text-placeholder",
+        hasError && "border-destructive-text field-error",
+        // Read-only: a muted box that does not answer to hover; the focus
+        // look stays, because the trigger still takes focus.
+        readOnly && "cursor-default bg-muted [--field-hover-ring:transparent]!",
         className,
       )}
     >
       <div className="flex-1 text-left truncate min-w-0">{renderTriggerContent()}</div>
-      <div className="flex items-center gap-1 ml-2">
-        {hasValue ? (
-          <span
-            // biome-ignore lint/a11y/useSemanticElements: avoid nested button inside Button
-            role="button"
-            tabIndex={0}
-            aria-label="Limpar seleção"
-            className="inline-flex cursor-pointer rounded-sm transition-colors hover:bg-secondary-foreground/20"
-            onClick={handleClearAll}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault()
-                handleClearAll(e)
-              }
-            }}
-          >
-            <X className="h-4 w-4 shrink-0 opacity-50" />
-          </span>
-        ) : null}
-        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-      </div>
-    </Button>
+      {/* Room for the clear button, which sits over this spot. */}
+      {showClear ? <span aria-hidden="true" className="size-6 shrink-0" /> : null}
+      <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+    </button>
   )
+
+  const clearButton = showClear ? (
+    <button
+      type="button"
+      aria-label={l.clear}
+      data-slot="combobox-clear"
+      className={cn(
+        "absolute top-1/2 inline-flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-inner state-layer focus-visible:focus-outline",
+        clearOffset[size],
+      )}
+      onClick={handleClearAll}
+    >
+      <X aria-hidden="true" className="size-4 shrink-0 opacity-50" />
+    </button>
+  ) : null
 
   return (
     <FieldShell
@@ -295,87 +531,148 @@ export function Combobox(props: ComboboxProps) {
       error={error}
       labelPosition={labelPosition}
       required={required}
+      // The trigger carries aria-required: the label draws only the asterisk, so
+      // "obrigatório" is not read twice.
+      nativeRequired
       disabled={disabled}
     >
-      <div className="flex flex-col gap-2" data-slot="combobox">
+      <div
+        ref={fieldRef}
+        className="flex flex-col gap-2"
+        data-slot="combobox"
+        // React brings the focus events of the list's portal here too.
+        onBlur={(e) => {
+          const next = e.relatedTarget as Node | null
+          if (next && (fieldRef.current?.contains(next) || commandRef.current?.contains(next))) {
+            return
+          }
+          onBlur?.(e)
+        }}
+      >
         {multiBadges}
-        <Popover
-          open={open}
-          onOpenChange={(isOpen) => {
-            if (disabled) return
-            setOpen(isOpen)
-            if (!isOpen) setSearch("")
-          }}
-          align="start"
-          trigger={trigger}
-          aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
-          className={cn("p-0", popoverWidth || "w-[--radix-popover-trigger-width]")}
-        >
-          <CommandPrimitive filter={filterOption} className="flex h-full w-full flex-col">
-            <div className="flex items-center gap-2 border-b px-3" cmdk-input-wrapper="">
-              <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
-              <CommandPrimitive.Input
-                placeholder={resolvedSearchPlaceholder}
-                onValueChange={setSearch}
-                className="flex w-full rounded-md bg-transparent py-2.5 text-sm outline-none placeholder:text-placeholder"
-              />
-            </div>
-            <CommandPrimitive.List
-              id={listboxId}
-              onTouchMove={(e) => e.stopPropagation()}
-              className="max-h-75 overflow-y-auto overflow-x-hidden overscroll-y-contain p-1"
+        <div className="relative" data-slot="combobox-control">
+          <Popover
+            open={open}
+            onOpenChange={(isOpen) => {
+              if (disabled || readOnly) return
+              if (isOpen) openList()
+              else setOpen(false)
+              if (!isOpen && search !== "") changeSearch("")
+            }}
+            align="start"
+            trigger={trigger}
+            aria-labelledby={label != null && label !== "" ? ids.labelId : undefined}
+            className={cn("p-0", popoverWidth || "w-(--radix-popover-trigger-width)")}
+          >
+            {/* The list is filtered here, not by cmdk: it only gets what is on screen. */}
+            <CommandPrimitive
+              ref={commandRef}
+              shouldFilter={false}
+              value={highlight}
+              onValueChange={setHighlight}
+              onKeyDown={() => {
+                pickedWithPointer.current = false
+              }}
+              className="flex h-full w-full flex-col"
             >
-              {!showCreateOption ? (
-                <CommandPrimitive.Empty className="py-6 text-center text-sm text-muted-foreground">
-                  {resolvedEmptyMessage}
-                </CommandPrimitive.Empty>
-              ) : null}
-              <CommandPrimitive.Group>
-                {showCreateOption ? (
-                  <CommandPrimitive.Item
-                    value={CREATE_ACTION_VALUE}
-                    keywords={[trimmedSearch]}
-                    onSelect={() => handleCreate(trimmedSearch)}
-                    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors aria-selected:bg-accent aria-selected:text-accent-foreground"
-                  >
-                    Usar: &ldquo;{trimmedSearch}&rdquo;
-                  </CommandPrimitive.Item>
+              <div className="flex items-center gap-2 border-b px-3" cmdk-input-wrapper="">
+                <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
+                <CommandPrimitive.Input
+                  placeholder={resolvedSearchPlaceholder}
+                  value={search}
+                  onValueChange={changeSearch}
+                  // The list may open with a letter already typed on the
+                  // trigger: the caret goes after it, for the next one. Radix
+                  // selects the text right after focusing it, hence the
+                  // microtask.
+                  onFocus={(e) => {
+                    const el = e.currentTarget
+                    queueMicrotask(() => {
+                      const end = el.value.length
+                      el.setSelectionRange(end, end)
+                    })
+                  }}
+                  // 16px on touch screens: iOS zooms the page into a
+                  // focused field whose text is smaller.
+                  className="flex w-full rounded-element bg-transparent py-2.5 text-sm pointer-coarse:text-base outline-none placeholder:text-placeholder"
+                />
+              </div>
+              <CommandPrimitive.List
+                label={l.list}
+                ref={setListRef}
+                onTouchMove={(e) => e.stopPropagation()}
+                className="max-h-75 overflow-y-auto overflow-x-hidden overscroll-y-contain p-1"
+              >
+                {!showCreateOption && !loading ? (
+                  <CommandPrimitive.Empty className="py-6 text-center text-sm text-muted-foreground">
+                    {resolvedEmptyMessage}
+                  </CommandPrimitive.Empty>
                 ) : null}
-                {options.map((option) => {
-                  const isSelected = isMultiple
-                    ? toArray(props.value).includes(option.value)
-                    : props.value === option.value
-
-                  return (
+                <CommandPrimitive.Group>
+                  {showCreateOption ? (
                     <CommandPrimitive.Item
-                      key={option.value}
-                      value={option.value}
-                      keywords={[option.label]}
-                      disabled={option.disabled}
-                      onSelect={() => {
-                        if (isMultiple) handleMultipleSelect(option.value)
-                        else handleSingleSelect(option.value)
-                      }}
-                      className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
+                      value={CREATE_ACTION_VALUE}
+                      onSelect={() => handleCreate(trimmedSearch)}
+                      className="relative flex cursor-default select-none items-center rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover forced-colors:aria-selected:outline-2 forced-colors:aria-selected:outline-solid forced-colors:aria-selected:-outline-offset-2"
                     >
-                      <div
-                        className={cn(
-                          "flex h-4 w-4 items-center justify-center rounded-md border border-primary",
-                          isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : "opacity-50 [&_svg]:invisible",
-                        )}
-                      >
-                        <Check className="h-3 w-3" />
-                      </div>
-                      {option.label}
+                      {l.create(trimmedSearch)}
                     </CommandPrimitive.Item>
-                  )
-                })}
-              </CommandPrimitive.Group>
-            </CommandPrimitive.List>
-          </CommandPrimitive>
-        </Popover>
+                  ) : null}
+                  {visibleOptions.map((option) => {
+                    const isSelected = chosen.includes(option.value)
+
+                    return (
+                      <CommandPrimitive.Item
+                        key={option.value}
+                        value={option.value}
+                        disabled={option.disabled}
+                        // cmdk marks the highlighted option aria-selected; the
+                        // chosen one is told apart by aria-checked.
+                        aria-checked={isSelected}
+                        onPointerDown={() => {
+                          pickedWithPointer.current = true
+                        }}
+                        onSelect={() => {
+                          if (isMultiple) handleMultipleSelect(option.value)
+                          else handleSingleSelect(option.value)
+                        }}
+                        className="relative flex cursor-default select-none items-center gap-2 rounded-element px-2 py-1.5 text-sm outline-none transition-colors aria-selected:state-hover forced-colors:aria-selected:outline-2 forced-colors:aria-selected:outline-solid forced-colors:aria-selected:-outline-offset-2 data-[disabled='true']:pointer-events-none data-[disabled='true']:opacity-50"
+                      >
+                        <div
+                          className={cn(
+                            "flex h-4 w-4 items-center justify-center rounded-inner border",
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-input [&_svg]:invisible",
+                          )}
+                        >
+                          <Check className="h-3 w-3" />
+                        </div>
+                        {option.label}
+                      </CommandPrimitive.Item>
+                    )
+                  })}
+                </CommandPrimitive.Group>
+              </CommandPrimitive.List>
+              {loading || hiddenCount > 0 ? (
+                // biome-ignore lint/a11y/useSemanticElements: <output> is for the result of a calculation; this tells that the list is loading or cut short.
+                <p
+                  role="status"
+                  data-slot="combobox-status"
+                  className="border-t px-3 py-2 text-xs text-muted-foreground"
+                >
+                  {loading ? l.loading : l.hiddenOptions(hiddenCount)}
+                </p>
+              ) : null}
+            </CommandPrimitive>
+          </Popover>
+          {clearButton}
+        </div>
+        {name != null && name !== ""
+          ? (props.multiple ? chosen : [chosen[0] ?? ""]).map((entry) => (
+              <input key={entry} type="hidden" name={name} value={entry} disabled={disabled} />
+            ))
+          : null}
       </div>
     </FieldShell>
   )

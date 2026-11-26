@@ -3,6 +3,7 @@ import { expect, userEvent, within } from "@storybook/test"
 import { Trash2 } from "lucide-react"
 import { useState } from "react"
 
+import { Input } from "../primitives/input"
 import { Accordion } from "./accordion"
 
 const meta: Meta<typeof Accordion> = {
@@ -22,6 +23,7 @@ const meta: Meta<typeof Accordion> = {
           "- `items: AccordionItemData[]` — lista de seções.",
           "- `defaultValue?` — em `'single'`: `string` com o `value` aberto. Em `'multiple'`: `string[]`.",
           "- `value?` / `onValueChange?` — modo controlled.",
+          "- `keepMounted?: boolean` — mantém as seções fechadas no DOM (escondidas), para campos não controlados não perderem o que foi digitado.",
           "",
           "**Shape do item (`AccordionItemData`):**",
           "```ts",
@@ -158,7 +160,7 @@ export const WithAction: Story = {
                 type="button"
                 aria-label={`Remover ${typeof item.title === "string" ? item.title : item.value}`}
                 onClick={() => setItems((prev) => prev.filter((p) => p.value !== item.value))}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <Trash2 className="size-4" />
               </button>
@@ -185,6 +187,40 @@ export const Disabled: Story = {
       <Accordion {...args} />
     </div>
   ),
+}
+
+export const KeepMounted: Story = {
+  args: {
+    type: "single",
+    collapsible: true,
+    keepMounted: true,
+    defaultValue: "dados",
+    items: [
+      { value: "dados", title: "Dados do comprador", content: <Input label="Nome completo" /> },
+      { value: "imovel", title: "Imóvel", content: <Input label="Matrícula" /> },
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Com `keepMounted`, as seções fechadas ficam no DOM, escondidas: num formulário longo com `type="single"`, abrir a seção 2 não apaga o que foi digitado na 1.',
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-[480px]">
+      <Accordion {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.type(canvas.getByRole("textbox", { name: "Nome completo" }), "Maria")
+    await userEvent.click(canvas.getByRole("button", { name: "Imóvel" }))
+    await expect(canvas.getByRole("textbox", { name: "Matrícula" })).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Dados do comprador" }))
+    await expect(canvas.getByRole("textbox", { name: "Nome completo" })).toHaveValue("Maria")
+  },
 }
 
 export const DefaultValueOpen: Story = {

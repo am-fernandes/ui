@@ -1,72 +1,28 @@
 "use client"
 
 import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import * as React from "react"
-import { type DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
+import { type DayButton, DayPicker, type Labels, getDefaultClassNames } from "react-day-picker"
+// The locale of react-day-picker, not date-fns': besides the month and day
+// names, it translates the accessible names (navigation buttons, "selecionado",
+// "Hoje"), which date-fns' locale leaves in English.
+import { ptBR } from "react-day-picker/locale"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "../primitives/button"
-import { CalendarQuickNav, type CalendarQuickNavView } from "./calendar-quick-nav"
+import { CALENDAR_ROOT_CLASS } from "./_internal/calendar-root"
+import { todayIn } from "./_internal/date-only"
+import { type DisabledDays, resolveDisabledDays } from "./_internal/disabled-days"
+import {
+  type CalendarLabels,
+  CalendarQuickNav,
+  type CalendarQuickNavView,
+  defaultCalendarLabels,
+} from "./calendar-quick-nav"
 
-/** Preset matchers that translate to a date-fns predicate at render time. */
-export type DisabledDayPreset = "past" | "future" | "weekends" | "weekdays" | "today"
-export type DisabledDays =
-  | Date
-  | Date[]
-  | DisabledDayPreset
-  | DisabledDayPreset[]
-  | ((date: Date) => boolean)
-
-function resolveDisabledDays(
-  input: DisabledDays | undefined,
-): ((date: Date) => boolean) | undefined {
-  if (input == null) return undefined
-  if (typeof input === "function") return input
-
-  const startOfToday = new Date()
-  startOfToday.setHours(0, 0, 0, 0)
-
-  function matchesPreset(date: Date, preset: DisabledDayPreset): boolean {
-    const d = new Date(date)
-    d.setHours(0, 0, 0, 0)
-    switch (preset) {
-      case "past":
-        return d.getTime() < startOfToday.getTime()
-      case "future":
-        return d.getTime() > startOfToday.getTime()
-      case "today":
-        return d.getTime() === startOfToday.getTime()
-      case "weekends":
-        return d.getDay() === 0 || d.getDay() === 6
-      case "weekdays":
-        return d.getDay() >= 1 && d.getDay() <= 5
-      default:
-        return false
-    }
-  }
-
-  function isDateInstance(value: unknown): value is Date {
-    return value instanceof Date && !Number.isNaN(value.getTime())
-  }
-
-  function matchesDate(date: Date, target: Date): boolean {
-    return (
-      date.getFullYear() === target.getFullYear() &&
-      date.getMonth() === target.getMonth() &&
-      date.getDate() === target.getDate()
-    )
-  }
-
-  if (isDateInstance(input)) return (date) => matchesDate(date, input)
-  if (typeof input === "string") return (date) => matchesPreset(date, input)
-  // Array of presets or dates
-  return (date) =>
-    (input as Array<Date | DisabledDayPreset>).some((entry) =>
-      isDateInstance(entry) ? matchesDate(date, entry) : matchesPreset(date, entry),
-    )
-}
+export type { DisabledDayPreset, DisabledDays } from "./_internal/disabled-days"
+export { type CalendarLabels, defaultCalendarLabels }
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
@@ -75,6 +31,13 @@ export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
    * Takes precedence over `disabled` if both are provided.
    */
   disabledDays?: DisabledDays
+  /**
+   * Texts read by screen readers: react-day-picker's (`labelNext`,
+   * `labelDayButton`…, Portuguese by default) and the quick navigation's
+   * (`chooseYear`, `chooseMonth`, `backToYears`, defaults in
+   * `defaultCalendarLabels`).
+   */
+  labels?: Partial<Labels> & Partial<CalendarLabels>
   ref?: React.Ref<HTMLDivElement>
 }
 
@@ -107,13 +70,14 @@ const STATIC_CLASS_NAMES = {
   caption_label: `text-sm font-medium select-none ${RDP_DEFAULTS.caption_label}`,
   table: "w-full border-collapse",
   weekdays: `flex ${RDP_DEFAULTS.weekdays}`,
-  weekday: `flex-1 rounded-(--cell-radius) text-[0.8rem] font-normal text-muted-foreground select-none ${RDP_DEFAULTS.weekday}`,
+  weekday: `flex-1 rounded-(--cell-radius) text-xs font-normal text-muted-foreground select-none ${RDP_DEFAULTS.weekday}`,
   week: `mt-2 flex w-full ${RDP_DEFAULTS.week}`,
   day: `group/day relative aspect-square h-full w-full rounded-(--cell-radius) p-0 text-center select-none [&:last-child[data-selected=true]_button]:rounded-r-(--cell-radius) [&:first-child[data-selected=true]_button]:rounded-l-(--cell-radius) ${RDP_DEFAULTS.day}`,
   range_start: `relative isolate z-0 rounded-l-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:right-0 after:w-4 after:bg-muted ${RDP_DEFAULTS.range_start}`,
   range_middle: `rounded-none ${RDP_DEFAULTS.range_middle}`,
   range_end: `relative isolate z-0 rounded-r-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:left-0 after:w-4 after:bg-muted ${RDP_DEFAULTS.range_end}`,
-  today: `rounded-(--cell-radius) bg-muted text-foreground data-[selected=true]:rounded-none ${RDP_DEFAULTS.today}`,
+  // In forced colours the fill is gone; today keeps a thick underline.
+  today: `rounded-(--cell-radius) bg-muted text-foreground data-[selected=true]:rounded-none forced-colors:[&>button]:underline forced-colors:[&>button]:decoration-2 forced-colors:[&>button]:underline-offset-4 ${RDP_DEFAULTS.today}`,
   outside: `text-muted-foreground aria-selected:text-muted-foreground ${RDP_DEFAULTS.outside}`,
   disabled: `text-muted-foreground opacity-50 ${RDP_DEFAULTS.disabled}`,
   hidden: `invisible ${RDP_DEFAULTS.hidden}`,
@@ -132,10 +96,25 @@ function Calendar({
   month,
   defaultMonth,
   onMonthChange,
+  labels,
+  today: todayProp,
   ref,
   ...props
 }: CalendarProps) {
-  const disabledFn = resolveDisabledDays(disabledDays)
+  // Today in São Paulo, as the rest of the library: the same day on the
+  // server and in the browser. react-day-picker's own `today` is the
+  // machine's, which differs between 21:00 and midnight in Brasília from a
+  // server in UTC (the day marked, the month shown, the "past" preset).
+  // `today` still overrides it.
+  const [zoneToday] = React.useState(() => todayIn())
+  const today = todayProp ?? zoneToday
+  const { chooseYear, chooseMonth, backToYears, ...dayPickerLabels } = labels ?? {}
+  const quickNavLabels: CalendarLabels = {
+    chooseYear: chooseYear ?? defaultCalendarLabels.chooseYear,
+    chooseMonth: chooseMonth ?? defaultCalendarLabels.chooseMonth,
+    backToYears: backToYears ?? defaultCalendarLabels.backToYears,
+  }
+  const disabledFn = resolveDisabledDays(disabledDays, today)
   const resolvedDisabled = disabledFn ?? disabled
 
   // ── Quick nav (jump to a year/month, MUI-style) ────────────────────────────
@@ -145,14 +124,14 @@ function Calendar({
   const quickNavEnabled = captionLayout === "label"
   const [quickNavView, setQuickNavView] = React.useState<"days" | CalendarQuickNavView>("days")
   const [pendingYear, setPendingYear] = React.useState<number>(() =>
-    (month ?? defaultMonth ?? new Date()).getFullYear(),
+    (month ?? defaultMonth ?? today).getFullYear(),
   )
 
   // The displayed month becomes controllable here so a year/month pick can
   // jump the grid. A consumer-controlled `month` keeps working: picks are
   // forwarded through their `onMonthChange`.
   const [internalMonth, setInternalMonth] = React.useState<Date>(
-    () => month ?? defaultMonth ?? new Date(),
+    () => month ?? defaultMonth ?? today,
   )
   const displayedMonth = month ?? internalMonth
   const displayedMonthRef = React.useRef(displayedMonth)
@@ -187,8 +166,9 @@ function Calendar({
     const variantClass = buttonVariants({ variant: buttonVariant })
     return {
       ...STATIC_CLASS_NAMES,
-      button_previous: `${variantClass} ${buttonNavClass} ${RDP_DEFAULTS.button_previous}`,
-      button_next: `${variantClass} ${buttonNavClass} ${RDP_DEFAULTS.button_next}`,
+      // cn(): the cell size has to replace the Button's own height and padding.
+      button_previous: cn(variantClass, buttonNavClass, RDP_DEFAULTS.button_previous),
+      button_next: cn(variantClass, buttonNavClass, RDP_DEFAULTS.button_next),
       ...classNames,
     }
   }, [buttonVariant, classNames])
@@ -238,21 +218,30 @@ function Calendar({
       ),
       ...(quickNavEnabled && {
         CaptionLabel: ({ className, children }: React.ComponentProps<"span">) => (
-          <Button
-            ref={captionButtonRef}
-            type="button"
-            variant="ghost"
-            data-slot="calendar-caption-button"
-            aria-expanded={false}
-            className={cn("h-(--cell-size) gap-1 px-2 select-none", className)}
-            onClick={() => {
-              setPendingYear(displayedMonthRef.current.getFullYear())
-              setQuickNavView("years")
-            }}
-          >
-            {children}
-            <ChevronDownIcon aria-hidden="true" className="size-4 text-muted-foreground" />
-          </Button>
+          <>
+            <Button
+              ref={captionButtonRef}
+              type="button"
+              variant="ghost"
+              data-slot="calendar-caption-button"
+              aria-expanded={false}
+              className={cn("h-(--cell-size) gap-1 px-2 select-none", className)}
+              onClick={() => {
+                setPendingYear(displayedMonthRef.current.getFullYear())
+                setQuickNavView("years")
+              }}
+            >
+              {children}
+              <ChevronDownIcon aria-hidden="true" className="size-4 text-muted-foreground" />
+            </Button>
+            {/* react-day-picker announces the month through its caption
+                (role="status"); a button cannot be a live region, so the
+                announcement gets its own hidden element. */}
+            {/* biome-ignore lint/a11y/useSemanticElements: <output> is for the result of a calculation; this announces the month shown. */}
+            <span role="status" aria-live="polite" className="sr-only">
+              {children}
+            </span>
+          </>
         ),
       }),
     }),
@@ -272,6 +261,9 @@ function Calendar({
         pendingYear={pendingYear}
         startMonth={props.startMonth}
         endMonth={props.endMonth}
+        numberOfMonths={props.numberOfMonths}
+        currentYear={today.getFullYear()}
+        labels={quickNavLabels}
         className={className}
         onSelectYear={(year) => {
           setPendingYear(year)
@@ -292,18 +284,17 @@ function Calendar({
       data-slot="calendar"
       showOutsideDays={showOutsideDays}
       disabled={resolvedDisabled}
-      className={cn(
-        "group/calendar bg-background p-2 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(7)]",
-        className,
-      )}
+      className={cn(CALENDAR_ROOT_CLASS, className)}
       captionLayout={captionLayout}
       locale={ptBR}
+      labels={labels ? dayPickerLabels : undefined}
       formatters={finalFormatters}
       classNames={finalClassNames}
       components={finalComponents}
       {...(quickNavEnabled
         ? { month: displayedMonth, onMonthChange: handleMonthChange }
-        : { month, defaultMonth, onMonthChange })}
+        : { month, defaultMonth: defaultMonth ?? today, onMonthChange })}
+      today={today}
       {...props}
     />
   )
@@ -324,12 +315,20 @@ const DAY_BUTTON_DEFAULTS = getDefaultClassNames()
 // becomes selected — combined with React's faster commit, it makes the click
 // feel instant even when the actual JS work is a few frames behind.
 const DAY_BUTTON_BASE_CLASS = [
-  "relative isolate z-10 flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 border-0 leading-none font-normal",
+  // A day is --day-size wide, whatever the width of its number: the quick
+  // navigation panels are sized from it.
+  "relative isolate z-10 flex aspect-square size-auto w-full min-w-(--day-size) px-0 flex-col gap-1 border-0 leading-none font-normal",
   "transition-colors duration-150",
   "data-[range-end=true]:rounded-(--cell-radius) data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground",
   "data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-muted data-[range-middle=true]:text-foreground",
   "data-[range-start=true]:rounded-(--cell-radius) data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground",
   "data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground",
+  // Forced colours (Windows high contrast) drop every fill: the chosen days
+  // get a solid outline, the days between the ends of a range a dashed one.
+  "forced-colors:data-[selected-single=true]:outline-2 forced-colors:data-[selected-single=true]:outline-solid forced-colors:data-[selected-single=true]:-outline-offset-2",
+  "forced-colors:data-[range-start=true]:outline-2 forced-colors:data-[range-start=true]:outline-solid forced-colors:data-[range-start=true]:-outline-offset-2",
+  "forced-colors:data-[range-end=true]:outline-2 forced-colors:data-[range-end=true]:outline-solid forced-colors:data-[range-end=true]:-outline-offset-2",
+  "forced-colors:data-[range-middle=true]:outline-1 forced-colors:data-[range-middle=true]:outline-dashed forced-colors:data-[range-middle=true]:-outline-offset-2",
   DAY_BUTTON_DEFAULTS.day,
 ]
   .filter(Boolean)
@@ -343,8 +342,17 @@ const CalendarDayButton = React.memo(function CalendarDayButton({
 }: CalendarDayButtonProps) {
   const isOutside = !!modifiers.outside
 
+  // react-day-picker moves the keyboard focus by marking another day as
+  // `focused` (arrows, Home, End, PageUp, PageDown); its own day button then
+  // focuses itself. This one replaces it, so it has to do the same.
+  const buttonRef = React.useRef<HTMLButtonElement>(null)
+  React.useEffect(() => {
+    if (modifiers.focused) buttonRef.current?.focus()
+  }, [modifiers.focused])
+
   return (
     <Button
+      ref={buttonRef}
       variant="ghost"
       data-slot="calendar-day-button"
       {...(!isOutside && { "data-day": format(day.date, "yyyy-MM-dd") })}

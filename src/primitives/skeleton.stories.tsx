@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
-import { Skeleton } from "./skeleton"
+import { Skeleton, SkeletonGroup } from "./skeleton"
 
 const meta: Meta<typeof Skeleton> = {
   title: "Primitives/Skeleton",
@@ -11,26 +11,28 @@ const meta: Meta<typeof Skeleton> = {
     docs: {
       description: {
         component: [
-          'Placeholder pulsante para conteúdo em carregamento. É um `<div>` com `animate-pulse`, `role="status"`, `aria-busy="true"` e `aria-live="polite"`.',
+          'Placeholder pulsante para conteúdo em carregamento. Cada `Skeleton` é só desenho: um `<div>` com `animate-pulse` e `aria-hidden="true"`.',
+          "",
+          '**Acessibilidade:** ponha os blocos de uma área que carrega dentro de um `SkeletonGroup`. Ele é o único `role="status"` da área e diz "Carregando…" uma vez ao leitor de tela, em vez de um status vazio por bloco. O texto vem de `labels.loading` (padrão em `defaultSkeletonLabels`).',
           "",
           "**API:**",
           "- `className` — define dimensões e formato (`h-4 w-48`, `size-12 rounded-full`, etc).",
-          "- Aceita todos os atributos HTML de `<div>` (`aria-label`, `data-*`, etc.).",
+          "- Aceita todos os atributos HTML de `<div>` (`data-*`, etc.).",
           "",
           "**Padrão de uso:** componha múltiplos skeletons em layouts que espelham a UI final.",
           "",
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { Skeleton } from "@amfernandesinc/ui"',
+          'import { Skeleton, SkeletonGroup } from "@amfernandesinc/ui"',
           "",
-          '<div className="flex items-center gap-4">',
+          '<SkeletonGroup labels={{ loading: "Carregando contatos…" }} className="flex items-center gap-4">',
           '  <Skeleton className="size-12 rounded-full" />',
           '  <div className="space-y-2">',
           '    <Skeleton className="h-4 w-48" />',
           '    <Skeleton className="h-4 w-32" />',
           "  </div>",
-          "</div>",
+          "</SkeletonGroup>",
           "```",
         ].join("\n"),
       },
@@ -64,12 +66,12 @@ export const Circle: Story = {
 
 export const TextBlock: Story = {
   render: () => (
-    <div className="flex w-80 flex-col gap-2">
+    <SkeletonGroup className="flex w-80 flex-col gap-2">
       <Skeleton className="h-5 w-32" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-2/3" />
-    </div>
+    </SkeletonGroup>
   ),
   parameters: {
     docs: {
@@ -83,13 +85,13 @@ export const TextBlock: Story = {
 
 export const AvatarRow: Story = {
   render: () => (
-    <div className="flex items-center gap-4">
+    <SkeletonGroup className="flex items-center gap-4">
       <Skeleton className="size-12 rounded-full" />
       <div className="flex flex-col gap-2">
         <Skeleton className="h-4 w-48" />
         <Skeleton className="h-4 w-32" />
       </div>
-    </div>
+    </SkeletonGroup>
   ),
   parameters: {
     docs: {
@@ -103,7 +105,7 @@ export const AvatarRow: Story = {
 
 export const Card: Story = {
   render: () => (
-    <div className="w-72 overflow-hidden rounded-lg border bg-card">
+    <SkeletonGroup className="w-72 overflow-hidden rounded-container border bg-card">
       <Skeleton className="h-32 w-full rounded-none" />
       <div className="flex flex-col gap-3 p-4">
         <Skeleton className="h-5 w-3/4" />
@@ -114,11 +116,9 @@ export const Card: Story = {
           <Skeleton className="h-3 w-24" />
         </div>
       </div>
-    </div>
+    </SkeletonGroup>
   ),
   parameters: {
-    // skeleton bg vs card bg intentionally muted (subtle pulse); fails 4.5:1. Tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story: "Card com imagem, título, texto e autor — replicando layout real enquanto carrega.",
@@ -129,7 +129,10 @@ export const Card: Story = {
 
 export const TableRows: Story = {
   render: () => (
-    <div className="w-[480px] overflow-hidden rounded-md border">
+    <SkeletonGroup
+      labels={{ loading: "Carregando usuários…" }}
+      className="w-[480px] overflow-hidden rounded-container border"
+    >
       <div className="grid grid-cols-[1fr_1fr_80px] gap-4 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground">
         <span>Nome</span>
         <span>E-mail</span>
@@ -149,12 +152,13 @@ export const TableRows: Story = {
           <Skeleton className="h-5 w-12 rounded-full" />
         </div>
       ))}
-    </div>
+    </SkeletonGroup>
   ),
   parameters: {
     docs: {
       description: {
-        story: "Esqueleto de tabela com 4 linhas — ideal para data tables enquanto carregam.",
+        story:
+          'Esqueleto de tabela com 4 linhas — ideal para data tables enquanto carregam. Os 12 blocos ficam escondidos do leitor de tela; o `SkeletonGroup` em volta diz "Carregando usuários…" uma vez.',
       },
     },
   },
@@ -162,7 +166,7 @@ export const TableRows: Story = {
 
 export const ListItems: Story = {
   render: () => (
-    <div className="flex w-80 flex-col gap-3">
+    <SkeletonGroup className="flex w-80 flex-col gap-3">
       {Array.from({ length: 3 }).map((_, i) => (
         <div
           // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows have no stable id
@@ -177,7 +181,7 @@ export const ListItems: Story = {
           <Skeleton className="size-6 rounded-md" />
         </div>
       ))}
-    </div>
+    </SkeletonGroup>
   ),
   parameters: {
     docs: {

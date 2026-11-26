@@ -1,12 +1,18 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import * as React from "react"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest"
 
 import { InputOTP, REGEXP_ONLY_DIGITS } from "./input-otp"
 
 afterEach(() => {
   cleanup()
 })
+
+// input-otp syncs the selection after every change with timers of 0, 10 and
+// 50 ms that unmounting does not clear. When this file is the last one in a
+// busy worker, they fired after jsdom was torn down and the run reported an
+// unhandled error. Let them run first.
+afterAll(() => new Promise((resolve) => setTimeout(resolve, 100)))
 
 describe("InputOTP", () => {
   it("renders the requested number of slots", () => {
@@ -140,5 +146,150 @@ describe("InputOTP", () => {
     expect(slots[1]?.textContent).toContain("2")
     expect(slots[2]?.textContent ?? "").not.toContain("1")
     expect(slots[2]?.textContent ?? "").not.toContain("2")
+  })
+  // Regressão: o contêiner tinha has-disabled:opacity-50 por cima do
+  // opacity-50 do FieldShell, e o campo desabilitado ficava a 0,25.
+  it("desabilitado, só o FieldShell esmaece", () => {
+    const { container } = render(
+      <InputOTP length={4} value="" onValueChange={() => {}} label="PIN" disabled />,
+    )
+    const faded = [...container.querySelectorAll("*")].filter((el) =>
+      /(^|\s)(has-disabled:)?opacity-50(\s|$)/.test(el.getAttribute("class") ?? ""),
+    )
+    expect(faded).toEqual([container.querySelector('[data-slot="field-shell"]')])
+  })
+  // Regressão: com error, as caixas tinham a mesma borda de sem erro; só a
+  // mensagem embaixo mudava.
+  it("com error, cada caixa fica marcada como inválida, com a borda do erro", () => {
+    const { container, rerender } = render(
+      <InputOTP length={4} value="" onValueChange={() => {}} error="Código expirado" />,
+    )
+    const slots = container.querySelectorAll('[data-slot="input-otp-slot"]')
+    for (const slot of slots) {
+      expect(slot).toHaveAttribute("data-invalid", "true")
+      expect(slot).toHaveClass("border-destructive-text")
+    }
+    rerender(<InputOTP length={4} value="" onValueChange={() => {}} />)
+    for (const slot of container.querySelectorAll('[data-slot="input-otp-slot"]')) {
+      expect(slot).not.toHaveAttribute("data-invalid")
+    }
+  })
+  // Regressão: o teclado era sempre numérico, e um código com letras
+  // (pattern alfanumérico) não podia ser digitado no celular.
+  describe("inputMode segue o pattern", () => {
+    it("só dígitos: teclado numérico", () => {
+      render(<InputOTP length={4} value="" onValueChange={() => {}} />)
+      expect(screen.getByRole("textbox")).toHaveAttribute("inputmode", "numeric")
+    })
+
+    it.each([
+      ["letras e dígitos", "^[a-zA-Z0-9]+$"],
+      ["só letras", "^[a-zA-Z]+$"],
+      ["hexadecimal em maiúsculas", "^[0-9A-F]+$"],
+    ])("%s: teclado de texto", (_, pattern) => {
+      render(<InputOTP length={4} value="" onValueChange={() => {}} pattern={pattern} />)
+      expect(screen.getByRole("textbox")).toHaveAttribute("inputmode", "text")
+    })
+
+    it("inputMode explícito ganha do automático", () => {
+      render(
+        <InputOTP
+          length={4}
+          value=""
+          onValueChange={() => {}}
+          pattern="^[a-zA-Z0-9]+$"
+          inputMode="numeric"
+        />,
+      )
+      expect(screen.getByRole("textbox")).toHaveAttribute("inputmode", "numeric")
+    })
+  })
+  // O campo não tinha name nem aria-required, e só funcionava controlado:
+  // um form nativo não recebia o código e o leitor de tela não ouvia que ele
+  // é obrigatório.
+  describe("name, obrigatório e modo não controlado", () => {
+    it("com name, o form nativo recebe o código", () => {
+      render(
+        <form data-testid="form">
+          <InputOTP length={4} name="codigo" value="1234" onValueChange={() => {}} />
+        </form>,
+      )
+      const data = new FormData(screen.getByTestId("form") as HTMLFormElement)
+      expect(data.get("codigo")).toBe("1234")
+    })
+
+    it("required: anunciado como obrigatório, e o form nativo não passa vazio", () => {
+      render(
+        <form data-testid="form">
+          <InputOTP length={4} label="Código" required value="" onValueChange={() => {}} />
+        </form>,
+      )
+      const input = screen.getByRole("textbox", { name: /Código/ })
+      expect(input).toHaveAttribute("aria-required", "true")
+      expect((screen.getByTestId("form") as HTMLFormElement).checkValidity()).toBe(false)
+    })
+
+    it("sem value, guarda o que foi digitado a partir de defaultValue", () => {
+      const onValueChange = vi.fn()
+      render(<InputOTP length={4} defaultValue="12" onValueChange={onValueChange} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input.value).toBe("12")
+      fireEvent.change(input, { target: { value: "123" } })
+      expect(input.value).toBe("123")
+      expect(onValueChange).toHaveBeenLastCalledWith("123")
+    })
+  })
+  it("onBlur é chamado quando o foco sai do código", () => {
+    const onBlur = vi.fn()
+    render(<InputOTP length={4} value="" onValueChange={() => {}} onBlur={onBlur} />)
+    const input = screen.getByRole("textbox")
+    fireEvent.focus(input)
+    fireEvent.blur(input)
+    expect(onBlur).toHaveBeenCalledTimes(1)
+  })
+
+  describe("readOnly", () => {
+    it("keeps the code: typing, pasting and deleting change nothing", () => {
+      const onValueChange = vi.fn()
+      const { container } = render(
+        <InputOTP
+          length={6}
+          defaultValue="482913"
+          readOnly
+          onValueChange={onValueChange}
+          label="Código"
+        />,
+      )
+      const input = container.querySelector("input") as HTMLInputElement
+      expect(input).toHaveAttribute("readonly")
+      expect(input).toHaveAttribute("data-readonly")
+      fireEvent.change(input, { target: { value: "111111" } })
+      fireEvent.paste(input, { clipboardData: { getData: () => "999999" } })
+      fireEvent.change(input, { target: { value: "" } })
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(input.value).toBe("482913")
+    })
+
+    it("fills the boxes with the muted read-only look and no blinking caret", () => {
+      const { container } = render(
+        <InputOTP length={4} defaultValue="12" readOnly label="Código" />,
+      )
+      const input = container.querySelector("input") as HTMLInputElement
+      input.focus()
+      const slots = [...container.querySelectorAll('[data-slot="input-otp-slot"]')]
+      expect(slots.every((s) => s.classList.contains("bg-muted"))).toBe(true)
+      expect(container.querySelector(".animate-caret-blink")).toBeNull()
+    })
+
+    it("is still sent with the form", () => {
+      const { container } = render(
+        <form>
+          <InputOTP length={6} defaultValue="482913" readOnly name="codigo" label="Código" />
+        </form>,
+      )
+      expect(new FormData(container.querySelector("form") as HTMLFormElement).get("codigo")).toBe(
+        "482913",
+      )
+    })
   })
 })

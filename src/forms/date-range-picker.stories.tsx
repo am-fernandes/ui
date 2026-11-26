@@ -10,11 +10,6 @@ const meta = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
-    a11y: {
-      // Outside-day text from react-day-picker (popover) fails 4.5:1 against background.
-      // Tracked in design-tokens roadmap.
-      config: { rules: [{ id: "color-contrast", enabled: false }] },
-    },
     docs: {
       description: {
         component: [
@@ -92,7 +87,7 @@ export const Playground: Story = {
     disabled: false,
   },
   render: (args) => {
-    const [range, setRange] = useState<DateRangeValue>(args.value)
+    const [range, setRange] = useState<DateRangeValue>(args.value ?? { from: "", to: "" })
     return (
       <div className="flex w-[360px] flex-col gap-2">
         <DateRangePicker
@@ -163,6 +158,47 @@ export const Disabled: Story = {
   ),
 }
 
+export const ReadOnly: Story = {
+  name: "Read Only",
+  args: { value: { from: "", to: "" } },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` mostra o período num fundo esmaecido, sem reação ao hover: o gatilho recebe foco e é lido, mas o calendário não abre, e o período vai junto no envio do formulário (com `name`).",
+      },
+    },
+  },
+  render: () => (
+    <div className="w-[360px]">
+      <DateRangePicker label="Período" value={{ from: "2025-01-01", to: "2025-01-15" }} readOnly />
+    </div>
+  ),
+}
+
+export const Sizes: Story = {
+  args: { value: { from: "", to: "" } },
+  parameters: {
+    docs: {
+      description: {
+        story: "`size` dá a altura do gatilho: `sm` 32 px, `md` 40 px (padrão) e `lg` 44 px.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex w-[360px] flex-col gap-4">
+      {(["sm", "md", "lg"] as const).map((size) => (
+        <DateRangePicker
+          key={size}
+          size={size}
+          label={`Tamanho ${size}`}
+          defaultValue={{ from: "2025-01-01", to: "2025-01-15" }}
+        />
+      ))}
+    </div>
+  ),
+}
+
 export const OneMonth: Story = {
   args: { value: { from: "", to: "" }, numberOfMonths: 1 },
   parameters: {
@@ -177,6 +213,34 @@ export const OneMonth: Story = {
         <DateRangePicker
           label="Período (1 mês)"
           numberOfMonths={1}
+          value={range}
+          onValueChange={setRange}
+        />
+      </div>
+    )
+  },
+}
+
+export const MinMax: Story = {
+  name: "Min Max",
+  args: { value: { from: "", to: "" } },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`min` e `max` (ISO) desligam os dias fora do intervalo e param a navegação nos limites; `disabledDays` aceita os mesmos presets do `Calendar` (aqui, `"future"` para um período que já aconteceu).',
+      },
+    },
+  },
+  render: () => {
+    const [range, setRange] = useState<DateRangeValue>({ from: "2025-03-03", to: "2025-03-07" })
+    return (
+      <div className="w-[360px]">
+        <DateRangePicker
+          label="Período de apuração"
+          description="A partir de 01/01/2025, sem datas futuras."
+          min="2025-01-01"
+          disabledDays="future"
           value={range}
           onValueChange={setRange}
         />

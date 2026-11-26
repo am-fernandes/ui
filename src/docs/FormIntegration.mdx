@@ -18,26 +18,34 @@ O prop `error: string` em todos os campos é **puramente visual**: ele pinta a b
 
 | Componente | Aceita `value` | Aceita `defaultValue` | Callback de mudança | Notas |
 |---|---|---|---|---|
-| `Input` | sim (`value: string`) | sim (`defaultValue`) | `onChange(event)` | API HTML nativa; funciona com `register()` direto. |
+| `Input` | sim (`value: string`) | sim | `onChange(event)` | API HTML nativa; funciona com `register()` direto. |
 | `Textarea` | sim | sim | `onChange(event)` | API HTML nativa; suporta `register()`. `maxLength` mostra contador. |
-| `Checkbox` | sim (`checked: boolean \| "indeterminate"`) | sim (`defaultChecked: boolean`, via Radix) | `onCheckedChange(checked)` | Não emite `event` — precisa de `Controller` se você quiser ler boolean direto, mas `register()` funciona para o caso simples (RHF lê via `event.target.checked`). |
-| `Switch` | sim (`checked: boolean`) | sim (`defaultChecked: boolean`, via Radix) | `onCheckedChange(checked: boolean)` | Mesmo perfil de `Checkbox`. |
-| `RadioGroup` | sim (`value: string`) | sim (`defaultValue: string`, via Radix) | `onValueChange(value: string)` | Itens passam via prop `values: RadioGroupItemData[]`. |
-| `Combobox` | sim (`value: string` ou `string[]` no modo `multiple`) | **não** | `onValueChange(value)` | Controlled-only. Use `Controller`. |
-| `DateInput` | sim, **obrigatório** (`value: string` ISO `yyyy-MM-dd`) | **não** | `onChange(value: string)` | Controlled-only. Valor em string vazia `""` representa "sem data". |
-| `DateRangePicker` | sim, **obrigatório** (`value: { from: string; to: string }`) | **não** | `onValueChange(value: DateRangeValue)` | Controlled-only. Use sempre `Controller`. |
-| `CurrencyInput` | sim, **obrigatório** (`value: number` em reais float) | **não** | `onValueChange(value: number)` | Controlled-only. Emite `number`, não `event`. |
-| `PercentageInput` | sim, **obrigatório** (`value: number`) | **não** | `onValueChange(value: number)` | Mesmo perfil de `CurrencyInput`. |
-| `MultiInput` | sim, **obrigatório** (`value: string[]` ou `number[]`) | **não** | `onValueChange(values)` | Controlled-only. Modo `type="number"` ordena ascendente. |
-| `TimePicker` | sim (`value?: string` formato `HH:MM`) | **não** | `onChange(value: string)` | Controlled. Valor inválido vira `""`. |
-| `InputOTP` | sim, **obrigatório** (`value: string`) | **não** | `onValueChange(value: string)`, mais `onComplete(value)` | Controlled-only. `onComplete` dispara ao preencher todos os slots. |
-| `FileUpload` | opcional (`value?: File[]`) | **não** — gerencia state interno se `value` não for passado | `onValueChange(files: File[])` | Híbrido: passe `value` + `onValueChange` para controlar, ou omita ambos para deixar o componente gerenciar. Emite `File[]`, não `FileList`. |
+| `Checkbox` | sim (`checked: boolean \| "indeterminate"`) | sim (`defaultChecked`) | `onCheckedChange(checked)` | `register()` resolve o caso simples; para `"indeterminate"`, `Controller`. |
+| `Switch` | sim (`checked: boolean`) | sim (`defaultChecked`) | `onCheckedChange(checked)` | Mesmo perfil de `Checkbox`. |
+| `RadioGroup` | sim (`value: string`) | sim | `onValueChange(value)` | Itens em `values: RadioGroupItemData[]`. |
+| `Select` | sim (`value: string`, `""` = nada escolhido) | sim | `onValueChange(value)` | Com `name`, um `<select>` nativo leva o valor; nada escolhido não envia nada. |
+| `Combobox` | sim (`string`, ou `string[]` com `multiple`) | sim | `onValueChange(value)` | Com `name` e `multiple`, uma entrada por valor (`formData.getAll`); sem nada escolhido, nenhuma entrada (`get` dá `null`), como num `<select multiple>`. |
+| `DateInput` | sim (`value: string` ISO `yyyy-MM-dd`, `""` = sem data) | sim | `onValueChange(value)` | Digitável. `onChange` antigo segue como alias, obsoleto. |
+| `DateRangePicker` | sim (`{ from, to }` em ISO) | sim | `onValueChange(value)` | |
+| `TimePicker` | sim (`"HH:MM"`, `""` = vazio) | sim | `onValueChange(value)` | `onChange` antigo segue como alias, obsoleto. |
+| `NumberInput` | sim (`number \| null`; vazio é `null`) | sim | `onValueChange(value)` | Com `name`, o número bruto com ponto decimal. |
+| `Slider` | sim (`number`, ou `[min, max]` com `range`) | sim | `onValueChange(value)` | Com `name`, um campo por polegar. |
+| `CurrencyInput` | sim (`number` em reais; `null` com `emptyValue="null"`) | sim | `onValueChange(value)` | Emite número, não `event`. |
+| `PercentageInput` | sim (`number`; `null` com `emptyValue="null"`) | sim | `onValueChange(value)` | Mesmo perfil de `CurrencyInput`. |
+| `CPFInput`, `CNPJInput`, `CEPInput`, `PhoneInput` | sim (só dígitos) | sim | `onValueChange(value)` | Com `name`, o formulário recebe os dígitos sem máscara. |
+| `MultiInput` | sim (`string[]` ou `number[]`) | sim | `onValueChange(values)` | `type="number"` ordena. Com `name`, valores separados por vírgula. |
+| `InputOTP` | sim (`string`) | sim | `onValueChange(value)`, mais `onComplete(value)` | `onComplete` dispara ao preencher todos os slots. |
+| `FileUpload` | opcional (`value?: File[]`) | não: sem `value`, guarda os arquivos por conta própria | `onValueChange(files)` | Emite `File[]`, não `FileList`. Com `name`, o formulário recebe os arquivos. |
 
-**Regra prática:** se a coluna `defaultValue` mostrar "não", você **precisa** de `Controller` para integrar com RHF. Se ambas colunas tiverem "sim" e o callback for `onChange(event)` padrão, `register()` direto resolve.
+Todos os campos aceitam `readOnly` (mostra, recebe foco, vai no formulário) e `disabled` (sai do formulário).
+
+**Regra prática:** com React Hook Form, `register()` direto serve aos campos cujo callback é `onChange(event)` (`Input`, `Textarea`, e o caso simples de `Checkbox` e `Switch`). Os outros entregam o valor, não um evento: use `Controller`. Num `<form>` nativo, sem biblioteca, todos funcionam não controlados com `defaultValue` e `name`.
 
 ---
 
 ## Receita com react-hook-form
+
+> **Use `noValidate` no `<form>`.** A prop `required` dos campos desenha o asterisco e marca o campo como obrigatório para o navegador. Sem `noValidate`, o navegador barra o envio com o balão dele antes de o react-hook-form rodar, e a mensagem que você escreveu em `rules` nunca aparece. Com `noValidate`, quem valida é a sua regra e quem mostra o erro é o campo da lib (`error`), no idioma e no visual do produto. A story **Form Integration / RHF Form / Envio vazio mostra os erros da lib** cobre esse fluxo.
 
 ### Setup mínimo
 
@@ -60,7 +68,7 @@ export function ContatoForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
       <Input
         label="Nome"
         required
@@ -227,7 +235,7 @@ Ambos disparam `onCheckedChange(checked: boolean | "indeterminate")` — **não 
       label="Data de nascimento"
       required
       value={field.value ?? ""}
-      onChange={field.onChange}
+      onValueChange={field.onChange}
       error={fieldState.error?.message}
     />
   )}
@@ -341,7 +349,7 @@ Ambos disparam `onCheckedChange(checked: boolean | "indeterminate")` — **não 
     <TimePicker
       label="Horário do compromisso"
       value={field.value}
-      onChange={field.onChange}
+      onValueChange={field.onChange}
       error={fieldState.error?.message}
     />
   )}
@@ -469,7 +477,7 @@ export function PropostaForm() {
     })
 
   return (
-    <form onSubmit={handleSubmit((data) => console.log(data))}>
+    <form noValidate onSubmit={handleSubmit((data) => console.log(data))}>
       <Input
         label="E-mail"
         {...register("email")}
@@ -526,13 +534,13 @@ export function PropostaForm() {
 
 ## Pitfalls
 
-**Sempre declare `defaultValues` no `useForm()`.** RHF tem comportamento sutil quando o valor inicial vem `undefined`: o componente pode iniciar uncontrolled e mudar para controlled na primeira interação, o que dispara o warning clássico do React (`A component is changing an uncontrolled input to be controlled`). Os componentes que exigem `value` (todos os `forms/` e `domain/` controlled-only) ficam ainda mais sensíveis — sempre forneça valor inicial coerente: `""` para string, `0` para número, `[]` para arrays, `{ from: "", to: "" }` para `DateRangePicker`.
+**Sempre declare `defaultValues` no `useForm()`.** RHF tem comportamento sutil quando o valor inicial vem `undefined`: o componente pode iniciar uncontrolled e mudar para controlled na primeira interação, o que dispara o warning clássico do React (`A component is changing an uncontrolled input to be controlled`). Com `Controller`, o campo recebe `value` desde o primeiro render: forneça um valor inicial coerente com o tipo — `""` para texto e datas, `null` para `NumberInput` vazio (e para `CurrencyInput`/`PercentageInput` com `emptyValue="null"`), `[]` para listas, `{ from: "", to: "" }` para `DateRangePicker`.
 
-**Componentes sem `event` precisam de `Controller`.** Qualquer componente cujo callback **não seja** `onChange(event)` HTML não funciona com `register()` direto. Isso inclui: `Combobox`, `DateInput`, `DateRangePicker`, `CurrencyInput`, `PercentageInput`, `MultiInput`, `TimePicker`, `InputOTP`, `FileUpload`. `Checkbox` e `Switch` ficam no limite: `register()` resolve para boolean simples, mas se você precisa do estado `"indeterminate"` do Checkbox, use `Controller`.
+**Componentes sem `event` precisam de `Controller`.** Qualquer componente cujo callback **não seja** `onChange(event)` HTML não funciona com `register()` direto. Isso inclui: `Select`, `Combobox`, `DateInput`, `DateRangePicker`, `TimePicker`, `NumberInput`, `Slider`, `CurrencyInput`, `PercentageInput`, os campos de CPF, CNPJ, CEP e telefone, `MultiInput`, `InputOTP` e `FileUpload`. `Checkbox` e `Switch` ficam no limite: `register()` resolve para boolean simples, mas se você precisa do estado `"indeterminate"` do Checkbox, use `Controller`.
 
 **Não misture `value=` com `{...register(...)}`.** Se você passar `register("campo")` no mesmo elemento que `value={...}`, o controle fica em estado inconsistente — `register` instala o seu próprio `ref`/`onChange`/`onBlur` e assume modo uncontrolled. Escolha um caminho: ou `register()` (uncontrolled, RHF gerencia o DOM), ou `Controller` + `value={field.value}` (controlled, você gerencia explicitamente).
 
-**`value` controlado precisa de fallback `??`.** Em campos controlled-only (`InputOTP`, `DateInput`, etc.), se `field.value` vier `undefined` em algum render (e.g. defaultValue ausente), o componente pode crashar ou disparar o warning. Use `field.value ?? ""` (ou o tipo apropriado) como guard.
+**`value` controlado precisa de fallback `??`.** Um `value` que vem `undefined` num render e definido no seguinte faz o campo passar de não controlado a controlado (os campos aceitam os dois modos e decidem pelo `value`). Use `field.value ?? ""` (ou o vazio do tipo: `null`, `[]`) como guarda.
 
 **`CurrencyInput` arredonda para 2 casas.** Internamente o componente passa por `toCents → fromCents`, então `0.123456` vira `0.12`. Para aritmética financeira (somas, percentuais), opere em centavos via os helpers `toCents`/`fromCents`/`percentOfTotal` exportados pela lib — veja a aba **Hooks**.
 

@@ -5,7 +5,8 @@ import {
   getCoreRowModel,
   getSortedRowModel,
 } from "@tanstack/react-table"
-import { render } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
 
 import { dateColumn, formattedColumn } from "./columns"
@@ -51,7 +52,8 @@ describe("dateColumn", () => {
 
   it("formats Date objects with time", () => {
     const col = dateColumn<RowShape>({ accessorKey: "data", header: "Data" })
-    expect(renderCell(col, new Date(2026, 4, 19, 14, 30))).toBe("19/05/2026 14:30")
+    // A Date is an instant: 14:30 in São Paulo, whatever the machine's zone.
+    expect(renderCell(col, new Date("2026-05-19T14:30:00-03:00"))).toBe("19/05/2026 14:30")
   })
 
   it("accepts BR-formatted strings (dd/MM/yyyy)", () => {
@@ -109,9 +111,79 @@ describe("dateColumn", () => {
   })
 })
 
+describe("dateColumn: time zone and accessors", () => {
+  it("shows a UTC instant in São Paulo by default, and in timeZone when given", () => {
+    const sp = dateColumn<RowShape>({ accessorKey: "data", header: "Data" })
+    expect(renderCell(sp, "2026-05-19T00:00:00.000Z")).toBe("18/05/2026 21:00")
+    const utc = dateColumn<RowShape>({ accessorKey: "data", header: "Data", timeZone: "UTC" })
+    // Midnight in UTC: a stored date, shown without the time.
+    expect(renderCell(utc, "2026-05-19T00:00:00.000Z")).toBe("19/05/2026")
+    expect(renderCell(sp, new Date(Date.UTC(2026, 4, 19, 17, 30)))).toBe("19/05/2026 14:30")
+  })
+
+  it("never moves a date-only value, in any time zone", () => {
+    for (const timeZone of ["America/Sao_Paulo", "Asia/Tokyo", "Pacific/Honolulu", "UTC"]) {
+      const col = dateColumn<RowShape>({ accessorKey: "data", header: "Data", timeZone })
+      expect(renderCell(col, "2026-05-19")).toBe("19/05/2026")
+      expect(renderCell(col, "19/05/2026")).toBe("19/05/2026")
+    }
+  })
+
+  it("reads wall-clock values (no offset) as they are", () => {
+    const col = dateColumn<RowShape>({
+      accessorKey: "data",
+      header: "Data",
+      timeZone: "Asia/Tokyo",
+    })
+    expect(renderCell(col, "2026-05-19T14:30:00")).toBe("19/05/2026 14:30")
+    expect(renderCell(col, "19/05/2026 14:30")).toBe("19/05/2026 14:30")
+  })
+
+  it("sorts instants by time across formats", () => {
+    const col = dateColumn<RowShape>({ accessorKey: "data", header: "Data" })
+    // 10:00Z is 07:00 in São Paulo, before 08:00 there.
+    expect(callSort(col, "2026-05-19T10:00:00Z", "19/05/2026 08:00")).toBe(-1)
+    expect(callSort(col, "2026-05-20", new Date(Date.UTC(2026, 4, 19, 12)))).toBe(1)
+  })
+
+  it("accepts id + accessorFn", () => {
+    interface Pedido {
+      meta: { criadoEm: string }
+    }
+    const col = dateColumn<Pedido>({
+      id: "criadoEm",
+      accessorFn: (row) => row.meta.criadoEm,
+      header: "Criado em",
+    })
+    expect(col.id).toBe("criadoEm")
+    const accessorFn = (col as { accessorFn: (row: Pedido, index: number) => unknown }).accessorFn
+    expect(accessorFn({ meta: { criadoEm: "2026-05-19" } }, 0)).toBe("2026-05-19")
+  })
+
+  it("searches and exports what the cell shows, in its time zone", () => {
+    const col = dateColumn<RowShape>({ accessorKey: "data", header: "Data" })
+    const meta = col.meta as {
+      searchText: (row: RowShape, value: unknown) => string
+      export: (row: RowShape, value: unknown) => Date | null
+    }
+    const value = "2026-05-19T00:00:00.000Z"
+    expect(meta.searchText({ data: value }, value)).toBe("18/05/2026 21:00")
+    const exported = meta.export({ data: value }, value) as Date
+    // The wall clock shown (18/05 21:00), in the Date's own fields for the sheet.
+    expect([exported.getDate(), exported.getMonth(), exported.getHours()]).toEqual([18, 4, 21])
+  })
+})
+
 interface PhoneRow {
   phone: string | null
   name: string
+}
+
+/** The text drawn in a cell (a clipped value's full text is only for screen readers). */
+function visibleText(container: HTMLElement): string {
+  const clone = container.cloneNode(true) as HTMLElement
+  for (const hidden of clone.querySelectorAll(".sr-only")) hidden.remove()
+  return clone.textContent ?? ""
 }
 
 function renderFormattedCell(
@@ -129,7 +201,7 @@ function renderFormattedCell(
   ).cell
   const node = cell({ getValue: () => value, row: { original: rowOriginal } })
   const { container } = render(<div>{node}</div>)
-  return container.textContent ?? ""
+  return visibleText(container)
 }
 
 describe("formattedColumn", () => {
@@ -204,13 +276,54 @@ describe("formattedColumn", () => {
     const { container } = render(
       <div>{cell({ getValue: () => "LEONARDO ALVES", row: { original: sampleRow } })}</div>,
     )
-    // The visible span shows the clipped form (5 chars + "…").
+    // What is drawn is the clipped form (5 chars + "…"); a screen reader
+    // reads the whole text, kept out of sight.
     const trigger = container.querySelector('[data-slot="tooltip-trigger"]')
-    expect(trigger?.textContent).toBe("LEONA…")
-    // The tooltip primitive (Radix) doesn't render the full content until
-    // opened — the trigger's child `span` is what users see at rest.
-    const span = container.querySelector("span")
-    expect(span?.textContent).toBe("LEONA…")
+    expect(trigger?.querySelector('[aria-hidden="true"]')?.textContent).toBe("LEONA…")
+    expect(trigger?.querySelector(".sr-only")?.textContent).toBe("LEONARDO ALVES")
+  })
+
+  it("opens the full text from the keyboard: the clipped text is focusable", async () => {
+    const col = formattedColumn<PhoneRow, string>({
+      accessorKey: "name",
+      header: "Nome",
+      truncate: { max: 5 },
+    })
+    const cell = (
+      col as unknown as {
+        cell: (ctx: { getValue: () => unknown; row: { original: PhoneRow } }) => React.ReactNode
+      }
+    ).cell
+    render(<div>{cell({ getValue: () => "LEONARDO ALVES", row: { original: sampleRow } })}</div>)
+    await userEvent.tab()
+    const trigger = document.activeElement as HTMLElement
+    expect(trigger).toHaveAttribute("data-slot", "tooltip-trigger")
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("LEONARDO ALVES")
+    await userEvent.keyboard("{Escape}")
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument()
+    // Enter (or Space) brings it back without leaving the text.
+    await userEvent.keyboard("{Enter}")
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("LEONARDO ALVES")
+    await userEvent.keyboard(" ")
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument()
+  })
+
+  it("is not a second tab stop inside a clickable row's button", async () => {
+    const { DataTable } = await import("./data-table")
+    const col = formattedColumn<PhoneRow, string>({
+      accessorKey: "name",
+      header: "Nome",
+      truncate: { max: 5 },
+    })
+    render(
+      <DataTable
+        columns={[col]}
+        data={[{ phone: null, name: "LEONARDO ALVES" }]}
+        onRowClick={() => {}}
+      />,
+    )
+    const action = screen.getByRole("button", { name: "LEONARDO ALVES" })
+    expect(action.querySelector("[tabindex]")).toBeNull()
   })
 
   it("counts code points (not UTF-16 units) so surrogate pairs aren't split", () => {

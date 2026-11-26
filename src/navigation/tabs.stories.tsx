@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, userEvent, within } from "@storybook/test"
 import { useEffect, useRef, useState } from "react"
 
+import { Input } from "../primitives/input"
 import { Tabs } from "./tabs"
 
 const meta: Meta<typeof Tabs> = {
@@ -17,10 +18,11 @@ const meta: Meta<typeof Tabs> = {
           "",
           "**Props:**",
           "- `items: TabsItemData[]` — abas + conteúdos.",
-          "- `defaultValue?: string` — aba inicial (uncontrolled). Default: primeiro item.",
+          "- `defaultValue?: string` — aba inicial (uncontrolled). Default: a primeira aba habilitada.",
           "- `value?` / `onValueChange?` — modo controlled.",
           "- `orientation?: 'horizontal' | 'vertical'` — layout das abas. Default `'horizontal'`.",
-          "- `lazy?: boolean` — quando `true`, apenas o painel ativo é montado.",
+          "- `keepMounted?: boolean` — mantém os painéis no DOM (escondidos), para formulários, filtros e uploads não zerarem ao trocar de aba. Sem ele, o painel inativo é desmontado.",
+          "- `lazy?: boolean` — com `keepMounted`, monta cada painel só na primeira visita (e o mantém depois).",
           "",
           "**Shape do item (`TabsItemData`):**",
           "```ts",
@@ -80,9 +82,15 @@ const meta: Meta<typeof Tabs> = {
         defaultValue: { summary: "'horizontal'" },
       },
     },
+    keepMounted: {
+      control: "boolean",
+      description: "Mantém os painéis no DOM (escondidos) ao trocar de aba.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
     lazy: {
       control: "boolean",
-      description: "Quando `true`, apenas o painel ativo é montado/renderizado.",
+      description:
+        "Com `keepMounted`, monta cada painel na primeira visita e o mantém. Sem `keepMounted`, só o painel ativo existe, com ou sem `lazy`.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
   },
@@ -124,6 +132,54 @@ export const Default: Story = {
   },
 }
 
+export const WithoutDefault: Story = {
+  args: { items: baseItems },
+  parameters: {
+    docs: {
+      description: {
+        story: "Sem `value` nem `defaultValue`, a primeira aba habilitada começa aberta.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-[520px]">
+      <Tabs {...args} />
+    </div>
+  ),
+}
+
+const leadTabs = [
+  "Resumo",
+  "Dados pessoais",
+  "Contatos",
+  "Imóveis de interesse",
+  "Propostas",
+  "Documentos",
+  "Histórico",
+  "Tarefas",
+].map((label, i) => ({
+  value: `aba-${i + 1}`,
+  label,
+  content: <p className="text-sm">{label} do lead.</p>,
+}))
+
+export const ManyTabs: Story = {
+  args: { items: leadTabs },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Quando as abas não cabem (a ficha de um lead no celular), a lista rola de lado e a aba ativa fica sempre à vista.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-full max-w-md">
+      <Tabs {...args} />
+    </div>
+  ),
+}
+
 export const WithBadge: Story = {
   args: {
     defaultValue: "inbox",
@@ -132,7 +188,7 @@ export const WithBadge: Story = {
         value: "inbox",
         label: "Caixa de entrada",
         badge: (
-          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-medium text-primary-foreground">
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
             12
           </span>
         ),
@@ -142,7 +198,7 @@ export const WithBadge: Story = {
         value: "snoozed",
         label: "Adiados",
         badge: (
-          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
             3
           </span>
         ),
@@ -222,7 +278,7 @@ export const Lazy: Story = {
     docs: {
       description: {
         story:
-          "Com `lazy={true}` apenas o painel ativo é montado — note como o contador zera ao trocar de aba.",
+          "Sem `keepMounted`, só o painel ativo fica montado, com ou sem `lazy`: o contador volta a 1 a cada troca de aba. Veja `KeepMounted` para guardar o estado dos painéis.",
       },
     },
   },
@@ -231,6 +287,46 @@ export const Lazy: Story = {
       <Tabs {...args} />
     </div>
   ),
+}
+
+export const KeepMounted: Story = {
+  args: {
+    keepMounted: true,
+    defaultValue: "dados",
+    items: [
+      {
+        value: "dados",
+        label: "Dados",
+        content: <Input label="Nome completo" />,
+      },
+      {
+        value: "endereco",
+        label: "Endereço",
+        content: <Input label="CEP" />,
+      },
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com `keepMounted`, os painéis ficam no DOM (escondidos): o que foi digitado num campo não controlado continua lá ao voltar à aba. Some `lazy` para montar cada painel só na primeira visita.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-[520px]">
+      <Tabs {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.type(canvas.getByRole("textbox", { name: "Nome completo" }), "Maria")
+    await userEvent.click(canvas.getByRole("tab", { name: "Endereço" }))
+    await expect(canvas.getByRole("textbox", { name: "CEP" })).toBeVisible()
+    await userEvent.click(canvas.getByRole("tab", { name: "Dados" }))
+    await expect(canvas.getByRole("textbox", { name: "Nome completo" })).toHaveValue("Maria")
+  },
 }
 
 export const Disabled: Story = {

@@ -22,7 +22,7 @@ const meta = {
           "",
           "**Props principais:**",
           "- `value` — string `HH:MM` (24h) ou `''` para vazio.",
-          "- `onChange(value)` — emite `HH:MM` quando ambos os campos têm 2 dígitos válidos; emite `''` quando incompleto.",
+          "- `onValueChange(value)` (antes `onChange`, que segue funcionando) — emite `HH:MM` quando ambos os campos têm 2 dígitos válidos; emite `''` quando incompleto.",
           "- `disabled` — desabilita ambos os inputs.",
           "- `id` — encaminhado ao input de horas (FieldShell associa internamente com a `label`).",
           "- `aria-label` — label do `<fieldset>` (default `'Horário'`).",
@@ -35,7 +35,7 @@ const meta = {
           "",
           'const [value, setValue] = useState("09:30")',
           "",
-          '<TimePicker label="Horário de início" value={value} onChange={setValue} />',
+          '<TimePicker label="Horário de início" value={value} onValueChange={setValue} />',
           "```",
         ].join("\n"),
       },
@@ -62,7 +62,8 @@ const meta = {
       description: "Label do `<fieldset>` (acessibilidade).",
       table: { type: { summary: "string" }, defaultValue: { summary: "'Horário'" } },
     },
-    onChange: { control: false, table: { category: "Eventos" } },
+    onValueChange: { control: false, table: { category: "Eventos" } },
+    onChange: { control: false, table: { category: "Eventos", disable: true } },
   },
 } satisfies Meta<typeof TimePicker>
 
@@ -84,7 +85,7 @@ export const Playground: Story = {
           id={args.id}
           label="Horário"
           value={value}
-          onChange={setValue}
+          onValueChange={setValue}
           disabled={args.disabled}
           aria-label={args["aria-label"]}
         />
@@ -99,15 +100,51 @@ export const Default: Story = {
     const [value, setValue] = useState("09:30")
     return (
       <div className="flex flex-col gap-2">
-        <TimePicker id="start-time" label="Horário de início" value={value} onChange={setValue} />
+        <TimePicker
+          id="start-time"
+          label="Horário de início"
+          value={value}
+          onValueChange={setValue}
+        />
         <span className="text-xs text-muted-foreground">Valor: {value || "(vazio)"}</span>
       </div>
     )
   },
 }
 
+export const Sizes: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` dá a altura da caixa: `sm` 32 px, `md` 40 px (padrão) e `lg` 44 px, a mesma de um botão ou campo do mesmo tamanho.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex flex-col gap-4">
+      {(["sm", "md", "lg"] as const).map((size) => (
+        <TimePicker key={size} size={size} label={`Tamanho ${size}`} value="09:30" />
+      ))}
+    </div>
+  ),
+}
+
 export const Disabled: Story = {
   render: () => <TimePicker label="Encerramento" value="18:00" disabled />,
+}
+
+export const ReadOnly: Story = {
+  name: "Read Only",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` mostra o horário num fundo esmaecido, sem reação ao hover: os campos recebem foco e vão junto no envio do formulário, mas digitar, as setas e colar não mudam nada.",
+      },
+    },
+  },
+  render: () => <TimePicker label="Encerramento" value="18:00" readOnly />,
 }
 
 export const Empty: Story = {
@@ -115,7 +152,7 @@ export const Empty: Story = {
     const [value, setValue] = useState("")
     return (
       <div className="flex flex-col gap-2">
-        <TimePicker id="empty-time" label="Horário" value={value} onChange={setValue} />
+        <TimePicker id="empty-time" label="Horário" value={value} onValueChange={setValue} />
         <span className="text-xs text-muted-foreground">Valor: {value || "(vazio)"}</span>
       </div>
     )

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, userEvent, within } from "@storybook/test"
 import { AlertTriangle, CheckCircle, Eye, Info as InfoIcon, Star } from "lucide-react"
 import { useState } from "react"
 
@@ -13,22 +14,24 @@ const meta: Meta<typeof Toggle> = {
     docs: {
       description: {
         component: [
-          "Button-like control whose value is binary (on/off). Separate from `Button` because the visual job is different:",
+          "Controle com cara de botão cujo valor é binário (ligado ou desligado). É separado do `Button` porque o trabalho visual é outro:",
           "",
-          "- `Button` communicates **action hierarchy** (primary, secondary, destructive). Semantic colours would muddy what's the page's main action.",
-          "- `Toggle` communicates **state**. When pressed it picks up the variant's colour so on/off reads at a glance — the way GitHub's \"Watch\", Trello's \"Watching\", or Gmail's star do.",
+          "- o `Button` comunica **hierarquia de ação** (primária, secundária, destrutiva). Cores semânticas ali confundiriam qual é a ação principal da página;",
+          '- o `Toggle` comunica **estado**. Ligado, ele assume a cor da variante, para o ligado/desligado ser lido de relance, como o "Watch" do GitHub ou a estrela do Gmail.',
           "",
-          "Backed by `@radix-ui/react-toggle`, so the controlled API (`pressed` / `onPressedChange`) and ARIA (`aria-pressed`, `data-state`) come for free.",
+          "Usa `@radix-ui/react-toggle`: API controlada (`pressed` / `onPressedChange`) e ARIA (`aria-pressed`, `data-state`) já vêm prontos.",
+          "",
+          '**O rótulo não muda com o estado.** Quem diz "ligado" é o `aria-pressed`. Se o texto virar "Remover da lista" quando o botão está ligado, o leitor de tela anuncia "Remover da lista, pressionado", que é o contrário do que está na tela. Dê ao `Toggle` o nome do estado ("Lista de atenção", "Favorito", "Negrito") e deixe-o fixo.',
           "",
           "**API**",
           "",
           "- `pressed` / `defaultPressed` — `boolean`.",
           "- `onPressedChange` — `(pressed: boolean) => void`.",
           "- `variant` — `default | info | success | warning | destructive`.",
-          "- `size` — `sm | default | lg`.",
-          "- `disabled` — standard.",
+          '- `size` — `sm` (32px), `md` (40px, padrão) ou `lg` (44px): a altura da caixa inteira, a mesma de um `Button` ou `Input` do mesmo tamanho. `"default"` é o nome antigo de `md`, depreciado.',
+          "- `disabled` — padrão.",
           "",
-          "**Example**",
+          "**Exemplo**",
           "",
           "```tsx",
           'import { Toggle } from "@amfernandesinc/ui"',
@@ -39,7 +42,7 @@ const meta: Meta<typeof Toggle> = {
           "  onPressedChange={setFlagged}",
           ">",
           "  <AlertTriangle />",
-          "  {isFlagged ? 'Remover atenção' : 'Marcar atenção'}",
+          "  Lista de atenção",
           "</Toggle>",
           "```",
         ].join("\n"),
@@ -58,11 +61,12 @@ const meta: Meta<typeof Toggle> = {
     },
     size: {
       control: "inline-radio",
-      options: ["sm", "default", "lg"],
-      description: "Tamanho do controle (espelha o Button).",
+      options: ["sm", "md", "lg"],
+      description:
+        'Altura da caixa, borda incluída: 32, 40 ou 44px, as mesmas do `Button`. `"default"` é o nome antigo de `md` e continua aceito.',
       table: {
-        type: { summary: "'sm' | 'default' | 'lg'" },
-        defaultValue: { summary: "'default'" },
+        type: { summary: "'sm' | 'md' | 'lg'" },
+        defaultValue: { summary: "'md'" },
       },
     },
     pressed: {
@@ -74,9 +78,9 @@ const meta: Meta<typeof Toggle> = {
     },
   },
   args: {
-    children: "Watch",
+    children: "Favorito",
     variant: "default",
-    size: "default",
+    size: "md",
   },
 }
 
@@ -86,7 +90,7 @@ type Story = StoryObj<typeof Toggle>
 export const Default: Story = {}
 
 export const PressedByDefault: Story = {
-  args: { defaultPressed: true, children: "Watching" },
+  args: { defaultPressed: true, children: "Favorito" },
 }
 
 export const Info: Story = {
@@ -95,7 +99,7 @@ export const Info: Story = {
     children: (
       <>
         <InfoIcon />
-        Inscrever
+        Notificações
       </>
     ),
     defaultPressed: true,
@@ -140,19 +144,34 @@ export const Controlled: Story = {
   render: () => {
     const [pressed, setPressed] = useState(false)
     return (
-      <Toggle variant="warning" pressed={pressed} onPressedChange={setPressed}>
-        <AlertTriangle />
-        {pressed ? "Remover da lista de atenção" : "Adicionar a lista de atenção"}
-      </Toggle>
+      <div className="flex flex-col items-center gap-2">
+        <Toggle variant="warning" pressed={pressed} onPressedChange={setPressed}>
+          <AlertTriangle />
+          Lista de atenção
+        </Toggle>
+        <p className="text-xs text-muted-foreground">
+          {pressed ? "Este cliente está na lista de atenção." : "Fora da lista de atenção."}
+        </p>
+      </div>
     )
   },
   parameters: {
     docs: {
       description: {
         story:
-          "Modo controlado típico: o label troca em função do estado, refletindo a ação inversa ao clique.",
+          'Modo controlado. O rótulo é o nome do estado e fica fixo: ligado, o leitor de tela anuncia "Lista de atenção, pressionado". Um texto que muda com o estado ("Remover da lista…") seria lido junto com "pressionado" e diria o contrário. Se a tela precisa explicar o estado, o texto vai fora do botão.',
       },
     },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const toggle = canvas.getByRole("button", { name: "Lista de atenção" })
+    await expect(toggle).toHaveAttribute("aria-pressed", "false")
+    await userEvent.click(toggle)
+    // Same name, new state: the name never has to be re-read to know which.
+    await expect(canvas.getByRole("button", { name: "Lista de atenção" })).toBe(toggle)
+    await expect(toggle).toHaveAttribute("aria-pressed", "true")
+    await expect(canvas.getByText("Este cliente está na lista de atenção.")).toBeInTheDocument()
   },
 }
 
@@ -189,9 +208,9 @@ export const AllVariants: Story = {
           <Star />
           sm
         </Toggle>
-        <Toggle size="default">
+        <Toggle size="md">
           <Star />
-          default
+          md
         </Toggle>
         <Toggle size="lg">
           <Star />
@@ -201,7 +220,6 @@ export const AllVariants: Story = {
     </div>
   ),
   parameters: {
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story: "Galeria com todas as variantes (pressed) + os 3 tamanhos.",
@@ -211,5 +229,5 @@ export const AllVariants: Story = {
 }
 
 export const Disabled: Story = {
-  args: { disabled: true, children: "Disabled" },
+  args: { disabled: true, children: "Favorito" },
 }

@@ -14,25 +14,70 @@ Decisões deliberadas:
 - **Defaults exportados.** Cada componente exporta também `defaultXLabels` para que consumers possam compor traduções completas a partir do default pt-BR (útil quando 90% das strings já está OK e você só quer trocar 1 ou 2).
 - **`Partial` na prop.** Você sempre passa só o que quer mudar; o componente faz `merge` interno com o default.
 
-Atualmente 3 componentes implementam esse pattern:
+30 objetos de `labels`, em 31 componentes (`BarChart` e `LineChart` dividem o mesmo):
 
 ## Tabela de componentes localizáveis
 
-| Componente       | Tipo                    | Default                          | Strings |
-|---               |---                      |---                               |---:     |
-| `DataTable`      | `DataTableLabels`       | `defaultDataTableLabels`         | 12 |
-| `FileUpload`     | `FileUploadLabels`      | `defaultFileUploadLabels`        | 20 |
-| `CommandPalette` | `CommandPaletteLabels`  | `defaultCommandPaletteLabels`    | 3 |
+**Formulários**
+
+| Componente | Tipo | Default | Strings |
+|---|---|---|---:|
+| `Button` | `ButtonLabels` | `defaultButtonLabels` | 1 |
+| `Textarea` | `TextareaLabels` | `defaultTextareaLabels` | 2 |
+| `NumberInput` | `NumberInputLabels` | `defaultNumberInputLabels` | 4 |
+| `CurrencyInput` | `CurrencyInputLabels` | `defaultCurrencyInputLabels` | 2 |
+| `PercentageInput` | `PercentageInputLabels` | `defaultPercentageInputLabels` | 2 |
+| `Slider` | `SliderLabels` | `defaultSliderLabels` | 2 |
+| `Select` | `SelectLabels` | `defaultSelectLabels` | 1 |
+| `Combobox` | `ComboboxLabels` | `defaultComboboxLabels` | 9 |
+| `Calendar` | `CalendarLabels` | `defaultCalendarLabels` | 3 |
+| `DateInput` | `DateInputLabels` | `defaultDateInputLabels` | 6 |
+| `DateRangePicker` | `DateRangePickerLabels` | `defaultDateRangePickerLabels` | 3 |
+| `TimePicker` | `TimePickerLabels` | `defaultTimePickerLabels` | 3 |
+| `MultiInput` | `MultiInputLabels` | `defaultMultiInputLabels` | 5 |
+| `CEPInput` | `CEPInputLabels` | `defaultCEPInputLabels` | 1 |
+| `FileUpload` | `FileUploadLabels` | `defaultFileUploadLabels` | 33 |
+
+**Dados**
+
+| Componente | Tipo | Default | Strings |
+|---|---|---|---:|
+| `DataTable` | `DataTableLabels` | `defaultDataTableLabels` | 24 |
+| `Schedule` | `ScheduleLabels` | `defaultScheduleLabels` | 11 |
+| `Tree` | `TreeLabels` | `defaultTreeLabels` | 3 |
+| `BarChart`, `LineChart` | `ChartLabels` | `defaultChartLabels` | 6 |
+| `Image` | `ImageLabels` | `defaultImageLabels` | 2 |
+| `Video` | `VideoLabels` | `defaultVideoLabels` | 3 |
+| `Skeleton` | `SkeletonLabels` | `defaultSkeletonLabels` | 1 |
+| `Token` | `TokenLabels` | `defaultTokenLabels` | 1 |
+
+**Navegação e overlays**
+
+| Componente | Tipo | Default | Strings |
+|---|---|---|---:|
+| `AppShell` | `AppShellLabels` | `defaultAppShellLabels` | 8 |
+| `Breadcrumb` | `BreadcrumbLabels` | `defaultBreadcrumbLabels` | 2 |
+| `Pagination` | `PaginationLabels` | `defaultPaginationLabels` | 9 |
+| `Stepper` | `StepperLabels` | `defaultStepperLabels` | 9 |
+| `CommandPalette` | `CommandPaletteLabels` | `defaultCommandPaletteLabels` | 4 |
+| `Tour` | `TourLabels` | `defaultTourLabels` | 5 |
+| `Toaster` | `ToasterLabels` | `defaultToasterLabels` | 2 |
+
+Alguns componentes têm um texto só e o recebem por prop direta, sem objeto: `Dialog` e `Sheet` (`closeLabel`, padrão "Fechar"), `AlertDialog` (`confirmLabel`, `cancelLabel`) e `Collapsible` (`triggerLabel`).
 
 Todos os tipos e defaults estão exportados no barrel principal:
 
 ```ts
 import {
   defaultDataTableLabels, type DataTableLabels,
-  defaultFileUploadLabels, type FileUploadLabels,
-  defaultCommandPaletteLabels, type CommandPaletteLabels,
+  defaultScheduleLabels, type ScheduleLabels,
+  defaultChartLabels, type ChartLabels,
 } from "@amfernandesinc/ui"
 ```
+
+### `locale`: nomes de dias e meses
+
+`labels` cobre os textos fixos. Onde o componente escreve nomes de dias e meses, o idioma vem de outra prop: `Schedule` aceita `locale` (BCP 47, padrão `"pt-BR"`), e os nomes e a ordem das datas saem do `Intl` do navegador. Os gráficos formatam números em pt-BR por padrão; para outro formato, passe `formatValue` e `formatX`.
 
 ## Pattern de uso
 
@@ -119,7 +164,7 @@ A regra: **strings simples** quando não há variação; **funções** quando h�
 
 ## Calendar e date pickers
 
-`Calendar`, `DateInput` e `DateRangePicker` são **pt-BR-only by design** — não aceitam `labels` nem `locale`. O grid (nomes de mês, dias da semana, aria-labels dos botões prev/next) é renderizado pelo `react-day-picker` com `ptBR` do `date-fns/locale` hardcoded internamente. Essa decisão segue a postura geral da lib: pt-BR first, sem mecanismos de override para componentes onde a opinionação é parte do produto.
+`Calendar`, `DateInput`, `DateRangePicker` e `TimePicker` têm `labels` para os seus textos (botões, nomes acessíveis, mensagens). Os nomes de meses e dias da semana do calendário continuam em pt-BR: vêm do `ptBR` do `react-day-picker`, fixo no componente.
 
 ## Quando criar um novo `XLabels`?
 

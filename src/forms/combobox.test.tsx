@@ -102,6 +102,13 @@ describe("Combobox", () => {
     expect(badges.length).toBeGreaterThan(0)
   })
 
+  it("the chip's remove button keeps its 12px icon and gets a 24px hit area", () => {
+    render(<Combobox multiple options={options} value={["a"]} />)
+    const remove = screen.getByRole("button", { name: "Remover Alpha" })
+    expect(remove.className).toMatch(/\brelative\b/)
+    expect(remove.className).toContain("before:-inset-1.5")
+  })
+
   it("removes a multi value via the X button on the badge", async () => {
     render(<MultiControlled initial={["a", "b"]} />)
     const removeBtn = screen.getByRole("button", { name: "Remover Alpha" })
@@ -161,6 +168,30 @@ describe("Combobox", () => {
     await userEvent.type(searchInput, "brav")
     expect(await screen.findByRole("option", { name: /Bravo/ })).toBeInTheDocument()
     expect(screen.queryByRole("option", { name: /Alpha/ })).not.toBeInTheDocument()
+  })
+
+  it("does not match the search against the option's value (numeric ids)", async () => {
+    const idOptions: ComboboxOption[] = [
+      { value: "101", label: "Alpha" },
+      { value: "202", label: "Bravo" },
+    ]
+    render(<Combobox options={idOptions} placeholder="Pick" emptyMessage="Nada" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.type(await screen.findByPlaceholderText("Buscar..."), "10")
+    expect(screen.queryByRole("option", { name: /Alpha/ })).not.toBeInTheDocument()
+    expect(await screen.findByText("Nada")).toBeInTheDocument()
+  })
+
+  it("finds an option by one of its keywords", async () => {
+    const cities: ComboboxOption[] = [
+      { value: "1", label: "São Paulo", keywords: ["SP", "Sampa"] },
+      { value: "2", label: "Rio de Janeiro", keywords: ["RJ"] },
+    ]
+    render(<Combobox options={cities} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.type(await screen.findByPlaceholderText("Buscar..."), "sampa")
+    expect(await screen.findByRole("option", { name: /São Paulo/ })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /Rio/ })).not.toBeInTheDocument()
   })
 
   it("creatable: filters existing options by label, not just value", async () => {
@@ -316,6 +347,46 @@ describe("Combobox", () => {
     expect(screen.getByText("Selecione...")).toBeInTheDocument()
   })
 
+  it("disabled: offers no clear control, so the value cannot be cleared by keyboard", async () => {
+    const onValueChange = vi.fn()
+    render(
+      <Combobox
+        options={options}
+        value="c"
+        disabled
+        onValueChange={onValueChange}
+        placeholder="Selecione"
+      />,
+    )
+    expect(screen.queryByRole("button", { name: "Limpar seleção" })).toBeNull()
+    await userEvent.tab()
+    await userEvent.keyboard("{Enter}")
+    expect(onValueChange).not.toHaveBeenCalled()
+    expect(screen.getByRole("combobox")).toHaveTextContent("Charlie")
+  })
+
+  it("disabled, multiple: the chips cannot be removed", () => {
+    render(<Combobox multiple options={options} value={["a", "b"]} disabled />)
+    expect(screen.getByText("Alpha")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Remover/ })).toBeNull()
+  })
+
+  it("the clear control is a real button next to the trigger, not inside it", () => {
+    render(<Combobox options={options} value="a" placeholder="Selecione" />)
+    const trigger = screen.getByRole("combobox")
+    const clear = screen.getByRole("button", { name: "Limpar seleção" })
+    expect(clear.tagName).toBe("BUTTON")
+    expect(trigger.contains(clear)).toBe(false)
+  })
+
+  it("clearing puts the focus back on the trigger", async () => {
+    render(<SingleControlled initial="a" />)
+    await userEvent.click(screen.getByRole("button", { name: "Limpar seleção" }))
+    expect(screen.queryByRole("button", { name: "Limpar seleção" })).toBeNull()
+    expect(screen.getByRole("combobox")).toHaveFocus()
+    expect(screen.getByRole("combobox")).toHaveTextContent("Selecione")
+  })
+
   it("triggers Limpar seleção via keyboard (Enter)", async () => {
     const onValueChange = vi.fn()
     render(
@@ -330,6 +401,461 @@ describe("Combobox", () => {
     clearBtn.focus()
     await userEvent.keyboard("{Enter}")
     expect(onValueChange).toHaveBeenLastCalledWith("")
+  })
+})
+
+describe("Combobox: a opção escolhida", () => {
+  const fifty: ComboboxOption[] = Array.from({ length: 50 }, (_, i) => ({
+    value: `o${i + 1}`,
+    label: `Opção ${i + 1}`,
+  }))
+
+  it("exposes which option is chosen with aria-checked", async () => {
+    render(<Combobox options={options} value="b" placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByRole("option", { name: "Bravo" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    )
+    expect(screen.getByRole("option", { name: "Alpha" })).toHaveAttribute("aria-checked", "false")
+  })
+
+  it("multiple: every chosen option is checked", async () => {
+    render(<Combobox multiple options={options} value={["a", "c"]} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await screen.findByRole("listbox")
+    const checked = screen
+      .getAllByRole("option")
+      .filter((option) => option.getAttribute("aria-checked") === "true")
+      .map((option) => option.textContent)
+    expect(checked).toEqual(["Alpha", "Charlie"])
+  })
+
+  it("opens with the chosen option highlighted, not the first one", async () => {
+    render(<Combobox options={fifty} value="o30" placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    const chosen = await screen.findByRole("option", { name: "Opção 30" })
+    await waitFor(() => expect(chosen).toHaveAttribute("aria-selected", "true"))
+    expect(screen.getByRole("option", { name: "Opção 1" })).toHaveAttribute(
+      "aria-selected",
+      "false",
+    )
+  })
+
+  it("Enter right after opening keeps the value", async () => {
+    const onValueChange = vi.fn()
+    render(
+      <Combobox options={fifty} value="o30" onValueChange={onValueChange} placeholder="Pick" />,
+    )
+    await userEvent.click(screen.getByRole("combobox"))
+    const chosen = await screen.findByRole("option", { name: "Opção 30" })
+    await waitFor(() => expect(chosen).toHaveAttribute("aria-selected", "true"))
+    await userEvent.keyboard("{Enter}")
+    expect(onValueChange).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
+  })
+
+  it("multiple: opens on the first chosen option", async () => {
+    render(<Combobox multiple options={fifty} value={["o12", "o40"]} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    const chosen = await screen.findByRole("option", { name: "Opção 12" })
+    await waitFor(() => expect(chosen).toHaveAttribute("aria-selected", "true"))
+  })
+
+  it("required: clicking the chosen option keeps it chosen", async () => {
+    const onValueChange = vi.fn()
+    render(
+      <Combobox
+        options={options}
+        value="a"
+        required
+        onValueChange={onValueChange}
+        placeholder="Pick"
+      />,
+    )
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.click(await screen.findByRole("option", { name: "Alpha" }))
+    expect(onValueChange).not.toHaveBeenCalled()
+    expect(screen.getByRole("combobox")).toHaveTextContent("Alpha")
+  })
+})
+
+describe("Combobox: ARIA do gatilho", () => {
+  it("aria-controls points to the list that is on screen, and to nothing while closed", async () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    const trigger = screen.getByRole("combobox")
+    expect(trigger).not.toHaveAttribute("aria-controls")
+    await userEvent.click(trigger)
+    const list = await screen.findByRole("listbox")
+    await waitFor(() => expect(trigger).toHaveAttribute("aria-controls", list.id))
+    expect(document.getElementById(trigger.getAttribute("aria-controls") ?? "")).toBe(list)
+  })
+
+  it("required: the trigger says so with aria-required", () => {
+    const { rerender } = render(<Combobox options={options} label="Status" required />)
+    expect(screen.getByRole("combobox", { name: /Status/ })).toHaveAttribute(
+      "aria-required",
+      "true",
+    )
+    rerender(<Combobox options={options} label="Status" />)
+    expect(screen.getByRole("combobox", { name: /Status/ })).not.toHaveAttribute("aria-required")
+  })
+
+  it("size sets the trigger's height from the control sizes (md by default)", () => {
+    const { rerender } = render(<Combobox options={options} label="Status" />)
+    const trigger = () => screen.getByRole("combobox", { name: "Status" })
+    expect(trigger().className).toContain("h-control-md")
+    rerender(<Combobox options={options} label="Status" size="sm" />)
+    expect(trigger().className).toContain("h-control-sm")
+    rerender(<Combobox options={options} label="Status" size="lg" />)
+    expect(trigger().className).toContain("h-control-lg")
+    expect(trigger().className).not.toMatch(/\bh-auto\b|min-h-10/)
+  })
+
+  it("the trigger is a button that opens a list: no aria-autocomplete", () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    expect(screen.getByRole("combobox")).not.toHaveAttribute("aria-autocomplete")
+  })
+
+  it("the popover takes the trigger's width (a class Tailwind 4 understands)", async () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    const list = await screen.findByRole("listbox")
+    const content = list.closest('[data-slot="popover-content"]')
+    expect(content?.className).toContain("w-(--radix-popover-trigger-width)")
+  })
+})
+
+describe("Combobox: não controlado e formulário nativo", () => {
+  it("without value, it keeps the choice itself", async () => {
+    const onValueChange = vi.fn()
+    render(<Combobox options={options} onValueChange={onValueChange} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.click(await screen.findByRole("option", { name: "Bravo" }))
+    expect(onValueChange).toHaveBeenCalledWith("b")
+    expect(screen.getByRole("combobox")).toHaveTextContent("Bravo")
+  })
+
+  it("starts from defaultValue and can be cleared", async () => {
+    render(<Combobox options={options} defaultValue="c" placeholder="Pick" />)
+    expect(screen.getByRole("combobox")).toHaveTextContent("Charlie")
+    await userEvent.click(screen.getByRole("button", { name: "Limpar seleção" }))
+    expect(screen.getByRole("combobox")).toHaveTextContent("Pick")
+  })
+
+  it("multiple: starts from defaultValue and toggles options", async () => {
+    render(<Combobox multiple options={options} defaultValue={["a"]} placeholder="Pick" />)
+    expect(screen.getByRole("combobox")).toHaveTextContent("1 selecionado")
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.click(await screen.findByRole("option", { name: "Charlie" }))
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
+    expect(screen.getByRole("combobox")).toHaveTextContent("2 selecionados")
+    await userEvent.click(screen.getByRole("button", { name: "Remover Alpha" }))
+    expect(screen.getByRole("combobox")).toHaveTextContent("1 selecionado")
+  })
+
+  it("name: a native form receives the raw value", () => {
+    const { container } = render(
+      <form>
+        <Combobox name="status" options={options} defaultValue="b" />
+      </form>,
+    )
+    const form = container.querySelector("form") as HTMLFormElement
+    expect(new FormData(form).get("status")).toBe("b")
+  })
+
+  it("name, multiple: one entry per value, so a comma inside a value survives", () => {
+    const { container } = render(
+      <form>
+        <Combobox multiple name="areas" options={options} value={["Rua A, 123", "c"]} />
+      </form>,
+    )
+    const form = container.querySelector("form") as HTMLFormElement
+    expect(new FormData(form).getAll("areas")).toEqual(["Rua A, 123", "c"])
+  })
+
+  it("name, multiple with nothing chosen: nothing is submitted", () => {
+    const { container } = render(
+      <form>
+        <Combobox multiple name="areas" options={options} value={[]} />
+      </form>,
+    )
+    const form = container.querySelector("form") as HTMLFormElement
+    expect(new FormData(form).has("areas")).toBe(false)
+  })
+
+  it("name, disabled: nothing is submitted", () => {
+    const { container } = render(
+      <form>
+        <Combobox name="status" options={options} value="b" disabled />
+      </form>,
+    )
+    const form = container.querySelector("form") as HTMLFormElement
+    expect(new FormData(form).has("status")).toBe(false)
+  })
+
+  it("an uncontrolled field goes back to defaultValue when its form is reset", async () => {
+    const { container } = render(
+      <form>
+        <Combobox name="status" options={options} defaultValue="a" />
+      </form>,
+    )
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.click(await screen.findByRole("option", { name: "Charlie" }))
+    expect(screen.getByRole("combobox")).toHaveTextContent("Charlie")
+    const form = container.querySelector("form") as HTMLFormElement
+    form.reset()
+    await waitFor(() => expect(screen.getByRole("combobox")).toHaveTextContent("Alpha"))
+    expect(new FormData(form).get("status")).toBe("a")
+  })
+})
+
+describe("Combobox: onBlur", () => {
+  it("is called once, when the focus leaves the whole field", async () => {
+    const onBlur = vi.fn()
+    render(
+      <>
+        <Combobox options={options} defaultValue="a" onBlur={onBlur} placeholder="Pick" />
+        <button type="button">Fora</button>
+      </>,
+    )
+    const trigger = screen.getByRole("combobox")
+    await userEvent.click(trigger)
+    // Into the popover's search box and back: still inside.
+    expect(await screen.findByPlaceholderText("Buscar...")).toHaveFocus()
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() => expect(trigger).toHaveFocus())
+    // To the clear button: still inside.
+    await userEvent.tab()
+    expect(screen.getByRole("button", { name: "Limpar seleção" })).toHaveFocus()
+    expect(onBlur).not.toHaveBeenCalled()
+    await userEvent.tab()
+    expect(screen.getByRole("button", { name: "Fora" })).toHaveFocus()
+    expect(onBlur).toHaveBeenCalledTimes(1)
+  })
+
+  it("choosing an option and returning to the trigger is not a blur", async () => {
+    const onBlur = vi.fn()
+    render(<Combobox options={options} onBlur={onBlur} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.click(await screen.findByRole("option", { name: "Bravo" }))
+    await waitFor(() => expect(screen.getByRole("combobox")).toHaveFocus())
+    expect(onBlur).not.toHaveBeenCalled()
+  })
+})
+
+describe("Combobox: somente leitura", () => {
+  it("shows the value, takes focus, does not open and offers no clear", async () => {
+    const onValueChange = vi.fn()
+    render(
+      <Combobox
+        options={options}
+        label="Status"
+        value="b"
+        readOnly
+        onValueChange={onValueChange}
+      />,
+    )
+    const trigger = screen.getByRole("combobox", { name: "Status" })
+    expect(trigger).toHaveTextContent("Bravo")
+    expect(trigger).toHaveAttribute("aria-readonly", "true")
+    expect(trigger).not.toBeDisabled()
+    expect(screen.queryByRole("button", { name: "Limpar seleção" })).toBeNull()
+    await userEvent.click(trigger)
+    expect(trigger).toHaveFocus()
+    await userEvent.keyboard("{Enter}{ArrowDown} ")
+    expect(screen.queryByRole("listbox")).toBeNull()
+    expect(onValueChange).not.toHaveBeenCalled()
+  })
+
+  it("multiple: the chips have no remove button", () => {
+    render(<Combobox multiple options={options} value={["a", "b"]} readOnly />)
+    expect(screen.getByText("Alpha")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Remover/ })).toBeNull()
+  })
+
+  it("is submitted with the form", () => {
+    const { container } = render(
+      <form>
+        <Combobox name="status" options={options} value="b" readOnly />
+      </form>,
+    )
+    const form = container.querySelector("form") as HTMLFormElement
+    expect(new FormData(form).get("status")).toBe("b")
+  })
+})
+
+describe("Combobox: teclado no gatilho fechado", () => {
+  it("ArrowDown and ArrowUp open the list", async () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    screen.getByRole("combobox").focus()
+    await userEvent.keyboard("{ArrowDown}")
+    expect(await screen.findByRole("listbox")).toBeInTheDocument()
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
+    await userEvent.keyboard("{ArrowUp}")
+    expect(await screen.findByRole("listbox")).toBeInTheDocument()
+  })
+
+  it("typing a letter opens the list with that letter in the search", async () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    screen.getByRole("combobox").focus()
+    await userEvent.keyboard("b")
+    const search = await screen.findByPlaceholderText("Buscar...")
+    await waitFor(() => expect(search).toHaveFocus())
+    expect(search).toHaveValue("b")
+    await userEvent.keyboard("r")
+    expect(search).toHaveValue("br")
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["Bravo"])
+    await userEvent.keyboard("{Enter}")
+    await waitFor(() => expect(screen.getByRole("combobox")).toHaveTextContent("Bravo"))
+  })
+
+  it("Tab, Shift and other non-printable keys do not open it", async () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    screen.getByRole("combobox").focus()
+    await userEvent.keyboard("{Shift}{Control>}c{/Control}{Home}")
+    expect(screen.queryByRole("listbox")).toBeNull()
+  })
+
+  it("disabled and readOnly do not open by keyboard", async () => {
+    const { rerender } = render(<Combobox options={options} readOnly value="a" />)
+    screen.getByRole("combobox").focus()
+    await userEvent.keyboard("{ArrowDown}b")
+    expect(screen.queryByRole("listbox")).toBeNull()
+    rerender(<Combobox options={options} disabled value="a" />)
+    expect(screen.queryByRole("listbox")).toBeNull()
+  })
+})
+
+describe("Combobox: textos", () => {
+  it("the list has a Portuguese name", async () => {
+    render(<Combobox options={options} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByRole("listbox", { name: "Opções" })).toBeInTheDocument()
+    expect(screen.queryByRole("listbox", { name: "Suggestions" })).toBeNull()
+  })
+
+  it("every fixed text comes from labels", async () => {
+    render(
+      <Combobox
+        multiple
+        creatable
+        options={options}
+        defaultValue={["a"]}
+        labels={{
+          clear: "Apagar tudo",
+          remove: (label) => `Tirar ${label}`,
+          create: (term) => `Criar ${term}`,
+          list: "Áreas",
+          empty: "Nada aqui",
+          placeholder: "Escolha",
+          search: "Procurar",
+        }}
+      />,
+    )
+    expect(screen.getByRole("button", { name: "Apagar tudo" })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Tirar Alpha" }))
+    expect(screen.getByRole("combobox")).toHaveTextContent("Escolha")
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByRole("listbox", { name: "Áreas" })).toBeInTheDocument()
+    await userEvent.type(screen.getByPlaceholderText("Procurar"), "zz")
+    expect(screen.getByRole("option", { name: "Criar zz" })).toBeInTheDocument()
+  })
+
+  it("the empty text comes from labels, and emptyMessage still wins", async () => {
+    const { unmount } = render(<Combobox options={[]} labels={{ empty: "Nada aqui" }} />)
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByText("Nada aqui")).toBeInTheDocument()
+    unmount()
+    render(<Combobox options={[]} labels={{ empty: "Nada aqui" }} emptyMessage="Vazio" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByText("Vazio")).toBeInTheDocument()
+  })
+})
+
+describe("Combobox: listas grandes e busca no servidor", () => {
+  const many: ComboboxOption[] = Array.from({ length: 250 }, (_, i) => ({
+    value: `o-${i + 1}`,
+    label: `Opção ${i + 1}`,
+  }))
+
+  it("renders at most maxVisibleOptions (100) and says how many are hidden", async () => {
+    render(<Combobox options={many} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await screen.findByRole("listbox")
+    expect(screen.getAllByRole("option")).toHaveLength(100)
+    expect(screen.getByText(/150 opções a mais/)).toBeInTheDocument()
+    expect(screen.getByText(/continue digitando/i)).toBeInTheDocument()
+  })
+
+  it("filters the whole list, not just what is on screen, and drops the line when all fit", async () => {
+    render(<Combobox options={many} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.type(await screen.findByPlaceholderText("Buscar..."), "opcao 24")
+    // 24 and 240-249
+    expect(screen.getAllByRole("option")).toHaveLength(11)
+    expect(screen.getByRole("option", { name: /Opção 249/ })).toBeInTheDocument()
+    expect(screen.queryByText(/opções a mais/)).toBeNull()
+  })
+
+  it("keeps the chosen option in the list even past the cap", async () => {
+    render(<Combobox options={many} value="o-200" placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByRole("option", { name: /Opção 200/ })).toBeInTheDocument()
+    expect(screen.getByText(/149 opções a mais/)).toBeInTheDocument()
+  })
+
+  it("maxVisibleOptions and the line's text can be changed", async () => {
+    render(
+      <Combobox
+        options={many}
+        placeholder="Pick"
+        maxVisibleOptions={10}
+        labels={{ hiddenOptions: (n) => `+${n} itens` }}
+      />,
+    )
+    await userEvent.click(screen.getByRole("combobox"))
+    await screen.findByRole("listbox")
+    expect(screen.getAllByRole("option")).toHaveLength(10)
+    expect(screen.getByText("+240 itens")).toBeInTheDocument()
+  })
+
+  it("server search: reports the term and shows the options as given with shouldFilter={false}", async () => {
+    const onSearchChange = vi.fn()
+    const serverOptions: ComboboxOption[] = [
+      { value: "1", label: "Alpha" },
+      { value: "2", label: "Bravo" },
+    ]
+    render(
+      <Combobox
+        options={serverOptions}
+        shouldFilter={false}
+        onSearchChange={onSearchChange}
+        placeholder="Pick"
+      />,
+    )
+    await userEvent.click(screen.getByRole("combobox"))
+    await userEvent.type(await screen.findByPlaceholderText("Buscar..."), "zz")
+    expect(onSearchChange).toHaveBeenLastCalledWith("zz")
+    // Nothing matches "zz" locally, but the server's answer is shown as is.
+    expect(screen.getAllByRole("option")).toHaveLength(2)
+  })
+
+  it("loading: says it is loading instead of saying nothing was found", async () => {
+    render(<Combobox options={[]} loading shouldFilter={false} placeholder="Pick" />)
+    await userEvent.click(screen.getByRole("combobox"))
+    expect(await screen.findByText("Carregando…")).toBeInTheDocument()
+    expect(screen.queryByText("Nenhuma opção encontrada.")).toBeNull()
+  })
+
+  it("server search: keeps showing the chosen label when the options no longer contain it", () => {
+    const { rerender } = render(
+      <Combobox options={[{ value: "1", label: "Alpha" }]} value="1" shouldFilter={false} />,
+    )
+    rerender(<Combobox options={[{ value: "2", label: "Bravo" }]} value="1" shouldFilter={false} />)
+    expect(screen.getByRole("combobox")).toHaveTextContent("Alpha")
   })
 })
 

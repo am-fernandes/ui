@@ -3,6 +3,7 @@ import { expect, userEvent, within } from "@storybook/test"
 import * as React from "react"
 
 import { isValidCPF } from "@/lib/brazil"
+import { Button } from "../primitives/button"
 import { CPFInput } from "./cpf-input"
 
 const meta = {
@@ -14,13 +15,17 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Input controlado para **CPF** com máscara `000.000.000-00`. O valor interno são apenas os **dígitos limpos** (string de até 11 dígitos), enquanto o display é mascarado em tempo real.",
+          "Input para **CPF** com máscara `000.000.000-00`. O valor interno são apenas os **dígitos limpos** (string de até 11 dígitos), enquanto o display é mascarado em tempo real.",
           "",
           "**Props principais:**",
           '- `value` — CPF atual como string de dígitos limpos (ex.: `"12345678909"`).',
           "- `onValueChange` — callback `(value: string) => void` que recebe os dígitos limpos a cada edição.",
           "- `label` — rótulo renderizado pelo próprio componente via `FieldShell`.",
           "- `disabled` — desabilita a edição.",
+          "- `defaultValue` — valor inicial (sem máscara) quando o campo não é controlado: sem `value`, ele guarda o próprio valor.",
+          "- `name` — nome no formulário nativo. O form recebe o valor **sem máscara**, por um input oculto.",
+          "- `size` — altura do campo: `sm` (32px), `md` (40px, padrão) ou `lg` (44px), a mesma de botões e selects do mesmo tamanho.",
+          "- `readOnly` — somente leitura: o valor fica legível, recebe foco e é enviado, mas não é editável. Use em tela de consulta, no lugar de `disabled`.",
           "- Demais props do `<input>` (exceto `value`, `onChange`, `type`) são repassadas.",
           "",
           "**Validação:** o componente é apenas um formatador. Para validar o DV use `isValidCPF` de `@amfernandesinc/ui/lib/brazil`.",
@@ -178,5 +183,93 @@ export const WithValidationFeedback: Story = {
         </p>
       </div>
     )
+  },
+}
+
+export const NativeForm: Story = {
+  args: {},
+  render: () => {
+    const [sent, setSent] = React.useState<string | null>(null)
+    return (
+      <form
+        className="flex w-80 flex-col gap-3"
+        onSubmit={(event) => {
+          event.preventDefault()
+          setSent(String(new FormData(event.currentTarget).get("cpf")))
+        }}
+      >
+        <CPFInput id="cpf-native" label="CPF" name="cpf" defaultValue="529982" required />
+        <div className="flex gap-2">
+          <Button type="submit">Enviar</Button>
+          <Button type="reset" variant="outline">
+            Desfazer
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">Enviado: {sent ?? "(nada ainda)"}</p>
+      </form>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const input = canvas.getByLabelText(/CPF/) as HTMLInputElement
+    await expect(input).toHaveValue("529.982")
+    await userEvent.click(input)
+    await userEvent.keyboard("{End}24725")
+    await expect(input).toHaveValue("529.982.247-25")
+    await userEvent.click(canvas.getByRole("button", { name: "Enviar" }))
+    // O form recebe os dígitos, não a máscara.
+    await expect(canvas.getByText("Enviado: 52998224725")).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole("button", { name: "Desfazer" }))
+    await expect(input).toHaveValue("529.982")
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Sem `value`, o campo é **não controlado**: parte de `defaultValue` e guarda o que é digitado. Com `name`, o `<form>` nativo recebe os dígitos limpos (`52998224725`), e o botão de reset devolve o `defaultValue`.",
+      },
+    },
+  },
+}
+
+export const ReadOnly: Story = {
+  args: {},
+  render: () => (
+    <div className="flex w-80 flex-col gap-4">
+      <CPFInput id="cpf-editable" label="CPF (editável)" defaultValue={"52998224725"} />
+      <CPFInput
+        id="cpf-readonly"
+        label="CPF (somente leitura)"
+        defaultValue={"52998224725"}
+        readOnly
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`readOnly` é o estado de tela de consulta: fundo esmaecido, sem reação ao hover, com o valor legível, focável e enviado no formulário. `disabled` (50% de opacidade, fora do Tab e do envio) é para o campo que não se aplica.",
+      },
+    },
+  },
+}
+
+export const Sizes: Story = {
+  args: {},
+  render: () => (
+    <div className="flex w-80 flex-col gap-4">
+      <CPFInput id="cpf-sm" label="CPF (sm)" size="sm" defaultValue={"52998224725"} />
+      <CPFInput id="cpf-md" label="CPF (md)" size="md" defaultValue={"52998224725"} />
+      <CPFInput id="cpf-lg" label="CPF (lg)" size="lg" defaultValue={"52998224725"} />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` define a altura da caixa inteira, borda incluída: 32, 40 e 44px. É o mesmo token de `Button` e dos demais controles, então campo e botão do mesmo tamanho ficam alinhados numa linha.",
+      },
+    },
   },
 }

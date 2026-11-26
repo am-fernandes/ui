@@ -2,19 +2,52 @@
 /* Required by overlay components for data-state animations. */
 @import "tw-animate-css";
 
+/* Tailwind v4 does not scan node_modules: an app that imports this file would
+   miss every class used only inside the library (the Dialog's position, the
+   radii, the status colours). Relative to this file, which ships in dist/, so
+   the app needs no @source line of its own. */
+@source "./";
+
+/* Dark mode: put the `dark` class on <html> (or on any ancestor of the part
+   that should be dark). Components need no `dark:` classes; the tokens flip. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Radius — three levels, by role (Foundations/Radius in Storybook):
+   inner      4px  parts inside a control and small pieces (checkbox box, tab,
+                   segment, badge, token, chip in a field)
+   element    8px  the control itself (button, field, menu item, nav item)
+   container 12px  surfaces that group or float (card, dialog, popover, menu)
+   They step by 4px, like the default inner padding (p-1), so nesting closes
+   exactly: a 12px menu with p-1 holds 8px items; an 8px track holds 4px tabs.
+   Use `rounded-inner`, `rounded-element` and `rounded-container`. */
+@theme {
+  --radius-inner: 4px;
+  --radius-element: 8px;
+  --radius-container: 12px;
+
+  /* Altura dos controles (botão, campo, gatilho, toggle): a caixa inteira,
+     borda incluída. `h-control-md`, `min-h-control-md`, `size-control-md`.
+     Um controle de borda e um sem borda do mesmo tamanho têm a mesma altura. */
+  --spacing-control-sm: 2rem;
+  --spacing-control-md: 2.5rem;
+  --spacing-control-lg: 2.75rem;
+}
+
 @theme inline {
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     "Liberation Mono", monospace;
 
-  --radius-sm: var(--radius);
-  --radius-md: var(--radius);
-  --radius-lg: var(--radius);
-  --radius-xl: var(--radius);
-  --radius-2xl: var(--radius);
-  --radius-3xl: var(--radius);
-  --radius-4xl: var(--radius);
+  /* Tailwind's own scale lands on the three levels, so no other radius exists. */
+  --radius-xs: var(--radius-inner);
+  --radius-sm: var(--radius-inner);
+  --radius-md: var(--radius-element);
+  --radius-lg: var(--radius-container);
+  --radius-xl: var(--radius-container);
+  --radius-2xl: var(--radius-container);
+  --radius-3xl: var(--radius-container);
+  --radius-4xl: var(--radius-container);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -24,14 +57,18 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-pressed: var(--primary-pressed);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-text: var(--destructive-text);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
@@ -39,30 +76,60 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
 
-  /* Status badge palettes — tinted bg, WCAG AA text, medium border */
-  --color-status-success-bg: var(--status-success-bg);
-  --color-status-success-text: var(--status-success-text);
-  --color-status-success-border: var(--status-success-border);
-  --color-status-warning-bg: var(--status-warning-bg);
-  --color-status-warning-text: var(--status-warning-text);
-  --color-status-warning-border: var(--status-warning-border);
-  --color-status-info-bg: var(--status-info-bg);
-  --color-status-info-text: var(--status-info-text);
-  --color-status-info-border: var(--status-info-border);
-  --color-status-destructive-bg: var(--status-destructive-bg);
-  --color-status-destructive-text: var(--status-destructive-text);
-  --color-status-destructive-border: var(--status-destructive-border);
+  /* Categorical palette (Token, Schedule): faint bg, AA+ text, solid accent */
+  --color-category-gray-bg: var(--category-gray-bg);
+  --color-category-gray-text: var(--category-gray-text);
+  --color-category-gray-solid: var(--category-gray-solid);
+  --color-category-red-bg: var(--category-red-bg);
+  --color-category-red-text: var(--category-red-text);
+  --color-category-red-solid: var(--category-red-solid);
+  --color-category-orange-bg: var(--category-orange-bg);
+  --color-category-orange-text: var(--category-orange-text);
+  --color-category-orange-solid: var(--category-orange-solid);
+  --color-category-yellow-bg: var(--category-yellow-bg);
+  --color-category-yellow-text: var(--category-yellow-text);
+  --color-category-yellow-solid: var(--category-yellow-solid);
+  --color-category-green-bg: var(--category-green-bg);
+  --color-category-green-text: var(--category-green-text);
+  --color-category-green-solid: var(--category-green-solid);
+  --color-category-teal-bg: var(--category-teal-bg);
+  --color-category-teal-text: var(--category-teal-text);
+  --color-category-teal-solid: var(--category-teal-solid);
+  --color-category-blue-bg: var(--category-blue-bg);
+  --color-category-blue-text: var(--category-blue-text);
+  --color-category-blue-solid: var(--category-blue-solid);
+  --color-category-purple-bg: var(--category-purple-bg);
+  --color-category-purple-text: var(--category-purple-text);
+  --color-category-purple-solid: var(--category-purple-solid);
+  --color-category-pink-bg: var(--category-pink-bg);
+  --color-category-pink-text: var(--category-pink-text);
+  --color-category-pink-solid: var(--category-pink-solid);
 
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-placeholder: var(--placeholder);
   --color-ring: var(--ring);
+  --color-link: var(--link);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-seq-1: var(--chart-seq-1);
+  --color-chart-seq-2: var(--chart-seq-2);
+  --color-chart-seq-3: var(--chart-seq-3);
+  --color-chart-seq-4: var(--chart-seq-4);
+  --color-chart-seq-5: var(--chart-seq-5);
+  --color-chart-div-1: var(--chart-div-1);
+  --color-chart-div-2: var(--chart-div-2);
+  --color-chart-div-3: var(--chart-div-3);
+  --color-chart-div-4: var(--chart-div-4);
+  --color-chart-div-5: var(--chart-div-5);
+  --color-chart-div-6: var(--chart-div-6);
+  --color-chart-div-7: var(--chart-div-7);
 
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -80,99 +147,414 @@
   --z-tooltip: 70;
   --z-toast: 80;
 
-  /* Motion durations — keep open/close in lockstep per component. */
-  --motion-fast: 100ms; /* tooltip */
-  --motion-default: 150ms; /* popover, dropdown */
-  --motion-slow: 200ms; /* dialog, alert-dialog, backdrop */
-  --motion-slowest: 300ms; /* sheet (symmetric open + close) */
+  /* `transition*` utilities default to the fast duration and the standard curve. */
+  --default-transition-duration: var(--duration-fast);
+  --default-transition-timing-function: var(--ease-standard);
 }
 
 :root {
-  --radius: 0.25rem;
+  color-scheme: light;
+  /** @deprecated Use --radius-element (or the level that fits). */
+  --radius: var(--radius-element);
 
-  /* Backgrounds & Foregrounds */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.203 0.013 252);
+  /* Motion — durations by visual weight (values from Astryx). fast: hover,
+     menus, tooltips, collapsibles; medium: popovers, sheets, dialogs; slow:
+     continuous movement. min/max are the band edges. Leaving always uses
+     --duration-exit. */
+  --duration-fast-min: 130ms;
+  --duration-fast: 175ms;
+  --duration-fast-max: 230ms;
+  --duration-medium-min: 310ms;
+  --duration-medium: 410ms;
+  --duration-medium-max: 550ms;
+  --duration-slow-min: 730ms;
+  --duration-slow: 975ms;
+  --duration-slow-max: 1300ms;
+  --duration-exit: var(--duration-fast);
+  /* standard decelerates (arrivals, state changes); exit accelerates. */
+  --ease-standard: cubic-bezier(0.24, 1, 0.4, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.6, 0.6);
+  /** @deprecated Use --duration-*. Kept for one release, mapped by role. */
+  --motion-fast: var(--duration-fast); /* tooltip */
+  --motion-default: var(--duration-fast); /* dropdown */
+  --motion-slow: var(--duration-medium-max); /* dialog */
+  --motion-slowest: var(--duration-medium); /* sheet */
+
+  /* Focus — one keyboard ring for every control (Astryx measures): 2px solid,
+     3px away from the edge. Applied by the focus-outline utilities below. */
+  --focus-outline-width: 2px;
+  --focus-outline-style: solid;
+  --focus-outline-color: var(--ring);
+  --focus-outline-offset: 3px;
+
+  /* Fields (Astryx field look): focus turns the border to the ring colour and
+     adds a 2px inner ring of it at 20%; hover adds the same ring in the border
+     color at 30%. Not the keyboard ring: a field shows it on any focus. */
+  --field-focus-ring: color-mix(in oklch, var(--ring) 20%, transparent);
+
+  /* States — hover and pressed paint a translucent layer of the control's own
+     text color over its fill, so one rule works on any variant. */
+  --state-hover-opacity: 5%;
+  --state-pressed-opacity: 10%;
+
+  /* ---- Colors: the group palette (AM Fernandes + Ponto Forte) ---------------
+     Neutrals are the Grafite scale (the brand navy's hue, almost no chroma).
+     The navy both brands share gives the primary (marinho-950) and the one
+     functional blue (marinho-500). Every pair the components draw is checked by
+     scripts/contrast-audit.ts. */
+
+  /* Surfaces. Two backgrounds: --background is the page (only the content
+     area), one small step under the white of every surface. Controls and
+     frames paint --card; floating layers paint --popover. */
+  --background: oklch(0.984 0.003 228.8); /* grafite-25 */
+  --foreground: oklch(0.173 0.038 249.2); /* marinho-950 */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.203 0.013 252);
+  --card-foreground: oklch(0.173 0.038 249.2);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.203 0.013 252);
+  --popover-foreground: oklch(0.173 0.038 249.2);
 
-  /* Primary: preto 100% */
-  --primary: oklch(0 0 0);
+  /* Primary: marinho-950. Hover and pressed walk towards the brand navy. */
+  --primary: oklch(0.173 0.038 249.2);
   --primary-foreground: oklch(1 0 0);
+  --primary-hover: oklch(0.271 0.072 249.1); /* marinho-800 */
+  --primary-pressed: oklch(0.322 0.089 248.8); /* marinho-700, the colour of both brands */
 
-  /* Secondary: branco */
-  --secondary: oklch(1 0 0);
-  --secondary-foreground: oklch(0 0 0);
+  --secondary: oklch(0.945 0.005 247.9); /* grafite-100 */
+  --secondary-foreground: oklch(0.173 0.038 249.2);
 
-  /* Muted & Accent */
-  --muted: oklch(0.934 0.008 252);
-  --muted-foreground: oklch(0.185 0 0);
-  --accent: oklch(0.968 0.005 252);
-  --accent-foreground: oklch(0.203 0.013 252);
+  /* Text has three levels: --foreground, --muted-foreground and
+     --subtle-foreground (placeholder, hint, date; only on --card and
+     --background, it misses 4.5:1 on --muted). */
+  --muted: oklch(0.945 0.005 247.9); /* grafite-100 */
+  --muted-foreground: oklch(0.471 0.011 243); /* grafite-600 */
+  --subtle-foreground: oklch(0.539 0.012 248); /* grafite-550 */
 
-  /* Destructive: vermelho profundo (#c93125) — passes WCAG AA (5.33:1 on white) */
-  --destructive: oklch(0.55 0.19 29.2);
+  /* Selected: the active nav item, a selected row. Stronger than the hover
+     layer, so "where I am" outranks "what I point at". */
+  --accent: oklch(0.931 0.024 248.1); /* marinho-100 */
+  --accent-foreground: oklch(0 0 0);
+
+  /* The functional blue: what is clickable and where you are (links, the focus
+     ring, the marker of the active item). Fills stay on --primary. */
+  --link: oklch(0.514 0.1 248.8); /* marinho-500 */
+  --ring: oklch(0.514 0.1 248.8);
+  --selection: oklch(0.86 0.045 249.4); /* marinho-200 */
+  --selection-foreground: oklch(0.173 0.038 249.2);
+
+  /* Status: one strong fill each, never a tinted version. Each sits at its own
+     lightness and the green leans to blue, so no pair depends on the red-green
+     axis alone (Foundations/Color Vision). Warning takes dark text. */
+  --destructive: oklch(0.551 0.19 29.3);
   --destructive-foreground: oklch(1 0 0);
-
-  /* Success: verde #6d8d0b (74 85% 30%) */
-  --success: oklch(0.497 0.135 120.7);
+  --warning: oklch(0.66 0.137 80.2);
+  --warning-foreground: oklch(0.173 0.038 249.2);
+  --success: oklch(0.52 0.1 168.2);
   --success-foreground: oklch(1 0 0);
-
-  /* Warning: amarelo #ebcd17 (49 86% 51%) */
-  --warning: oklch(0.868 0.167 92.6);
-  --warning-foreground: oklch(0 0 0);
-
-  /* Info: azul corporativo (#006cac) — passes WCAG AA (5.61:1 on white) */
-  --info: oklch(0.5 0.15 236.3);
+  --info: oklch(0.358 0.088 244);
   --info-foreground: oklch(1 0 0);
+  /* Error on a surface, with no fill: field border and message. */
+  --destructive-text: oklch(0.551 0.19 29.3);
 
-  /* Status badge palettes — tinted bg, WCAG AA contrast text, medium border */
-  --status-success-bg: oklch(0.96 0.025 120.7);
-  --status-success-text: oklch(0.33 0.07 120.7);
-  --status-success-border: oklch(0.68 0.1 120.7);
-  --status-warning-bg: oklch(0.97 0.03 92.6);
-  --status-warning-text: oklch(0.38 0.1 92.6);
-  --status-warning-border: oklch(0.75 0.12 92.6);
-  --status-info-bg: oklch(0.96 0.02 236.3);
-  --status-info-text: oklch(0.35 0.1 236.3);
-  --status-info-border: oklch(0.6 0.12 236.3);
-  --status-destructive-bg: oklch(0.97 0.02 29.2);
-  --status-destructive-text: oklch(0.42 0.18 29.2);
-  --status-destructive-border: oklch(0.6 0.2 29.2);
+  /* Categorical palette: 9 hues for tags (Token) and calendar events (Schedule).
+     Low chroma, and each solid at its own lightness: the solid (dot, bar) and
+     the label carry the category; bg and text only support it. */
+  --category-gray-bg: oklch(0.963 0.005 247.9);
+  --category-gray-text: oklch(0.379 0.015 248.2);
+  --category-gray-solid: oklch(0.502 0.018 248.2);
+  --category-red-bg: oklch(0.962 0.016 32);
+  --category-red-text: oklch(0.379 0.065 30);
+  --category-red-solid: oklch(0.399 0.109 30.1);
+  --category-orange-bg: oklch(0.961 0.016 42.4);
+  --category-orange-text: oklch(0.381 0.065 45.7);
+  --category-orange-solid: oklch(0.521 0.11 45.3);
+  --category-yellow-bg: oklch(0.961 0.015 90.2);
+  --category-yellow-text: oklch(0.379 0.064 92.8);
+  --category-yellow-solid: oklch(0.604 0.11 92.9);
+  --category-green-bg: oklch(0.962 0.016 156.9);
+  --category-green-text: oklch(0.381 0.065 157.8);
+  --category-green-solid: oklch(0.596 0.07 158);
+  --category-teal-bg: oklch(0.962 0.016 201.7);
+  --category-teal-text: oklch(0.379 0.065 202.4);
+  --category-teal-solid: oklch(0.399 0.061 201.4);
+  --category-blue-bg: oklch(0.962 0.015 257.2);
+  --category-blue-text: oklch(0.379 0.065 255.8);
+  --category-blue-solid: oklch(0.442 0.11 255.9);
+  --category-purple-bg: oklch(0.963 0.016 310.1);
+  --category-purple-text: oklch(0.38 0.065 310.3);
+  --category-purple-solid: oklch(0.568 0.111 310.3);
+  --category-pink-bg: oklch(0.961 0.017 337.6);
+  --category-pink-text: oklch(0.379 0.065 340);
+  --category-pink-solid: oklch(0.665 0.111 340.1);
 
-  /* Inputs & Borders */
-  --border: oklch(0.875 0.01 252);
-  --input: oklch(0.875 0.01 252);
-  --placeholder: oklch(0.55 0.005 252);
-  --ring: oklch(0 0 0);
+  /* Borders. Two levels of the primary: 10% for dividers inside a surface,
+     18% for the frames that separate layers (card, table, menu, dialog).
+     Fields keep a solid border at 3:1 or more, so they can be found. */
+  --border: color-mix(in oklch, var(--primary) 10%, transparent);
+  --border-strong: color-mix(in oklch, var(--primary) 18%, transparent);
+  --input: oklch(0.63 0.011 248); /* grafite-450 */
+  --placeholder: var(--subtle-foreground);
 
-  /* Charts */
-  --chart-1: oklch(0 0 0);
-  --chart-2: oklch(0.507 0.189 17.6);
-  --chart-3: oklch(0.497 0.135 120.7);
-  --chart-4: oklch(0.868 0.167 92.6);
-  --chart-5: oklch(0.668 0.151 236.3);
+  /* Charts. 1-6: series identity, always in this order (neighbours differ in
+     lightness; past six, group as "Outros"). seq: one hue for magnitude.
+     div: two arms around a neutral middle. None repeats a status colour. */
+  --chart-1: oklch(0.514 0.1 248.8);
+  --chart-2: oklch(0.54 0.128 58);
+  --chart-3: oklch(0.66 0.131 300.1);
+  --chart-4: oklch(0.66 0.13 113);
+  --chart-5: oklch(0.499 0.126 0.7);
+  --chart-6: oklch(0.612 0.1 184.5);
+  --chart-seq-1: oklch(0.76 0.068 249.4);
+  --chart-seq-2: oklch(0.629 0.088 249.4);
+  --chart-seq-3: oklch(0.514 0.1 248.8);
+  --chart-seq-4: oklch(0.421 0.098 248.9);
+  --chart-seq-5: oklch(0.322 0.089 248.8);
+  --chart-div-1: oklch(0.421 0.13 29.1);
+  --chart-div-2: oklch(0.629 0.12 28.6);
+  --chart-div-3: oklch(0.76 0.091 28.7);
+  --chart-div-4: oklch(0.945 0.005 247.9);
+  --chart-div-5: oklch(0.76 0.068 249.4);
+  --chart-div-6: oklch(0.629 0.088 249.4);
+  --chart-div-7: oklch(0.421 0.098 248.9);
 
-  /* Sidebar */
+  /* Sidebar: the frame of the app (side menu and navbar) is a surface. */
   --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.203 0.013 252);
-  --sidebar-primary: oklch(0 0 0);
+  --sidebar-foreground: oklch(0.173 0.038 249.2);
+  --sidebar-primary: oklch(0.173 0.038 249.2);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.968 0.005 252);
-  --sidebar-accent-foreground: oklch(0.203 0.013 252);
-  --sidebar-border: oklch(0.875 0.01 252);
-  --sidebar-ring: oklch(0 0 0);
+  --sidebar-accent: oklch(0.931 0.024 248.1);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: var(--border-strong);
+  --sidebar-ring: var(--ring);
+}
+
+/* Dark theme. Same roles. A higher layer is lighter: page grafite-950, surfaces
+   grafite-900, floating layers grafite-850. Status fills are the light ones,
+   except info, which is lighter to stay 3:1 from the card and the popover. */
+.dark {
+  color-scheme: dark;
+
+  --background: oklch(0.175 0.009 240.5); /* grafite-950 */
+  --foreground: oklch(0.896 0.007 247.9); /* grafite-200: pure white would glare */
+  --card: oklch(0.215 0.01 248.3); /* grafite-900 */
+  --card-foreground: oklch(0.896 0.007 247.9);
+  --popover: oklch(0.245 0.01 248.2); /* grafite-850 */
+  --popover-foreground: oklch(0.896 0.007 247.9);
+
+  --primary: oklch(0.931 0.024 248.1); /* marinho-100 */
+  --primary-foreground: oklch(0.175 0.009 240.5);
+  --primary-hover: oklch(0.86 0.045 249.4); /* marinho-200 */
+  --primary-pressed: oklch(0.76 0.068 249.4); /* marinho-300 */
+
+  --secondary: oklch(0.286 0.01 242); /* grafite-800 */
+  --secondary-foreground: oklch(0.896 0.007 247.9);
+
+  --muted: oklch(0.286 0.01 242); /* grafite-800 */
+  --muted-foreground: oklch(0.7 0.011 248); /* grafite-400 */
+  --subtle-foreground: oklch(0.63 0.011 248); /* grafite-450 */
+
+  --accent: oklch(0.322 0.089 248.8); /* marinho-700, the colour of both brands */
+  --accent-foreground: oklch(1 0 0);
+
+  --link: oklch(0.76 0.068 249.4); /* marinho-300 */
+  --ring: oklch(0.76 0.068 249.4);
+  --selection: oklch(0.421 0.098 248.9); /* marinho-600 */
+  --selection-foreground: oklch(1 0 0);
+
+  --destructive: oklch(0.551 0.19 29.3);
+  --destructive-foreground: oklch(1 0 0);
+  --warning: oklch(0.66 0.137 80.2);
+  --warning-foreground: oklch(0.173 0.038 249.2);
+  --success: oklch(0.52 0.1 168.2);
+  --success-foreground: oklch(1 0 0);
+  --info: oklch(0.528 0.1 248.8);
+  --info-foreground: oklch(1 0 0);
+  /* The fill red would be 3.3:1 as text here, so error text gets lighter. */
+  --destructive-text: oklch(0.759 0.14 29.2);
+
+  --category-gray-bg: oklch(0.284 0.006 258.4);
+  --category-gray-text: oklch(0.881 0.008 253.9);
+  --category-gray-solid: oklch(0.688 0.009 253.9);
+  --category-red-bg: oklch(0.286 0.03 32.2);
+  --category-red-text: oklch(0.879 0.046 31.6);
+  --category-red-solid: oklch(0.581 0.11 32.2);
+  --category-orange-bg: oklch(0.284 0.031 55.6);
+  --category-orange-text: oklch(0.88 0.045 58.4);
+  --category-orange-solid: oklch(0.669 0.098 56.7);
+  --category-yellow-bg: oklch(0.286 0.03 102.7);
+  --category-yellow-text: oklch(0.88 0.045 100.4);
+  --category-yellow-solid: oklch(0.86 0.11 99.8);
+  --category-green-bg: oklch(0.286 0.031 137.5);
+  --category-green-text: oklch(0.88 0.045 137);
+  --category-green-solid: oklch(0.766 0.069 137.8);
+  --category-teal-bg: oklch(0.286 0.03 199.1);
+  --category-teal-text: oklch(0.88 0.045 198.1);
+  --category-teal-solid: oklch(0.579 0.059 198.6);
+  --category-blue-bg: oklch(0.285 0.03 254.7);
+  --category-blue-text: oklch(0.881 0.044 253.6);
+  --category-blue-solid: oklch(0.676 0.108 254);
+  --category-purple-bg: oklch(0.286 0.029 290.2);
+  --category-purple-text: oklch(0.88 0.045 289.6);
+  --category-purple-solid: oklch(0.55 0.11 289.9);
+  --category-pink-bg: oklch(0.284 0.031 338.3);
+  --category-pink-text: oklch(0.879 0.046 339.7);
+  --category-pink-solid: oklch(0.817 0.103 340.3);
+
+  /* Re-declared: these derive from tokens that change in this theme. */
+  --border: color-mix(in oklch, var(--primary) 10%, transparent);
+  --border-strong: color-mix(in oklch, var(--primary) 18%, transparent);
+  --input: oklch(0.539 0.012 248); /* grafite-550 */
+  --placeholder: var(--subtle-foreground);
+  --focus-outline-color: var(--ring);
+  --field-focus-ring: color-mix(in oklch, var(--ring) 25%, transparent);
+
+  /* seq inverts here: the dark end is "little". */
+  --chart-1: oklch(0.641 0.11 249.2);
+  --chart-2: oklch(0.538 0.1302 53.8);
+  --chart-3: oklch(0.541 0.134 302.8);
+  --chart-4: oklch(0.667 0.103 112.7);
+  --chart-5: oklch(0.556 0.102 2.5);
+  --chart-6: oklch(0.669 0.101 185);
+  --chart-seq-1: oklch(0.421 0.098 248.9);
+  --chart-seq-2: oklch(0.514 0.1 248.8);
+  --chart-seq-3: oklch(0.629 0.088 249.4);
+  --chart-seq-4: oklch(0.76 0.068 249.4);
+  --chart-seq-5: oklch(0.86 0.045 249.4);
+  --chart-div-1: oklch(0.76 0.091 28.7);
+  --chart-div-2: oklch(0.629 0.12 28.6);
+  --chart-div-3: oklch(0.421 0.13 29.1);
+  --chart-div-4: oklch(0.286 0.01 242);
+  --chart-div-5: oklch(0.421 0.098 248.9);
+  --chart-div-6: oklch(0.629 0.088 249.4);
+  --chart-div-7: oklch(0.76 0.068 249.4);
+
+  --sidebar: oklch(0.215 0.01 248.3);
+  --sidebar-foreground: oklch(0.896 0.007 247.9);
+  --sidebar-primary: oklch(0.931 0.024 248.1);
+  --sidebar-primary-foreground: oklch(0.175 0.009 240.5);
+  --sidebar-accent: oklch(0.322 0.089 248.8);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: var(--border-strong);
+  --sidebar-ring: var(--ring);
+}
+
+/* The `--color-*` names (the ones `@theme inline` hands Tailwind) are
+   computed where they are declared, on :root, and inherited already
+   resolved. With `dark` on an element other than <html>, CSS that reads
+   `var(--color-border)` (the app's, or the library's) drew the light value
+   inside the dark part: dividers at about 1:1 on a dark panel. Declared
+   again here, they follow the tokens of the dark part. Kept in step with
+   `@theme inline` by src/contracts/theme-scope.test.ts. */
+.dark {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-pressed: var(--primary-pressed);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-text: var(--destructive-text);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-category-gray-bg: var(--category-gray-bg);
+  --color-category-gray-text: var(--category-gray-text);
+  --color-category-gray-solid: var(--category-gray-solid);
+  --color-category-red-bg: var(--category-red-bg);
+  --color-category-red-text: var(--category-red-text);
+  --color-category-red-solid: var(--category-red-solid);
+  --color-category-orange-bg: var(--category-orange-bg);
+  --color-category-orange-text: var(--category-orange-text);
+  --color-category-orange-solid: var(--category-orange-solid);
+  --color-category-yellow-bg: var(--category-yellow-bg);
+  --color-category-yellow-text: var(--category-yellow-text);
+  --color-category-yellow-solid: var(--category-yellow-solid);
+  --color-category-green-bg: var(--category-green-bg);
+  --color-category-green-text: var(--category-green-text);
+  --color-category-green-solid: var(--category-green-solid);
+  --color-category-teal-bg: var(--category-teal-bg);
+  --color-category-teal-text: var(--category-teal-text);
+  --color-category-teal-solid: var(--category-teal-solid);
+  --color-category-blue-bg: var(--category-blue-bg);
+  --color-category-blue-text: var(--category-blue-text);
+  --color-category-blue-solid: var(--category-blue-solid);
+  --color-category-purple-bg: var(--category-purple-bg);
+  --color-category-purple-text: var(--category-purple-text);
+  --color-category-purple-solid: var(--category-purple-solid);
+  --color-category-pink-bg: var(--category-pink-bg);
+  --color-category-pink-text: var(--category-pink-text);
+  --color-category-pink-solid: var(--category-pink-solid);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-placeholder: var(--placeholder);
+  --color-ring: var(--ring);
+  --color-link: var(--link);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-seq-1: var(--chart-seq-1);
+  --color-chart-seq-2: var(--chart-seq-2);
+  --color-chart-seq-3: var(--chart-seq-3);
+  --color-chart-seq-4: var(--chart-seq-4);
+  --color-chart-seq-5: var(--chart-seq-5);
+  --color-chart-div-1: var(--chart-div-1);
+  --color-chart-div-2: var(--chart-div-2);
+  --color-chart-div-3: var(--chart-div-3);
+  --color-chart-div-4: var(--chart-div-4);
+  --color-chart-div-5: var(--chart-div-5);
+  --color-chart-div-6: var(--chart-div-6);
+  --color-chart-div-7: var(--chart-div-7);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 }
 
 @layer base {
   * {
-    border-color: var(--color-border);
+    border-color: var(--border);
+  }
+  /* The system ring is the default for anything focusable, so parts without
+     their own focus style (links, calendar days, tree rows) match the rest. */
+  :focus-visible {
+    outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+    outline-offset: var(--focus-outline-offset);
+  }
+  ::selection {
+    background-color: var(--selection);
+    color: var(--selection-foreground);
+  }
+  /* A dark part of the page (`dark` on an ancestor other than <html>) gets
+     the dark text colour too: the text it holds inherited the light one from
+     <body>, dark on dark. The surface stays the app's choice. */
+  .dark {
+    color: var(--foreground);
   }
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
+    background-color: var(--background);
+    color: var(--foreground);
     font-family: var(--font-sans);
   }
   input::placeholder,
@@ -190,6 +572,96 @@
   }
 }
 
+/* ---- Focus ------------------------------------------------------------------
+   One ring for every control. Pair it with a variant so it only shows to
+   keyboard users: `focus-visible:focus-outline`. Fields use their own look
+   (`field-states`, below). The inset form is for cells and rows whose
+   container would clip an outer ring. */
+@utility focus-outline {
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+@utility focus-outline-inset {
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: calc(var(--focus-outline-width) * -1);
+}
+
+/* ---- Fields -----------------------------------------------------------------
+   The look of a text field, select or date trigger (Astryx Field): solid
+   --input border; hover (pointer only, never disabled) adds a 2px inner ring
+   of it at 30%; any focus turns the border to --ring with a 2px inner ring
+   of it at 20% (25% in dark). `border-destructive-text field-error` keeps
+   the border red, focused too, and tints the hover ring. Put it on the element
+   that draws the border (a shell with the <input> inside, or the input). */
+@utility field-states {
+  outline: none;
+  transition-property: border-color, box-shadow;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-standard);
+  @media (pointer: coarse) {
+    /* A tap raises the keyboard; a fade would repaint every frame of it. */
+    transition-duration: 0s;
+  }
+  @media (hover: hover) {
+    &:hover:not(:focus-within):where(
+        :not(:disabled, [aria-disabled="true"], [data-disabled], :has(:disabled))
+      ) {
+      box-shadow: inset 0 0 0 2px
+        var(--field-hover-ring, color-mix(in oklch, var(--input) 30%, transparent));
+    }
+  }
+  &:focus-within {
+    border-color: var(--field-focus-border, var(--ring));
+    box-shadow: inset 0 0 0 2px var(--field-focus-ring);
+  }
+  @media (forced-colors: active) {
+    &:focus-within {
+      border-color: Highlight;
+    }
+  }
+}
+/* Use together with `border-destructive-text`: that class sets the resting
+   border (and lets cn() drop `border-input`); this one keeps it red on focus. */
+@utility field-error {
+  --field-focus-border: var(--destructive-text);
+  --field-hover-ring: color-mix(in oklch, var(--destructive-text) 30%, transparent);
+}
+
+/* ---- States -----------------------------------------------------------------
+   `state-layer` paints hover (pointer devices only) and pressed as a layer of
+   the control's text color over its fill — darker on light fills, lighter on
+   dark ones — and never on a disabled control. `state-hover` and
+   `state-pressed` are the same layers for states that are not a pointer
+   (`data-[highlighted]:state-hover` on a menu item, for one). */
+@utility state-hover {
+  background-image: linear-gradient(
+    color-mix(in oklch, currentColor var(--state-hover-opacity), transparent),
+    color-mix(in oklch, currentColor var(--state-hover-opacity), transparent)
+  );
+}
+@utility state-pressed {
+  background-image: linear-gradient(
+    color-mix(in oklch, currentColor var(--state-pressed-opacity), transparent),
+    color-mix(in oklch, currentColor var(--state-pressed-opacity), transparent)
+  );
+}
+@utility state-layer {
+  @media (hover: hover) {
+    &:hover:where(:not(:disabled, [aria-disabled="true"], [data-disabled])) {
+      background-image: linear-gradient(
+        color-mix(in oklch, currentColor var(--state-hover-opacity), transparent),
+        color-mix(in oklch, currentColor var(--state-hover-opacity), transparent)
+      );
+    }
+  }
+  &:active:where(:not(:disabled, [aria-disabled="true"], [data-disabled])) {
+    background-image: linear-gradient(
+      color-mix(in oklch, currentColor var(--state-pressed-opacity), transparent),
+      color-mix(in oklch, currentColor var(--state-pressed-opacity), transparent)
+    );
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -198,5 +670,89 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ==== Overlays (src/overlays) ================================================ */
+
+/* ---- Veils ------------------------------------------------------------------
+   The backdrop behind a modal (Dialog, AlertDialog, Sheet) and the dimming
+   around a Tour's target. The same in both themes: they darken whatever is
+   behind. As colours of the theme they give `bg-scrim` and `outline-scrim-light`. */
+@theme {
+  --color-scrim: oklch(0 0 0 / 80%);
+  --color-scrim-light: oklch(0 0 0 / 50%);
+}
+
+/* ---- Toaster (Sonner) -------------------------------------------------------
+   Sonner injects its own stylesheet at runtime, outside any cascade layer, so
+   utility classes (which are layered) lose to it whatever the order. Its
+   colours come from CSS variables, which `Toaster` points at our tokens; the
+   rules below cover what has no variable. They are not layered either, and
+   each selector carries more attributes than the Sonner rule it replaces, so
+   the order of the two stylesheets does not matter. */
+
+/* Sonner paints the description #3f3f3f, for its own light theme: 1.5:1 on
+   the dark surface. With `richColors` it inherits the text of the fill. */
+[data-sonner-toaster]
+  [data-sonner-toast][data-styled="true"]:not([data-rich-colors="true"])
+  [data-description] {
+  color: var(--muted-foreground);
+}
+
+/* The X took a fixed near-black (1.1:1 in the dark theme) and, on hover, a
+   near-white fill. It wears what the toast wears, neutral or status fill,
+   and hover is the state layer of every other control. */
+[data-sonner-toaster][data-sonner-theme]
+  [data-sonner-toast][data-styled="true"]
+  [data-close-button] {
+  color: inherit;
+  background-color: inherit;
+  border-color: inherit;
+}
+[data-sonner-toaster][data-sonner-theme]
+  [data-sonner-toast][data-styled="true"]
+  [data-close-button]:hover {
+  background-color: inherit;
+  background-image: linear-gradient(
+    color-mix(in oklch, currentColor var(--state-hover-opacity), transparent),
+    color-mix(in oklch, currentColor var(--state-hover-opacity), transparent)
+  );
+  border-color: inherit;
+}
+
+/* Flat, like every other surface: no shadow, the text size of the system
+   (Sonner fixes 13px), and the system focus ring instead of Sonner's shadow
+   ring. The radius comes through --border-radius (see `Toaster`). */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+  box-shadow: none;
+  font-size: var(--text-sm);
+}
+[data-sonner-toaster] [data-sonner-toast]:focus-visible,
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button]:focus-visible,
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-button]:focus-visible {
+  box-shadow: none;
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+/* The X was 20px: 24px is the smallest target (WCAG 2.2, 2.5.8). */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button] {
+  width: 24px;
+  height: 24px;
+}
+
+/* ---- Progress ----------------------------------------------------------------
+   Indeterminate bar (`value` null or undefined): a third of the track that
+   crosses it, from just outside the left edge to just outside the right. */
+@theme {
+  --animate-progress-indeterminate: progress-indeterminate 1.5s var(--ease-standard) infinite;
+
+  @keyframes progress-indeterminate {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(300%);
+    }
   }
 }

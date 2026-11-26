@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, fn, userEvent, within } from "@storybook/test"
-import { useState } from "react"
+import { useRef, useState } from "react"
 
+import { Button } from "./button"
 import { Textarea } from "./textarea"
 
 const meta: Meta<typeof Textarea> = {
@@ -20,8 +21,10 @@ const meta: Meta<typeof Textarea> = {
           "- `description` — texto auxiliar.",
           "- `error` — mensagem de erro (`role=alert`, `aria-invalid` no campo).",
           "- `required` — marca como obrigatório.",
-          "- `maxLength` — limita caracteres E renderiza contador `atual/limite`.",
+          "- `maxLength` — limita caracteres e mostra o contador `atual/limite`. O contador entra na descrição do campo (lido quando o campo recebe foco, não a cada tecla) e o limite atingido é anunciado uma vez.",
+          "- `labels` — textos do contador para o leitor de tela (`characterCount`, `limitReached`).",
           "- `autoResize` — ajusta altura automaticamente ao conteúdo (`resize-none overflow-hidden`).",
+          "- `size` — `sm`, `md` (padrão) ou `lg`: altura mínima e padding. Com `rows={1}` a caixa mede 32, 40 ou 44px, a altura de um `Input` do mesmo tamanho.",
           "- `disabled`, `readOnly` — estados de leitura.",
           "- `value`, `defaultValue`, `onChange` — controlled/uncontrolled.",
           "- Repassa todos os atributos HTML de `<textarea>` (`rows`, `placeholder`, etc).",
@@ -60,6 +63,13 @@ const meta: Meta<typeof Textarea> = {
       control: { type: "number", min: 1, step: 1 },
       description: "Limite de caracteres. Quando definido, mostra contador `atual/limite`.",
       table: { type: { summary: "number" } },
+    },
+    size: {
+      control: "inline-radio",
+      options: ["sm", "md", "lg"],
+      description:
+        "Altura mínima e padding. Uma linha (`rows={1}`) mede 32, 40 ou 44px, como um `Input`.",
+      table: { type: { summary: "'sm' | 'md' | 'lg'" }, defaultValue: { summary: "'md'" } },
     },
     autoResize: {
       control: "boolean",
@@ -119,10 +129,6 @@ export const WithError: Story = {
     placeholder: "Diga o que achou",
     error: "Comentário não pode ficar vazio.",
   },
-  parameters: {
-    // error-foreground + placeholder muted fail 4.5:1 against background; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
-  },
 }
 
 export const Required: Story = {
@@ -162,7 +168,7 @@ export const WithCounter: Story = {
     docs: {
       description: {
         story:
-          "Com `maxLength` o componente renderiza um contador `atual/limite` abaixo do campo, atualizado em tempo real.",
+          'Com `maxLength` o componente mostra um contador `atual/limite` abaixo do campo, atualizado em tempo real. Para o leitor de tela ele é parte da descrição do campo ("57 de 280 caracteres", lido quando o campo recebe foco), não uma região viva que fala a cada tecla. Ao chegar no limite, isso é anunciado uma vez.',
       },
     },
   },
@@ -187,6 +193,74 @@ export const AutoResize: Story = {
       description: {
         story:
           "`autoResize` desabilita `resize`/`overflow` e ajusta `style.height` ao `scrollHeight` toda vez que o valor muda.",
+      },
+    },
+  },
+}
+
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex w-96 flex-col gap-4">
+      <Textarea label="sm" size="sm" placeholder="Duas linhas, padding menor" />
+      <Textarea label="md" size="md" placeholder="Duas linhas (padrão)" />
+      <Textarea label="lg" size="lg" placeholder="Duas linhas, padding maior" />
+      <div className="flex items-end gap-2">
+        <Textarea
+          label="Mensagem"
+          labelPosition="hidden"
+          rows={1}
+          autoResize
+          placeholder="Escreva uma mensagem"
+        />
+        <Button>Enviar</Button>
+      </div>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` dá a altura mínima e o padding. Com `rows={1}` a caixa tem a altura de um `Input` do mesmo tamanho, então fecha com um `Button` ao lado; com `autoResize` ela cresce a partir daí.",
+      },
+    },
+  },
+}
+
+const SERVER_NOTE = Array.from(
+  { length: 12 },
+  (_, i) => `Linha ${i + 1} de uma observação carregada do servidor`,
+).join("\n")
+
+export const ValueSetByCode: Story = {
+  render: () => {
+    const ref = useRef<HTMLTextAreaElement>(null)
+    const [narrow, setNarrow] = useState(false)
+    return (
+      <div className="flex w-96 flex-col gap-3">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (ref.current) ref.current.value = SERVER_NOTE
+            }}
+          >
+            Carregar observação
+          </Button>
+          <Button variant="outline" onClick={() => setNarrow((current) => !current)}>
+            {narrow ? "Alargar" : "Estreitar"}
+          </Button>
+        </div>
+        <div data-testid="box" style={{ width: narrow ? 180 : 360 }}>
+          <Textarea ref={ref} label="Observações" autoResize maxLength={2000} />
+        </div>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "O contador e a altura leem o valor do próprio campo, não o `onChange`. Por isso acompanham um valor escrito por código (o `register`, o `setValue` e o `reset` do react-hook-form escrevem pelo `ref`, sem evento nenhum), um `form.reset()` e uma mudança de largura da caixa.",
       },
     },
   },

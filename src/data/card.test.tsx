@@ -87,7 +87,7 @@ describe("Card", () => {
     const card = container.querySelector('[data-slot="card"]') as HTMLElement
     expect(card.className).toContain("custom-class")
     // Default styles still applied.
-    expect(card.className).toContain("rounded-lg")
+    expect(card.className).toContain("rounded-container")
   })
 
   it("forwards ref", () => {
@@ -102,5 +102,35 @@ describe("Card", () => {
       </Card>,
     )
     expect(captured).toBeInstanceOf(HTMLDivElement)
+  })
+
+  it("pads the content by default, less when compact, and not at all with padding none", () => {
+    const { rerender } = render(<Card title="Leads">conteúdo</Card>)
+    const content = () => screen.getByText("conteúdo")
+    expect(content()).toHaveClass("p-6", "pt-4")
+    rerender(
+      <Card title="Leads" padding="compact">
+        conteúdo
+      </Card>,
+    )
+    expect(content()).toHaveClass("p-4", "pt-3")
+    rerender(
+      <Card title="Leads" padding="none">
+        conteúdo
+      </Card>,
+    )
+    expect(content().className).toBe("")
+    expect(content()).toHaveAttribute("data-padding", "none")
+  })
+
+  it("titles with an h3 by default and with the heading level given", () => {
+    const { rerender } = render(<Card title="Receita do mês">x</Card>)
+    expect(screen.getByRole("heading", { level: 3, name: "Receita do mês" })).toBeInTheDocument()
+    rerender(
+      <Card title="Receita do mês" headingLevel={2}>
+        x
+      </Card>,
+    )
+    expect(screen.getByRole("heading", { level: 2, name: "Receita do mês" })).toBeInTheDocument()
   })
 })

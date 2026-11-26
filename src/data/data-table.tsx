@@ -1,11 +1,16 @@
 "use client"
 
 import {
+  type Column,
   type ColumnDef,
   type ColumnFiltersState,
+  type FilterFn,
   type OnChangeFn,
   type PaginationState,
+  type Row,
+  type SortingFn,
   type SortingState,
+  type Table as TanstackTable,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -13,78 +18,84 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  FilterX,
-  Search,
-} from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, FilterX, Search } from "lucide-react"
 import * as React from "react"
 
+import { compareText, matchesSearch } from "@/lib/text"
 import { cn } from "@/lib/utils"
-import { Popover } from "../overlays/popover"
+import { Pagination, type PaginationLabels } from "../navigation/pagination"
+import { DropdownMenu } from "../overlays/dropdown-menu"
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
-import { downloadXlsx } from "./_xlsx-export"
+import { InsideRowActionContext, columnMeta, valueToText } from "./_internal/column-meta"
+import {
+  SELECTION_COLUMN_ID,
+  type SelectionContextValue,
+  SelectionProvider,
+  selectionColumn,
+} from "./_internal/data-table-selection"
+import {
+  type ExportSheet,
+  type ExportValue,
+  downloadSheet,
+  recordsToSheet,
+  toExportValue,
+} from "./_xlsx-export"
+import { tableStyles } from "./table-styles"
 
-// Internal Table primitives — inlined here (was src/data/table.tsx).
-function Table({ className, children, ...props }: React.HTMLAttributes<HTMLTableElement>) {
+export type { DataTableColumnMeta } from "./_internal/column-meta"
+// The TanStack types the props use, so consumers need no transitive import.
+export type { ColumnDef, PaginationState, SortingState } from "@tanstack/react-table"
+
+// Internal Table primitives, drawn with `tableStyles()` so a raw <table>
+// styled with it looks the same as a DataTable.
+const styles = tableStyles()
+function Table({
+  className,
+  children,
+  containerStyle,
+  containerRef,
+  containerProps,
+  ...props
+}: React.HTMLAttributes<HTMLTableElement> & {
+  containerStyle?: React.CSSProperties
+  containerRef?: React.Ref<HTMLDivElement>
+  containerProps?: React.HTMLAttributes<HTMLDivElement>
+}) {
   return (
-    <div className="relative w-full overflow-auto">
-      <table
-        data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      >
+    // `isolate`: the sticky header (and pinned columns) stack among themselves,
+    // never above the page's overlays.
+    <div
+      {...containerProps}
+      ref={containerRef}
+      data-slot="data-table-scroll"
+      // Drawn inside: the rounded frame around it would clip an outer ring.
+      className="relative isolate w-full overflow-auto focus-visible:focus-outline-inset"
+      style={containerStyle}
+    >
+      <table data-slot="table" className={cn(styles.table, className)} {...props}>
         {children}
       </table>
     </div>
   )
 }
 function TableHeader({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead data-slot="table-header" className={cn("[&_tr]:border-b", className)} {...props} />
+  return <thead data-slot="table-header" className={cn(styles.header, className)} {...props} />
 }
 function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return (
-    <tbody
-      data-slot="table-body"
-      className={cn("[&_tr:last-child]:border-0", className)}
-      {...props}
-    />
-  )
+  return <tbody data-slot="table-body" className={cn(styles.body, className)} {...props} />
 }
 function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
-  return (
-    <tr
-      data-slot="table-row"
-      className={cn(
-        "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
-        className,
-      )}
-      {...props}
-    />
-  )
+  return <tr data-slot="table-row" className={cn(styles.row, className)} {...props} />
 }
 function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
-  return (
-    <th
-      data-slot="table-head"
-      className={cn(
-        "px-3 py-2.5 text-left align-middle font-medium text-muted-foreground",
-        className,
-      )}
-      {...props}
-    />
-  )
+  return <th data-slot="table-head" scope="col" className={cn(styles.head, className)} {...props} />
+}
+function TableFooter({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
+  return <tfoot data-slot="table-footer" className={cn(styles.footer, className)} {...props} />
 }
 function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return (
-    <td data-slot="table-cell" className={cn("px-3 py-2.5 align-middle", className)} {...props} />
-  )
+  return <td data-slot="table-cell" className={cn(styles.cell, className)} {...props} />
 }
 
 export interface DataTableLabels {
@@ -108,9 +119,19 @@ export interface DataTableLabels {
   pageSize: string
   /** Render the row-count line, given filtered + total counts. */
   rowCount: (filtered: number, total: number) => string
-  /** Render the "page X of Y" indicator. */
+  /**
+   * "Página X de Y". The footer now shows the page numbers of `Pagination`;
+   * this names its compact indicator only.
+   * @deprecated Use `pagination.pageOf`.
+   */
   pageIndicator: (pageIndex: number, pageCount: number) => string
-  /** Render the column-header sort button aria-label. */
+  /**
+   * Any other text of the footer's `Pagination` ("Paginação", "Primeira
+   * página", the "11–20 de 243" range…). `paginationPrevious`,
+   * `paginationNext` and `pageSize` above name its controls.
+   */
+  pagination: Partial<PaginationLabels>
+  /** Description of a sortable column's button ("Ordenar por Número"); its name is the header text. */
   sortBy: (headerText: string) => string
   /** Export-to-Excel trigger button label. */
   exportTrigger: string
@@ -122,6 +143,22 @@ export interface DataTableLabels {
   exportAll: string
   /** "Clear filters" toolbar button label. */
   clearFilters: string
+  /** Message shown when an export fails (a fetcher rejects, the file cannot be written). */
+  exportError: string
+  /** Body text for `error={true}`. */
+  error: string
+  /** The button that calls `onRetry`. */
+  retry: string
+  /** Name of the header checkbox (`selectable`): it selects the rows of the page. */
+  selectPage: string
+  /** Name of a row's checkbox, from the text of the row's first column. */
+  selectRow: (rowText: string) => string
+  /** Count in the selection bar. */
+  selectedCount: (count: number) => string
+  /** The selection bar's button that clears the selection. */
+  clearSelection: string
+  /** Name of the scrolling box when the table has no `aria-label` / `aria-labelledby`. */
+  scrollRegion: string
 }
 
 const numberFormatter = new Intl.NumberFormat("pt-BR")
@@ -148,25 +185,63 @@ export const defaultDataTableLabels: DataTableLabels = {
   pageSize: "Linhas por página",
   rowCount: defaultRowCount,
   pageIndicator: defaultPageIndicator,
+  pagination: {},
   sortBy: (headerText) => `Ordenar por ${headerText}`,
   exportTrigger: "Exportar para Excel",
   exportFiltered: "Exportar dados filtrados",
   exportPage: "Exportar página atual",
   exportAll: "Exportar todos os dados",
   clearFilters: "Limpar filtros",
+  exportError: "Não foi possível exportar os dados. Tente de novo.",
+  error: "Não foi possível carregar os dados.",
+  retry: "Tentar de novo",
+  selectPage: "Selecionar todas as linhas da página",
+  selectRow: (rowText) => `Selecionar ${rowText}`,
+  selectedCount: (count) =>
+    count === 1 ? "1 selecionado" : `${numberFormatter.format(count)} selecionados`,
+  clearSelection: "Limpar seleção",
+  scrollRegion: "Tabela com rolagem",
 }
 
-export interface DataTableProps<TData> {
+/**
+ * A column id in `searchableColumns`, `sortableColumns`: the editor suggests
+ * the row's own keys, and any other id (`"cliente.nome"`, an `id` you gave
+ * a column) is accepted.
+ */
+export type DataTableColumnKey<TData> = (keyof TData & string) | (string & {})
+
+export interface DataTableProps<TData>
+  extends Omit<
+    React.HTMLAttributes<HTMLDivElement>,
+    "aria-label" | "aria-labelledby" | "children"
+  > {
+  /** The root `<div>` (toolbar, table and footer). */
+  ref?: React.Ref<HTMLDivElement>
   columns: ColumnDef<TData>[]
   data: TData[]
-  /** Enable global text search; the columns listed are the only ones searched. */
-  searchableColumns?: string[]
+  /**
+   * Shows the search box; the columns listed are the only ones searched. The
+   * search ignores accents and case and compares the text the cell shows: a
+   * column's `meta.searchText` (filled by `dateColumn` and `formattedColumn`)
+   * or the value as a string. With a controlled `globalFilter` and no list,
+   * every visible column is searched.
+   *
+   * Entries are column ids: a column's `id`, or its `accessorKey` (nested
+   * keys as written, `"cliente.nome"`, or as TanStack's id, `"cliente_nome"`).
+   */
+  searchableColumns?: DataTableColumnKey<TData>[]
   /**
    * Whitelist of column ids (typically `accessorKey`) whose headers are sortable.
    * When omitted, **no** header is sortable. Mirrors the `searchableColumns`
    * opt-in pattern. Replaces the per-column `enableSorting` flag in the columnDef.
+   *
+   * Text sorts in Portuguese order (accents and case ignored, "Bloco 2" before
+   * "Bloco 10"), numbers by value and dates by time. A column's own
+   * `sortingFn` still wins.
+   *
+   * Entries are column ids, as in `searchableColumns`.
    */
-  sortableColumns?: string[]
+  sortableColumns?: DataTableColumnKey<TData>[]
   /** Placeholder for the search input. */
   searchPlaceholder?: string
   /**
@@ -182,6 +257,55 @@ export interface DataTableProps<TData> {
   emptyMessage?: React.ReactNode
   /** Additional class on the outer wrapper. */
   className?: string
+  /** Accessible name of the `<table>` ("Contratos"). Or use `aria-labelledby` / `caption`. */
+  "aria-label"?: string
+  /** Id of a visible heading that names the `<table>`. */
+  "aria-labelledby"?: string
+  /** A `<caption>` that names the table and is shown with it (below the rows). */
+  caption?: React.ReactNode
+  /**
+   * Caps the table's height (`320`, `"50vh"`): the body scrolls inside the box
+   * and, by default, the header stays in place (`stickyHeader`).
+   */
+  maxHeight?: number | string
+  /**
+   * Keeps the header visible while the body scrolls inside `maxHeight`.
+   * Default: on when `maxHeight` is set.
+   */
+  stickyHeader?: boolean
+  /**
+   * Adds a checkbox column: one per row (named after the row's first column)
+   * and one in the header that selects the rows of the page, with the mixed
+   * state when only some are. The selection is a list of row ids
+   * (`getRowId`, or the index), so it survives paging, sorting and server
+   * pages; selected rows are marked (`data-state="selected"`).
+   */
+  selectable?: boolean
+  /** Selected row ids, controlled. */
+  selectedRowIds?: string[]
+  /** Selected row ids on the first render, uncontrolled. */
+  defaultSelectedRowIds?: string[]
+  /** Called with every id selected after a change, in the order they were picked. */
+  onSelectionChange?: (rowIds: string[]) => void
+  /**
+   * Actions for the selected rows ("Arquivar", "Exportar"): shown in a bar
+   * above the table, with the count and a button to clear the selection,
+   * while something is selected.
+   */
+  selectionActions?: (rowIds: string[]) => React.ReactNode
+  /**
+   * Columns that stay in place while the table scrolls sideways, by id or
+   * `accessorKey`: `{ left: ["numero", "cliente.nome"] }`. They move to the
+   * left edge in the order given, with a line after the last one.
+   */
+  pinnedColumns?: { left?: string[] }
+  /**
+   * Row density. `"compact"` gives rows of about 36px (`py-2`) and a 32px
+   * pager, for dense back-office lists; `"default"` keeps the library's
+   * `py-2.5 px-3` rows (about 41px).
+   * @default "default"
+   */
+  density?: "default" | "compact"
   /** Enable pagination. When set, footer shows previous/next + page indicator. Default: not paginated. */
   pagination?: {
     pageSize?: number
@@ -213,10 +337,31 @@ export interface DataTableProps<TData> {
   manualFiltering?: boolean
   /** Controlled page index (0-based). */
   pageIndex?: number
-  /** Controlled pagination change handler. */
+  /**
+   * Called with the new `{ pageIndex, pageSize }` on every page or page-size
+   * change. Without `pageIndex` it only listens: the table keeps its page.
+   */
   onPaginationChange?: OnChangeFn<PaginationState>
-  /** Total page count (required when `manualPagination` is true). */
+  /**
+   * Go back to the first page when the search, a filter or the sort changes.
+   * A new `data` array with the same view keeps the page either way.
+   * Default `true`, or `false` with `manualPagination` (the server owns it).
+   */
+  autoResetPage?: boolean
+  /**
+   * Number of pages on the server (`manualPagination`). Optional when
+   * `rowCount` is given: the count then derives from it and the page size.
+   * With neither, the total is unknown: no page count is shown and "next"
+   * stays available.
+   */
   pageCount?: number
+  /**
+   * Number of rows on the server, for `manualPagination` / `manualFiltering`:
+   * `data` only holds the current page, so the footer shows this total
+   * (`showRowCount`) and the page count derives from it when `pageCount` is
+   * absent. Without it, server pagination shows no row count.
+   */
+  rowCount?: number
   /** Whether pagination is server-driven. */
   manualPagination?: boolean
   /** Controlled sorting state. When provided, parent owns the sort. */
@@ -228,20 +373,44 @@ export interface DataTableProps<TData> {
   manualSorting?: boolean
   /** Overridable copy. All keys optional — defaults are pt-BR. */
   labels?: Partial<DataTableLabels>
-  /** Callback fired when a body row is clicked. Adds button-like a11y (role, tabIndex, keydown). */
+  /**
+   * Makes every body row clickable. A click anywhere on the row calls it; the
+   * keyboard and screen readers reach it through a real `<button>` that wraps
+   * the first cell's content (named by that content), so Tab, Enter and Space
+   * work and the row is still a row. A click or key press that starts in a
+   * control inside the row (button, link, field, menu) belongs to that control
+   * and never calls `onRowClick`. Keep the first cell free of controls: a
+   * button cannot hold another one.
+   */
   onRowClick?: (row: TData, event: React.MouseEvent<HTMLTableRowElement>) => void
+  /**
+   * A stable id for each row (its key in the database, not its position).
+   * React keys the rows by it, so a row's state (a field typed in, an open
+   * menu) stays with that row when the page, the sort or the data changes;
+   * row selection is kept by it too. Default: the row's index in `data`.
+   */
+  getRowId?: (row: TData, index: number) => string
   /** Per-row className. Receives the row data and index; return undefined to skip. Useful for coloring rows by status. */
   rowClassName?: (row: TData, index: number) => string | undefined
   /**
-   * When `true`, the body renders skeleton rows in place of data. Search input and
-   * footer (count + pagination buttons) also skeleton-ize. Skeleton row count
-   * derives from `pagination.pageSize` (or 5 when pagination is off). `aria-busy`
-   * is set on the wrapper so assistive tech announces the loading state once.
+   * When `true`, the body renders skeleton rows in place of data: as many as
+   * the current page size (5 without pagination). The row count and the
+   * export button skeleton-ize, the pager is unavailable, and `labels.loading`
+   * is announced through the table's status region. `aria-busy` is set on
+   * the wrapper.
    */
   loading?: boolean
   /**
+   * The data failed to load. Shown in the body (as an alert) instead of the
+   * rows or the empty message, so a failed request does not read as "Nenhum
+   * resultado". `true` shows `labels.error`. Ignored while `loading`.
+   */
+  error?: React.ReactNode
+  /** With `error`, renders a `labels.retry` ("Tentar de novo") button that calls it. */
+  onRetry?: () => void
+  /**
    * Render an "Exportar para Excel" ghost button on the right side of the toolbar.
-   * Clicking opens a popover with three scopes (filtered, current page, all rows).
+   * Clicking opens a menu (`DropdownMenu`) with the scopes the table can fill (filtered, current page, all rows).
    * Pass `true` to enable with defaults or an object to customize filename / sheet
    * name / row mapping.
    */
@@ -266,15 +435,22 @@ export interface DataTableDownloadable<TData> {
    * derive the name from the export scope (e.g. reflect active filters or the
    * current page); returning a falsy value falls back to `"export.xlsx"`. The function
    * must not throw: an exception aborts the export. `.xlsx` is appended unless the name ends in a spreadsheet or CSV extension.
+   *
+   * A name ending in `.csv` gives a CSV written for the Brazilian Excel: UTF-8
+   * with BOM, `;` between cells, decimal comma, dates as `dd/mm/aaaa`, and a
+   * `'` in front of text starting with `=`, `+`, `-` or `@`, also after a comma or
+   * a tab inside it (formula injection).
    */
   filename?: string | ((scope: ExportScope) => string)
   /** Sheet name inside the workbook. Default `"Dados"`. */
   sheetName?: string
   /**
-   * Custom row → record mapping. Defaults to one column per visible leaf column,
-   * using the column's `header` (when it's a string) as the key and the resolved
-   * cell value as the cell content. The default resolver supports both
-   * `accessorKey` and `accessorFn` columns.
+   * Custom row → record mapping (one key per column of the file). Without it
+   * the file has what the screen shows: one column per column with data, in
+   * order, headed by its `header` text (or id), with the value its accessor
+   * reads (nested keys and `accessorFn` included). Columns without data
+   * (actions) are left out, `meta.exportOnly` columns are added, and a column
+   * can set `meta.export` to `false` (left out) or to `(row, value) => value`.
    */
   rowToRecord?: (row: TData, rowIndex: number) => Record<string, unknown>
   /**
@@ -296,9 +472,141 @@ export interface DataTableDownloadable<TData> {
    * "all" variant.
    */
   fetchFiltered?: () => Promise<TData[]>
+  /**
+   * Called when an export fails: a fetcher rejects, the file name function
+   * throws or the file cannot be written. The table also shows
+   * `labels.exportError` under the toolbar until the next export.
+   */
+  onExportError?: (error: unknown) => void
 }
 
 export type ExportScope = "filtered" | "page" | "all"
+
+/** The leaf column definitions, inside groups too. */
+function leafColumnDefs<TData>(columns: ColumnDef<TData>[]): ColumnDef<TData>[] {
+  return columns.flatMap((def) => {
+    const children = (def as { columns?: ColumnDef<TData>[] }).columns
+    return children && children.length > 0 ? leafColumnDefs(children) : [def]
+  })
+}
+
+/**
+ * TanStack's id of a column: its `id`, or its `accessorKey` with dots as
+ * underscores ("cliente.nome" is "cliente_nome"), or a string header.
+ */
+function columnDefId<TData>(def: ColumnDef<TData>): string | undefined {
+  const { id, accessorKey, header } = def as { id?: string; accessorKey?: string; header?: unknown }
+  if (id) return id
+  if (accessorKey) return accessorKey.replace(/\./g, "_")
+  return typeof header === "string" ? header : undefined
+}
+
+/** Leaf column ids for names given by id or by `accessorKey`, in the order given. */
+function resolveColumnIds<TData>(columns: ColumnDef<TData>[], names?: readonly string[]): string[] {
+  if (!names || names.length === 0) return []
+  const leaves = leafColumnDefs(columns)
+  return names.flatMap((name) => {
+    const def = leaves.find(
+      (leaf) =>
+        columnDefId(leaf) === name || (leaf as { accessorKey?: string }).accessorKey === name,
+    )
+    const id = def ? columnDefId(def) : undefined
+    return id ? [id] : []
+  })
+}
+
+/**
+ * Controls a cell can hold. A click (or the click a key press makes) that
+ * starts in one of them belongs to that control, never to the row.
+ */
+const INTERACTIVE_IN_ROW = [
+  "a[href]",
+  "button",
+  "input",
+  "select",
+  "textarea",
+  "label",
+  "summary",
+  "[contenteditable]:not([contenteditable='false'])",
+  ...[
+    "button",
+    "link",
+    "checkbox",
+    "radio",
+    "switch",
+    "slider",
+    "spinbutton",
+    "combobox",
+    "textbox",
+    "searchbox",
+    "option",
+    "tab",
+    "menu",
+    "menuitem",
+    "menuitemcheckbox",
+    "menuitemradio",
+    "dialog",
+    "listbox",
+  ].map((role) => `[role='${role}']`),
+].join(",")
+
+/**
+ * Whether a click on a clickable row is the row's own: it lands in the row's
+ * DOM (React also bubbles clicks from portals, such as a row's menu) and does
+ * not start in a control inside the row, other than the row's action button.
+ * A click that ends a text selection is not one either.
+ */
+function isOwnRowClick(event: React.MouseEvent<HTMLTableRowElement>): boolean {
+  const row = event.currentTarget
+  const target = event.target
+  if (!(target instanceof Element) || !row.contains(target)) return false
+  const control = target.closest(INTERACTIVE_IN_ROW)
+  if (control && row.contains(control) && !control.hasAttribute("data-row-action")) return false
+  const selection = typeof window !== "undefined" ? window.getSelection() : null
+  if (
+    selection &&
+    !selection.isCollapsed &&
+    selection.toString().trim() !== "" &&
+    selection.anchorNode &&
+    row.contains(selection.anchorNode)
+  ) {
+    return false
+  }
+  return true
+}
+
+/**
+ * Default order of a sortable column: numbers by value, dates by time,
+ * booleans false first, and text in Portuguese order (`compareText`: accents
+ * and case ignored, "Bloco 2" before "Bloco 10"). Empty values come first.
+ * A column's own `sortingFn` takes precedence.
+ */
+function compareCellValues(a: unknown, b: unknown): number {
+  const aEmpty = a == null || a === ""
+  const bEmpty = b == null || b === ""
+  if (aEmpty || bEmpty) return aEmpty === bEmpty ? 0 : aEmpty ? -1 : 1
+  if (typeof a === "number" && typeof b === "number") {
+    if (Number.isNaN(a) || Number.isNaN(b)) return Number.isNaN(a) ? -1 : Number.isNaN(b) ? 1 : 0
+    return a - b
+  }
+  if (typeof a === "bigint" && typeof b === "bigint") return a < b ? -1 : a > b ? 1 : 0
+  if (a instanceof Date && b instanceof Date) return a.getTime() - b.getTime()
+  if (typeof a === "boolean" && typeof b === "boolean") return Number(a) - Number(b)
+  return compareText(valueToText(a), valueToText(b))
+}
+
+function defaultSortingFn<TData>(rowA: Row<TData>, rowB: Row<TData>, columnId: string): number {
+  return compareCellValues(rowA.getValue(columnId), rowB.getValue(columnId))
+}
+
+function sortEmptyCells<TData>(columns: ColumnDef<TData>[]): ColumnDef<TData>[] {
+  return columns.map((column) => {
+    if ("columns" in column && column.columns) {
+      return { ...column, columns: sortEmptyCells(column.columns) }
+    }
+    return column.sortingFn === undefined ? { sortUndefined: false, ...column } : column
+  })
+}
 
 /** Width classes used to vary skeleton cell widths so rows don't look uniform. */
 const SKELETON_CELL_WIDTHS = ["w-3/4", "w-1/2", "w-2/3", "w-5/6", "w-3/5"] as const
@@ -312,18 +620,35 @@ function DataTable<TData>({
   searchClassName,
   emptyMessage,
   className,
+  "aria-label": ariaLabelProp,
+  "aria-labelledby": ariaLabelledBy,
+  caption,
+  density = "default",
+  maxHeight,
+  stickyHeader,
+  pinnedColumns,
+  selectable = false,
+  selectedRowIds,
+  defaultSelectedRowIds,
+  onSelectionChange,
+  selectionActions,
   pagination,
   showRowCount = false,
   globalFilter: globalFilterProp,
   onGlobalFilterChange: onGlobalFilterChangeProp,
   pageIndex: pageIndexProp,
   onPaginationChange: onPaginationChangeProp,
+  autoResetPage,
   pageCount,
+  rowCount,
   manualPagination,
   labels,
   onRowClick,
+  getRowId,
   rowClassName,
   loading = false,
+  error,
+  onRetry,
   downloadable,
   onClearFilters,
   clearFiltersDisabled,
@@ -333,9 +658,14 @@ function DataTable<TData>({
   onSortingChange: onSortingChangeProp,
   manualSorting,
   manualFiltering,
+  ref,
+  ...rootProps
 }: DataTableProps<TData>) {
+  const idBase = React.useId()
   const isGlobalFilterControlled = globalFilterProp !== undefined
-  const isPaginationControlled = pageIndexProp !== undefined || onPaginationChangeProp !== undefined
+  // The page is controlled by `pageIndex` alone: `onPaginationChange` without
+  // it is a listener, and the table keeps moving through its own pages.
+  const isPageIndexControlled = pageIndexProp !== undefined
   const isSortingControlled = sortingProp !== undefined
 
   const [internalSorting, setInternalSorting] = React.useState<SortingState>([])
@@ -347,27 +677,29 @@ function DataTable<TData>({
   // <option> — avoids React's "value didn't match any option" warning and
   // the visually-unselected state. `?.[0]` returns undefined for empty arrays
   // so the trailing `?? 10` is the catch-all when neither field is set.
-  const [paginationState, setPaginationState] = React.useState<PaginationState>(() => ({
+  const [internalPagination, setInternalPagination] = React.useState<PaginationState>(() => ({
     pageIndex: pageIndexProp ?? 0,
     pageSize: pagination?.pageSize ?? pagination?.pageSizeOptions?.[0] ?? 10,
   }))
 
   // Keep pageSize in sync with prop (consumer may change it later).
   React.useEffect(() => {
-    setPaginationState((prev) => {
+    setInternalPagination((prev) => {
       const nextPageSize = pagination?.pageSize ?? prev.pageSize
       if (prev.pageSize === nextPageSize) return prev
       return { ...prev, pageSize: nextPageSize }
     })
   }, [pagination?.pageSize])
 
-  // Sync controlled pageIndex into local state when present.
-  React.useEffect(() => {
-    if (pageIndexProp === undefined) return
-    setPaginationState((prev) =>
-      prev.pageIndex === pageIndexProp ? prev : { ...prev, pageIndex: pageIndexProp },
-    )
-  }, [pageIndexProp])
+  const effectivePageIndex = isPageIndexControlled ? pageIndexProp : internalPagination.pageIndex
+  const paginationState = React.useMemo<PaginationState>(
+    () => ({ pageIndex: effectivePageIndex, pageSize: internalPagination.pageSize }),
+    [effectivePageIndex, internalPagination.pageSize],
+  )
+  // The latest pagination, also between two changes of one event (the page
+  // size select reports the size, then page 1): each change builds on it.
+  const paginationRef = React.useRef(paginationState)
+  paginationRef.current = paginationState
 
   const globalFilter = isGlobalFilterControlled ? globalFilterProp : internalGlobalFilter
 
@@ -387,16 +719,18 @@ function DataTable<TData>({
 
   const handlePaginationChange: OnChangeFn<PaginationState> = React.useCallback(
     (updater) => {
+      const prev = paginationRef.current
       const next =
         typeof updater === "function"
-          ? (updater as (old: PaginationState) => PaginationState)(paginationState)
+          ? (updater as (old: PaginationState) => PaginationState)(prev)
           : updater
-      if (!isPaginationControlled) {
-        setPaginationState(next)
-      }
+      if (next.pageIndex === prev.pageIndex && next.pageSize === prev.pageSize) return
+      paginationRef.current = next
+      // The size is always the table's; the index only while uncontrolled.
+      setInternalPagination(next)
       onPaginationChangeProp?.(next)
     },
-    [isPaginationControlled, onPaginationChangeProp, paginationState],
+    [onPaginationChangeProp],
   )
 
   const handleSortingChange: OnChangeFn<SortingState> = React.useCallback(
@@ -413,23 +747,93 @@ function DataTable<TData>({
     [isSortingControlled, onSortingChangeProp, sorting],
   )
 
-  const globalFilterFn = React.useCallback(
-    (row: { getValue: (id: string) => unknown }, _columnId: string, filterValue: unknown) => {
-      if (!filterValue) return true
-      if (!searchableColumns || searchableColumns.length === 0) return true
-      const needle = String(filterValue).toLowerCase()
-      return searchableColumns.some((col) => {
-        const value = row.getValue(col)
-        return value != null && String(value).toLowerCase().includes(needle)
-      })
+  // The search compares what the user sees, without accents or case: a
+  // column's `meta.searchText` (dateColumn and formattedColumn fill it with
+  // their formatted output) or the cell value as a string. TanStack calls the
+  // filter once per searchable column and keeps the row if any column matches.
+  const tableRef = React.useRef<TanstackTable<TData> | null>(null)
+  const globalFilterFn = React.useCallback<FilterFn<TData>>((row, columnId, filterValue) => {
+    const value = row.getValue(columnId)
+    const meta = columnMeta<TData>(tableRef.current?.getColumn(columnId)?.columnDef.meta)
+    const text = meta.searchText ? meta.searchText(row.original, value) : valueToText(value)
+    return matchesSearch(text, String(filterValue ?? ""))
+  }, [])
+
+  // Which columns the search reads: the ones in `searchableColumns`, or every
+  // visible column with data when the list is not given.
+  const searchableKey = searchableColumns?.join("\u0000") ?? ""
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the joined names are the change signal for the list.
+  const searchableSet = React.useMemo(
+    () =>
+      searchableColumns && searchableColumns.length > 0
+        ? new Set(resolveColumnIds(columns, searchableColumns))
+        : null,
+    [columns, searchableKey],
+  )
+  const sortableKey = sortableColumns?.join("\u0000") ?? ""
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the joined names are the change signal for the list.
+  const sortableSet = React.useMemo(
+    () => new Set(resolveColumnIds(columns, sortableColumns)),
+    [columns, sortableKey],
+  )
+  const getColumnCanGlobalFilter = React.useCallback(
+    (column: Column<TData, unknown>) =>
+      searchableSet ? searchableSet.has(column.id) : column.getIsVisible(),
+    [searchableSet],
+  )
+
+  // Row selection, a list of row ids. Controlled by `selectedRowIds`.
+  const isSelectionControlled = selectedRowIds !== undefined
+  const [internalSelection, setInternalSelection] = React.useState<string[]>(
+    () => defaultSelectedRowIds ?? [],
+  )
+  const selection = isSelectionControlled ? selectedRowIds : internalSelection
+  const selectionRef = React.useRef(selection)
+  selectionRef.current = selection
+  const setSelected = React.useCallback(
+    (rowIds: string[], selected: boolean) => {
+      const prev = selectionRef.current
+      const next = selected
+        ? [...prev, ...rowIds.filter((id) => !prev.includes(id))]
+        : prev.filter((id) => !rowIds.includes(id))
+      if (next.length === prev.length && next.every((id, index) => id === prev[index])) return
+      selectionRef.current = next
+      if (!isSelectionControlled) setInternalSelection(next)
+      onSelectionChange?.(next)
     },
-    [searchableColumns],
+    [isSelectionControlled, onSelectionChange],
+  )
+  const selectedSet = React.useMemo(() => new Set(selection), [selection])
+  const tableColumns = React.useMemo(() => {
+    const sorted = sortEmptyCells(columns)
+    return selectable ? [selectionColumn<TData>(), ...sorted] : sorted
+  }, [selectable, columns])
+
+  const pinnedLeftKey = pinnedColumns?.left?.join("\u0000") ?? ""
+  // The checkbox column, when there is one, is pinned in front of the others.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the joined names are the change signal for the list.
+  const pinnedLeftIds = React.useMemo(() => {
+    const ids = resolveColumnIds(columns, pinnedColumns?.left)
+    return selectable && ids.length > 0 ? [SELECTION_COLUMN_ID, ...ids] : ids
+  }, [columns, pinnedLeftKey, selectable])
+
+  // `meta.exportOnly` columns (inside groups too, nested keys included) are
+  // hidden from the screen but kept for the export.
+  const exportOnlyVisibility = React.useMemo(
+    () =>
+      Object.fromEntries(
+        leafColumnDefs(columns).flatMap((def) => {
+          const id = columnDefId(def)
+          return id && columnMeta(def.meta).exportOnly === true ? [[id, false]] : []
+        }),
+      ),
+    [columns],
   )
 
   const tableOptions = React.useMemo(
     () => ({
       data,
-      columns,
+      columns: tableColumns,
       state: {
         sorting,
         columnFilters,
@@ -438,26 +842,18 @@ function DataTable<TData>({
         // Columns flagged `meta.exportOnly: true` are removed from the
         // rendered table but kept in `getAllLeafColumns()` so the xlsx
         // export still includes them.
-        columnVisibility: Object.fromEntries(
-          columns
-            .filter((col) => {
-              const meta = (col as { meta?: { exportOnly?: boolean } }).meta
-              return meta?.exportOnly === true
-            })
-            .map((col) => [
-              ((col as { id?: string; accessorKey?: string }).id ??
-                (col as { accessorKey?: string }).accessorKey ??
-                "") as string,
-              false,
-            ])
-            .filter(([id]) => id !== ""),
-        ),
+        columnPinning: { left: pinnedLeftIds, right: [] },
+        columnVisibility: exportOnlyVisibility,
       },
       onSortingChange: handleSortingChange,
       manualSorting,
+      defaultColumn: { sortingFn: defaultSortingFn as SortingFn<TData> },
       onColumnFiltersChange: setColumnFilters,
       onGlobalFilterChange: handleGlobalFilterChange,
       onPaginationChange: paginationEnabled ? handlePaginationChange : undefined,
+      // The table decides when to go back to page 1 (see `autoResetPage`):
+      // TanStack's own reset fires on every new `data` array.
+      autoResetPageIndex: false,
       getCoreRowModel: getCoreRowModel(),
       getSortedRowModel: getSortedRowModel(),
       // Skip the client-side filter pass when the server is filtering.
@@ -470,16 +866,23 @@ function DataTable<TData>({
       ...(paginationEnabled && !manualPagination
         ? { getPaginationRowModel: getPaginationRowModel() }
         : {}),
-      ...(manualPagination ? { manualPagination: true, pageCount: pageCount ?? -1 } : {}),
-      // When `searchableColumns` is provided, scope global filter to those columns;
-      // otherwise fall back to TanStack's built-in `includesString` matcher.
-      ...(searchableColumns && searchableColumns.length > 0
-        ? { globalFilterFn }
-        : { globalFilterFn: "includesString" as const }),
+      // Server pagination: TanStack derives the page count from `rowCount`
+      // when `pageCount` is absent; with neither, -1 means "unknown" (next
+      // stays enabled, no count is shown).
+      ...(manualPagination
+        ? {
+            manualPagination: true,
+            pageCount: pageCount ?? (rowCount == null ? -1 : undefined),
+            rowCount,
+          }
+        : {}),
+      globalFilterFn,
+      getColumnCanGlobalFilter,
+      ...(getRowId ? { getRowId: (row: TData, index: number) => getRowId(row, index) } : {}),
     }),
     [
       data,
-      columns,
+      tableColumns,
       sorting,
       columnFilters,
       globalFilter,
@@ -492,25 +895,249 @@ function DataTable<TData>({
       manualSorting,
       manualFiltering,
       pageCount,
-      searchableColumns,
+      rowCount,
       globalFilterFn,
+      getColumnCanGlobalFilter,
+      getRowId,
+      pinnedLeftIds,
+      exportOnlyVisibility,
     ],
   )
 
   const table = useReactTable(tableOptions)
+  tableRef.current = table
+
+  // Back to page 1 when what the rows are changes (search, filters, sort) —
+  // not when a new `data` array arrives with the same view (a refetch, a
+  // row edited). Server pagination owns its page unless asked.
+  const shouldAutoResetPage = autoResetPage ?? !manualPagination
+  const viewKey = React.useMemo(
+    () => JSON.stringify([globalFilter, columnFilters, sorting]),
+    [globalFilter, columnFilters, sorting],
+  )
+  const lastViewKey = React.useRef(viewKey)
+  React.useLayoutEffect(() => {
+    if (lastViewKey.current === viewKey) return
+    lastViewKey.current = viewKey
+    if (!paginationEnabled || !shouldAutoResetPage) return
+    handlePaginationChange((prev) => ({ ...prev, pageIndex: 0 }))
+  }, [viewKey, paginationEnabled, shouldAutoResetPage, handlePaginationChange])
+
+  // A page that no longer exists (the data shrank) moves to the last one.
+  // Not while the rows are on their way (`loading`, or no rows at all): a
+  // page that came from the URL (`pageIndex={3}` with `data={query.data ??
+  // []}`) went to page 1 before the data arrived, and stayed there.
+  const pageCountNow = table.getPageCount()
+  React.useLayoutEffect(() => {
+    if (!paginationEnabled || manualPagination) return
+    if (loading || pageCountNow === 0) return
+    const lastPage = Math.max(0, pageCountNow - 1)
+    if (paginationState.pageIndex > lastPage) {
+      handlePaginationChange((prev) => ({ ...prev, pageIndex: lastPage }))
+    }
+  }, [
+    pageCountNow,
+    paginationState.pageIndex,
+    paginationEnabled,
+    manualPagination,
+    loading,
+    handlePaginationChange,
+  ])
 
   const mergedLabels: DataTableLabels = { ...defaultDataTableLabels, ...labels }
   const resolvedSearchPlaceholder = searchPlaceholder ?? mergedLabels.search
   const resolvedEmptyMessage = emptyMessage ?? mergedLabels.empty
   const rowCountFn = mergedLabels.rowCount
 
-  const skeletonRowCount = pagination?.pageSize ?? 5
-  // Skip `meta.exportOnly` columns: they're absent from the rendered header,
-  // so the skeleton body shouldn't render placeholder cells for them either —
-  // otherwise the body row is wider than the header and rows misalign.
-  const skeletonColumnCount = columns.filter(
-    (col) => !(col as { meta?: { exportOnly?: boolean } }).meta?.exportOnly,
-  ).length
+  // Rows for the footer count. On the server (`manualPagination` /
+  // `manualFiltering`) `data` is a page or the filtered set, and the total is
+  // `rowCount`: unknown under server pagination when it is not given.
+  const counts: { filtered: number; total: number } | null =
+    manualPagination || manualFiltering
+      ? rowCount != null
+        ? { filtered: rowCount, total: rowCount }
+        : manualPagination
+          ? null
+          : { filtered: data.length, total: data.length }
+      : { filtered: table.getFilteredRowModel().rows.length, total: data.length }
+
+  // What the pager knows about the total: the rows (client side, or
+  // `rowCount`), the pages (`pageCount`), or nothing (cursor-like: next stays
+  // available while the page is full).
+  const pageTotals: { totalItems?: number; totalPages?: number; hasMore?: boolean } =
+    manualPagination
+      ? pageCount != null
+        ? { totalPages: pageCount }
+        : rowCount != null
+          ? { totalItems: rowCount }
+          : { hasMore: data.length >= paginationState.pageSize }
+      : { totalItems: table.getPrePaginationRowModel().rows.length }
+
+  // When the data shrinks under the current page, the table moves to the
+  // last one in an effect; until then, show the last page instead of handing
+  // Pagination a page it would warn about.
+  const knownPageCount = table.getPageCount()
+  const shownPage =
+    knownPageCount > 0
+      ? Math.min(paginationState.pageIndex + 1, knownPageCount)
+      : paginationState.pageIndex + 1
+
+  // As many skeleton rows as the page the user is about to see.
+  const skeletonRowCount = paginationEnabled ? paginationState.pageSize : 5
+  const hasError = !loading && error != null && error !== false && error !== ""
+  const statusText = loading
+    ? mergedLabels.loading
+    : !hasError && table.getRowModel().rows.length === 0 && typeof resolvedEmptyMessage === "string"
+      ? resolvedEmptyMessage
+      : ""
+  // Alignment per leaf column: `meta.align`, or right for a formattedColumn
+  // whose values are numbers (looked up in the first row that has one).
+  const columnAlign = new Map<string, "left" | "center" | "right">()
+  for (const column of table.getAllLeafColumns()) {
+    const meta = columnMeta<TData>(column.columnDef.meta)
+    if (meta.align) {
+      columnAlign.set(column.id, meta.align)
+    } else if (meta.alignNumbers) {
+      const sample = table
+        .getCoreRowModel()
+        .rows.find((row) => row.getValue(column.id) != null)
+        ?.getValue(column.id)
+      if (typeof sample === "number" || typeof sample === "bigint") {
+        columnAlign.set(column.id, "right")
+      }
+    }
+  }
+  const alignClass = (columnId: string) => {
+    const align = columnAlign.get(columnId)
+    return align === "right" ? "text-right" : align === "center" ? "text-center" : undefined
+  }
+  const isStickyHeader = stickyHeader ?? maxHeight != null
+  const compact = density === "compact"
+  // Compact: 20px line + 16px = 36px rows; headers keep room for the 32px sort button.
+  const cellDensity = compact ? "py-2" : undefined
+  const headDensity = compact ? "py-1" : undefined
+
+  // Pinned columns stick at the sum of the widths before them. The widths are
+  // the rendered ones (content decides them), measured after layout and again
+  // whenever the table or a pinned header resizes.
+  const scrollRef = React.useRef<HTMLDivElement>(null)
+  const [pinOffsets, setPinOffsets] = React.useState<Record<string, number>>({})
+  React.useLayoutEffect(() => {
+    const tableElement = scrollRef.current?.querySelector("table")
+    if (!tableElement || pinnedLeftIds.length === 0) {
+      setPinOffsets((prev) => (Object.keys(prev).length === 0 ? prev : {}))
+      return
+    }
+    const headerFor = (id: string) =>
+      tableElement.querySelector<HTMLElement>(
+        `thead tr:last-child th[data-column-id="${CSS.escape(id)}"]`,
+      )
+    const measure = () => {
+      const next: Record<string, number> = {}
+      let left = 0
+      for (const id of pinnedLeftIds) {
+        next[id] = left
+        left += headerFor(id)?.getBoundingClientRect().width ?? 0
+      }
+      setPinOffsets((prev) =>
+        pinnedLeftIds.every((id) => prev[id] === next[id]) &&
+        Object.keys(prev).length === pinnedLeftIds.length
+          ? prev
+          : next,
+      )
+    }
+    measure()
+    if (typeof ResizeObserver === "undefined") return
+    const observer = new ResizeObserver(measure)
+    observer.observe(tableElement)
+    for (const id of pinnedLeftIds) {
+      const header = headerFor(id)
+      if (header) observer.observe(header)
+    }
+    return () => observer.disconnect()
+  }, [pinnedLeftIds])
+  const lastPinnedId = pinnedLeftIds.at(-1)
+
+  // Whether the box scrolls (wide columns, `maxHeight`): measured on layout
+  // and on every resize of the box or the table.
+  const [scrolls, setScrolls] = React.useState(false)
+  React.useLayoutEffect(() => {
+    const box = scrollRef.current
+    if (!box) return
+    const measure = () =>
+      setScrolls(box.scrollWidth > box.clientWidth + 1 || box.scrollHeight > box.clientHeight + 1)
+    measure()
+    if (typeof ResizeObserver === "undefined") return
+    const observer = new ResizeObserver(measure)
+    observer.observe(box)
+    const tableElement = box.querySelector("table")
+    if (tableElement) observer.observe(tableElement)
+    return () => observer.disconnect()
+  }, [])
+  /** Sticky placement of a pinned column's cell; nothing for the others. */
+  const pinFor = (
+    columnId: string,
+    surface: "head" | "body" | "foot",
+  ): { className?: string; style?: React.CSSProperties; "data-pinned"?: "left" } => {
+    if (!pinnedLeftIds.includes(columnId)) return {}
+    return {
+      "data-pinned": "left",
+      style: { left: pinOffsets[columnId] ?? 0 },
+      className: cn(
+        // On one line: a pinned block that wraps grows tall and narrow.
+        "sticky z-[1] whitespace-nowrap",
+        // Opaque, or the scrolled cells would show through. A body cell takes
+        // its row's colour (hover, selected, rowClassName); the row is
+        // `bg-card` underneath so there is always one.
+        surface === "head" && "bg-card",
+        surface === "body" && "bg-inherit [tr:hover>&]:state-hover",
+        surface === "foot" && "bg-card bg-linear-to-r from-muted/50 to-muted/50",
+        // The edge of the pinned block: drawn by the cell, since a collapsed
+        // border would stay behind while scrolling.
+        columnId === lastPinnedId &&
+          "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border",
+      ),
+    }
+  }
+  /** The leaf column a header (or its placeholder) stands for. */
+  const leafIdOf = (header: {
+    column: { id: string }
+    getLeafHeaders: () => { column: { id: string } }[]
+  }) => header.getLeafHeaders()[0]?.column.id ?? header.column.id
+  const orderedLeafColumns = [
+    ...table.getLeftVisibleLeafColumns(),
+    ...table.getCenterVisibleLeafColumns(),
+  ]
+
+  // The first column with data: its cell holds the row's action button
+  // (`onRowClick`) and its text names the row's checkbox.
+  const firstDataColumn = orderedLeafColumns.find(
+    (column) => column.id !== SELECTION_COLUMN_ID && column.accessorFn != null,
+  )
+  const rowActionColumnId = orderedLeafColumns.find(
+    (column) => column.id !== SELECTION_COLUMN_ID,
+  )?.id
+  const pageRows = loading || hasError ? [] : table.getRowModel().rows
+  const rowText = (rowId: string): string => {
+    const row = pageRows.find((candidate) => candidate.id === rowId)
+    if (!row || !firstDataColumn) return rowId
+    const value = row.getValue(firstDataColumn.id)
+    const meta = columnMeta<TData>(firstDataColumn.columnDef.meta)
+    const text = (
+      meta.searchText ? meta.searchText(row.original, value) : valueToText(value)
+    ).trim()
+    return text === "" ? String(row.index + 1) : text
+  }
+  const selectionContext: SelectionContextValue = {
+    isSelected: (rowId) => selectedSet.has(rowId),
+    setSelected,
+    pageIds: pageRows.map((row) => row.id),
+    rowCheckboxLabel: (rowId) => mergedLabels.selectRow(rowText(rowId)),
+    pageCheckboxLabel: mergedLabels.selectPage,
+  }
+
+  // Totals and other footers: `columnDef.footer` of any column.
+  const hasFooter = table.getAllFlatColumns().some((column) => column.columnDef.footer != null)
 
   const hasSearch = !!(searchableColumns && searchableColumns.length > 0)
   const hasDownload = !!downloadable
@@ -518,83 +1145,119 @@ function DataTable<TData>({
   const downloadConfig: DataTableDownloadable<TData> | undefined =
     downloadable && typeof downloadable === "object" ? downloadable : undefined
 
-  const defaultRowToRecord = React.useCallback(
-    (row: TData, rowIndex: number): Record<string, unknown> => {
-      // Null-prototype object so a column header literally named
-      // `__proto__` / `constructor` assigns to a plain key instead of
-      // mutating the record's prototype chain on its way into xlsx.
-      const record = Object.create(null) as Record<string, unknown>
-      // Use ALL leaf cols (not just visible) so columns flagged
-      // `meta.exportOnly: true` — hidden from the table UI — still appear
-      // in the xlsx output.
-      const leafCols = table.getAllLeafColumns()
-      for (const col of leafCols) {
-        const headerDef = col.columnDef.header
-        const label = typeof headerDef === "string" && headerDef.length > 0 ? headerDef : col.id
-        const def = col.columnDef as {
-          accessorKey?: string
-          accessorFn?: (row: TData, rowIndex: number) => unknown
-        }
-        // Resolve in priority order: explicit accessorKey > accessorFn (covers
-        // computed/nested values) > fallback to col.id as a property.
-        let rawValue: unknown
-        if (def.accessorKey != null) {
-          rawValue = (row as Record<string, unknown>)[def.accessorKey]
-        } else if (typeof def.accessorFn === "function") {
-          rawValue = def.accessorFn(row, rowIndex)
-        } else {
-          rawValue = (row as Record<string, unknown>)[col.id]
-        }
-        record[label] = rawValue ?? ""
-      }
-      return record
-    },
-    [table],
-  )
-
   const [exportingScope, setExportingScope] = React.useState<ExportScope | null>(null)
+  const [exportFailed, setExportFailed] = React.useState(false)
+
+  /**
+   * The file for some rows. Without `rowToRecord`, what the screen shows:
+   * every leaf column with data (plus `meta.exportOnly` ones), in order, with
+   * the value its accessor reads; `meta.export` leaves a column out (`false`)
+   * or gives its value. Headers repeat as they are on screen.
+   */
+  const buildExportSheet = React.useCallback(
+    (rows: { original: TData; index: number }[]): ExportSheet => {
+      const rowToRecord = downloadConfig?.rowToRecord
+      if (rowToRecord)
+        return recordsToSheet(rows.map((row) => rowToRecord(row.original, row.index)))
+      const exportColumns = table.getAllLeafColumns().flatMap((column) => {
+        const meta = columnMeta<TData>(column.columnDef.meta)
+        if (meta.export === false) return []
+        const custom = typeof meta.export === "function" ? meta.export : undefined
+        const accessor = column.accessorFn
+        if (!accessor && !custom) return []
+        const header = column.columnDef.header
+        return [
+          {
+            header: typeof header === "string" && header.length > 0 ? header : column.id,
+            value: (row: TData, index: number): ExportValue => {
+              const value = accessor ? accessor(row, index) : undefined
+              return toExportValue(custom ? custom(row, value) : value)
+            },
+          },
+        ]
+      })
+      return {
+        headers: exportColumns.map((column) => column.header),
+        rows: rows.map((row) =>
+          exportColumns.map((column) => column.value(row.original, row.index)),
+        ),
+      }
+    },
+    [downloadConfig, table],
+  )
 
   const handleExport = React.useCallback(
     async (scope: ExportScope) => {
-      // When the parent runs paginated/filtered on the server, the
-      // table only holds the current page in `data`. Defer to the
-      // consumer-supplied fetchers so "Exportar todos"/"filtrados"
-      // hit the full server set instead of silently truncating.
-      let rows: TData[]
+      // When the parent runs paginated/filtered on the server, the table only
+      // holds the current page in `data`: the consumer's fetchers bring the
+      // full server set. "filtered" keeps the current sort (the pre-pagination
+      // model is filtered and sorted).
+      const fromFetch = (rows: TData[]) => rows.map((original, index) => ({ original, index }))
+      let rows: { original: TData; index: number }[]
       if (scope === "all" && downloadConfig?.fetchAll) {
-        rows = await downloadConfig.fetchAll()
+        rows = fromFetch(await downloadConfig.fetchAll())
       } else if (scope === "filtered" && downloadConfig?.fetchFiltered) {
-        rows = await downloadConfig.fetchFiltered()
+        rows = fromFetch(await downloadConfig.fetchFiltered())
       } else if (scope === "filtered") {
-        rows = table.getFilteredRowModel().rows.map((r) => r.original)
+        rows = table.getPrePaginationRowModel().rows
       } else if (scope === "page") {
-        rows = table.getRowModel().rows.map((r) => r.original)
+        rows = table.getRowModel().rows
       } else {
-        rows = data
+        rows = fromFetch(data)
       }
-      const mapper = downloadConfig?.rowToRecord ?? defaultRowToRecord
-      const records = rows.map(mapper)
       const filename =
         typeof downloadConfig?.filename === "function"
           ? downloadConfig.filename(scope)
           : downloadConfig?.filename
-      await downloadXlsx(records, filename || "export.xlsx", downloadConfig?.sheetName ?? "Dados")
+      await downloadSheet(
+        buildExportSheet(rows),
+        filename || "export.xlsx",
+        downloadConfig?.sheetName ?? "Dados",
+      )
     },
-    [data, defaultRowToRecord, downloadConfig, table],
+    [buildExportSheet, data, downloadConfig, table],
   )
 
-  const [downloadMenuOpen, setDownloadMenuOpen] = React.useState(false)
+  // Only the scopes the table can fill. With server pagination `data` is one
+  // page: "filtered" and "all" need their fetcher, or they would export that
+  // page under the wrong name. With server filtering only, `data` is the
+  // filtered set: "filtered" is it, "all" needs `fetchAll`.
+  const exportScopes: ExportScope[] = (["filtered", "page", "all"] as const).filter((scope) => {
+    if (scope === "filtered") return !manualPagination || downloadConfig?.fetchFiltered != null
+    if (scope === "all") {
+      return (!manualPagination && !manualFiltering) || downloadConfig?.fetchAll != null
+    }
+    return true
+  })
+  const scopeLabels: Record<ExportScope, string> = {
+    filtered: mergedLabels.exportFiltered,
+    page: mergedLabels.exportPage,
+    all: mergedLabels.exportAll,
+  }
+
+  // One file at a time. The trigger is busy while a file is made (and a
+  // busy Button opens nothing), and this holds for any other way in: a
+  // second export used to fetch everything again, download twice and take
+  // the spinner away while the first was still running.
+  const exporting = React.useRef(false)
   const runExport = React.useCallback(
     async (scope: ExportScope) => {
-      setDownloadMenuOpen(false)
+      if (exporting.current) return
+      exporting.current = true
       setExportingScope(scope)
+      setExportFailed(false)
       try {
         await handleExport(scope)
+      } catch (error) {
+        // Never silent: the consumer hears about it and the user sees it.
+        setExportFailed(true)
+        downloadConfig?.onExportError?.(error)
       } finally {
+        exporting.current = false
         setExportingScope(null)
       }
     },
-    [handleExport],
+    [downloadConfig, handleExport],
   )
   const renderDownloadMenu = () => {
     if (loading) {
@@ -602,23 +1265,24 @@ function DataTable<TData>({
         <div
           data-slot="data-table-download-skeleton"
           className={cn(
-            "h-10 w-40 animate-pulse rounded-md bg-primary/10",
+            "h-10 w-40 animate-pulse rounded-element bg-primary/10",
             downloadTriggerClassName,
           )}
         />
       )
     }
+    // The library's menu: arrows, Home/End, typeahead, Escape back to the
+    // trigger. While a file is being made the trigger is busy (`loading`,
+    // aria-disabled), so the focus Radix hands back to it stays there.
     return (
-      <Popover
+      <DropdownMenu
         align="end"
-        aria-label={mergedLabels.exportTrigger}
-        open={downloadMenuOpen}
-        onOpenChange={setDownloadMenuOpen}
+        className="w-56"
         trigger={
           <Button
             type="button"
             variant="outline"
-            disabled={data.length === 0 || exportingScope !== null}
+            disabled={data.length === 0}
             loading={exportingScope !== null}
             data-slot="data-table-download-trigger"
             className={cn("gap-2", downloadTriggerClassName)}
@@ -627,49 +1291,33 @@ function DataTable<TData>({
             {mergedLabels.exportTrigger}
           </Button>
         }
-        className="w-56 p-1"
-      >
-        <div role="menu" className="flex flex-col">
-          <button
-            type="button"
-            role="menuitem"
-            data-slot="data-table-download-filtered"
-            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground"
-            onClick={() => runExport("filtered")}
-          >
-            {mergedLabels.exportFiltered}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            data-slot="data-table-download-page"
-            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground"
-            onClick={() => runExport("page")}
-          >
-            {mergedLabels.exportPage}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            data-slot="data-table-download-all"
-            className="rounded-sm px-2 py-1.5 text-left text-sm transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground"
-            onClick={() => runExport("all")}
-          >
-            {mergedLabels.exportAll}
-          </button>
-        </div>
-      </Popover>
+        items={exportScopes.map((scope) => ({
+          id: scope,
+          label: scopeLabels[scope],
+          onSelect: () => {
+            void runExport(scope)
+          },
+        }))}
+      />
     )
   }
 
   return (
     <div
+      {...rootProps}
+      ref={ref}
       className={cn("flex flex-col gap-3", className)}
       data-slot="data-table"
-      aria-busy={loading || undefined}
+      data-density={density}
+      aria-busy={loading || rootProps["aria-busy"] || undefined}
     >
       {hasSearch || hasDownload || hasClearFilters ? (
-        <div className="flex items-center justify-between gap-2">
+        // Wraps on a phone: the actions go under the search instead of
+        // squeezing it (or leaving the box).
+        <div
+          data-slot="data-table-toolbar"
+          className="flex flex-wrap items-center justify-between gap-2"
+        >
           {hasSearch ? (
             // Always-mounted input. Previously the loading state swapped the
             // input for a skeleton div, which made React unmount + remount the
@@ -680,7 +1328,10 @@ function DataTable<TData>({
             <div
               data-slot="data-table-search"
               data-loading={loading || undefined}
-              className={cn("relative w-full max-w-sm", searchClassName)}
+              className={cn(
+                "relative w-full min-w-0 flex-[1_1_12rem] sm:max-w-sm",
+                searchClassName,
+              )}
             >
               <Search
                 className={cn(
@@ -700,7 +1351,7 @@ function DataTable<TData>({
           ) : (
             <span aria-hidden />
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {hasClearFilters ? (
               <Button
                 type="button"
@@ -723,216 +1374,339 @@ function DataTable<TData>({
         </div>
       ) : null}
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  const canSort = sortableColumns?.includes(header.column.id) ?? false
-                  const sorted = header.column.getIsSorted()
-                  const ariaSort: "ascending" | "descending" | "none" =
-                    sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"
-                  const headerDef = header.column.columnDef.header
-                  const headerText = typeof headerDef === "string" ? headerDef : header.id
-                  const ariaLabel = mergedLabels.sortBy(headerText)
-                  return (
-                    <TableHead key={header.id} aria-sort={canSort ? ariaSort : undefined}>
-                      {header.isPlaceholder ? null : canSort ? (
-                        <button
-                          type="button"
-                          onClick={header.column.getToggleSortingHandler()}
-                          className="-mx-2 inline-flex h-8 items-center gap-2 rounded-md px-2 text-left cursor-pointer transition-colors hover:bg-accent"
-                          aria-label={ariaLabel}
+      {/* One live region for the table, in the DOM from the start: it is the
+          change of its text that screen readers announce (loading, or a search
+          that empties the table). A custom ReactNode empty message speaks for
+          itself (see EmptyState's `announce`). */}
+      {/* biome-ignore lint/a11y/useSemanticElements: <output> is for form results; this is a status message. */}
+      <div role="status" data-slot="data-table-status" className="sr-only">
+        {statusText}
+      </div>
+
+      {exportFailed ? (
+        <p
+          data-slot="data-table-export-error"
+          role="alert"
+          className="text-sm text-destructive-text"
+        >
+          {mergedLabels.exportError}
+        </p>
+      ) : null}
+
+      {selectable && selection.length > 0 ? (
+        <div
+          data-slot="data-table-selection-bar"
+          className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-container border border-border-strong bg-muted px-3 py-2"
+        >
+          <span className="text-sm font-medium">
+            {mergedLabels.selectedCount(selection.length)}
+          </span>
+          {selectionActions ? (
+            <div className="flex flex-wrap items-center gap-2">{selectionActions(selection)}</div>
+          ) : null}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
+            onClick={() => setSelected(selection, false)}
+          >
+            {mergedLabels.clearSelection}
+          </Button>
+        </div>
+      ) : null}
+
+      <SelectionProvider value={selectable ? selectionContext : null}>
+        <div className="overflow-hidden rounded-container border border-border-strong bg-card">
+          <Table
+            aria-label={ariaLabelProp}
+            aria-labelledby={ariaLabelledBy}
+            containerStyle={maxHeight != null ? { maxHeight } : undefined}
+            containerRef={scrollRef}
+            containerProps={
+              scrolls
+                ? {
+                    // A box that scrolls must be reachable by keyboard (arrows,
+                    // Page Down) even when it holds no control; then it is a named
+                    // region. No tab stop while it does not scroll.
+                    tabIndex: 0,
+                    role: "region",
+                    ...(ariaLabelledBy
+                      ? { "aria-labelledby": ariaLabelledBy }
+                      : { "aria-label": ariaLabelProp ?? mergedLabels.scrollRegion }),
+                  }
+                : undefined
+            }
+          >
+            {caption != null ? (
+              <caption
+                data-slot="data-table-caption"
+                className="px-3 py-2.5 text-left text-sm text-muted-foreground"
+              >
+                {caption}
+              </caption>
+            ) : null}
+            <TableHeader
+              className={cn(
+                isStickyHeader &&
+                  // A collapsed border does not travel with a sticky header: each
+                  // th draws the line itself, in the border colour.
+                  "sticky top-0 z-10 bg-card [&_tr]:border-b-0 [&_th]:relative [&_th]:after:pointer-events-none [&_th]:after:absolute [&_th]:after:inset-x-0 [&_th]:after:bottom-0 [&_th]:after:h-px [&_th]:after:bg-border",
+              )}
+            >
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    // Only a leaf header sorts: a group header ("Cliente" over two
+                    // columns) and the empty cell above a plain column do not.
+                    const isLeafHeader = !header.isPlaceholder && header.subHeaders.length === 0
+                    const canSort = isLeafHeader && sortableSet.has(header.column.id)
+                    const sorted = header.column.getIsSorted()
+                    const ariaSort: "ascending" | "descending" | "none" =
+                      sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"
+                    const headerDef = header.column.columnDef.header
+                    const headerText = typeof headerDef === "string" ? headerDef : header.id
+                    // The button is named by what it shows, so the column header
+                    // reads "Número", not "Ordenar por Número", on every cell;
+                    // the action is its description (a hidden node is still read
+                    // as a description, and stays out of the header's name).
+                    const sortHintId = `${idBase}-sort-${header.id}`
+                    const pin = pinFor(leafIdOf(header), "head")
+                    return (
+                      <TableHead
+                        key={header.id}
+                        data-column-id={isLeafHeader ? header.column.id : undefined}
+                        data-pinned={pin["data-pinned"]}
+                        style={pin.style}
+                        className={cn(
+                          headDensity,
+                          isLeafHeader && alignClass(header.column.id),
+                          pin.className,
+                        )}
+                        colSpan={header.colSpan > 1 ? header.colSpan : undefined}
+                        scope={header.colSpan > 1 ? "colgroup" : "col"}
+                        aria-sort={canSort ? ariaSort : undefined}
+                      >
+                        {header.isPlaceholder ? null : canSort ? (
+                          <button
+                            type="button"
+                            onClick={header.column.getToggleSortingHandler()}
+                            className="-mx-2 inline-flex h-8 items-center gap-2 rounded-element px-2 text-left cursor-pointer transition-colors state-layer focus-visible:focus-outline-inset"
+                            aria-describedby={sortHintId}
+                          >
+                            <span id={sortHintId} hidden>
+                              {mergedLabels.sortBy(headerText)}
+                            </span>
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {sorted === "asc" ? (
+                              <ArrowUp className="size-3.5" aria-hidden />
+                            ) : sorted === "desc" ? (
+                              <ArrowDown className="size-3.5" aria-hidden />
+                            ) : (
+                              <ArrowUpDown className="size-3.5 opacity-50" aria-hidden />
+                            )}
+                          </button>
+                        ) : (
+                          flexRender(header.column.columnDef.header, header.getContext())
+                        )}
+                      </TableHead>
+                    )
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <>
+                  {Array.from({ length: skeletonRowCount }).map((_, rowIdx) => (
+                    <TableRow
+                      // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows are positional and identityless
+                      key={`skeleton-${rowIdx}`}
+                      data-slot="data-table-skeleton-row"
+                    >
+                      {orderedLeafColumns.map((column, colIdx) => (
+                        <TableCell
+                          key={`skeleton-${rowIdx}-${column.id}`}
+                          {...pinFor(column.id, "body")}
+                          className={cn(cellDensity, pinFor(column.id, "body").className)}
                         >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {sorted === "asc" ? (
-                            <ArrowUp className="size-3.5" aria-hidden />
-                          ) : sorted === "desc" ? (
-                            <ArrowDown className="size-3.5" aria-hidden />
-                          ) : (
-                            <ArrowUpDown className="size-3.5 opacity-50" aria-hidden />
-                          )}
-                        </button>
-                      ) : (
-                        flexRender(header.column.columnDef.header, header.getContext())
-                      )}
-                    </TableHead>
-                  )
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <>
-                <TableRow
-                  aria-hidden="true"
-                  className="sr-only"
-                  data-slot="data-table-loading-announcer"
-                >
-                  <TableCell colSpan={table.getVisibleLeafColumns().length}>
-                    {/* biome-ignore lint/a11y/useSemanticElements: <output> targets calculation results inside <form>; this is a generic loading announcement, role="status" is the right ARIA role. */}
-                    <span role="status" className="sr-only">
-                      {mergedLabels.loading}
-                    </span>
+                          <div
+                            className={cn(
+                              "h-5 animate-pulse rounded-inner bg-primary/10",
+                              SKELETON_CELL_WIDTHS[(rowIdx + colIdx) % SKELETON_CELL_WIDTHS.length],
+                            )}
+                          />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </>
+              ) : hasError ? (
+                <TableRow data-slot="data-table-error-row">
+                  <TableCell colSpan={table.getVisibleLeafColumns().length} className="h-24">
+                    <div className="flex flex-col items-center justify-center gap-3 text-center">
+                      <div
+                        role="alert"
+                        data-slot="data-table-error"
+                        className="text-destructive-text"
+                      >
+                        {error === true ? mergedLabels.error : error}
+                      </div>
+                      {onRetry ? (
+                        <Button type="button" variant="outline" onClick={onRetry}>
+                          {mergedLabels.retry}
+                        </Button>
+                      ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
-                {Array.from({ length: skeletonRowCount }).map((_, rowIdx) => (
-                  <TableRow
-                    // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows are positional and identityless
-                    key={`skeleton-${rowIdx}`}
-                    data-slot="data-table-skeleton-row"
-                  >
-                    {Array.from({ length: skeletonColumnCount }).map((__, colIdx) => (
-                      <TableCell
-                        // biome-ignore lint/suspicious/noArrayIndexKey: skeleton cells are positional
-                        key={`skeleton-${rowIdx}-${colIdx}`}
-                      >
-                        <div
-                          className={cn(
-                            "h-5 animate-pulse rounded-md bg-primary/10",
-                            SKELETON_CELL_WIDTHS[(rowIdx + colIdx) % SKELETON_CELL_WIDTHS.length],
-                          )}
-                        />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </>
-            ) : table.getRowModel().rows.length > 0 ? (
-              table.getRowModel().rows.map((row, index) => {
-                const interactive = onRowClick != null
-                return (
-                  <TableRow
-                    key={row.id}
-                    className={cn(
-                      interactive &&
-                        "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset focus-visible:bg-muted/60",
-                      rowClassName?.(row.original, index),
-                    )}
-                    role={interactive ? "button" : undefined}
-                    tabIndex={interactive ? 0 : undefined}
-                    onClick={interactive ? (e) => onRowClick?.(row.original, e) : undefined}
-                    onKeyDown={
-                      interactive
-                        ? (e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault()
-                              onRowClick?.(
-                                row.original,
-                                e as unknown as React.MouseEvent<HTMLTableRowElement>,
-                              )
+              ) : table.getRowModel().rows.length > 0 ? (
+                table.getRowModel().rows.map((row, index) => {
+                  const interactive = onRowClick != null
+                  return (
+                    // The row stays a row (a `role="button"` would flatten it and
+                    // its cells into one button). Mouse users click anywhere on
+                    // it; keyboard and assistive tech reach the same action
+                    // through the real button in the first cell.
+                    <TableRow
+                      key={row.id}
+                      data-state={selectable && selectedSet.has(row.id) ? "selected" : undefined}
+                      className={cn(
+                        pinnedLeftIds.length > 0 && "bg-card",
+                        interactive &&
+                          "cursor-pointer has-[[data-row-action]:focus-visible]:state-hover",
+                        rowClassName?.(row.original, index),
+                      )}
+                      onClick={
+                        interactive
+                          ? (event) => {
+                              if (isOwnRowClick(event)) onRowClick(row.original, event)
                             }
-                          }
-                        : undefined
-                    }
+                          : undefined
+                      }
+                    >
+                      {row.getVisibleCells().map((cell) => {
+                        const content = flexRender(cell.column.columnDef.cell, cell.getContext())
+                        const pin = pinFor(cell.column.id, "body")
+                        return (
+                          <TableCell
+                            key={cell.id}
+                            data-pinned={pin["data-pinned"]}
+                            style={pin.style}
+                            className={cn(cellDensity, alignClass(cell.column.id), pin.className)}
+                          >
+                            {interactive && cell.column.id === rowActionColumnId ? (
+                              <button
+                                type="button"
+                                data-slot="data-table-row-action"
+                                data-row-action=""
+                                className="-mx-1 cursor-pointer rounded-inner px-1 text-left focus-visible:focus-outline"
+                              >
+                                <InsideRowActionContext.Provider value={true}>
+                                  {content}
+                                </InsideRowActionContext.Provider>
+                              </button>
+                            ) : (
+                              content
+                            )}
+                          </TableCell>
+                        )
+                      })}
+                    </TableRow>
+                  )
+                })
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={table.getVisibleLeafColumns().length}
+                    className="h-24 text-center text-muted-foreground"
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                )
-              })
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={table.getVisibleLeafColumns().length}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  {/* biome-ignore lint/a11y/useSemanticElements: <output> targets form calculation results; this is a generic "no results" announcement, role="status" is the right ARIA role. */}
-                  <span role="status" aria-live="polite">
                     {resolvedEmptyMessage}
-                  </span>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+            {hasFooter && !loading && !hasError ? (
+              <TableFooter>
+                {table
+                  .getFooterGroups()
+                  .filter((group) =>
+                    group.headers.some(
+                      (header) => !header.isPlaceholder && header.column.columnDef.footer != null,
+                    ),
+                  )
+                  .map((group) => (
+                    <tr key={group.id} data-slot="table-footer-row" className="border-b">
+                      {group.headers.map((header) => (
+                        <TableCell
+                          key={header.id}
+                          {...pinFor(leafIdOf(header), "foot")}
+                          className={cn(
+                            cellDensity,
+                            header.subHeaders.length === 0 && alignClass(header.column.id),
+                            pinFor(leafIdOf(header), "foot").className,
+                          )}
+                          colSpan={header.colSpan > 1 ? header.colSpan : undefined}
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.footer, header.getContext())}
+                        </TableCell>
+                      ))}
+                    </tr>
+                  ))}
+              </TableFooter>
+            ) : null}
+          </Table>
+        </div>
+      </SelectionProvider>
 
       {paginationEnabled || showRowCount ? (
         // Tight footer: `-mt-1` trims the parent `gap-3` to 8px, plus `pt-1`
         // gives the footer only 4px of internal top padding (was 12px). The
         // row count / pagination read as part of the table block instead of
         // floating below it; pb-3 keeps a normal bottom breath at the edge.
-        <div className="-mt-1 flex items-center justify-between gap-2 px-3 pt-1 pb-3">
-          {showRowCount ? (
+        <div
+          data-slot="data-table-footer"
+          className="-mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 pt-1 pb-3"
+        >
+          {showRowCount && counts !== null ? (
             loading ? (
-              <div className="h-4 w-32 animate-pulse rounded-md bg-primary/10" />
+              <div className="h-4 w-32 animate-pulse rounded-inner bg-primary/10" />
             ) : (
               <span className="text-xs text-muted-foreground">
-                {rowCountFn(table.getFilteredRowModel().rows.length, data.length)}
+                {rowCountFn(counts.filtered, counts.total)}
               </span>
             )
           ) : (
             <span />
           )}
           {paginationEnabled ? (
-            <div className="flex items-center gap-2">
-              {pagination?.pageSizeOptions && pagination.pageSizeOptions.length > 0 ? (
-                loading ? (
-                  <div
-                    data-slot="data-table-page-size-skeleton"
-                    className="h-9 w-28 animate-pulse rounded-md bg-primary/10"
-                  />
-                ) : (
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{mergedLabels.pageSize}</span>
-                    <select
-                      data-slot="data-table-page-size"
-                      value={table.getState().pagination.pageSize}
-                      onChange={(e) => {
-                        const next = Number(e.target.value)
-                        if (!Number.isFinite(next) || next <= 0) return
-                        // Atomic update: setting pageIndex and pageSize in a single
-                        // call avoids TanStack's setPageSize recomputing pageIndex
-                        // from the stale `old.pageIndex` (which would land on a
-                        // non-zero page when the user was past page 0).
-                        table.setPagination({ pageIndex: 0, pageSize: next })
-                      }}
-                      className="h-9 rounded-md border border-input bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      {pagination.pageSizeOptions.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )
-              ) : null}
-              {loading ? (
-                <div className="h-4 w-24 animate-pulse rounded-md bg-primary/10" />
-              ) : (
-                <span className="text-xs text-muted-foreground">
-                  {mergedLabels.pageIndicator(
-                    table.getState().pagination.pageIndex,
-                    table.getPageCount(),
-                  )}
-                </span>
-              )}
-              <Button
-                variant="outline"
-                className="size-9 p-0"
-                disabled={loading || !table.getCanPreviousPage()}
-                onClick={() => table.previousPage()}
-                aria-label={mergedLabels.paginationPrevious}
-              >
-                <ChevronLeft className="size-4" />
-              </Button>
-              <Button
-                variant="outline"
-                className="size-9 p-0"
-                disabled={loading || !table.getCanNextPage()}
-                onClick={() => table.nextPage()}
-                aria-label={mergedLabels.paginationNext}
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
+            <Pagination
+              page={shownPage}
+              onPageChange={(page) =>
+                handlePaginationChange((prev) => ({ ...prev, pageIndex: page - 1 }))
+              }
+              {...pageTotals}
+              pageSize={paginationState.pageSize}
+              pageSizeOptions={pagination?.pageSizeOptions}
+              onPageSizeChange={(size) => {
+                if (!Number.isFinite(size) || size <= 0) return
+                // One change, page and size together, so a server consumer
+                // never fetches page N of the new size. Pagination's own
+                // "back to page 1" that follows is then a no-op.
+                handlePaginationChange({ pageIndex: 0, pageSize: size })
+              }}
+              disabled={loading}
+              size={compact ? "sm" : "md"}
+              labels={{
+                previous: mergedLabels.paginationPrevious,
+                next: mergedLabels.paginationNext,
+                pageSize: mergedLabels.pageSize,
+                pageOf: (page, total) => mergedLabels.pageIndicator(page - 1, total),
+                ...mergedLabels.pagination,
+              }}
+            />
           ) : null}
         </div>
       ) : null}

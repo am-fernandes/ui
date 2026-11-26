@@ -5,7 +5,9 @@ import { useState } from "react"
 
 import { Button } from "../primitives/button"
 import { Input } from "../primitives/input"
+import { Dialog } from "./dialog"
 import { Popover } from "./popover"
+import { Sheet } from "./sheet"
 
 const meta: Meta<typeof Popover> = {
   title: "Overlays/Popover",
@@ -170,4 +172,124 @@ export const ControlledOpen: Story = {
       },
     },
   },
+}
+
+const cities = Array.from({ length: 40 }, (_, i) => `Cidade ${i + 1}`)
+
+function CityPicker() {
+  const [city, setCity] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="flex items-center gap-3">
+      <Popover
+        open={open}
+        onOpenChange={setOpen}
+        align="start"
+        aria-label="Cidades"
+        className="w-56 p-1"
+        trigger={<Button variant="outline">{city ?? "Escolher cidade"}</Button>}
+      >
+        <ul data-testid="city-list" className="flex max-h-48 flex-col overflow-y-auto">
+          {cities.map((name) => (
+            <li key={name}>
+              <button
+                type="button"
+                className="w-full cursor-pointer rounded-element px-2 py-1.5 text-left text-sm state-layer focus-visible:focus-outline-inset"
+                onClick={() => {
+                  setCity(name)
+                  setOpen(false)
+                }}
+              >
+                {name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Popover>
+    </div>
+  )
+}
+
+export const Anchored: Story = {
+  render: () => {
+    const [open, setOpen] = useState(false)
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <Popover
+          open={open}
+          onOpenChange={setOpen}
+          align="start"
+          aria-label="Detalhes da unidade"
+          anchor={<span className="text-sm font-medium">Unidade 101 · Bloco A</span>}
+        >
+          <p className="text-sm">3 quartos, 92 m², vaga coberta.</p>
+        </Popover>
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          Ver detalhes
+        </Button>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Quando outra coisa abre o popover (um botão, um atalho), `anchor` diz para onde ele aponta. Sem `trigger` nem `anchor` ele não tem onde se posicionar: a lib avisa no console em desenvolvimento.",
+      },
+    },
+  },
+}
+
+export const TallContent: Story = {
+  render: () => (
+    <Popover
+      trigger={<Button variant="outline">Colunas visíveis</Button>}
+      aria-label="Colunas visíveis"
+      align="start"
+      collisionPadding={8}
+    >
+      <ul className="flex flex-col gap-2 text-sm">
+        {Array.from({ length: 40 }, (_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static story content
+          <li key={i}>Coluna {i + 1}</li>
+        ))}
+      </ul>
+    </Popover>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Conteúdo mais alto que o espaço até a borda da tela: o popover para no espaço disponível (menos `collisionPadding`) e rola.",
+      },
+    },
+  },
+}
+
+export const InsideDialog: Story = {
+  render: () => (
+    <Dialog
+      trigger={<Button>Abrir dialog</Button>}
+      title="Filtrar leads"
+      description="A lista abre dentro do diálogo e rola com a roda do mouse e com o dedo."
+    >
+      <CityPicker />
+    </Dialog>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Dentro de um `Dialog`, `AlertDialog` ou `Sheet`, o popover é renderizado dentro do conteúdo do modal (e não no `<body>`): a lista rola, um clique nela não fecha o modal e ela acompanha a animação dele.",
+      },
+    },
+  },
+}
+
+export const InsideSheet: Story = {
+  render: () => (
+    <Sheet trigger={<Button>Abrir sheet</Button>} title="Filtrar leads" description="Por cidade.">
+      <CityPicker />
+    </Sheet>
+  ),
 }

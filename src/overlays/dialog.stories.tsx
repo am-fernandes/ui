@@ -1,10 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, userEvent, waitFor, within } from "@storybook/test"
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { useState } from "react"
 
 import { Button } from "../primitives/button"
+import { IconButton } from "../primitives/icon-button"
 import { Input } from "../primitives/input"
 import { Dialog } from "./dialog"
+import { DropdownMenu } from "./dropdown-menu"
 
 const meta: Meta<typeof Dialog> = {
   title: "Overlays/Dialog",
@@ -26,7 +29,7 @@ const meta: Meta<typeof Dialog> = {
           "- `size?: 'sm' | 'md' | 'lg' | 'xl'` — largura máxima. Default `'md'`.",
           "- `dismissible?: boolean` — quando `false`, Escape/click fora não fecham e o X some. Default `true`.",
           "- `hideCloseButton?: boolean` — esconde o X mas mantém Escape/click fora.",
-          "- `closeLabel?: string` — `aria-label` do X. Default `'Close'`.",
+          "- `closeLabel?: string` — `aria-label` do X. Default `'Fechar'`.",
           "- `open` / `onOpenChange` — controlled mode.",
           "",
           "**Exemplo:**",
@@ -38,7 +41,9 @@ const meta: Meta<typeof Dialog> = {
           "  trigger={<Button>Editar perfil</Button>}",
           '  title="Editar perfil"',
           '  description="Atualize seu nome e e-mail."',
-          '  footer={<><Button variant="outline">Cancelar</Button><Button>Salvar</Button></>}',
+          "  footer={({ close }) => (",
+          '    <><Button variant="outline" onClick={close}>Cancelar</Button><Button>Salvar</Button></>',
+          "  )}",
           ">",
           '  <Input label="Nome" />',
           "</Dialog>",
@@ -96,9 +101,11 @@ export const WithFooter: Story = {
         <Input label="Nome" placeholder="João da Silva" />
       </div>
     ),
-    footer: (
+    footer: ({ close }) => (
       <>
-        <Button variant="outline">Cancelar</Button>
+        <Button variant="outline" onClick={close}>
+          Cancelar
+        </Button>
         <Button>Salvar</Button>
       </>
     ),
@@ -152,6 +159,24 @@ export const Sizes: Story = {
   },
 }
 
+export const LongTitle: Story = {
+  args: {
+    trigger: <Button>Transferir proposta</Button>,
+    size: "sm",
+    title: "Transferir a proposta #1042 do Residencial Jardim das Acácias para outro corretor?",
+    description: "O novo corretor recebe o histórico e os anexos.",
+    children: <Input label="Corretor" placeholder="Nome ou CRECI" />,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Título que quebra em duas linhas: as linhas têm a entrelinha do texto (acentos não encostam) e o X fica alinhado à primeira.",
+      },
+    },
+  },
+}
+
 export const HideClose: Story = {
   args: {
     trigger: <Button>Abrir sem X</Button>,
@@ -196,10 +221,10 @@ export const NonDismissible: Story = {
 
 export const CustomCloseLabel: Story = {
   args: {
-    trigger: <Button>Abrir em PT-BR</Button>,
-    title: "Botão de fechar em português",
-    description: "O `aria-label` do X foi customizado para 'Fechar'.",
-    closeLabel: "Fechar",
+    trigger: <Button>Nome do X</Button>,
+    title: "Nome do botão de fechar",
+    description: "O `aria-label` do X (por padrão “Fechar”) foi trocado para “Fechar sem salvar”.",
+    closeLabel: "Fechar sem salvar",
     children: <p className="text-sm">Inspecione o botão de fechar.</p>,
   },
 }
@@ -224,7 +249,58 @@ export const ControlledOpen: Story = {
     )
   },
   parameters: {
-    docs: { description: { story: "Modo controlled via `open` + `onOpenChange`." } },
+    docs: {
+      description: {
+        story:
+          "Modo controlled via `open` + `onOpenChange`. Sem `trigger`, ao fechar o foco volta para o elemento que o tinha quando o diálogo abriu (aqui, o botão).",
+      },
+    },
+  },
+}
+
+export const OpenedFromMenu: Story = {
+  render: () => {
+    const [editing, setEditing] = useState(false)
+    return (
+      <div className="flex w-96 max-w-full items-center justify-between gap-3 rounded-md border px-3 py-2">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">Proposta #1042</p>
+          <p className="truncate text-xs text-muted-foreground">Ana Souza · R$ 412.000,00</p>
+        </div>
+        <DropdownMenu
+          trigger={<IconButton icon={<MoreHorizontal />} label="Ações da proposta" size="sm" />}
+          align="end"
+          items={[
+            { label: "Editar", icon: Pencil, onSelect: () => setEditing(true) },
+            { label: "Excluir", icon: Trash2, variant: "destructive" },
+          ]}
+        />
+        <Dialog
+          open={editing}
+          onOpenChange={setEditing}
+          title="Editar proposta #1042"
+          description="Altere os dados e salve."
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setEditing(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={() => setEditing(false)}>Salvar</Button>
+            </>
+          }
+        >
+          <Input label="Cliente" defaultValue="Ana Souza" />
+        </Dialog>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "O “…” de uma linha de tabela: o item do menu abre o diálogo por estado (`open`). O item some com o menu, então, ao fechar, o foco volta para o gatilho do menu.",
+      },
+    },
   },
 }
 
@@ -235,10 +311,10 @@ export const LongContent: Story = {
     description: "Role para baixo para ver mais.",
     size: "lg",
     children: (
-      <div className="max-h-[60vh] overflow-y-auto pr-2 text-sm leading-relaxed">
+      <div className="text-sm leading-relaxed">
         {Array.from({ length: 12 }).map((_, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: static story content
-          <p key={i} className="mb-3">
+          <p key={i} className="mb-3 last:mb-0">
             <strong>Cláusula {i + 1}.</strong> Lorem ipsum dolor sit amet, consectetur adipiscing
             elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
             minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
@@ -247,9 +323,11 @@ export const LongContent: Story = {
         ))}
       </div>
     ),
-    footer: (
+    footer: ({ close }) => (
       <>
-        <Button variant="outline">Cancelar</Button>
+        <Button variant="outline" onClick={close}>
+          Cancelar
+        </Button>
         <Button>Aceitar</Button>
       </>
     ),
@@ -258,7 +336,70 @@ export const LongContent: Story = {
     docs: {
       description: {
         story:
-          "Aplique `max-h-*` + `overflow-y-auto` no `children` para conteúdo longo com scroll interno.",
+          "O diálogo nunca passa da altura da tela: título e descrição ficam no topo, o rodapé fica embaixo e só o corpo rola. Não é preciso `max-h-*` nem `overflow-y-auto` no `children`.",
+      },
+    },
+  },
+}
+
+const proposalFields = [
+  "Nome completo",
+  "CPF",
+  "RG",
+  "Data de nascimento",
+  "Estado civil",
+  "Profissão",
+  "Renda mensal",
+  "E-mail",
+  "Telefone",
+  "CEP",
+  "Logradouro",
+  "Número",
+  "Complemento",
+  "Bairro",
+  "Cidade",
+  "UF",
+  "Empreendimento",
+  "Unidade",
+  "Valor da proposta",
+  "Entrada",
+  "Parcelas",
+  "Banco",
+  "Corretor",
+  "Observações",
+]
+
+export const LongForm: Story = {
+  args: {
+    trigger: <Button>Formulário longo</Button>,
+    title: "Nova proposta",
+    description: "Preencha os dados do comprador e da unidade.",
+    children: (
+      <form id="proposta" className="flex flex-col gap-3" onSubmit={(e) => e.preventDefault()}>
+        {proposalFields.map((label) => (
+          <Input key={label} label={label} />
+        ))}
+        <Button type="button" variant="outline" className="self-start">
+          Adicionar comprador
+        </Button>
+      </form>
+    ),
+    footer: ({ close }) => (
+      <>
+        <Button variant="outline" onClick={close}>
+          Cancelar
+        </Button>
+        <Button type="submit" form="proposta">
+          Salvar
+        </Button>
+      </>
+    ),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Formulário com 24 campos: num notebook ou num celular o corpo rola e “Salvar” continua à vista. O `form` fica no corpo e o botão do rodapé o envia por `form="id"`.',
       },
     },
   },

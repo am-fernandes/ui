@@ -1,7 +1,7 @@
 /**
  * URL safety helpers shared by every component that takes a consumer-
  * supplied URL: `<img src>` (Image, Avatar), `<video src>` (Video) and
- * `<a href>` (Breadcrumb, Sidebar).
+ * `<a href>` (Breadcrumb, AppShell).
  *
  * The goal is to refuse `javascript:`, `vbscript:`, `file:`, and similar
  * pseudo-schemes that turn a URL into a script-execution vector when
@@ -14,7 +14,7 @@
 export const DEFAULT_ALLOWED_RESOURCE_PROTOCOLS = ["http:", "https:"] as const
 
 /**
- * Default allowlist for navigation `href` props — Breadcrumb, Sidebar.
+ * Default allowlist for navigation `href` props — Breadcrumb, AppShell.
  * `mailto:` and `tel:` are added because contact links are a legitimate
  * use case in enterprise menus. Relative URLs and `#hash` links resolve
  * through the page origin's protocol, so they're already covered by the

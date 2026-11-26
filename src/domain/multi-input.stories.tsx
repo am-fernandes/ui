@@ -24,13 +24,14 @@ const meta = {
           "",
           "**Variantes via prop `type`:**",
           "- `type='string'` (default) — preserva ordem de inserção, dedupe automático.",
-          "- `type='number'` — só aceita inteiros positivos, ordenados crescente.",
+          "- `type='number'` — só aceita inteiros positivos, ordenados crescente. Cada pedaço precisa ser um inteiro por inteiro: `10.000`, `3,5` e `12x` são recusados com `onReject('invalid')`, nunca lidos pela metade. Separe por espaço, ponto-e-vírgula, barra ou vírgula; uma vírgula sozinha entre dois números (`3,5`) é lida como decimal.",
           "",
           "**Props principais:**",
           "- `value` / `onValueChange` — par controlado (`string[]` ou `number[]` conforme `type`).",
           "- `prefix` / `suffix` — strings concatenadas ao redor do valor dentro do Badge (ex.: `R$`, ` dias`).",
-          "- `maxItems` — teto de tokens; extras emitem `onReject('max-items')`.",
+          "- `maxItems` — teto de tokens. Os itens que já estão na lista ficam; os novos entram enquanto há espaço e os demais são recusados com `onReject('max-items')`.",
           "- `onReject` — chamado com `'max-items'` ou `'invalid'` (number-mode com token não numérico).",
+          "- `size` — `'sm'`, `'md'` (padrão) ou `'lg'`: altura mínima de 32, 40 ou 44px, a mesma dos outros controles.",
           "- `label`, `description`, `error`, `required`, `labelPosition`, `placeholder`, `disabled`, `id` — padrão do `FieldShell`.",
           "",
           "**Exemplo de uso:**",
@@ -117,7 +118,7 @@ export const NumberList: Story = {
   args: {
     type: "number",
     label: "Páginas relevantes",
-    description: "Apenas inteiros positivos. Lista é ordenada automaticamente.",
+    description: "Apenas inteiros positivos, separados por espaço ou vírgula. A lista é ordenada.",
     placeholder: "Ex.: 10, 22, 35",
   },
   render: (args) => {
@@ -190,7 +191,7 @@ export const MaxItems3: Story = {
     docs: {
       description: {
         story:
-          "Quando `maxItems` é excedido, o componente trunca e emite `onReject('max-items')`. Combine com `toast` para feedback.",
+          "Com a lista cheia, o item novo é recusado, os antigos ficam e o texto continua no campo. `onReject('max-items')` avisa: combine com `toast` para dar o motivo.",
       },
     },
   },
@@ -213,10 +214,6 @@ export const WithError: Story = {
       </div>
     )
   },
-  parameters: {
-    // error-foreground + muted placeholder fail 4.5:1 against background; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
-  },
 }
 
 export const Disabled: Story = {
@@ -235,9 +232,36 @@ export const Disabled: Story = {
       />
     </div>
   ),
+}
+
+export const ReadOnly: Story = {
+  args: {
+    label: "Áreas de atuação",
+    readOnly: true,
+    description: "Vem do cadastro do corretor; altere por lá.",
+  },
+  render: (args) => (
+    <div className="w-[420px]">
+      {/* Enter in a read-only field submits its form, as in any text field. */}
+      <form onSubmit={(event) => event.preventDefault()}>
+        <MultiInput
+          type="string"
+          label={args.label}
+          description={args.description}
+          readOnly={args.readOnly}
+          name="areas"
+          defaultValue={["civil", "trabalhista", "tributário"]}
+        />
+      </form>
+    </div>
+  ),
   parameters: {
-    // Disabled state intentionally low-contrast (muted); tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
+    docs: {
+      description: {
+        story:
+          "`readOnly`: os itens aparecem sem o ×, nada digitado ou colado entra, o campo continua focável e a lista vai no formulário (ao contrário de `disabled`).",
+      },
+    },
   },
 }
 
@@ -314,6 +338,29 @@ export const DedupExample: Story = {
       description: {
         story:
           "Tokens duplicados são silenciosamente descartados — o componente usa um `Set` para garantir unicidade.",
+      },
+    },
+  },
+}
+
+export const Sizes: Story = {
+  render: () => {
+    const [sm, setSm] = useState<string[]>(["urgente"])
+    const [md, setMd] = useState<string[]>(["urgente"])
+    const [lg, setLg] = useState<string[]>(["urgente"])
+    return (
+      <div className="flex w-80 flex-col gap-4">
+        <MultiInput label="Tags (sm)" size="sm" value={sm} onValueChange={setSm} />
+        <MultiInput label="Tags (md)" size="md" value={md} onValueChange={setMd} />
+        <MultiInput label="Tags (lg)" size="lg" value={lg} onValueChange={setLg} />
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`size` dá a altura mínima da caixa, borda incluída: 32, 40 e 44px, a mesma de um `Button` ou campo do mesmo tamanho. Com mais itens do que cabem numa linha, a caixa cresce.",
       },
     },
   },

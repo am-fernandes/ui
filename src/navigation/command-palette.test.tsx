@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { Star } from "lucide-react"
 import { describe, expect, it, vi } from "vitest"
@@ -150,6 +150,252 @@ describe("CommandPalette", () => {
     const input = screen.getByPlaceholderText("Search...")
     await userEvent.type(input, "zzzzzz")
     expect(screen.getByText("No results")).toBeInTheDocument()
+  })
+
+  describe("search term", () => {
+    const groups = [
+      {
+        items: [
+          { label: "Dashboard", onSelect: () => {} },
+          { label: "Clientes", onSelect: () => {} },
+        ],
+      },
+    ]
+
+    it("reports the typed term through onSearchChange", async () => {
+      const onSearchChange = vi.fn()
+      render(<CommandPalette open title="X" groups={groups} onSearchChange={onSearchChange} />)
+      await userEvent.type(screen.getByRole("combobox"), "cli")
+      expect(onSearchChange).toHaveBeenLastCalledWith("cli")
+      expect(onSearchChange.mock.calls.map((call) => call[0])).toEqual(["c", "cl", "cli"])
+    })
+
+    it("takes a controlled search term", () => {
+      render(<CommandPalette open title="X" groups={groups} search="cli" />)
+      expect(screen.getByRole("combobox")).toHaveValue("cli")
+      expect(screen.getByRole("option", { name: "Clientes" })).toBeInTheDocument()
+      expect(screen.queryByRole("option", { name: "Dashboard" })).not.toBeInTheDocument()
+    })
+
+    it("shows the items as given with shouldFilter={false} (server search)", async () => {
+      const onSearchChange = vi.fn()
+      render(
+        <CommandPalette
+          open
+          title="X"
+          groups={[{ items: [{ label: "João da Silva", onSelect: () => {} }] }]}
+          shouldFilter={false}
+          onSearchChange={onSearchChange}
+        />,
+      )
+      // A CPF typed for a server search does not hide what the server sent.
+      await userEvent.type(screen.getByRole("combobox"), "123.456")
+      expect(onSearchChange).toHaveBeenLastCalledWith("123.456")
+      expect(screen.getByRole("option", { name: "João da Silva" })).toBeInTheDocument()
+    })
+
+    it("keeps value/onValueChange as the highlighted item", async () => {
+      const onValueChange = vi.fn()
+      render(<CommandPalette open title="X" groups={groups} onValueChange={onValueChange} />)
+      await userEvent.type(screen.getByRole("combobox"), "{ArrowDown}")
+      expect(onValueChange).toHaveBeenLastCalledWith("Clientes")
+    })
+  })
+
+  describe("items with the same label", () => {
+    function setup(withIds: boolean) {
+      const exportClients = vi.fn()
+      const exportContracts = vi.fn()
+      render(
+        <CommandPalette
+          open
+          title="X"
+          groups={[
+            {
+              heading: "Clientes",
+              items: [
+                { id: withIds ? "c-exp" : undefined, label: "Exportar", onSelect: exportClients },
+                { id: withIds ? "c-imp" : undefined, label: "Importar", onSelect: () => {} },
+              ],
+            },
+            {
+              heading: "Contratos",
+              items: [
+                { id: withIds ? "k-exp" : undefined, label: "Exportar", onSelect: exportContracts },
+              ],
+            },
+          ]}
+        />,
+      )
+      return { exportClients, exportContracts }
+    }
+
+    for (const withIds of [true, false]) {
+      it(`moves through each one and runs the right one (${withIds ? "with" : "without"} id)`, async () => {
+        const { exportClients, exportContracts } = setup(withIds)
+        const selected = () =>
+          screen.getAllByRole("option").filter((o) => o.ariaSelected === "true")
+        expect(selected()).toHaveLength(1)
+        await userEvent.type(screen.getByRole("combobox"), "{ArrowDown}")
+        expect(selected().map((o) => o.textContent)).toEqual(["Importar"])
+        await userEvent.type(screen.getByRole("combobox"), "{ArrowDown}")
+        const [last] = selected()
+        expect(selected()).toHaveLength(1)
+        expect(last).toBe(screen.getAllByRole("option")[2])
+        await userEvent.type(screen.getByRole("combobox"), "{Enter}")
+        expect(exportContracts).toHaveBeenCalledTimes(1)
+        expect(exportClients).not.toHaveBeenCalled()
+      })
+    }
+
+    it("reports the item id as the highlighted value", async () => {
+      const onValueChange = vi.fn()
+      render(
+        <CommandPalette
+          open
+          title="X"
+          onValueChange={onValueChange}
+          groups={[
+            {
+              items: [
+                { id: "lead-1", label: "João", onSelect: () => {} },
+                { id: "lead-2", label: "João", onSelect: () => {} },
+              ],
+            },
+          ]}
+        />,
+      )
+      await userEvent.type(screen.getByRole("combobox"), "{ArrowDown}")
+      expect(onValueChange).toHaveBeenLastCalledWith("lead-2")
+    })
+  })
+
+  describe("names for assistive technology", () => {
+    const groups = [{ heading: "Geral", items: [{ label: "Dashboard", onSelect: () => {} }] }]
+
+    it("names the field after the title and the list in Portuguese", () => {
+      render(<CommandPalette open title="Comandos" groups={groups} />)
+      expect(screen.getByRole("combobox", { name: "Comandos" })).toBeInTheDocument()
+      expect(screen.getByRole("listbox", { name: "Resultados" })).toBeInTheDocument()
+    })
+
+    it("names the loading state in Portuguese", () => {
+      render(<CommandPalette open loading title="Comandos" groups={groups} />)
+      expect(screen.getByRole("progressbar", { name: "Carregando…" })).toBeInTheDocument()
+    })
+
+    it("takes the list name and the loading text from labels", () => {
+      render(
+        <CommandPalette
+          open
+          loading
+          title="Commands"
+          labels={{ list: "Results", loading: "Loading…" }}
+          groups={groups}
+        />,
+      )
+      expect(screen.getByRole("listbox", { name: "Results" })).toBeInTheDocument()
+      expect(screen.getByRole("progressbar", { name: "Loading…" })).toBeInTheDocument()
+    })
+
+    it("renders a heading that is not plain text", () => {
+      render(
+        <CommandPalette
+          open
+          title="Comandos"
+          groups={[
+            {
+              heading: <span data-testid="rich-heading">Clientes recentes</span>,
+              items: [{ label: "João", onSelect: () => {} }],
+            },
+          ]}
+        />,
+      )
+      expect(screen.getByTestId("rich-heading")).toHaveTextContent("Clientes recentes")
+    })
+  })
+
+  describe("closing", () => {
+    const groups = (onSelect: () => void) => [{ items: [{ label: "Dashboard", onSelect }] }]
+
+    it("closes on a press outside the palette, even with a command list on the page", async () => {
+      const onOpenChange = vi.fn()
+      render(<CommandPalette open onOpenChange={onOpenChange} title="X" groups={groups(vi.fn())} />)
+      expect(document.querySelector("[cmdk-root]")).not.toBeNull()
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0))
+      })
+      fireEvent.pointerDown(document.querySelector('[data-slot="dialog-overlay"]') as Element)
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+    })
+
+    it("closes after an item is chosen, by click or Enter", async () => {
+      const onOpenChange = vi.fn()
+      const onSelect = vi.fn()
+      const { rerender } = render(
+        <CommandPalette open onOpenChange={onOpenChange} title="X" groups={groups(onSelect)} />,
+      )
+      await userEvent.click(screen.getByRole("option", { name: "Dashboard" }))
+      expect(onSelect).toHaveBeenCalledTimes(1)
+      expect(onOpenChange).toHaveBeenLastCalledWith(false)
+
+      onOpenChange.mockClear()
+      rerender(
+        <CommandPalette open onOpenChange={onOpenChange} title="X" groups={groups(onSelect)} />,
+      )
+      await userEvent.type(screen.getByRole("combobox"), "{Enter}")
+      expect(onSelect).toHaveBeenCalledTimes(2)
+      expect(onOpenChange).toHaveBeenLastCalledWith(false)
+    })
+
+    it("stays open after a choice with closeOnSelect={false}", async () => {
+      const onOpenChange = vi.fn()
+      const onSelect = vi.fn()
+      render(
+        <CommandPalette
+          open
+          onOpenChange={onOpenChange}
+          closeOnSelect={false}
+          title="X"
+          groups={groups(onSelect)}
+        />,
+      )
+      await userEvent.click(screen.getByRole("option", { name: "Dashboard" }))
+      expect(onSelect).toHaveBeenCalledTimes(1)
+      expect(onOpenChange).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("search in Portuguese", () => {
+    const groups = [
+      {
+        items: [
+          { id: "cfg", label: "Configurações", onSelect: () => {} },
+          { id: "inv", label: "Convidar usuário", onSelect: () => {} },
+          { id: "rel", label: "Relatório mensal", keywords: ["balanço"], onSelect: () => {} },
+          { id: "exp-42", label: "Importar", onSelect: () => {} },
+        ],
+      },
+    ]
+
+    for (const [term, expected] of [
+      ["configuracoes", "Configurações"],
+      ["USUARIO", "Convidar usuário"],
+      ["relatorio", "Relatório mensal"],
+      ["balanco", "Relatório mensal"],
+    ] as const) {
+      it(`finds "${expected}" when typing "${term}"`, async () => {
+        render(<CommandPalette open title="X" groups={groups} />)
+        await userEvent.type(screen.getByRole("combobox"), term)
+        expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([expected])
+      })
+    }
+
+    it("does not match the item id as text", async () => {
+      render(<CommandPalette open title="X" groups={groups} />)
+      await userEvent.type(screen.getByRole("combobox"), "exp")
+      expect(screen.queryAllByRole("option")).toHaveLength(0)
+    })
   })
 
   it("finds an item via custom keywords search", async () => {

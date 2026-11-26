@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { useState } from "react"
 
 import { Button } from "../primitives/button"
+import { Input } from "../primitives/input"
 import { Collapsible } from "./collapsible"
 
 const meta: Meta<typeof Collapsible> = {
@@ -22,6 +23,8 @@ const meta: Meta<typeof Collapsible> = {
           "- `triggerLabel?: string` — `aria-label` do botão quando sem `title`. Default `'Alternar seção'`.",
           "- `defaultOpen?: boolean` — uncontrolled inicial.",
           "- `open` / `onOpenChange` — controlled mode.",
+          "- `disabled?: boolean` — trava a seção: o trigger fica desabilitado e uma seção aberta continua legível.",
+          "- `keepMounted?: boolean` — mantém o conteúdo no DOM quando fechada, para os campos não perderem o que foi digitado.",
           "",
           "**Exemplo:**",
           "",
@@ -143,5 +146,26 @@ export const Nested: Story = {
   ),
   parameters: {
     docs: { description: { story: "Collapsibles aninhados — cada nível tem estado próprio." } },
+  },
+}
+
+export const KeepMounted: Story = {
+  render: () => (
+    <div className="flex w-96 flex-col gap-2">
+      <Collapsible title="Dados do comprador" keepMounted defaultOpen>
+        <div className="flex flex-col gap-3 pb-2">
+          <Input label="Nome" />
+          <Input label="E-mail" type="email" />
+        </div>
+      </Collapsible>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`keepMounted`: fechada, a seção continua no DOM (escondida e fora do Tab), então o que foi digitado nos campos não controlados não se perde. Sem ele, o conteúdo desmonta ao fechar.",
+      },
+    },
   },
 }

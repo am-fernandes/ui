@@ -17,7 +17,7 @@ const meta: Meta<typeof Alert> = {
           "Bloco de aviso inline com 5 variantes semânticas (`default | info | success | warning | destructive`).",
           "",
           "**Props principais:**",
-          "- `variant` — controla cor + ícone padrão.",
+          '- `variant` — controla cor + ícone padrão e o papel para o leitor de tela: `destructive` e `warning` são `role="alert"` (interrompem a leitura), as outras são `role="status"` (lidas quando ele fica livre). `role` nas props continua valendo.',
           "- `title?: ReactNode` — título em destaque.",
           "- `description?: ReactNode` — texto secundário (`text-sm opacity-90`).",
           "- `icon?: ReactNode` — sobrescreve o ícone padrão da variante.",
@@ -82,7 +82,8 @@ export const Info: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const alert = canvas.getByRole("alert")
+    // info, success and default are role="status": read without interrupting.
+    const alert = canvas.getByRole("status")
     await expect(alert).toBeInTheDocument()
     await expect(canvas.getByText("Atualização disponível")).toBeInTheDocument()
     await expect(
@@ -112,10 +113,6 @@ export const Destructive: Story = {
     variant: "destructive",
     title: "Erro ao salvar",
     description: "Tente novamente em alguns segundos.",
-  },
-  parameters: {
-    // destructive token + body text on tinted bg fails 4.5:1; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
   },
 }
 
@@ -184,7 +181,6 @@ export const AllVariants: Story = {
     </div>
   ),
   parameters: {
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: { description: { story: "Todas as 5 variantes empilhadas." } },
   },
 }

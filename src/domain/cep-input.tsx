@@ -1,96 +1,85 @@
 "use client"
 
-import type * as React from "react"
+import { Loader2 } from "lucide-react"
 
-import { cn } from "@/lib/utils"
-import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
-import { useFieldIds } from "../primitives/_internal/use-field-ids"
+import { maskCEP } from "@/lib/_internal/masks"
+import { type MaskSpec, MaskedInput, type MaskedInputProps } from "./_internal/masked-input"
 
-interface CEPInputProps extends Omit<React.ComponentProps<"input">, "value" | "onChange" | "type"> {
+export interface CEPInputLabels {
+  /** Announced to screen readers while `loading`. */
+  loading: string
+}
+
+export const defaultCEPInputLabels: CEPInputLabels = {
+  loading: "Buscando endereço…",
+}
+
+interface CEPInputProps extends MaskedInputProps {
   /**
    * O CEP como **dígitos limpos** (sem máscara).
    * Pode conter de 0 a 8 dígitos enquanto o usuário digita.
-   * Ex.: `"01310100"`.
+   * Ex.: `"01310100"`. `null` é campo vazio; sem `value`, o campo guarda o
+   * próprio valor a partir de `defaultValue`.
    */
-  value: string
-  onValueChange: (value: string) => void
-  label?: React.ReactNode
-  description?: React.ReactNode
-  error?: string
-  labelPosition?: LabelPosition
-  required?: boolean
-  ref?: React.Ref<HTMLInputElement>
+  value?: string | null
+  /** CEP inicial (dígitos limpos) de um campo não controlado. */
+  defaultValue?: string
+  /**
+   * Chamado com os oito dígitos quando o CEP fica completo por uma edição do
+   * usuário (o oitavo dígito digitado, ou um CEP inteiro colado). É o gancho
+   * da consulta de endereço. Não dispara por um `value` que chega pronto.
+   */
+  onComplete?: (cep: string) => void
+  /**
+   * Mostra um indicador de carregamento dentro do campo, para o tempo da
+   * consulta de endereço. O campo continua editável.
+   */
+  loading?: boolean
+  /** Textos do componente. Padrão em pt-BR. */
+  labels?: Partial<CEPInputLabels>
 }
 
-/** Aplica a máscara `00000-000` sobre dígitos limpos. */
-function maskCEP(digits: string): string {
-  const d = digits.slice(0, 8)
-  if (d.length <= 5) return d
-  return `${d.slice(0, 5)}-${d.slice(5, 8)}`
+const cepSpec: MaskSpec = {
+  maxLength: 8,
+  filter: (text) => text.replace(/\D/g, ""),
+  mask: maskCEP,
+  // Um CEP inteiro que não seja parte de um número maior: num endereço
+  // colado, o número da rua não entra no lugar dele.
+  extract: (text) => /(?:^|\D)(\d{5}-?\d{3})(?!\d)/.exec(text)?.[1] ?? null,
 }
 
-function CEPInput({
-  className,
-  value,
-  onValueChange,
-  disabled,
-  label,
-  description,
-  error,
-  labelPosition,
-  required,
-  id,
-  ref,
-  ...props
-}: CEPInputProps) {
-  const ids = useFieldIds(id)
-  const hasError = error != null && error !== ""
-  const hasDescription = description != null && description !== ""
-  const cleaned = value.replace(/\D/g, "").slice(0, 8)
-  const display = maskCEP(cleaned)
+function CEPInput({ onValueChange, onComplete, loading = false, labels, ...props }: CEPInputProps) {
+  const l: CEPInputLabels = { ...defaultCEPInputLabels, ...labels }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 8)
-    onValueChange(digits)
+  // `onValueChange` only runs when an edit changes the value, so this is the
+  // moment the CEP becomes complete, never a re-render of a complete one.
+  const handleValueChange = (cep: string) => {
+    onValueChange?.(cep)
+    if (cep.length === cepSpec.maxLength) onComplete?.(cep)
   }
 
   return (
-    <FieldShell
-      controlId={ids.controlId}
-      labelId={ids.labelId}
-      descriptionId={ids.descriptionId}
-      errorId={ids.errorId}
-      label={label}
-      description={description}
-      error={error}
-      labelPosition={labelPosition}
-      required={required}
-      disabled={disabled}
-    >
-      <div className="relative" data-slot="cep-input">
-        <input
-          ref={ref}
-          id={ids.controlId}
-          type="text"
-          inputMode="numeric"
-          autoComplete="postal-code"
-          maxLength={9}
-          aria-invalid={hasError ? true : undefined}
-          aria-describedby={ids.describedBy({ description: hasDescription, error: hasError })}
-          required={required}
-          aria-required={required ? true : undefined}
-          className={cn(
-            "flex w-full rounded-md border border-input bg-transparent px-3 py-2.5 text-sm tabular-nums transition-colors focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed",
-            hasError && "border-destructive focus-visible:ring-1 focus-visible:ring-destructive",
-            className,
-          )}
-          value={display}
-          onChange={handleChange}
-          disabled={disabled}
-          {...props}
-        />
-      </div>
-    </FieldShell>
+    <MaskedInput
+      spec={cepSpec}
+      slot="cep-input"
+      inputMode="numeric"
+      autoComplete="postal-code"
+      aria-busy={loading || undefined}
+      {...props}
+      onValueChange={handleValueChange}
+      trailing={
+        <>
+          {/* Always in the DOM, so the text is announced when it appears. */}
+          {/* biome-ignore lint/a11y/useSemanticElements: <output> is for the result of a calculation; this announces that a lookup is running. */}
+          <span role="status" className="sr-only">
+            {loading ? l.loading : ""}
+          </span>
+          {loading ? (
+            <Loader2 data-slot="cep-input-spinner" className="size-4 animate-spin" aria-hidden />
+          ) : null}
+        </>
+      }
+    />
   )
 }
 

@@ -59,15 +59,25 @@ export function formatBRL(value: number): string {
   return `R$ ${centsToDisplay(toCents(value))}`
 }
 
+const brlMoney = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
 /**
- * Formata número para exibição BRL sem prefixo: 1234.5 → "1.234,50"
+ * Formata número para exibição BRL sem prefixo, sempre com duas casas:
+ * 1234.5 → "1.234,50", 1000 / 3 → "333,33".
  * Útil para tabelas e campos onde o símbolo R$ já está no label.
+ *
+ * Um texto é lido por `parseBRNumber`: tanto o formato de máquina
+ * (`"1234.5"`) quanto o brasileiro (`"1.234,50"`, `"R$ 1.234,50"`). O que não
+ * for número devolve `""`.
  */
 export function toBRLMoney(value?: string | number | null): string {
   if (value === null || value === undefined || value === "") return ""
-  return new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2 }).format(
-    Number.parseFloat(String(value)),
-  )
+  const amount = typeof value === "number" ? value : parseBRNumber(value)
+  if (amount === null || !Number.isFinite(amount)) return ""
+  return brlMoney.format(amount)
 }
 
 /**
@@ -76,4 +86,55 @@ export function toBRLMoney(value?: string | number | null): string {
  */
 export function parseMaskedValue(value: string): number {
   return Number(value.replaceAll(".", "").replaceAll(",", "."))
+}
+
+/**
+ * Lê um número escrito por um brasileiro (colado de uma planilha, de um
+ * e-mail, de um PDF) e devolve o valor, ou `null` quando o texto não tem
+ * número. `R$`, `%`, espaços e qualquer outro texto são ignorados.
+ *
+ * - Com vírgula, ela é o separador decimal e os pontos são de milhar:
+ *   `"1.234,5"` → 1234.5.
+ * - Sem vírgula, um único ponto seguido de um ou dois dígitos é decimal:
+ *   `"2350.9"` → 2350.9, `"1500.00"` → 1500.
+ * - Sem vírgula, pontos de milhar bem formados são milhar: `"1.500"` → 1500,
+ *   `"350.000"` → 350000.
+ * - Sem vírgula, um ponto que não pode ser de milhar é decimal (número em
+ *   formato de máquina): `"1234.567"` → 1234.567, `"0.125"` → 0.125.
+ * - Sem separador, é um inteiro: `"1500"` → 1500.
+ *
+ * Um sinal de menos antes do primeiro dígito torna o número negativo.
+ */
+export function parseBRNumber(text: string): number | null {
+  // Dígitos, separadores e o sinal (hífen ou o "−" tipográfico).
+  const kept = text.replace(/[^\d.,\-\u2212]/g, "")
+  const firstDigit = kept.search(/\d/)
+  if (firstDigit === -1) return null
+  const negative = /[-\u2212]/.test(kept.slice(0, firstDigit))
+  // Sem o sinal e sem separador sobrando no fim ("R$ 1.500,00.").
+  const body = kept.replace(/[-\u2212]/g, "").replace(/[.,]+$/, "")
+
+  let integerPart: string
+  let fractionPart = ""
+  const lastComma = body.lastIndexOf(",")
+  if (lastComma !== -1) {
+    integerPart = body.slice(0, lastComma)
+    fractionPart = body.slice(lastComma + 1)
+  } else {
+    const dots = body.split(".").length - 1
+    const lastDot = body.lastIndexOf(".")
+    const digitsAfterDot = body.length - lastDot - 1
+    const isThousands = /^[1-9]\d{0,2}(\.\d{3})+$/.test(body)
+    if (dots === 1 && (digitsAfterDot <= 2 || !isThousands)) {
+      integerPart = body.slice(0, lastDot)
+      fractionPart = body.slice(lastDot + 1)
+    } else {
+      integerPart = body
+    }
+  }
+
+  const digits = (part: string) => part.replace(/\D/g, "")
+  const value = Number(`${digits(integerPart) || "0"}.${digits(fractionPart) || "0"}`)
+  if (!Number.isFinite(value)) return null
+  return negative && value !== 0 ? -value : value
 }

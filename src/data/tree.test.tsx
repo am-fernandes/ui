@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
@@ -121,7 +121,7 @@ describe("Tree", () => {
       },
     ]
     render(<Tree data={deep} defaultExpanded={["l0", "l1"]} maxDepth={2} />)
-    expect(screen.getByText(/depth limit reached/i)).toBeInTheDocument()
+    expect(screen.getByText(/limite de profundidade/i)).toBeInTheDocument()
     expect(screen.queryByText("L2")).not.toBeInTheDocument()
   })
 
@@ -132,7 +132,7 @@ describe("Tree", () => {
     const b: TreeNodeData = { id: "b", label: "B", children: [a] }
     a.children = [b]
     render(<Tree data={[a]} defaultExpanded={["a", "b"]} />)
-    expect(screen.getByText(/cycle detected/i)).toBeInTheDocument()
+    expect(screen.getByText(/ciclo detectado/i)).toBeInTheDocument()
     warn.mockRestore()
   })
 
@@ -225,15 +225,15 @@ describe("Tree", () => {
     expect(onSelectedChange).toHaveBeenCalledWith("sibling")
   })
 
-  it("keyboard nav: Space on a parent toggles expansion and fires onSelectedChange", () => {
+  it("keyboard nav: Space selects a parent without opening it; Enter selects and opens it", () => {
     const onSelectedChange = vi.fn()
     render(<Tree data={data} onSelectedChange={onSelectedChange} />)
-    const items = screen.getAllByRole("treeitem")
-    const root = items[0] as HTMLElement
+    const root = screen.getAllByRole("treeitem")[0] as HTMLElement
     root.focus()
     fireEvent.keyDown(root, { key: " " })
     expect(onSelectedChange).toHaveBeenCalledWith("root")
-    // Children become visible because Space toggled expansion.
+    expect(screen.queryByText("Child 1")).not.toBeInTheDocument()
+    fireEvent.keyDown(root, { key: "Enter" })
     expect(screen.getByText("Child 1")).toBeInTheDocument()
   })
 
@@ -271,24 +271,272 @@ describe("Tree", () => {
     expect(items[1]?.getAttribute("aria-selected")).toBe("true")
   })
 
-  it("row keydown handler activates on Enter/Space and ignores other keys", () => {
-    // Targets the inner row <div>'s onKeyDown handler (distinct from the <li>
-    // onKeyDown which owns arrow-nav). The row handler only reacts to
-    // Enter/Space and calls handleRowActivate, otherwise it's a no-op.
+  it("Enter and Space on an item select it; other keys do not", () => {
     const onSelectedChange = vi.fn()
     render(<Tree data={data} onSelectedChange={onSelectedChange} />)
-    // The row <div> is the parent of the label text node.
-    const row = screen.getByText("Sibling").parentElement as HTMLElement
-    expect(row).not.toBeNull()
-    // Non-activation key: handler should early-return (no preventDefault, no activate).
-    fireEvent.keyDown(row, { key: "a" })
+    const sibling = screen.getAllByRole("treeitem")[1] as HTMLElement
+    sibling.focus()
+    fireEvent.keyDown(sibling, { key: "x" })
     expect(onSelectedChange).not.toHaveBeenCalled()
-    // Enter triggers row activate via the row's own onKeyDown.
-    fireEvent.keyDown(row, { key: "Enter" })
+    fireEvent.keyDown(sibling, { key: "Enter" })
     expect(onSelectedChange).toHaveBeenCalledWith("sibling")
-    // Space also triggers activation.
     onSelectedChange.mockClear()
-    fireEvent.keyDown(row, { key: " " })
+    fireEvent.keyDown(sibling, { key: " " })
     expect(onSelectedChange).toHaveBeenCalledWith("sibling")
+  })
+})
+
+const deep: TreeNodeData[] = [
+  {
+    id: "emp",
+    label: "Residencial Aurora",
+    children: [
+      {
+        id: "bloco-a",
+        label: "Bloco A",
+        children: [
+          { id: "u101", label: "Unidade 101" },
+          { id: "u102", label: "Unidade 102" },
+        ],
+      },
+      { id: "bloco-b", label: "Bloco B" },
+    ],
+  },
+  { id: "outro", label: "Parque das Águas" },
+]
+
+describe("Tree: nested items", () => {
+  const focused = () =>
+    document.activeElement?.querySelector('[data-slot="tree-label"]')?.textContent
+
+  it("ArrowDown walks every visible item, at every depth", async () => {
+    render(<Tree aria-label="Empreendimentos" data={deep} defaultExpanded={["emp", "bloco-a"]} />)
+    ;(screen.getAllByRole("treeitem")[0] as HTMLElement).focus()
+    const seen = [focused()]
+    for (let i = 0; i < 5; i++) {
+      await userEvent.keyboard("{ArrowDown}")
+      seen.push(focused())
+    }
+    expect(seen).toEqual([
+      "Residencial Aurora",
+      "Bloco A",
+      "Unidade 101",
+      "Unidade 102",
+      "Bloco B",
+      "Parque das Águas",
+    ])
+  })
+
+  it("a key pressed on a nested item acts on that item only", async () => {
+    const onSelectedChange = vi.fn()
+    const onExpandedChange = vi.fn()
+    render(
+      <Tree
+        data={deep}
+        defaultExpanded={["emp", "bloco-a"]}
+        onSelectedChange={onSelectedChange}
+        onExpandedChange={onExpandedChange}
+      />,
+    )
+    const unit = screen.getByText("Unidade 102").closest('[role="treeitem"]') as HTMLElement
+    unit.focus()
+    await userEvent.keyboard("{Enter}")
+    expect(onSelectedChange.mock.calls).toEqual([["u102"]])
+    expect(onExpandedChange).not.toHaveBeenCalled()
+    await userEvent.keyboard("{ArrowLeft}")
+    expect(focused()).toBe("Bloco A")
+    // Nothing closed: ArrowLeft on a leaf only moves to its parent.
+    expect(screen.getByText("Unidade 101")).toBeInTheDocument()
+  })
+
+  it("typing a letter jumps to the next item that starts with it", async () => {
+    render(<Tree data={deep} defaultExpanded={["emp", "bloco-a"]} />)
+    ;(screen.getAllByRole("treeitem")[0] as HTMLElement).focus()
+    await userEvent.keyboard("b")
+    expect(focused()).toBe("Bloco A")
+    await userEvent.keyboard("b")
+    expect(focused()).toBe("Bloco B")
+    await userEvent.keyboard("p")
+    expect(focused()).toBe("Parque das Águas")
+  })
+})
+
+describe("Tree: clicks", () => {
+  it("the chevron opens and closes without changing the selection", async () => {
+    const onSelectedChange = vi.fn()
+    const { container } = render(
+      <Tree data={deep} selected="outro" onSelectedChange={onSelectedChange} />,
+    )
+    const chevron = container.querySelector('[data-slot="tree-toggle"]') as HTMLElement
+    await userEvent.click(chevron)
+    expect(screen.getByText("Bloco A")).toBeInTheDocument()
+    await userEvent.click(chevron)
+    expect(screen.queryByText("Bloco A")).not.toBeInTheDocument()
+    expect(onSelectedChange).not.toHaveBeenCalled()
+  })
+
+  it("the label selects, opens a closed folder and never closes an open one", async () => {
+    const onSelectedChange = vi.fn()
+    render(<Tree data={deep} onSelectedChange={onSelectedChange} />)
+    await userEvent.click(screen.getByText("Residencial Aurora"))
+    expect(onSelectedChange).toHaveBeenLastCalledWith("emp")
+    expect(screen.getByText("Bloco A")).toBeInTheDocument()
+    await userEvent.click(screen.getByText("Residencial Aurora"))
+    expect(screen.getByText("Bloco A")).toBeInTheDocument()
+  })
+})
+
+describe("Tree: props", () => {
+  it("accepts expanded as an array", () => {
+    render(<Tree data={deep} expanded={["emp"]} />)
+    expect(screen.getByText("Bloco A")).toBeInTheDocument()
+    expect(screen.queryByText("Unidade 101")).not.toBeInTheDocument()
+  })
+
+  it("keeps an uncontrolled selection from defaultSelected", async () => {
+    render(<Tree data={deep} defaultSelected="outro" />)
+    const outro = screen.getByText("Parque das Águas").closest('[role="treeitem"]')
+    expect(outro).toHaveAttribute("aria-selected", "true")
+    await userEvent.click(screen.getByText("Residencial Aurora"))
+    expect(outro).toHaveAttribute("aria-selected", "false")
+    expect(screen.getByText("Residencial Aurora").closest('[role="treeitem"]')).toHaveAttribute(
+      "aria-selected",
+      "true",
+    )
+  })
+
+  it("asks for the children of a lazy node once and shows a loading row meanwhile", async () => {
+    const onLoadChildren = vi.fn()
+    const lazy: TreeNodeData[] = [{ id: "emp", label: "Residencial Aurora", hasChildren: true }]
+    const { rerender } = render(<Tree data={lazy} onLoadChildren={onLoadChildren} />)
+    const item = screen.getByText("Residencial Aurora").closest('[role="treeitem"]')
+    expect(item).toHaveAttribute("aria-expanded", "false")
+    await userEvent.click(screen.getByText("Residencial Aurora"))
+    expect(onLoadChildren).toHaveBeenCalledTimes(1)
+    expect(onLoadChildren).toHaveBeenCalledWith(lazy[0])
+    expect(screen.getByText("Carregando…")).toBeInTheDocument()
+    expect(item).toHaveAttribute("aria-busy", "true")
+
+    rerender(
+      <Tree
+        data={[{ ...lazy[0], children: [{ id: "bloco-a", label: "Bloco A" }] } as TreeNodeData]}
+        onLoadChildren={onLoadChildren}
+      />,
+    )
+    expect(screen.queryByText("Carregando…")).not.toBeInTheDocument()
+    expect(screen.getByText("Bloco A")).toBeInTheDocument()
+    expect(onLoadChildren).toHaveBeenCalledTimes(1)
+  })
+
+  it("asks again for children that never arrived when the node is reopened", async () => {
+    const onLoadChildren = vi.fn()
+    render(
+      <Tree
+        data={[{ id: "emp", label: "Residencial Aurora", hasChildren: true }]}
+        onLoadChildren={onLoadChildren}
+      />,
+    )
+    screen.getByRole("treeitem").focus()
+    await userEvent.keyboard("{ArrowRight}{ArrowLeft}")
+    expect(onLoadChildren).toHaveBeenCalledTimes(1)
+    await userEvent.keyboard("{ArrowRight}")
+    expect(onLoadChildren).toHaveBeenCalledTimes(2)
+  })
+
+  it("takes its fixed texts from labels", () => {
+    const deepChain: TreeNodeData[] = [
+      {
+        id: "a",
+        label: "A",
+        children: [{ id: "b", label: "B", children: [{ id: "c", label: "C" }] }],
+      },
+    ]
+    render(
+      <Tree
+        data={deepChain}
+        defaultExpanded={["a", "b"]}
+        maxDepth={2}
+        labels={{ depthLimit: "Mais níveis ocultos" }}
+      />,
+    )
+    expect(screen.getByText("Mais níveis ocultos")).toBeInTheDocument()
+  })
+})
+
+describe("Tree: large trees", () => {
+  it("an arrow key re-renders the two items involved, not all 2,000", async () => {
+    let renders = 0
+    function CountingIcon({ className }: { className?: string }) {
+      renders += 1
+      return <span className={className} />
+    }
+    const big: TreeNodeData[] = Array.from({ length: 2000 }, (_, i) => ({
+      id: `n${i}`,
+      label: `Unidade ${i}`,
+      icon: CountingIcon,
+    }))
+    render(<Tree data={big} />)
+    expect(renders).toBe(2000)
+    ;(screen.getAllByRole("treeitem")[0] as HTMLElement).focus()
+    renders = 0
+    await userEvent.keyboard("{ArrowDown}")
+    expect(renders).toBeLessThanOrEqual(2)
+    // Mounting 2,000 items takes seconds under coverage instrumentation; the
+    // assertion is about re-renders, not time.
+  }, 30_000)
+})
+
+// Reopening a node whose load was still running asked again: an app that
+// appends the children it receives got every one of them twice.
+describe("Tree: a load in progress is not asked twice", () => {
+  const lazy: TreeNodeData[] = [{ id: "emp", label: "Residencial Aurora", hasChildren: true }]
+  const reopen = async () => {
+    ;(screen.getByText("Residencial Aurora").closest('[role="treeitem"]') as HTMLElement).focus()
+    await userEvent.keyboard("{ArrowLeft}{ArrowRight}")
+  }
+
+  it("while the returned promise runs, closing and opening does not ask again", async () => {
+    let finish: () => void = () => {}
+    const onLoadChildren = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve
+        }),
+    )
+    render(<Tree data={lazy} onLoadChildren={onLoadChildren} />)
+    await userEvent.click(screen.getByText("Residencial Aurora"))
+    await reopen()
+    await reopen()
+    expect(onLoadChildren).toHaveBeenCalledTimes(1)
+    await act(async () => finish())
+  })
+
+  it("a load that failed is asked again when the node is reopened", async () => {
+    let fail: () => void = () => {}
+    const onLoadChildren = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((_, reject) => {
+            fail = () => reject(new Error("rede"))
+          }),
+      )
+      .mockImplementation(() => Promise.resolve())
+    render(<Tree data={lazy} onLoadChildren={onLoadChildren} />)
+    await userEvent.click(screen.getByText("Residencial Aurora"))
+    await act(async () => {
+      fail()
+    })
+    await reopen()
+    expect(onLoadChildren).toHaveBeenCalledTimes(2)
+  })
+
+  it("a load that ended without children is asked again when the node is reopened", async () => {
+    const onLoadChildren = vi.fn(() => Promise.resolve())
+    render(<Tree data={lazy} onLoadChildren={onLoadChildren} />)
+    await userEvent.click(screen.getByText("Residencial Aurora"))
+    await act(async () => {})
+    await reopen()
+    expect(onLoadChildren).toHaveBeenCalledTimes(2)
   })
 })

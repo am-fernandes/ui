@@ -11,8 +11,11 @@ import {
 } from "lucide-react"
 import * as React from "react"
 
+import { DEFAULT_ALLOWED_RESOURCE_PROTOCOLS, isAllowedUrl } from "@/lib/url"
 import { cn } from "@/lib/utils"
+import * as ProgressPrimitive from "@radix-ui/react-progress"
 import { Dialog } from "../overlays/dialog"
+import { Progress } from "../overlays/progress"
 import { toast } from "../overlays/sonner"
 import { Button } from "../primitives/button"
 
@@ -23,12 +26,42 @@ export interface FileUploadRejection {
   reason: FileUploadRejectionReason
 }
 
+/**
+ * A file the component did not pick itself: an attachment that already exists
+ * on the server, or one that is on its way there.
+ */
+export interface FileUploadItem {
+  /** Stable identifier, usually the attachment's id on the server. */
+  id: string
+  name: string
+  /** Size in bytes, when known. */
+  size?: number
+  /**
+   * Where the file lives (`http:`, `https:` or a relative URL; anything else
+   * is ignored). An image gets a thumbnail and opens enlarged, a PDF opens in
+   * a new tab and any other file is downloaded.
+   */
+  url?: string
+  /**
+   * `"uploading"` shows the progress and `"error"` shows `error`.
+   * @default "done"
+   */
+  status?: "uploading" | "done" | "error"
+  /** 0 to 100, while `uploading`. Leave it out when the progress is unknown. */
+  progress?: number
+  /** Why the upload failed, when `status` is `"error"`. */
+  error?: string
+}
+
 export interface FileUploadLabels {
   /** Default label inside the dropzone when `multiple={false}`. */
   dropzoneSingle: string
   /** Default label inside the dropzone when `multiple={true}`. */
   dropzoneMultiple: string
-  /** Fallback aria-label of the dropzone when `label` is not a string. */
+  /**
+   * @deprecated No longer used: the dropzone is named by its visible label,
+   * whatever it holds (`aria-labelledby`).
+   */
   dropzoneAriaLabel: string
   /** Camera trigger button label. */
   cameraButton: string
@@ -60,10 +93,47 @@ export interface FileUploadLabels {
   imageClose?: string
   /** Aria-label of the lightbox-open button for image rows: `(fileName) => ...`. */
   zoomImage: (fileName: string) => string
-  /** Aria-label of the open-in-new-tab button for non-image rows. */
+  /** Aria-label of the open-in-new-tab button of a PDF row. */
   openFile: (fileName: string) => string
+  /** Aria-label of the download button of a row that is neither an image nor a PDF. */
+  downloadFile?: (fileName: string) => string
+  /** Download name of a file that has none. */
+  fileFallbackName?: string
   /** Aria-label of the remove-row button. */
   removeFile: (fileName: string) => string
+  /** Message for a file refused because its type is not in `accept`. */
+  rejectedType?: (fileName: string) => string
+  /** Message for a file larger than `maxSize`; `limit` is that size, formatted. */
+  rejectedSize?: (fileName: string, limit: string) => string
+  /** Message for a file beyond `maxFiles` (`limit` is 1 when not `multiple`). */
+  rejectedMaxFiles?: (fileName: string, limit: number) => string
+  /** Second line of an item being sent; `progress` is 0 to 100, or undefined when unknown. */
+  uploading?: (progress?: number) => string
+  /** Second line of an item whose upload failed and that brings no `error` text. */
+  uploadFailed?: string
+  /** Accessible name of the progress bar of an item being sent. */
+  uploadProgress?: (fileName: string) => string
+  /** Added to the dropzone's accessible name when `required` (after a visible `*`). */
+  required?: string
+  /** Shown, and announced, when a form is sent with a `required` field still empty. */
+  requiredError?: string
+  /** Shown in a `readOnly` field with no files. */
+  noFiles?: string
+  /** Part of the default hint that tells the size limit; `limit` is formatted. */
+  maxSizeHint?: (limit: string) => string
+  /**
+   * Unit texts of every size shown (list, hint, refusal). The number is
+   * always written the Brazilian way: `1,5 MB`.
+   */
+  sizeUnits?: FileSizeUnits
+}
+
+/** Unit texts of the sizes `FileUpload` shows. */
+export interface FileSizeUnits {
+  bytes: string
+  kilobytes: string
+  megabytes: string
+  gigabytes: string
 }
 
 type ResolvedFileUploadLabels = Required<FileUploadLabels>
@@ -88,19 +158,35 @@ export const defaultFileUploadLabels: ResolvedFileUploadLabels = {
   imageClose: "Fechar",
   zoomImage: (fileName) => `Ampliar ${fileName}`,
   openFile: (fileName) => `Abrir ${fileName} em nova aba`,
+  downloadFile: (fileName) => `Baixar ${fileName}`,
+  fileFallbackName: "Arquivo",
   removeFile: (fileName) => `Remover ${fileName}`,
+  rejectedType: (fileName) => `${fileName}: tipo de arquivo não aceito`,
+  rejectedSize: (fileName, limit) => `${fileName}: maior que ${limit}`,
+  rejectedMaxFiles: (fileName, limit) =>
+    limit === 1
+      ? `${fileName}: só é possível enviar um arquivo`
+      : `${fileName}: passa do limite de ${limit} arquivos`,
+  uploading: (progress) => (progress == null ? "Enviando…" : `Enviando… ${Math.round(progress)}%`),
+  uploadFailed: "Falha no envio",
+  uploadProgress: (fileName) => `Envio de ${fileName}`,
+  required: "obrigatório",
+  requiredError: "Selecione um arquivo.",
+  noFiles: "Nenhum arquivo.",
+  maxSizeHint: (limit) => `até ${limit}`,
+  sizeUnits: { bytes: "B", kilobytes: "KB", megabytes: "MB", gigabytes: "GB" },
 }
 
 export interface FileUploadProps {
-  /** MIME pattern(s) accepted by the picker. Examples: `"image/*"`, `["image/png", "application/pdf"]`. Same syntax as native `<input accept>`. */
+  /** MIME pattern(s) accepted by the picker. Examples: `"image/*"`, `["image/png", "application/pdf"]`. Same syntax as native `<input accept>`. Checked only in the browser, against the type it infers from the file name: validate the file again on the server. */
   accept?: string | string[]
   /** Allow selecting more than one file. Default `false`. */
   multiple?: boolean
-  /** Maximum bytes per file. Files larger than this are rejected. Compose with the `kb()` / `mb()` / `gb()` helpers from `@amfernandesinc/ui`. */
+  /** Maximum bytes per file. Files larger than this are rejected. Compose with the `kb()` / `mb()` / `gb()` helpers from `@amfernandesinc/ui`. Checked only in the browser: enforce the limit on the server too. */
   maxSize?: number
   /** Maximum number of files when `multiple`. Extra files are rejected. */
   maxFiles?: number
-  /** How to display selected files. `"thumbnail"` (default) shows an image preview tile (clickable: image opens fullscreen, document opens in a new tab). `"none"` hides previews. */
+  /** How to display selected files. `"thumbnail"` (default) shows an image preview tile (clickable: an image opens fullscreen, a PDF opens in a new tab, any other file is downloaded). `"none"` hides previews. */
   preview?: "thumbnail" | "none"
   /** Show an extra "Capturar foto" button that opens the device camera and snapshots a photo as `image/jpeg`. Requires HTTPS or localhost (`getUserMedia`). */
   camera?: boolean
@@ -108,10 +194,38 @@ export interface FileUploadProps {
   value?: File[]
   /** Called whenever the accepted file list changes. */
   onValueChange?: (files: File[]) => void
+  /**
+   * Files the component did not pick itself, shown in the same list, before
+   * the chosen ones: attachments already saved on the server (give them a
+   * `url`) and uploads in progress (`status`, `progress`, `error`). They are
+   * yours to keep: the usual flow is to take a file from `onValueChange`,
+   * start the upload and move it from `value` to `items`. They count towards
+   * `maxFiles`.
+   */
+  items?: FileUploadItem[]
+  /**
+   * Called with the item's `id` when the user removes it. Without it, items
+   * have no remove button.
+   */
+  onRemoveItem?: (id: string) => void
   /** Called when one or more files were dropped/selected but did not pass `accept`, `maxSize`, or `maxFiles`. */
   onReject?: (rejections: FileUploadRejection[]) => void
+  /**
+   * Show, under the dropzone, why each file of the last attempt was refused
+   * (texts in `labels`). Set `false` when `onReject` already tells the user,
+   * with a toast for instance. Default `true`.
+   */
+  showRejections?: boolean
   /** Disable user interaction. */
   disabled?: boolean
+  /**
+   * Shows the files without letting the list change: no dropzone, camera or
+   * remove buttons; files can still be opened, previewed and downloaded, and
+   * are sent with the form. The dropzone's place takes the `label`, and "no
+   * files" (`labels.noFiles`) when the list is empty. The `ref` (the
+   * dropzone) is `null`.
+   */
+  readOnly?: boolean
   /** Validation message — when set, the dropzone border turns red and the message renders below. */
   error?: string
   /** Main label inside the dropzone. */
@@ -128,6 +242,24 @@ export interface FileUploadProps {
   downloadable?: boolean
   /** Override individual UI strings. Defaults are pt-BR. */
   labels?: Partial<FileUploadLabels>
+  /** `id` of the dropzone button, for a `<label htmlFor>` or a link to the field. */
+  id?: string
+  /**
+   * Name of the field in a native form: a hidden `<input type="file">`
+   * carries the files of the list, so `FormData` gets them under this name.
+   * `items` are not sent: they are already on the server.
+   */
+  name?: string
+  /**
+   * The list cannot be empty (chosen files or `items`). A native form is not
+   * sent while it is: the message in `labels.requiredError` shows under the
+   * dropzone and the focus goes to it.
+   */
+  required?: boolean
+  /** The dropzone button: it takes the focus (`ref.current.focus()`), as React Hook Form does on an error. */
+  ref?: React.Ref<HTMLButtonElement>
+  /** Called when the focus leaves the field: the dropzone and the buttons of the list. */
+  onBlur?: (event: React.FocusEvent<HTMLElement>) => void
 }
 
 function normalizeAccept(accept?: string | string[]): string | undefined {
@@ -155,20 +287,41 @@ function fileMatchesAccept(file: File, accept?: string | string[]): boolean {
   })
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`
+const sizeNumber = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
+
+/** `1536` → `"1,5 KB"`; whole bytes below 1 KB (`"10 B"`). */
+function formatBytes(bytes: number, units: FileSizeUnits): string {
+  if (bytes < 1024) return `${bytes} ${units.bytes}`
+  const scale = [units.kilobytes, units.megabytes, units.gigabytes]
+  let value = bytes / 1024
+  let unit = 0
+  // Move up while the rounded number would read 1.024 or more of a unit.
+  while (unit < scale.length - 1 && Math.round(value * 10) / 10 >= 1024) {
+    value /= 1024
+    unit += 1
+  }
+  return `${sizeNumber.format(value)} ${scale[unit]}`
 }
 
-function defaultDescription(accept?: string | string[], maxSize?: number) {
+/** What tells two picks of the same file on disk apart from two different files. */
+function fileKey(file: File) {
+  return `${file.name}\u0000${file.size}\u0000${file.lastModified}\u0000${file.type}`
+}
+
+function defaultDescription(
+  labels: ResolvedFileUploadLabels,
+  accept?: string | string[],
+  maxSize?: number,
+) {
   const parts: string[] = []
   if (accept != null) {
     const patterns = Array.isArray(accept) ? accept : accept.split(",").map((s) => s.trim())
     parts.push(patterns.join(", "))
   }
-  if (maxSize != null) parts.push(`até ${formatBytes(maxSize)}`)
+  if (maxSize != null) parts.push(labels.maxSizeHint(formatBytes(maxSize, labels.sizeUnits)))
   return parts.length > 0 ? parts.join(" · ") : null
 }
 
@@ -181,8 +334,12 @@ function FileUpload({
   camera = false,
   value,
   onValueChange,
+  items = NO_ITEMS,
+  onRemoveItem,
   onReject,
+  showRejections = true,
   disabled = false,
+  readOnly: readOnlyProp = false,
   error,
   label,
   description,
@@ -191,18 +348,92 @@ function FileUpload({
   removable = true,
   downloadable = false,
   labels,
+  id,
+  name,
+  required = false,
+  ref,
+  onBlur,
 }: FileUploadProps) {
   const mergedLabels: ResolvedFileUploadLabels = { ...defaultFileUploadLabels, ...labels }
+  // Disabled wins: a disabled field is dimmed, not read-only.
+  const readOnly = readOnlyProp && !disabled
   const resolvedLabel: React.ReactNode =
     label ?? (multiple ? mergedLabels.dropzoneMultiple : mergedLabels.dropzoneSingle)
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const baseId = React.useId()
+  const labelId = `${baseId}-label`
+  const hintId = `${baseId}-hint`
+  const errorId = `${baseId}-error`
+  const rejectionsId = `${baseId}-rejections`
+  const requiredErrorId = `${baseId}-required`
   const [internal, setInternal] = React.useState<File[]>([])
+  // What the last attempt refused: shown until the next one.
+  const [rejected, setRejected] = React.useState<FileUploadRejection[]>([])
   const [isDragging, setDragging] = React.useState(false)
   const [cameraOpen, setCameraOpen] = React.useState(false)
-  const [lightboxFile, setLightboxFile] = React.useState<File | null>(null)
+  const [lightbox, setLightbox] = React.useState<LightboxImage | null>(null)
 
   const isControlled = value !== undefined
   const files = isControlled ? value : internal
+  const isEmpty = files.length + items.length === 0
+  // A native form was sent while the required list was empty. The message
+  // goes away as soon as something is in the list.
+  const [missing, setMissing] = React.useState(false)
+  if (missing && !isEmpty) setMissing(false)
+  const showMissing = required && missing && isEmpty
+
+  const dropzoneRef = React.useRef<HTMLButtonElement | null>(null)
+  const setDropzoneRef = React.useCallback(
+    (node: HTMLButtonElement | null) => {
+      dropzoneRef.current = node
+      if (typeof ref === "function") ref(node)
+      else if (ref != null) (ref as React.RefObject<HTMLButtonElement | null>).current = node
+    },
+    [ref],
+  )
+
+  // The files a native form sends: the browser only submits what an
+  // <input type="file"> holds, so the list is copied into one.
+  const formInputRef = React.useRef<HTMLInputElement>(null)
+  const copyIntoForm = React.useCallback((list: File[]) => {
+    const input = formInputRef.current
+    if (input == null || typeof DataTransfer === "undefined") return
+    const transfer = new DataTransfer()
+    for (const file of list) transfer.items.add(file)
+    input.files = transfer.files
+  }, [])
+  React.useEffect(() => copyIntoForm(files), [files, copyIntoForm])
+
+  // A form reset (`<button type="reset">`, `form.reset()`, the reset React 19
+  // does after a form action, `reset()` of react-hook-form) empties every
+  // <input type="file">. Uncontrolled, the list empties with it, like a
+  // native file input; controlled, the files the app holds go back into the
+  // form's input. The event fires before the browser resets the fields, so
+  // the copy waits for it. Before this, the list stayed on screen and the
+  // next submit sent no file.
+  const [root, setRoot] = React.useState<HTMLDivElement | null>(null)
+  const latestFiles = React.useRef({ isControlled, files })
+  latestFiles.current = { isControlled, files }
+  React.useEffect(() => {
+    const form = root?.closest("form")
+    if (!form) return
+    let timer: number | undefined
+    const reset = () => {
+      if (!latestFiles.current.isControlled) setInternal([])
+      setRejected([])
+      setMissing(false)
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        const { isControlled: controlled, files: current } = latestFiles.current
+        copyIntoForm(controlled ? current : [])
+      })
+    }
+    form.addEventListener("reset", reset)
+    return () => {
+      window.clearTimeout(timer)
+      form.removeEventListener("reset", reset)
+    }
+  }, [root, copyIntoForm])
 
   const setFiles = React.useCallback(
     (next: File[]) => {
@@ -233,12 +464,21 @@ function FileUpload({
 
       let next: File[]
       if (multiple) {
-        next = [...files, ...accepted]
-        if (maxFiles != null && next.length > maxFiles) {
-          const overflow = next.slice(maxFiles)
-          for (const file of overflow) rejections.push({ file, reason: "max-files" })
-          next = next.slice(0, maxFiles)
-        }
+        // A file already in the list (picked again, or twice in one drop) is
+        // left out quietly: it is there to see, and would be sent twice.
+        const seen = new Set(files.map(fileKey))
+        const fresh = accepted.filter((file) => {
+          const key = fileKey(file)
+          if (seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+        // The items and the files already chosen take part of the room.
+        const room =
+          maxFiles == null ? fresh.length : Math.max(0, maxFiles - items.length - files.length)
+        for (const file of fresh.slice(room)) rejections.push({ file, reason: "max-files" })
+        const added = fresh.slice(0, room)
+        next = added.length === 0 ? files : [...files, ...added]
       } else {
         next = accepted.length > 0 ? [accepted[0] as File] : files
         if (accepted.length > 1) {
@@ -246,10 +486,11 @@ function FileUpload({
         }
       }
 
+      setRejected(rejections)
       if (rejections.length > 0) onReject?.(rejections)
       if (next !== files) setFiles(next)
     },
-    [accept, files, maxFiles, maxSize, multiple, onReject, setFiles],
+    [accept, files, items.length, maxFiles, maxSize, multiple, onReject, setFiles],
   )
 
   const removeAt = (index: number) => {
@@ -263,87 +504,225 @@ function FileUpload({
   }
 
   const renderedDescription =
-    description !== undefined ? description : defaultDescription(accept, maxSize)
+    description !== undefined ? description : defaultDescription(mergedLabels, accept, maxSize)
 
-  const hasError = error != null && error !== ""
+  const hasError = (error != null && error !== "") || showMissing
+  const hasHint = renderedDescription != null && renderedDescription !== ""
+  const hasRejections = showRejections && rejected.length > 0
+  // The label names the dropzone; the type and size hint, the error and the
+  // reasons of the last refusal describe it, so a screen reader hears them.
+  const describedBy = [
+    hasHint ? hintId : null,
+    error != null && error !== "" ? errorId : null,
+    showMissing ? requiredErrorId : null,
+    hasRejections ? rejectionsId : null,
+  ]
+    .filter((id) => id !== null)
+    .join(" ")
+
+  const rejectionMessage = ({ file, reason }: FileUploadRejection) => {
+    if (reason === "type") return mergedLabels.rejectedType(file.name)
+    if (reason === "size")
+      return mergedLabels.rejectedSize(file.name, formatBytes(maxSize ?? 0, mergedLabels.sizeUnits))
+    return mergedLabels.rejectedMaxFiles(file.name, multiple ? (maxFiles ?? 1) : 1)
+  }
 
   return (
-    <div className={cn("flex flex-col gap-3", className)} data-slot="file-upload">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-        <button
-          type="button"
-          onClick={openPicker}
-          onDragOver={(e) => {
-            e.preventDefault()
-            if (!disabled) setDragging(true)
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault()
-            setDragging(false)
-            if (disabled) return
-            ingest(e.dataTransfer.files)
-          }}
-          disabled={disabled}
-          aria-label={
-            typeof resolvedLabel === "string" ? resolvedLabel : mergedLabels.dropzoneAriaLabel
-          }
-          className={cn(
-            "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
-            "hover:bg-accent/40",
-            "focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring",
-            isDragging && "border-primary bg-accent/60",
-            hasError && "border-destructive",
-            disabled && "cursor-not-allowed opacity-50",
-            dropzoneClassName,
-          )}
-        >
-          <UploadCloud className="size-6 text-muted-foreground" aria-hidden />
-          <span className="font-medium">{resolvedLabel}</span>
-          {renderedDescription ? (
-            <span className="text-xs text-muted-foreground">{renderedDescription}</span>
+    <div
+      ref={setRoot}
+      className={cn("relative flex flex-col gap-3", className)}
+      data-slot="file-upload"
+      onBlur={(e) => {
+        // The camera and image dialogs are portals: React bubbles their
+        // events here, but they are not the field.
+        if (!e.currentTarget.contains(e.target as Node)) return
+        // Moving between the dropzone and the list stays inside the field.
+        const next = e.relatedTarget as Node | null
+        if (next && e.currentTarget.contains(next)) return
+        onBlur?.(e)
+      }}
+    >
+      {readOnly ? (
+        <div data-slot="file-upload-readonly" className="flex flex-col gap-1">
+          {label != null && label !== "" ? (
+            <span id={labelId} className="text-sm font-medium">
+              {label}
+            </span>
           ) : null}
-        </button>
-        {camera ? (
-          <Button
+          {description != null && description !== "" ? (
+            <span id={hintId} className="text-xs text-muted-foreground">
+              {description}
+            </span>
+          ) : null}
+          {isEmpty ? (
+            <p data-slot="file-upload-empty" className="text-sm text-muted-foreground">
+              {mergedLabels.noFiles}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+          <button
+            ref={setDropzoneRef}
+            id={id}
             type="button"
-            variant="outline"
+            onClick={openPicker}
+            onDragOver={(e) => {
+              e.preventDefault()
+              if (!disabled) setDragging(true)
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault()
+              setDragging(false)
+              if (disabled) return
+              ingest(e.dataTransfer.files)
+            }}
             disabled={disabled}
-            onClick={() => setCameraOpen(true)}
-            className="sm:h-auto sm:min-h-26 sm:flex-col sm:gap-2 sm:px-6"
+            aria-labelledby={labelId}
+            aria-describedby={describedBy === "" ? undefined : describedBy}
+            className={cn(
+              "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-element border border-dashed border-input bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
+              "state-layer",
+              "focus-visible:focus-outline",
+              isDragging && "border-primary bg-accent/60",
+              hasError && "border-destructive-text",
+              disabled && "cursor-default opacity-50",
+              dropzoneClassName,
+            )}
           >
-            <Camera className="size-5" aria-hidden />
-            <span>{mergedLabels.cameraButton}</span>
-          </Button>
-        ) : null}
-      </div>
-      {hasError ? (
-        <p role="alert" className="text-xs text-destructive">
+            <UploadCloud className="size-6 text-muted-foreground" aria-hidden />
+            <span id={labelId} className="font-medium">
+              {resolvedLabel}
+              {required ? (
+                <>
+                  <span
+                    aria-hidden
+                    data-slot="file-upload-required"
+                    className="ml-0.5 text-destructive-text"
+                  >
+                    *
+                  </span>
+                  <span className="sr-only"> ({mergedLabels.required})</span>
+                </>
+              ) : null}
+            </span>
+            {hasHint ? (
+              <span id={hintId} className="text-xs text-muted-foreground">
+                {renderedDescription}
+              </span>
+            ) : null}
+          </button>
+          {camera ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={disabled}
+              onClick={() => setCameraOpen(true)}
+              className="sm:h-auto sm:min-h-26 sm:flex-col sm:gap-2 sm:px-6"
+            >
+              <Camera className="size-5" aria-hidden />
+              <span>{mergedLabels.cameraButton}</span>
+            </Button>
+          ) : null}
+        </div>
+      )}
+      {error != null && error !== "" ? (
+        <p id={errorId} role="alert" className="text-xs text-destructive-text">
           {error}
         </p>
       ) : null}
-      <input
-        ref={inputRef}
-        type="file"
-        accept={normalizeAccept(accept)}
-        multiple={multiple}
-        disabled={disabled}
-        className="sr-only"
-        onChange={(e) => {
-          ingest(e.target.files)
-          e.target.value = ""
-        }}
-      />
-      {preview === "thumbnail" && files.length > 0 ? (
-        <ul className="space-y-2" aria-label={mergedLabels.fileListAriaLabel}>
+      {showMissing ? (
+        <p id={requiredErrorId} role="alert" className="text-xs text-destructive-text">
+          {mergedLabels.requiredError}
+        </p>
+      ) : null}
+      {hasRejections ? (
+        // The alert wraps the list: on the <ul> itself the role would replace
+        // "list" and leave the items without one.
+        <div
+          id={rejectionsId}
+          role="alert"
+          data-slot="file-upload-rejections"
+          className="text-xs text-destructive-text"
+        >
+          <ul className="flex flex-col gap-1">
+            {rejected.map((rejection, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: the list is replaced as a whole on every attempt, and two refused files can share a name.
+              <li key={index}>{rejectionMessage(rejection)}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {/* Only the dropzone is operated: the native input is a hidden helper
+          that opens the picker, so it is out of the tab order and of the
+          accessibility tree. */}
+      {readOnly ? null : (
+        <input
+          ref={inputRef}
+          type="file"
+          tabIndex={-1}
+          aria-hidden="true"
+          accept={normalizeAccept(accept)}
+          multiple={multiple}
+          disabled={disabled}
+          // Native validation sees an empty required list here. The browser's
+          // own bubble would point at this hidden input: the message shows
+          // under the dropzone instead, and the dropzone takes the focus.
+          required={required && isEmpty}
+          onInvalid={(e) => {
+            e.preventDefault()
+            setMissing(true)
+            dropzoneRef.current?.focus()
+          }}
+          className="sr-only"
+          onChange={(e) => {
+            ingest(e.target.files)
+            e.target.value = ""
+          }}
+        />
+      )}
+      {name != null && name !== "" ? (
+        <input
+          ref={formInputRef}
+          type="file"
+          name={name}
+          multiple
+          hidden
+          disabled={disabled}
+          tabIndex={-1}
+          aria-hidden="true"
+        />
+      ) : null}
+      {preview === "thumbnail" && items.length + files.length > 0 ? (
+        <ul
+          className="space-y-2"
+          // Read-only, the list is the field: named by its label when it has one.
+          aria-labelledby={readOnly && label != null && label !== "" ? labelId : undefined}
+          aria-label={
+            readOnly && label != null && label !== "" ? undefined : mergedLabels.fileListAriaLabel
+          }
+        >
+          {items.map((item) => (
+            <ItemRow
+              key={item.id}
+              item={item}
+              disabled={disabled}
+              onRemove={
+                removable && !readOnly && onRemoveItem ? () => onRemoveItem(item.id) : undefined
+              }
+              onOpenImage={(url) => setLightbox({ name: item.name, url })}
+              labels={mergedLabels}
+            />
+          ))}
           {files.map((file, index) => (
             <FileRow
               key={`${file.name}-${file.lastModified}-${index}`}
               file={file}
               disabled={disabled}
-              removable={removable}
+              removable={removable && !readOnly}
               onRemove={() => removeAt(index)}
-              onOpenImage={() => setLightboxFile(file)}
+              onOpenImage={() => setLightbox({ name: file.name, file })}
               labels={mergedLabels}
             />
           ))}
@@ -358,8 +737,8 @@ function FileUpload({
         />
       ) : null}
       <ImageLightbox
-        file={lightboxFile}
-        onOpenChange={() => setLightboxFile(null)}
+        image={lightbox}
+        onOpenChange={() => setLightbox(null)}
         downloadable={downloadable}
         labels={mergedLabels}
       />
@@ -383,6 +762,7 @@ function FileRow({
   labels: ResolvedFileUploadLabels
 }) {
   const isImage = file.type.startsWith("image/")
+  const isPdf = file.type === "application/pdf"
   const [thumb, setThumb] = React.useState<string | null>(null)
 
   React.useEffect(() => {
@@ -392,36 +772,56 @@ function FileRow({
     return () => URL.revokeObjectURL(url)
   }, [file, isImage])
 
-  function openInNewTab() {
+  // Only a PDF is opened in a tab. A blob URL belongs to the page's origin:
+  // an .html (or .svg, .xml…) opened this way would run its script with the
+  // application's cookies and storage. A blob URL is served with the blob's
+  // own type, so this tab can only ever show the PDF viewer.
+  function openPdfInNewTab() {
     const url = URL.createObjectURL(file)
     window.open(url, "_blank", "noopener,noreferrer")
     setTimeout(() => URL.revokeObjectURL(url), OBJECT_URL_REVOKE_MS)
   }
 
+  function download() {
+    downloadWithAnchor(file, resolveDownloadName(file, labels.fileFallbackName))
+  }
+
+  const action = isImage
+    ? { run: onOpenImage, label: labels.zoomImage(file.name) }
+    : isPdf
+      ? { run: openPdfInNewTab, label: labels.openFile(file.name) }
+      : { run: download, label: labels.downloadFile(file.name) }
+
   return (
-    <li className="flex items-center gap-3 rounded-md border bg-background px-2 py-1.5 text-sm">
+    <li className="flex items-center gap-3 rounded-element border bg-card px-2 py-1.5 text-sm">
       <button
         type="button"
-        onClick={isImage ? onOpenImage : openInNewTab}
+        onClick={action.run}
         disabled={disabled}
-        aria-label={isImage ? labels.zoomImage(file.name) : labels.openFile(file.name)}
+        aria-label={action.label}
+        title={action.label}
         className={cn(
-          "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-muted-foreground cursor-pointer transition-opacity",
-          "hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-          disabled && "cursor-not-allowed opacity-50",
+          TILE_CLASS,
+          "cursor-pointer focus-visible:focus-outline",
+          disabled && "cursor-default opacity-50",
         )}
       >
         {thumb ? (
           <img src={thumb} alt={file.name} className="size-full object-cover" />
         ) : isImage ? (
           <ImageIcon className="size-4" />
-        ) : (
+        ) : isPdf ? (
           <FileIcon className="size-4" />
+        ) : (
+          <Download className="size-4" />
         )}
+        {disabled ? null : <TileLayer />}
       </button>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-medium">{file.name}</span>
-        <span className="text-xs text-muted-foreground">{formatBytes(file.size)}</span>
+        <span className="text-xs text-muted-foreground">
+          {formatBytes(file.size, labels.sizeUnits)}
+        </span>
       </span>
       {removable ? (
         <Button
@@ -438,6 +838,170 @@ function FileRow({
     </li>
   )
 }
+
+const IMAGE_EXTENSION = /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i
+
+const TILE_CLASS =
+  "relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-element bg-muted text-muted-foreground"
+
+/**
+ * The hover and pressed tint of a preview tile. It is a layer over the tile,
+ * not the tile's own background, so it also covers an image thumbnail.
+ */
+function TileLayer() {
+  return (
+    <span
+      aria-hidden
+      data-slot="file-upload-tile-layer"
+      className="absolute inset-0 rounded-[inherit] state-layer"
+    />
+  )
+}
+
+/** A file the component did not pick: a saved attachment or an upload in progress. */
+function ItemRow({
+  item,
+  disabled,
+  onRemove,
+  onOpenImage,
+  labels,
+}: {
+  item: FileUploadItem
+  disabled: boolean
+  onRemove?: () => void
+  onOpenImage: (url: string) => void
+  labels: ResolvedFileUploadLabels
+}) {
+  const status = item.status ?? "done"
+  // A URL that is not http(s) or relative is dropped: `javascript:` here
+  // would run on a click.
+  const url =
+    item.url != null && isAllowedUrl(item.url, DEFAULT_ALLOWED_RESOURCE_PROTOCOLS)
+      ? item.url
+      : undefined
+  const isImage = url != null && IMAGE_EXTENSION.test(item.name)
+  const isPdf = /\.pdf$/i.test(item.name)
+
+  let tile: React.ReactNode
+  if (isImage && url != null) {
+    tile = (
+      <button
+        type="button"
+        onClick={() => onOpenImage(url)}
+        disabled={disabled}
+        aria-label={labels.zoomImage(item.name)}
+        title={labels.zoomImage(item.name)}
+        className={cn(
+          TILE_CLASS,
+          "cursor-pointer focus-visible:focus-outline",
+          disabled && "cursor-default opacity-50",
+        )}
+      >
+        <img src={url} alt={item.name} loading="lazy" className="size-full object-cover" />
+        {disabled ? null : <TileLayer />}
+      </button>
+    )
+  } else if (url != null && !disabled) {
+    // Like a chosen file: a PDF opens in a new tab and anything else is
+    // downloaded. A server on another origin may still decide to show it,
+    // but never inside the application's origin.
+    const linkLabel = isPdf ? labels.openFile(item.name) : labels.downloadFile(item.name)
+    tile = (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        download={isPdf ? undefined : item.name}
+        aria-label={linkLabel}
+        title={linkLabel}
+        className={cn(TILE_CLASS, "cursor-pointer focus-visible:focus-outline")}
+      >
+        {isPdf ? (
+          <FileIcon className="size-4" aria-hidden />
+        ) : (
+          <Download className="size-4" aria-hidden />
+        )}
+        <TileLayer />
+      </a>
+    )
+  } else {
+    tile = (
+      <span className={cn(TILE_CLASS, disabled && "opacity-50")}>
+        {status === "uploading" ? (
+          <Loader2 className="size-4 animate-spin" aria-hidden />
+        ) : (
+          <FileIcon className="size-4" aria-hidden />
+        )}
+      </span>
+    )
+  }
+
+  return (
+    <li
+      data-slot="file-upload-item"
+      data-status={status}
+      className="flex items-center gap-3 rounded-element border bg-card px-2 py-1.5 text-sm"
+    >
+      {tile}
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate font-medium">{item.name}</span>
+        {status === "uploading" ? (
+          <>
+            <span className="text-xs text-muted-foreground">{labels.uploading(item.progress)}</span>
+            {item.progress != null ? (
+              <Progress
+                value={item.progress}
+                aria-label={labels.uploadProgress(item.name)}
+                className="h-1"
+              />
+            ) : (
+              // Progress unknown: a bar without a value, so a screen reader
+              // does not announce 0%.
+              <ProgressPrimitive.Root
+                value={null}
+                aria-label={labels.uploadProgress(item.name)}
+                data-slot="progress"
+                className="relative h-1 w-full overflow-hidden rounded-inner bg-primary/20"
+              >
+                <ProgressPrimitive.Indicator className="h-full w-full bg-primary/60 motion-safe:animate-pulse" />
+              </ProgressPrimitive.Root>
+            )}
+          </>
+        ) : status === "error" ? (
+          <span role="alert" className="text-xs text-destructive-text">
+            {item.error || labels.uploadFailed}
+          </span>
+        ) : item.size != null ? (
+          <span className="text-xs text-muted-foreground">
+            {formatBytes(item.size, labels.sizeUnits)}
+          </span>
+        ) : null}
+      </span>
+      {onRemove ? (
+        <Button
+          type="button"
+          variant="ghost"
+          className="size-9 p-0"
+          disabled={disabled}
+          onClick={onRemove}
+          aria-label={labels.removeFile(item.name)}
+        >
+          <X className="size-4" />
+        </Button>
+      ) : null}
+    </li>
+  )
+}
+
+/** What the lightbox shows: a chosen file, or the URL of a saved image. */
+interface LightboxImage {
+  name: string
+  file?: File
+  url?: string
+}
+
+/** One array for "no items", so the list of dependencies of `ingest` is stable. */
+const NO_ITEMS: FileUploadItem[] = []
 
 type SaveFilePicker = (options: { suggestedName?: string }) => Promise<{
   createWritable: () => Promise<{
@@ -460,6 +1024,16 @@ function downloadWithAnchor(file: File, name: string) {
   setTimeout(() => URL.revokeObjectURL(objectUrl), OBJECT_URL_REVOKE_MS)
 }
 
+function downloadUrlWithAnchor(url: string, name: string) {
+  const a = document.createElement("a")
+  a.href = url
+  a.download = name
+  a.rel = "noopener noreferrer"
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+}
+
 /** Download name for nameless files: falls back to `<fallback>.<ext from MIME>` so the OS keeps an extension. */
 function resolveDownloadName(file: File, fallback: string) {
   if (file.name) return file.name
@@ -480,31 +1054,40 @@ async function writeWithPicker(picker: SaveFilePicker, file: File, name: string)
 }
 
 function ImageLightbox({
-  file,
+  image,
   onOpenChange,
   downloadable,
   labels,
 }: {
-  file: File | null
+  image: LightboxImage | null
   onOpenChange: (open: boolean) => void
   downloadable: boolean
   labels: ResolvedFileUploadLabels
 }) {
-  const [url, setUrl] = React.useState<string | null>(null)
+  const file = image?.file ?? null
+  const [objectUrl, setObjectUrl] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
     if (!file) {
-      setUrl(null)
+      setObjectUrl(null)
       return
     }
     const u = URL.createObjectURL(file)
-    setUrl(u)
+    setObjectUrl(u)
     return () => URL.revokeObjectURL(u)
   }, [file])
 
+  // A chosen file is shown through its object URL; a saved image, by its own.
+  const url = file ? objectUrl : (image?.url ?? null)
+
   async function handleDownload() {
-    if (!file || saving) return
+    if (!image || saving) return
+    if (!file) {
+      // A saved image: the browser fetches it from where it lives.
+      if (image.url) downloadUrlWithAnchor(image.url, image.name || labels.imageFallbackName)
+      return
+    }
     setSaving(true)
     const name = resolveDownloadName(file, labels.imageFallbackName)
     const picker = (window as unknown as { showSaveFilePicker?: SaveFilePicker }).showSaveFilePicker
@@ -534,9 +1117,9 @@ function ImageLightbox({
 
   return (
     <Dialog
-      open={file != null}
+      open={image != null}
       onOpenChange={onOpenChange}
-      title={<span className="sr-only">{file?.name ?? labels.imageFallbackName}</span>}
+      title={<span className="sr-only">{image?.name || labels.imageFallbackName}</span>}
       size="xl"
       className="border-0 bg-transparent p-0"
       hideCloseButton
@@ -565,8 +1148,8 @@ function ImageLightbox({
       {url ? (
         <img
           src={url}
-          alt={file?.name ?? ""}
-          className="h-auto max-h-[85vh] w-full rounded-md object-contain"
+          alt={image?.name ?? ""}
+          className="h-auto max-h-[85vh] w-full rounded-container object-contain"
         />
       ) : null}
     </Dialog>
@@ -676,11 +1259,11 @@ function CameraDialog({
       }
     >
       {errorMsg ? (
-        <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-container border border-destructive-text px-3 py-2 text-sm text-destructive-text">
           {errorMsg}
         </p>
       ) : (
-        <div className="relative aspect-video w-full overflow-hidden rounded-md bg-muted">
+        <div className="relative aspect-video w-full overflow-hidden rounded-container bg-muted">
           <video
             ref={videoRef}
             autoPlay

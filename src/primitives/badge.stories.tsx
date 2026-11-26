@@ -18,6 +18,7 @@ const meta: Meta<typeof Badge> = {
           "",
           "**API:**",
           "- `variant` — controla a cor: `default` (primary), `secondary`, `destructive`, `info`, `success`, `warning`, `outline`.",
+          "- `dot` — ponto colorido + rótulo, sem fundo. Para tabelas densas, onde uma coluna de badges cheios pesaria mais que o conteúdo.",
           "- `children` — texto, número ou JSX (incluindo ícones).",
           "- `className` — para ajustes pontuais (raio, padding, cores).",
           "- Aceita todos os atributos HTML de `<div>` (`onClick`, `role`, etc.).",
@@ -49,6 +50,11 @@ const meta: Meta<typeof Badge> = {
         defaultValue: { summary: "'default'" },
       },
     },
+    dot: {
+      control: "boolean",
+      description: "Ponto + rótulo em vez do fundo cheio.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
     children: {
       control: "text",
       description: "Conteúdo do badge (texto, número ou JSX).",
@@ -78,10 +84,6 @@ export const Secondary: Story = {
 
 export const Destructive: Story = {
   args: { variant: "destructive", children: "Erro" },
-  parameters: {
-    // destructive badge bg fails 4.5:1 against label text; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
-  },
 }
 
 export const Outline: Story = {
@@ -113,10 +115,54 @@ export const AllVariants: Story = {
     </div>
   ),
   parameters: {
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story: "Galeria com todas as 7 variantes lado a lado para comparação visual.",
+      },
+    },
+  },
+}
+
+export const Dot: Story = {
+  args: { variant: "success", dot: true, children: "Aprovado" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com `dot`, o status é um ponto na cor da variante ao lado de texto comum. A cor acelera a leitura e o rótulo carrega o significado.",
+      },
+    },
+  },
+}
+
+export const DotInTable: Story = {
+  render: () => (
+    <div className="w-96 overflow-hidden rounded-container border border-border-strong bg-card text-sm">
+      {(
+        [
+          ["Ana Souza", "success", "Aprovado"],
+          ["Bruno Lima", "warning", "Pendente"],
+          ["Carla Dias", "info", "Novo"],
+          ["Diego Rocha", "destructive", "Perdido"],
+        ] as const
+      ).map(([name, variant, label], index) => (
+        <div
+          key={name}
+          className={`grid grid-cols-2 items-center px-4 py-2.5 ${index ? "border-t" : ""}`}
+        >
+          <span className="font-medium">{name}</span>
+          <Badge variant={variant} dot>
+            {label}
+          </Badge>
+        </div>
+      ))}
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Numa tabela, quatro linhas de status não viram quatro blocos de cor. O fundo cheio fica para alertas e contadores.",
       },
     },
   },
@@ -140,7 +186,6 @@ export const WithIcon: Story = {
     </div>
   ),
   parameters: {
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story: "Badges com ícone do `lucide-react` para reforçar a semântica visual de status.",
@@ -157,7 +202,9 @@ export const AsCounter: Story = {
           <BellIcon className="size-6 text-muted-foreground" />
           <Badge
             variant="destructive"
-            className="-right-2 -top-2 absolute h-5 min-w-5 justify-center rounded-full px-1 text-[10px]"
+            // 12px (`text-xs`), the smallest text the system uses: 10px was
+            // hard to read, and a count is read at a glance.
+            className="-right-2 -top-2 absolute h-5 min-w-5 justify-center rounded-full px-1 text-xs"
           >
             {formatCount(n)}
           </Badge>
@@ -166,7 +213,6 @@ export const AsCounter: Story = {
     </div>
   ),
   parameters: {
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
     docs: {
       description: {
         story: [

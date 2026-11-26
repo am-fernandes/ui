@@ -3,7 +3,7 @@
  * Run `bun run sync:e2e-stats` to refresh.
  *
  * Source: tests/e2e/*.spec.ts + src story files
- * Generated: 2026-05-19T02:00:23.915Z
+ * Generated: 2026-11-25T23:40:44.159Z
  */
 
 export interface E2ESpec {
@@ -12,42 +12,107 @@ export interface E2ESpec {
   describes: number
 }
 
-export const E2E_GENERATED_AT = "2026-05-19T02:00:23.915Z"
+export const E2E_GENERATED_AT = "2026-11-25T23:40:44.159Z"
 
 export const E2E_SPECS: readonly E2ESpec[] = [
   {
-    file: "domain.spec.ts",
-    tests: 5,
+    file: "charts.spec.ts",
+    tests: 11,
+    describes: 8,
+  },
+  {
+    file: "control-size.spec.ts",
+    tests: 1,
+    describes: 1,
+  },
+  {
+    file: "data-display.spec.ts",
+    tests: 12,
     describes: 4,
+  },
+  {
+    file: "data-table.spec.ts",
+    tests: 23,
+    describes: 16,
+  },
+  {
+    file: "domain.spec.ts",
+    tests: 64,
+    describes: 34,
+  },
+  {
+    file: "empty-state.spec.ts",
+    tests: 2,
+    describes: 1,
+  },
+  {
+    file: "forced-colors.spec.ts",
+    tests: 1,
+    describes: 0,
+  },
+  {
+    file: "form-integration.spec.ts",
+    tests: 3,
+    describes: 1,
   },
   {
     file: "forms.spec.ts",
-    tests: 5,
-    describes: 3,
+    tests: 44,
+    describes: 30,
   },
   {
     file: "mobile.spec.ts",
-    tests: 6,
-    describes: 4,
+    tests: 12,
+    describes: 7,
   },
   {
     file: "navigation.spec.ts",
-    tests: 5,
-    describes: 3,
+    tests: 28,
+    describes: 5,
+  },
+  {
+    file: "number-input.spec.ts",
+    tests: 11,
+    describes: 4,
   },
   {
     file: "overlays.spec.ts",
-    tests: 5,
-    describes: 3,
+    tests: 69,
+    describes: 16,
+  },
+  {
+    file: "pagination.spec.ts",
+    tests: 12,
+    describes: 1,
   },
   {
     file: "primitives.spec.ts",
-    tests: 9,
-    describes: 3,
+    tests: 47,
+    describes: 16,
   },
   {
     file: "responsive.spec.ts",
-    tests: 7,
+    tests: 8,
+    describes: 1,
+  },
+  {
+    file: "schedule.spec.ts",
+    tests: 22,
+    describes: 6,
+  },
+  {
+    file: "select.spec.ts",
+    tests: 11,
+    describes: 4,
+  },
+  {
+    file: "slider.spec.ts",
+    tests: 11,
+    describes: 5,
+  },
+  {
+    file: "stepper.spec.ts",
+    tests: 11,
     describes: 1,
   },
   {
@@ -56,16 +121,36 @@ export const E2E_SPECS: readonly E2ESpec[] = [
     describes: 3,
   },
   {
+    file: "theme-ancestor.spec.ts",
+    tests: 2,
+    describes: 1,
+  },
+  {
+    file: "token.spec.ts",
+    tests: 11,
+    describes: 1,
+  },
+  {
+    file: "tour.spec.ts",
+    tests: 12,
+    describes: 1,
+  },
+  {
+    file: "tree.spec.ts",
+    tests: 6,
+    describes: 1,
+  },
+  {
     file: "visual.spec.ts",
-    tests: 57,
-    describes: 20,
+    tests: 86,
+    describes: 29,
   },
 ] as const
 
-export const E2E_TOTAL_TESTS = 102
+export const E2E_TOTAL_TESTS = 523
 
 export const STORYBOOK_STATS = {
-  totalStoryFiles: 40,
-  playFunctionFiles: 19,
-  playFunctionsTotal: 21,
+  totalStoryFiles: 65,
+  playFunctionFiles: 37,
+  playFunctionsTotal: 44,
 } as const

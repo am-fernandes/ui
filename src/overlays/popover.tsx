@@ -1,14 +1,28 @@
 "use client"
 
 import * as PopoverPrimitive from "@radix-ui/react-popover"
-import type * as React from "react"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useComposedRefs } from "../primitives/_internal/compose-refs"
+import { motionPopover } from "./_internal/animations"
+import type { OverlayContentProps } from "./_internal/content-props"
+import { useLayerTheme } from "./_internal/layer-theme"
+import { useOverlayContainer } from "./_internal/overlay-container"
+import { asAnchorElement, asTriggerElement } from "./_internal/trigger-child"
 
 type PopoverContentProps = React.ComponentProps<typeof PopoverPrimitive.Content>
 
 export interface PopoverProps {
+  /** Element that opens and closes the popover, and that it points at. */
   trigger?: React.ReactNode
+  /**
+   * Element the popover points at without opening it: a table cell, a field,
+   * a line of text. Open it with `open`. Use it instead of `trigger` when
+   * something else opens the popover; without either one the popover has
+   * nowhere to go.
+   */
+  anchor?: React.ReactNode
   children?: React.ReactNode
   open?: boolean
   defaultOpen?: boolean
@@ -20,16 +34,30 @@ export interface PopoverProps {
   collisionPadding?: PopoverContentProps["collisionPadding"]
   modal?: boolean
   className?: string
+  /**
+   * Name of the popover, which is a `role="dialog"`: "Filtros", "Cidades".
+   * Without this or `aria-labelledby` it is named by its trigger; with
+   * neither a name nor a trigger, a warning in development.
+   */
   "aria-label"?: string
+  /** Id of the element that names the popover (its title). */
   "aria-labelledby"?: string
   onInteractOutside?: PopoverContentProps["onInteractOutside"]
   onPointerDownOutside?: PopoverContentProps["onPointerDownOutside"]
   onFocusOutside?: PopoverContentProps["onFocusOutside"]
   onEscapeKeyDown?: PopoverContentProps["onEscapeKeyDown"]
+  /** The content panel (`[data-slot="popover-content"]`). */
+  ref?: React.Ref<HTMLDivElement>
+  /**
+   * Attributes for the content panel: `id`, `data-*`, `aria-*`, handlers.
+   * The overlay's own props win over these.
+   */
+  contentProps?: OverlayContentProps
 }
 
 function Popover({
   trigger,
+  anchor,
   children,
   open,
   defaultOpen,
@@ -46,7 +74,45 @@ function Popover({
   onPointerDownOutside,
   onFocusOutside,
   onEscapeKeyDown,
+  ref,
+  contentProps,
 }: PopoverProps) {
+  // Inside a Dialog, AlertDialog or Sheet the content renders into the modal
+  // (not into <body>), where the wheel and touch scrolling are not locked.
+  // `null`: the modal is mounting; its element comes in the next pass.
+  const container = useOverlayContainer()
+  // Opened from a dark part of the page, the popover is dark too.
+  const theme = useLayerTheme()
+  const contentRef = useComposedRefs(theme.contentRef, ref)
+
+  const placed = Boolean(trigger || anchor)
+  React.useEffect(() => {
+    if (process.env.NODE_ENV !== "production" && !placed) {
+      console.warn(
+        "[Popover] Sem `trigger` nem `anchor`, o popover não tem onde se posicionar e abre fora da tela. Passe `anchor` com o elemento para onde ele aponta.",
+      )
+    }
+  }, [placed])
+
+  // The content is a role="dialog": it needs a name, read when focus enters.
+  // Without one of its own it is named by its trigger, as a menu is by its
+  // button. (The trigger keeps an id it already has.)
+  const triggerElement = asTriggerElement(trigger)
+  const generatedTriggerId = React.useId()
+  const triggerId =
+    React.isValidElement<{ id?: string }>(triggerElement) && triggerElement.props.id
+      ? triggerElement.props.id
+      : generatedTriggerId
+  const labelledBy = ariaLabelledby ?? (ariaLabel || !trigger ? undefined : triggerId)
+  const named = Boolean(ariaLabel || labelledBy)
+  React.useEffect(() => {
+    if (process.env.NODE_ENV !== "production" && !named) {
+      console.warn(
+        '[Popover] O conteúdo é um role="dialog" sem nome: passe `aria-label` (ex.: "Filtros") ou `aria-labelledby` com o id do título.',
+      )
+    }
+  }, [named])
+
   return (
     <PopoverPrimitive.Root
       open={open}
@@ -55,36 +121,55 @@ function Popover({
       modal={modal}
     >
       {trigger ? (
-        <PopoverPrimitive.Trigger asChild data-slot="popover-trigger">
-          {trigger}
+        <PopoverPrimitive.Trigger
+          asChild
+          data-slot="popover-trigger"
+          id={triggerId}
+          ref={theme.anchorRef}
+        >
+          {triggerElement}
         </PopoverPrimitive.Trigger>
       ) : null}
-      <PopoverPrimitive.Portal>
-        <PopoverPrimitive.Content
-          data-slot="popover-content"
-          align={align}
-          side={side}
-          sideOffset={sideOffset}
-          collisionPadding={collisionPadding}
-          aria-label={ariaLabel}
-          aria-labelledby={ariaLabelledby}
-          onInteractOutside={onInteractOutside}
-          onPointerDownOutside={onPointerDownOutside}
-          onFocusOutside={onFocusOutside}
-          onEscapeKeyDown={onEscapeKeyDown}
-          className={cn(
-            "z-(--z-popover) w-72 rounded-md border bg-popover p-4 text-popover-foreground outline-none",
-            "duration-(--motion-default)",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-            "origin-(--radix-popover-content-transform-origin)",
-            className,
-          )}
-        >
-          {children}
-        </PopoverPrimitive.Content>
-      </PopoverPrimitive.Portal>
+      {anchor ? (
+        <PopoverPrimitive.Anchor asChild data-slot="popover-anchor" ref={theme.anchorRef}>
+          {asAnchorElement(anchor)}
+        </PopoverPrimitive.Anchor>
+      ) : null}
+      {container === null ? null : (
+        <PopoverPrimitive.Portal container={container}>
+          <PopoverPrimitive.Content
+            {...contentProps}
+            ref={contentRef}
+            data-slot="popover-content"
+            align={align}
+            side={side}
+            sideOffset={sideOffset}
+            collisionPadding={collisionPadding}
+            aria-label={ariaLabel}
+            aria-labelledby={labelledBy}
+            onInteractOutside={onInteractOutside}
+            onPointerDownOutside={onPointerDownOutside}
+            onFocusOutside={onFocusOutside}
+            onEscapeKeyDown={onEscapeKeyDown}
+            className={cn(
+              "z-(--z-popover) w-72 rounded-container border border-border-strong bg-popover p-4 text-popover-foreground outline-none",
+              // Never taller than the room Radix measures between the trigger
+              // and the edge of the screen (less `collisionPadding`): the rest
+              // scrolls.
+              "max-h-(--radix-popover-content-available-height) overflow-y-auto overscroll-contain",
+              motionPopover,
+              "data-[state=open]:animate-in data-[state=closed]:animate-out",
+              "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+              "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+              "origin-(--radix-popover-content-transform-origin)",
+              theme.className,
+              className,
+            )}
+          >
+            {children}
+          </PopoverPrimitive.Content>
+        </PopoverPrimitive.Portal>
+      )}
     </PopoverPrimitive.Root>
   )
 }

@@ -227,15 +227,30 @@ export const PolymorphicAs: Story = {
     </div>
   ),
   parameters: {
-    a11y: {
-      config: {
-        rules: [{ id: "heading-order", enabled: false }],
-      },
-    },
     docs: {
       description: {
         story:
           "Separe estilo (variant) de semântica (as). Mantém o visual de `title` mas adapta o nível do heading conforme o contexto da página.",
+      },
+    },
+  },
+}
+
+export const OnFilledSurface: Story = {
+  render: () => (
+    <div
+      data-testid="surface"
+      className="flex flex-col gap-1 rounded-container bg-primary p-4 text-primary-foreground"
+    >
+      <Typography variant="subtitle">Proposta aprovada</Typography>
+      <Typography variant="body">O texto acompanha a cor da superfície em volta.</Typography>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Sem cor própria, a `Typography` herda a cor do texto em volta: sobre um fundo cheio (primário, status, linha selecionada) fica com o `-foreground` dele. Só a `caption` tem cor (`muted-foreground`).",
       },
     },
   },
@@ -250,7 +265,7 @@ export const WithClassName: Story = {
       <Typography variant="body" className="italic">
         Itálico via className
       </Typography>
-      <Typography variant="body" className="text-destructive">
+      <Typography variant="body" className="text-destructive-text">
         Texto destrutivo
       </Typography>
     </div>

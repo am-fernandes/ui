@@ -23,12 +23,25 @@ import { defineConfig, devices } from "@playwright/test"
  *   bun run test:e2e:mobile      # mobile project only
  *   bun run test:e2e:tablet      # tablet project only
  */
+/**
+ * Storybook que os testes abrem. O padrão é o da porta 6006; para rodar contra
+ * outra cópia do repositório (um worktree com o seu próprio Storybook), passe
+ * `STORYBOOK_URL=http://localhost:6011 bun run test:e2e`.
+ */
+const storybookUrl = process.env.STORYBOOK_URL ?? "http://localhost:6006"
+// CI's e2e job serves the built Storybook itself (`test:e2e:ci`): no dev
+// server to start. It also leaves the screenshots to the visual job.
+const staticStorybook = Boolean(process.env.STORYBOOK_STATIC)
+const skipVisual = Boolean(process.env.E2E_SKIP_VISUAL)
+const storybookPort = new URL(storybookUrl).port || "6006"
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Two workers on CI's four-core runners: the suite has ~550 tests.
+  workers: process.env.CI ? 2 : undefined,
   reporter: process.env.CI
     ? [["github"], ["html", { open: "never" }]]
     : [["list"], ["html", { open: "never" }]],
@@ -52,7 +65,7 @@ export default defineConfig({
     },
   },
   use: {
-    baseURL: "http://localhost:6006",
+    baseURL: storybookUrl,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -63,7 +76,7 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
       // Desktop runs every spec EXCEPT the viewport-specific ones — those
       // assert mobile/tablet-only behaviors that would fail on desktop.
-      testIgnore: /(mobile|tablet)\.spec\.ts$/,
+      testIgnore: skipVisual ? /(mobile|tablet|visual)\.spec\.ts$/ : /(mobile|tablet)\.spec\.ts$/,
     },
     {
       name: "mobile-chromium",
@@ -82,12 +95,14 @@ export default defineConfig({
       testMatch: /tablet\.spec\.ts$/,
     },
   ],
-  webServer: {
-    command: "bun run storybook -- --ci --quiet --port 6006",
-    url: "http://localhost:6006",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-    stdout: "ignore",
-    stderr: "pipe",
-  },
+  webServer: staticStorybook
+    ? undefined
+    : {
+        command: `bun run storybook -- --ci --quiet --port ${storybookPort}`,
+        url: storybookUrl,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+        stdout: "ignore",
+        stderr: "pipe",
+      },
 })

@@ -1,0 +1,277 @@
+import { Meta } from "@storybook/addon-docs/blocks"
+import * as React from "react"
+
+<Meta title="Foundations/Radius" />
+
+# Radius
+
+Três níveis de raio, escolhidos pelo **papel** da peça, não pelo tamanho. Cada componente usa o nível do seu papel e não existe nenhum outro valor na lib.
+
+export const Level = ({ name, value, role }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "10px 0" }}>
+    <div
+      style={{
+        width: 72,
+        height: 48,
+        flexShrink: 0,
+        border: "2px solid var(--foreground)",
+        borderRadius: `var(--radius-${name})`,
+      }}
+    />
+    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <strong>
+        {name} · {value}
+      </strong>
+      <code style={{ fontSize: 12 }}>
+        rounded-{name} · var(--radius-{name})
+      </code>
+      <span style={{ fontSize: 13, color: "var(--muted-foreground)" }}>{role}</span>
+    </div>
+  </div>
+)
+
+## Os três níveis
+
+<Level name="inner" value="4px" role="Peças dentro de um controle e peças pequenas: a caixa do checkbox, uma aba dentro do trilho, um chip, um badge." />
+<Level name="element" value="8px" role="O próprio controle: botão, campo, item de menu, item de navegação, tooltip." />
+<Level name="container" value="12px" role="Superfícies que agrupam ou flutuam: card, dialog, popover, menu." />
+
+export const Tag = ({ children, side = "top" }) => (
+  <span
+    style={{
+      position: "absolute",
+      ...(side === "top"
+        ? { top: -9, right: 6 }
+        : { left: "100%", marginLeft: 10, top: "50%", transform: "translateY(-50%)" }),
+      whiteSpace: "nowrap",
+      padding: "0 6px",
+      fontSize: 10,
+      lineHeight: "16px",
+      background: "var(--foreground)",
+      color: "var(--background)",
+      borderRadius: "var(--radius-inner)",
+      fontFamily: "var(--font-mono)",
+    }}
+  >
+    {children}
+  </span>
+)
+
+export const Composition = () => (
+  <div
+    style={{
+      position: "relative",
+      maxWidth: 420,
+      padding: 20,
+      border: "1px solid var(--border)",
+      borderRadius: "var(--radius-container)",
+      background: "var(--card)",
+      color: "var(--card-foreground)",
+      display: "flex",
+      flexDirection: "column",
+      gap: 14,
+      margin: "16px 0 24px",
+    }}
+  >
+    <Tag>container · 12</Tag>
+    <div style={{ fontWeight: 600 }}>Nova proposta</div>
+    <div
+      style={{
+        position: "relative",
+        display: "inline-flex",
+        alignSelf: "flex-start",
+        gap: 4,
+        padding: 4,
+        background: "var(--muted)",
+        borderRadius: "var(--radius-element)",
+      }}
+    >
+      <Tag side="right">element · 8</Tag>
+      {["Dados", "Unidade", "Pagamento"].map((t, i) => (
+        <span
+          key={t}
+          style={{
+            padding: "4px 10px",
+            fontSize: 13,
+            borderRadius: "var(--radius-inner)",
+            background: i === 0 ? "var(--background)" : "transparent",
+          }}
+        >
+          {t}
+        </span>
+      ))}
+    </div>
+    <div
+      style={{
+        position: "relative",
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 6,
+        padding: "8px 10px",
+        maxWidth: 250,
+        border: "1px solid var(--input)",
+        borderRadius: "var(--radius-element)",
+      }}
+    >
+      <Tag side="right">element · 8</Tag>
+      {["Torre A", "Torre B"].map((t) => (
+        <span
+          key={t}
+          style={{
+            padding: "2px 8px",
+            fontSize: 12,
+            background: "var(--muted)",
+            borderRadius: "var(--radius-inner)",
+          }}
+        >
+          {t}
+        </span>
+      ))}
+      <span style={{ fontSize: 12, color: "var(--muted-foreground)", alignSelf: "center" }}>
+        chips · inner 4
+      </span>
+    </div>
+    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+      <span
+        style={{
+          padding: "8px 12px",
+          fontSize: 13,
+          border: "1px solid var(--input)",
+          borderRadius: "var(--radius-element)",
+        }}
+      >
+        Cancelar
+      </span>
+      <span
+        style={{
+          padding: "8px 12px",
+          fontSize: 13,
+          background: "var(--primary)",
+          color: "var(--primary-foreground)",
+          borderRadius: "var(--radius-element)",
+        }}
+      >
+        Salvar
+      </span>
+    </div>
+  </div>
+)
+
+Numa tela, os três aparecem juntos: o card é `container`, o trilho das abas e o campo são `element`, as abas e os chips dentro deles são `inner`, e os botões voltam a ser `element`.
+
+<Composition />
+
+## Por elemento
+
+| Nível | Componentes |
+|---|---|
+| **container** · 12px | Card, Alert, Dialog e AlertDialog, Popover, DropdownMenu (o painel), balão do Tour, moldura da DataTable e do Schedule, Video, prévias do FileUpload |
+| **element** · 8px | Button, IconButton, Toggle, Tooltip (uma linha só: com 12px viraria pílula), Input, Textarea, inputs brasileiros (CPF, CNPJ, CEP, telefone, valor, percentual), MultiInput, TimePicker, InputOTP (o grupo), gatilhos de Combobox, DateInput e DateRangePicker, seletor de itens por página, trilho das Tabs e do SegmentedControl, itens do DropdownMenu, do Combobox e da CommandPalette, itens do menu do AppShell, linhas da Tree, gatilho do Collapsible, etapas clicáveis do Stepper, área de upload do FileUpload, ícone do EmptyState |
+| **inner** · 4px | Badge e Token (peças baixas: com 8px virariam pílula), caixa do Checkbox, abas (dentro do trilho), segmentos do SegmentedControl, chips dentro do Combobox e do MultiInput (e o × deles), × do Token, dias do Calendar, eventos do Schedule e o "+N mais", selo "Hoje" da lista do Schedule, indicador do Combobox múltiplo, Skeleton, botão de fechar do Dialog e do Sheet, barras (Progress, linha do Stepper, barra de rolagem) |
+
+**Círculos não são nível de raio.** Radio, Avatar, Switch, os pontos e marcadores do Schedule e os marcadores do Stepper são círculos por forma, e só eles usam `rounded-full`.
+
+export const cornerGap = (outer, gap, inner) => {
+  // Gap between the two curves, measured on the 45° diagonal of the corner.
+  const r = Math.max(0, inner)
+  return Math.SQRT2 * (gap + r - outer) + (outer - r)
+}
+
+export const Nested = ({ outer, gap, inner, label, ok }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+    <div
+      style={{
+        width: 200,
+        height: 120,
+        padding: gap,
+        boxSizing: "border-box",
+        background: "var(--muted)",
+        border: "2px solid var(--foreground)",
+        borderRadius: outer,
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          background: "var(--background)",
+          border: "2px solid var(--foreground)",
+          borderRadius: Math.max(0, inner),
+        }}
+      />
+    </div>
+    <strong style={{ color: ok ? "var(--foreground)" : "var(--destructive-text)" }}>{label}</strong>
+    <span style={{ fontSize: 13 }}>
+      Raio de dentro: {Math.max(0, inner)}px
+      <br />
+      Espaço na lateral: {gap}px · no canto: {cornerGap(outer, gap, inner).toFixed(1)}px
+    </span>
+  </div>
+)
+
+export const ConcentricDemo = () => {
+  const [outer, setOuter] = React.useState(16)
+  const [gap, setGap] = React.useState(6)
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+        padding: 16,
+        margin: "16px 0",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-container)",
+      }}
+    >
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+          Raio de fora: {outer}px
+          <input type="range" min={0} max={32} value={outer} onChange={(e) => setOuter(Number(e.target.value))} />
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+          Espaço entre as bordas: {gap}px
+          <input type="range" min={0} max={24} value={gap} onChange={(e) => setGap(Number(e.target.value))} />
+        </label>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 32 }}>
+        <Nested outer={outer} gap={gap} inner={outer} label="Mesmo raio dentro e fora" ok={false} />
+        <Nested outer={outer} gap={gap} inner={outer - gap} label="Concêntrico" ok />
+      </div>
+    </div>
+  )
+}
+
+## O raio de dentro sai do raio de fora
+
+Quando uma peça fica dentro de outra, as duas curvas precisam ser **paralelas**: são os **cantos concêntricos**. A conta é
+
+**raio de dentro = raio de fora − espaço entre as bordas**
+
+Se as duas peças usam o mesmo raio, o espaço no canto fica maior que nas laterais e o canto de dentro parece grosso. Medido na diagonal, entre as duas curvas, esse espaço vale o espaço lateral × √2, cerca de 41% a mais. Com o raio concêntrico ele é igual ao espaço lateral. Quando o espaço é maior que o raio de fora, o raio de dentro chega a 0 e não fica negativo: as curvas já não se encostam e a peça de dentro fica livre.
+
+Mexa nos valores e compare:
+
+<ConcentricDemo />
+
+## Concêntrico na AMF
+
+Os níveis sobem de 4 em 4, o mesmo passo do espaço interno mais usado na lib (`p-1`, 4px). Por isso a conta fecha exata a cada encaixe:
+
+| Fora | Espaço | Conta | Dentro |
+|---|---|---|---|
+| Menu: DropdownMenu, Combobox, CommandPalette (**container**, 12px) | `p-1`, 4px | 12 − 4 = 8 | **element**: os itens |
+| Trilho das Tabs e do SegmentedControl (**element**, 8px) | `p-1`, 4px | 8 − 4 = 4 | **inner**: abas e segmentos |
+| Calendar no popover (**container**, 12px) | `p-2`, 8px | 12 − 8 = 4 | **inner**: os dias |
+| Campo: Input, MultiInput, Combobox (**element**, 8px) | 10px ou mais | 8 − 10 < 0 | livre; os chips usam **inner**, por serem parte do controle |
+| Card, Dialog (**container**, 12px) | `p-4` a `p-6`, 16 a 24px | 12 − 16 < 0 | livre: cada peça usa o nível do próprio papel |
+
+Por isso um item de menu tem o mesmo raio de um botão, e uma aba tem menos raio que o trilho em volta dela. Se um encaixe novo não fechar exato, use o nível mais próximo do resultado, nunca abaixo de `inner`.
+
+## Como usar
+
+- Use os nomes por papel: `rounded-inner`, `rounded-element` e `rounded-container`; em CSS, `var(--radius-inner)`, `var(--radius-element)` e `var(--radius-container)`.
+- A escala do Tailwind também cai nos três níveis: `rounded-xs` e `rounded-sm` → inner, `rounded-md` → element, `rounded-lg` até `rounded-4xl` → container. Código antigo continua funcionando, mas prefira os nomes por papel.
+- Peça nova dentro de outra: comece pela conta do concêntrico e escolha o nível mais próximo.
+- `rounded-full` só para círculo de verdade (radio, avatar, switch, pontos).
+- `--radius` continua como sinônimo de `--radius-element` (agora 8px) e está deprecated.

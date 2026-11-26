@@ -179,3 +179,39 @@ describe("Tooltip", () => {
     expect(content).toHaveClass("custom-tooltip")
   })
 })
+
+// A disabled button gets no pointer or focus events, so its tooltip never
+// opened: "por que Excluir está desabilitado?" had no answer.
+describe("Tooltip on a disabled control", () => {
+  it("wraps it in a focusable span that opens the tooltip on focus", async () => {
+    render(
+      <Tooltip content="Só o gestor pode excluir">
+        <button type="button" disabled>
+          Excluir
+        </button>
+      </Tooltip>,
+    )
+    const button = screen.getByRole("button", { name: "Excluir" })
+    const wrapper = button.parentElement as HTMLElement
+    expect(wrapper.tagName).toBe("SPAN")
+    expect(wrapper).toHaveAttribute("tabindex", "0")
+    expect(wrapper).toHaveAttribute("data-slot", "tooltip-trigger")
+
+    await userEvent.tab()
+    expect(wrapper).toHaveFocus()
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Só o gestor pode excluir")
+    // The explanation is the description of what has the focus.
+    expect(wrapper).toHaveAttribute("aria-describedby")
+  })
+
+  it("leaves an enabled control as the trigger itself", () => {
+    render(
+      <Tooltip content="Excluir proposta">
+        <button type="button">Excluir</button>
+      </Tooltip>,
+    )
+    const button = screen.getByRole("button", { name: "Excluir" })
+    expect(button).toHaveAttribute("data-slot", "tooltip-trigger")
+    expect(button.parentElement?.tagName).not.toBe("SPAN")
+  })
+})

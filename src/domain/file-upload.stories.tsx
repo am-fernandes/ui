@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { mb } from "@/lib/size"
 import { Toaster, toast } from "../overlays/sonner"
 import { Button } from "../primitives/button"
-import { FileUpload, type FileUploadRejection } from "./file-upload"
+import { FileUpload, type FileUploadItem, type FileUploadRejection } from "./file-upload"
 
 const meta = {
   title: "Domain/FileUpload",
@@ -12,17 +12,6 @@ const meta = {
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
-    a11y: {
-      // Hidden `<input type="file">` is intentionally visually-hidden and triggered via the dropzone label;
-      // it lacks an associated `<label for>` because the dropzone itself acts as the label region.
-      // Real component bug to track: wire aria-labelledby to the dropzone heading.
-      config: {
-        rules: [
-          { id: "label", enabled: false },
-          { id: "color-contrast", enabled: false },
-        ],
-      },
-    },
     docs: {
       description: {
         component: [
@@ -33,10 +22,13 @@ const meta = {
           "- `multiple` — habilita seleção/drag de múltiplos arquivos.",
           "- `maxSize` — limite em bytes. Use `kb()` / `mb()` / `gb()` da própria lib para ergonomia.",
           "- `maxFiles` — número máximo de arquivos quando `multiple`.",
-          "- `preview` — `'thumbnail'` (default) ou `'none'`.",
+          "- `preview` — `'thumbnail'` (default) ou `'none'`. Na lista, uma imagem abre ampliada, um PDF abre em outra aba e qualquer outro arquivo é baixado: um `.html` aberto por blob URL rodaria script na origem da aplicação.",
           "- `camera` — adiciona botão de captura via `getUserMedia` (HTTPS/localhost).",
           "- `value` / `onValueChange` — modo controlado.",
+          "- `items` / `onRemoveItem` — anexos que já estão no servidor e envios em andamento (`status`, `progress`, `error`), na mesma lista.",
+          "- Anexo com nome `.pdf` e `url` do próprio domínio abre em outra aba na origem da aplicação. O servidor precisa enviar `Content-Type: application/pdf` e `X-Content-Type-Options: nosniff`; sem isso, um HTML ou SVG renomeado roda script ali.",
           "- `onReject` — chamado com `{ file, reason: 'type' | 'size' | 'max-files' }[]`.",
+          "- `showRejections` — mostra, embaixo da dropzone, por que cada arquivo da última tentativa foi recusado (padrão `true`; os textos ficam em `labels`). Passe `false` quando `onReject` já avisa, com um toast por exemplo.",
           "- `label`, `description`, `error`, `className`, `dropzoneClassName` — customização visual.",
           "",
           "**Exemplo de uso:**",
@@ -202,7 +194,7 @@ export const Disabled: Story = {
   ),
 }
 
-export const ReadOnly: Story = {
+export const AppendOnly: Story = {
   render: () => {
     const [files] = useState(() => [
       new File(["conteúdo"], "contrato.pdf", { type: "application/pdf" }),
@@ -218,6 +210,35 @@ export const ReadOnly: Story = {
       description: {
         story:
           "`removable={false}` esconde o botão de remover (append-only): a linha continua abrível e o dropzone aceita novos arquivos.",
+      },
+    },
+  },
+}
+
+export const ReadOnly: Story = {
+  render: () => {
+    const [files] = useState(() => [
+      new File(["conteúdo"], "contrato.pdf", { type: "application/pdf" }),
+    ])
+    return (
+      <form className="flex w-[460px] flex-col gap-6" onSubmit={(event) => event.preventDefault()}>
+        <FileUpload
+          readOnly
+          multiple
+          name="anexos"
+          value={files}
+          label="Anexos do processo"
+          description="Enviados pelo cliente; só a equipe jurídica altera."
+        />
+        <FileUpload readOnly label="Comprovante de renda" />
+      </form>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`readOnly`: sem dropzone, câmera ou botão de remover; os arquivos continuam abríveis e vão no formulário. Sem arquivos, aparece "Nenhum arquivo." (`labels.noFiles`).',
       },
     },
   },
@@ -308,7 +329,6 @@ export const English: Story = {
     labels: {
       dropzoneMultiple: "Drag files or click to select",
       dropzoneSingle: "Drag a file or click to select",
-      dropzoneAriaLabel: "Select files",
       cameraButton: "Take photo",
       cameraDialogTitle: "Take photo",
       cameraDialogDescription:
@@ -361,6 +381,7 @@ export const RejectionHandler: Story = {
           maxSize={mb(1)}
           accept="image/*"
           label="Anexar imagens (≤ 1 MB cada, máx. 3)"
+          showRejections={false}
           onReject={(rejections) => {
             for (const r of rejections) {
               toast.error(describe(r))
@@ -374,7 +395,151 @@ export const RejectionHandler: Story = {
     docs: {
       description: {
         story:
-          "Combine `onReject` com `toast` para feedback imediato sobre arquivos recusados — distinguindo `type`, `size` e `max-files`.",
+          "Por padrão o componente já explica, embaixo da dropzone, por que um arquivo foi recusado. Para avisar de outro jeito, combine `onReject` com `toast` (distinguindo `type`, `size` e `max-files`) e desligue a mensagem embutida com `showRejections={false}`.",
+      },
+    },
+  },
+}
+
+export const ExistingAttachments: Story = {
+  render: () => {
+    const [items, setItems] = useState<FileUploadItem[]>([
+      { id: "a1", name: "contrato-assinado.pdf", size: 245_760, url: "/anexos/contrato.pdf" },
+      { id: "a2", name: "planilha-de-custos.xlsx", size: 18_432, url: "/anexos/custos.xlsx" },
+      { id: "a3", name: "matricula.pdf", status: "error", error: "O servidor recusou o arquivo" },
+    ])
+
+    // Simula o envio: cada arquivo escolhido vira um item que avança até
+    // "done". Numa tela real, o progresso vem do upload.
+    useEffect(() => {
+      if (!items.some((item) => item.status === "uploading")) return
+      const timer = setTimeout(() => {
+        setItems((current) =>
+          current.map((item) => {
+            if (item.status !== "uploading") return item
+            const progress = (item.progress ?? 0) + 25
+            return progress >= 100
+              ? { ...item, status: "done", progress: undefined }
+              : { ...item, progress }
+          }),
+        )
+      }, 600)
+      return () => clearTimeout(timer)
+    }, [items])
+
+    return (
+      <div className="w-[460px]">
+        <FileUpload
+          multiple
+          maxFiles={6}
+          label="Documentos do processo"
+          items={items}
+          onRemoveItem={(id) => setItems((current) => current.filter((item) => item.id !== id))}
+          value={[]}
+          onValueChange={(files) =>
+            setItems((current) => [
+              ...current,
+              ...files.map((file) => ({
+                id: `${file.name}-${file.lastModified}`,
+                name: file.name,
+                size: file.size,
+                status: "uploading" as const,
+                progress: 0,
+              })),
+            ])
+          }
+        />
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`items` mostra, na mesma lista, o que o componente não escolheu: anexos que já estão no servidor (com `url`, um PDF abre em outra aba e o resto é baixado) e envios em andamento ou com falha. O fluxo usual: receber o arquivo em `onValueChange`, começar o envio e passar o arquivo para `items`. `onRemoveItem(id)` recebe a remoção; os itens contam para `maxFiles`.",
+      },
+    },
+  },
+}
+
+export const NativeForm: Story = {
+  render: () => {
+    const [sent, setSent] = useState<string | null>(null)
+    return (
+      <form
+        className="flex w-[460px] flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault()
+          const names = new FormData(e.currentTarget)
+            .getAll("anexos")
+            .map((entry) => (entry instanceof File ? entry.name : String(entry)))
+            .filter((entry) => entry !== "")
+          setSent(names.length > 0 ? names.join(", ") : "(nenhum arquivo)")
+        }}
+      >
+        <FileUpload multiple name="anexos" required label="Anexar documentos" />
+        <div className="flex items-center gap-3">
+          <Button type="submit">Enviar</Button>
+          <Button type="reset" variant="outline" onClick={() => setSent(null)}>
+            Limpar
+          </Button>
+          <output data-testid="form-data" className="text-sm text-muted-foreground">
+            {sent ?? ""}
+          </output>
+        </div>
+      </form>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Num `<form>` nativo, `name` faz o `FormData` receber os arquivos da lista e `required` impede o envio com a lista vazia: o aviso aparece embaixo da dropzone e o foco vai para ela. O reset do formulário (o botão **Limpar**, `form.reset()` ou o reset que o React 19 faz depois de uma `action`) esvazia a lista, como num `<input type="file">`. `id` vai para a dropzone e `ref` aponta para ela.',
+      },
+    },
+  },
+}
+
+export const NativeFormControlled: Story = {
+  render: () => {
+    const [files, setFiles] = useState<File[]>([])
+    const [sent, setSent] = useState<string | null>(null)
+    return (
+      <form
+        className="flex w-[460px] flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault()
+          const names = new FormData(e.currentTarget)
+            .getAll("anexos")
+            .map((entry) => (entry instanceof File ? entry.name : String(entry)))
+            .filter((entry) => entry !== "")
+          setSent(names.length > 0 ? names.join(", ") : "(nenhum arquivo)")
+        }}
+      >
+        <FileUpload
+          multiple
+          name="anexos"
+          label="Anexar documentos"
+          value={files}
+          onValueChange={setFiles}
+        />
+        <div className="flex items-center gap-3">
+          <Button type="submit">Enviar</Button>
+          <Button type="reset" variant="outline">
+            Redefinir outros campos
+          </Button>
+          <output data-testid="form-data" className="text-sm text-muted-foreground">
+            {sent ?? ""}
+          </output>
+        </div>
+      </form>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Controlado num `<form>` nativo: a lista é do app. Um reset do formulário não a apaga, e o `FormData` continua recebendo os arquivos que estão na tela.",
       },
     },
   },

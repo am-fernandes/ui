@@ -96,10 +96,6 @@ export const WithError: Story = {
     error: "Você precisa aceitar para continuar.",
     required: true,
   },
-  parameters: {
-    // error-foreground fails 4.5:1 against background; tracked in design-tokens roadmap.
-    a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
-  },
 }
 
 export const Disabled: Story = {
@@ -112,6 +108,27 @@ export const DisabledChecked: Story = {
 
 export const Required: Story = {
   args: { label: "Aceitar termos", required: true },
+}
+
+export const LongLabel: Story = {
+  args: {
+    label: "Avisar o corretor responsável quando o cliente abrir a proposta pela primeira vez",
+  },
+  decorators: [
+    (Story) => (
+      <div data-testid="narrow" className="w-56">
+        <Story />
+      </div>
+    ),
+  ],
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Um rótulo maior que o espaço quebra em linhas dentro do contêiner, com o switch na altura da primeira linha.",
+      },
+    },
+  },
 }
 
 export const Controlled: Story = {

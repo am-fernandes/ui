@@ -1,135 +1,409 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
 import { DateInput } from "./date-input"
 
+vi.setConfig({ testTimeout: 20000 })
+
+function Controlled({
+  initial = "",
+  onChangeSpy,
+  ...props
+}: Omit<React.ComponentProps<typeof DateInput>, "value" | "onValueChange"> & {
+  initial?: string
+  onChangeSpy?: (value: string) => void
+}) {
+  const [value, setValue] = React.useState(initial)
+  return (
+    <>
+      <DateInput
+        label="Data de nascimento"
+        {...props}
+        value={value}
+        onValueChange={(next) => {
+          onChangeSpy?.(next)
+          setValue(next)
+        }}
+      />
+      <output data-testid="iso">{value}</output>
+      <button type="button">Fora</button>
+    </>
+  )
+}
+
+const input = () => screen.getByRole("textbox")
+
 describe("DateInput", () => {
-  it("names the calendar popover after the label", async () => {
+  it("is a text field named by its label, with the dd/mm/aaaa placeholder", () => {
     render(<DateInput label="Data de entrega" value="" />)
-    await userEvent.click(screen.getByRole("button", { name: "Data de entrega" }))
-    expect(await screen.findByRole("dialog", { name: "Data de entrega" })).toBeInTheDocument()
+    const field = screen.getByRole("textbox", { name: "Data de entrega" })
+    expect(field).toHaveAttribute("placeholder", "dd/mm/aaaa")
+    expect(field).toHaveAttribute("inputmode", "numeric")
   })
 
-  it("renders placeholder when value is empty", () => {
+  it("accepts a custom placeholder", () => {
     render(<DateInput value="" placeholder="Escolha a data" />)
-    expect(screen.getByText("Escolha a data")).toBeInTheDocument()
+    expect(input()).toHaveAttribute("placeholder", "Escolha a data")
   })
 
-  it("renders default placeholder ('dd/mm/aaaa') when value is empty and no placeholder is set", () => {
+  it("shows an ISO value as dd/mm/aaaa in the field", () => {
+    render(<DateInput label="Data" value="2025-03-14" />)
+    expect(input()).toHaveValue("14/03/2025")
+  })
+
+  it("a value with a time part shows its date part", async () => {
+    render(<DateInput label="Data" value="2025-03-14T00:00:00Z" />)
+    expect(input()).toHaveValue("14/03/2025")
+    await userEvent.click(screen.getByRole("button", { name: "Abrir calendário" }))
+    expect(await screen.findByRole("grid", { name: /março 2025/i })).toBeInTheDocument()
+    expect(
+      document.querySelector('button[data-day="2025-03-14"]')?.closest('[role="gridcell"]'),
+    ).toHaveAttribute("aria-selected", "true")
+  })
+
+  it("shows an empty field for a value that is not a date", () => {
+    render(<DateInput label="Data" value="not-a-date" />)
+    expect(input()).toHaveValue("")
+  })
+
+  it("typing 15031990 shows 15/03/1990 and reports the ISO date once complete", async () => {
+    const spy = vi.fn()
+    render(<Controlled onChangeSpy={spy} />)
+    await userEvent.type(input(), "1503199")
+    expect(input()).toHaveValue("15/03/199")
+    // Nothing is reported while the date is incomplete.
+    expect(spy).not.toHaveBeenCalled()
+    await userEvent.type(input(), "0")
+    expect(input()).toHaveValue("15/03/1990")
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy).toHaveBeenLastCalledWith("1990-03-15")
+  })
+
+  it("the accessible name comes from the label and the value is read from the field", () => {
+    render(
+      <DateInput
+        label={
+          <span>
+            Data <em>de nascimento</em>
+          </span>
+        }
+        required
+        value="1990-03-15"
+      />,
+    )
+    const field = screen.getByRole("textbox", { name: /Data de nascimento/ })
+    expect(field).not.toHaveAttribute("aria-label")
+    expect(field).toHaveValue("15/03/1990")
+  })
+
+  it("a consumer aria-label names the field", () => {
+    render(<DateInput value="" aria-label="Data da visita" />)
+    expect(screen.getByRole("textbox", { name: "Data da visita" })).toBeInTheDocument()
+  })
+
+  it("without label or aria-label the field is still named", () => {
     render(<DateInput value="" />)
-    expect(screen.getByText("dd/mm/aaaa")).toBeInTheDocument()
+    expect(screen.getByRole("textbox", { name: "Data" })).toBeInTheDocument()
   })
 
-  it("formats ISO value as dd/MM/yyyy", () => {
-    render(<DateInput value="2025-03-14" />)
-    expect(screen.getByText("14/03/2025")).toBeInTheDocument()
+  it("leaving an incomplete date marks the field invalid and reports an empty value", async () => {
+    const spy = vi.fn()
+    render(<Controlled initial="2025-03-14" onChangeSpy={spy} />)
+    await userEvent.clear(input())
+    spy.mockClear()
+    await userEvent.type(input(), "1503")
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(screen.getByRole("alert")).toHaveTextContent("Data inválida")
+    expect(input()).toHaveAttribute("aria-invalid", "true")
+    // The typed text stays, to be fixed.
+    expect(input()).toHaveValue("15/03")
+    expect(screen.getByTestId("iso")).toHaveTextContent("")
   })
 
-  it("renders placeholder when value is an invalid ISO string", () => {
-    // parseIsoDate returns undefined for non-ISO strings; formatBrDate returns "".
-    render(<DateInput value="not-a-date" placeholder="Selecione" />)
-    expect(screen.getByText("Selecione")).toBeInTheDocument()
+  it("an impossible date (31/02/2026) is invalid on blur", async () => {
+    const spy = vi.fn()
+    render(<Controlled onChangeSpy={spy} />)
+    await userEvent.type(input(), "31022026")
+    expect(spy).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(screen.getByRole("alert")).toHaveTextContent("Data inválida")
+    expect(spy).not.toHaveBeenCalledWith(expect.stringMatching(/\d/))
   })
 
-  it("renders as a disabled button when disabled", () => {
-    render(<DateInput value="2025-03-14" disabled />)
-    const button = screen.getByRole("button", { name: /14\/03\/2025|Selecionar data/i })
-    expect(button).toBeDisabled()
+  it("fixing the date clears the error", async () => {
+    render(<Controlled />)
+    await userEvent.type(input(), "3102")
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(screen.getByRole("alert")).toBeInTheDocument()
+    await userEvent.clear(input())
+    await userEvent.type(input(), "28022026")
+    expect(screen.queryByRole("alert")).toBeNull()
+    expect(screen.getByTestId("iso")).toHaveTextContent("2026-02-28")
   })
 
-  it("uses 'Selecionar data' as default aria-label when no label/aria-label is provided", () => {
-    render(<DateInput value="" />)
-    expect(screen.getByRole("button", { name: "Selecionar data" })).toBeInTheDocument()
+  it("the consumer's error wins over the field's own message", async () => {
+    render(<Controlled error="Informe a data" />)
+    await userEvent.type(input(), "15")
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(screen.getByRole("alert")).toHaveTextContent("Informe a data")
   })
 
-  it("derives aria-label from string label when no aria-label override", () => {
-    render(<DateInput value="" label="Data de nascimento" />)
-    expect(screen.getByRole("button", { name: "Data de nascimento" })).toBeInTheDocument()
+  it("the invalid-date message can be changed through labels", async () => {
+    render(<Controlled labels={{ invalidDate: "Confira a data" }} />)
+    await userEvent.type(input(), "15")
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(screen.getByRole("alert")).toHaveTextContent("Confira a data")
   })
 
-  it("uses custom aria-label when provided", () => {
-    render(<DateInput value="" aria-label="Selecionar minha data" label="Outra label" />)
-    expect(screen.getByRole("button", { name: "Selecionar minha data" })).toBeInTheDocument()
+  it("moving from the field to the calendar button does not validate", async () => {
+    render(<Controlled />)
+    await userEvent.type(input(), "15")
+    await userEvent.tab()
+    expect(screen.getByRole("button", { name: "Abrir calendário" })).toHaveFocus()
+    expect(screen.queryByRole("alert")).toBeNull()
   })
 
-  it("renders the error and sets aria-invalid + aria-describedby on the trigger", () => {
+  it("pasting a date in any common format fills the field", () => {
+    const spy = vi.fn()
+    render(<Controlled onChangeSpy={spy} />)
+    const field = input()
+    field.focus()
+    fireEvent.paste(field, { clipboardData: { getData: () => "Nascimento: 1990-03-15" } })
+    expect(field).toHaveValue("15/03/1990")
+    expect(spy).toHaveBeenLastCalledWith("1990-03-15")
+    fireEvent.paste(field, { clipboardData: { getData: () => "14/02/2001" } })
+    expect(field).toHaveValue("14/02/2001")
+    expect(spy).toHaveBeenLastCalledWith("2001-02-14")
+  })
+
+  it("the calendar button opens a dialog named after the label", async () => {
+    render(<DateInput label="Data de entrega" value="" />)
+    await userEvent.click(screen.getByRole("button", { name: "Abrir calendário" }))
+    expect(await screen.findByRole("dialog", { name: "Data de entrega" })).toBeInTheDocument()
+    expect(screen.getByRole("grid")).toBeInTheDocument()
+  })
+
+  it("picking a day reports its ISO date, fills the field and closes the calendar", async () => {
+    const spy = vi.fn()
+    render(<Controlled initial="2025-03-14" onChangeSpy={spy} />)
+    await userEvent.click(screen.getByRole("button", { name: "Abrir calendário" }))
+    await screen.findByRole("grid")
+    const day = document.querySelector<HTMLButtonElement>('button[data-day="2025-03-20"]')
+    if (!day) throw new Error("day not found")
+    await userEvent.click(day)
+    expect(spy).toHaveBeenLastCalledWith("2025-03-20")
+    expect(input()).toHaveValue("20/03/2025")
+    await waitFor(() => expect(screen.queryByRole("grid")).toBeNull())
+  })
+
+  it("the calendar opens with the chosen day focused, and Enter on it keeps the date", async () => {
+    const spy = vi.fn()
+    render(<Controlled initial="2025-03-14" onChangeSpy={spy} />)
+    await userEvent.click(screen.getByRole("button", { name: "Abrir calendário" }))
+    await screen.findByRole("grid")
+    const chosen = document.querySelector<HTMLButtonElement>('button[data-day="2025-03-14"]')
+    await waitFor(() => expect(chosen).toHaveFocus())
+    await userEvent.keyboard("{Enter}")
+    expect(spy).not.toHaveBeenCalledWith("")
+    expect(screen.getByTestId("iso")).toHaveTextContent("2025-03-14")
+  })
+
+  it("renders the error and wires aria-invalid and aria-describedby on the field", () => {
     render(
       <DateInput value="" label="Data" error="obrigatório" description="Escolha um dia útil" />,
     )
-    const button = screen.getByRole("button")
-    expect(button).toHaveAttribute("aria-invalid", "true")
-    const describedBy = button.getAttribute("aria-describedby")
-    expect(describedBy).toBeTruthy()
-    // Wire both description and error ids into aria-describedby.
-    const ids = (describedBy ?? "").split(" ")
-    expect(ids.length).toBe(2)
+    const field = input()
+    expect(field).toHaveAttribute("aria-invalid", "true")
+    const ids = (field.getAttribute("aria-describedby") ?? "").split(" ")
+    expect(ids).toHaveLength(2)
     expect(screen.getByRole("alert")).toHaveTextContent("obrigatório")
   })
 
-  it("does not open the popover when disabled", async () => {
+  it("disabled: the field and the calendar button are disabled", async () => {
     render(<DateInput value="2025-03-14" disabled />)
-    const button = screen.getByRole("button")
+    expect(input()).toBeDisabled()
+    const button = screen.getByRole("button", { name: "Abrir calendário" })
+    expect(button).toBeDisabled()
     await userEvent.click(button)
-    // Calendar grid only renders when the popover is open.
     expect(screen.queryByRole("grid")).toBeNull()
   })
 
-  it("opens the popover when the trigger is clicked", async () => {
-    render(<DateInput value="" />)
-    await userEvent.click(screen.getByRole("button"))
-    expect(await screen.findByRole("grid")).toBeInTheDocument()
-  })
-
-  it("fires onChange with an ISO yyyy-MM-dd string when a day is selected", async () => {
+  it("reports through onValueChange, and still through the deprecated onChange", async () => {
+    const onValueChange = vi.fn()
     const onChange = vi.fn()
-    function Wrapper() {
-      const [value, setValue] = React.useState("2025-03-14")
-      return (
+    render(<DateInput label="Data" value="" onValueChange={onValueChange} onChange={onChange} />)
+    await userEvent.type(input(), "01022024")
+    expect(onValueChange).toHaveBeenCalledWith("2024-02-01")
+    expect(onChange).toHaveBeenCalledWith("2024-02-01")
+  })
+
+  it("without value, it keeps its own date, starting from defaultValue", async () => {
+    const onValueChange = vi.fn()
+    render(<DateInput label="Data" defaultValue="2025-03-14" onValueChange={onValueChange} />)
+    expect(input()).toHaveValue("14/03/2025")
+    await userEvent.clear(input())
+    await userEvent.type(input(), "01042025")
+    expect(input()).toHaveValue("01/04/2025")
+    expect(onValueChange).toHaveBeenLastCalledWith("2025-04-01")
+    await userEvent.click(screen.getByRole("button", { name: "Abrir calendário" }))
+    const day = await screen.findByRole("button", { name: /10 de abril de 2025/ })
+    await userEvent.click(day)
+    expect(input()).toHaveValue("10/04/2025")
+  })
+
+  it("an uncontrolled field goes back to defaultValue when its form is reset", async () => {
+    const { container } = render(
+      <form>
+        <DateInput label="Data" defaultValue="2025-03-14" />
+      </form>,
+    )
+    await userEvent.clear(input())
+    await userEvent.type(input(), "15")
+    ;(container.querySelector("form") as HTMLFormElement).reset()
+    await waitFor(() => expect(input()).toHaveValue("14/03/2025"))
+  })
+
+  it("name: a native form receives the ISO date, not the typed text", async () => {
+    const { container } = render(
+      <form>
+        <DateInput label="Data" name="nascimento" />
+      </form>,
+    )
+    const form = container.querySelector("form") as HTMLFormElement
+    expect(input()).not.toHaveAttribute("name")
+    expect(new FormData(form).get("nascimento")).toBe("")
+    await userEvent.type(input(), "15031990")
+    expect(new FormData(form).get("nascimento")).toBe("1990-03-15")
+  })
+
+  it("name, disabled: nothing is submitted", () => {
+    const { container } = render(
+      <form>
+        <DateInput label="Data" name="nascimento" value="1990-03-15" disabled />
+      </form>,
+    )
+    expect(new FormData(container.querySelector("form") as HTMLFormElement).has("nascimento")).toBe(
+      false,
+    )
+  })
+
+  it("onBlur: once, when the focus leaves the field, after the value is reported", async () => {
+    const calls: string[] = []
+    render(
+      <>
         <DateInput
-          value={value}
-          onChange={(v) => {
-            onChange(v)
-            setValue(v)
-          }}
+          label="Data"
+          defaultValue="2025-03-14"
+          onValueChange={(v) => calls.push(`value:${v}`)}
+          onBlur={() => calls.push("blur")}
         />
-      )
-    }
-    render(<Wrapper />)
-    await userEvent.click(screen.getByRole("button"))
+        <button type="button">Fora</button>
+      </>,
+    )
+    await userEvent.clear(input())
+    await userEvent.type(input(), "15")
+    // To the calendar button and into the calendar: still the field.
+    await userEvent.tab()
+    await userEvent.keyboard("{Enter}")
     await screen.findByRole("grid")
-    // Pick a date in the visible month.
-    const day = document.querySelector<HTMLButtonElement>('button[data-day="2025-03-20"]')
-    expect(day).not.toBeNull()
-    if (day) await userEvent.click(day)
-    expect(onChange).toHaveBeenCalledWith("2025-03-20")
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Abrir calendário" })).toHaveFocus(),
+    )
+    expect(calls).toEqual(["value:"])
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(calls).toEqual(["value:", "blur"])
   })
 
-  it("closes the popover after a successful selection", async () => {
-    function Wrapper() {
-      const [value, setValue] = React.useState("2025-03-14")
-      return <DateInput value={value} onChange={setValue} />
-    }
-    render(<Wrapper />)
-    await userEvent.click(screen.getByRole("button"))
-    await screen.findByRole("grid")
-    const day = document.querySelector<HTMLButtonElement>('button[data-day="2025-03-21"]')
-    if (day) await userEvent.click(day)
-    await waitFor(() => {
-      expect(screen.queryByRole("grid")).toBeNull()
-    })
+  it("min and max: a typed date outside them is not reported and is an error on blur", async () => {
+    const spy = vi.fn()
+    render(<Controlled min="2020-01-01" max="2020-12-31" onChangeSpy={spy} />)
+    await userEvent.type(input(), "15031990")
+    expect(spy).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(screen.getByRole("alert")).toHaveTextContent("A data deve ser a partir de 01/01/2020.")
+
+    await userEvent.clear(input())
+    await userEvent.type(input(), "01012021")
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(screen.getByRole("alert")).toHaveTextContent("A data deve ser até 31/12/2020.")
+
+    await userEvent.clear(input())
+    await userEvent.type(input(), "31122020")
+    expect(spy).toHaveBeenLastCalledWith("2020-12-31")
+    expect(screen.queryByRole("alert")).toBeNull()
   })
 
-  it("forwards the ref to the trigger button", () => {
-    const ref = React.createRef<HTMLButtonElement>()
+  it("min and max limit the calendar too", async () => {
+    render(<DateInput label="Data" value="2020-01-10" min="2020-01-05" max="2020-01-20" />)
+    await userEvent.click(screen.getByRole("button", { name: "Abrir calendário" }))
+    await screen.findByRole("grid")
+    const day = (iso: string) => document.querySelector(`button[data-day="${iso}"]`)
+    expect(day("2020-01-04")).toBeDisabled()
+    expect(day("2020-01-05")).not.toBeDisabled()
+    expect(day("2020-01-21")).toBeDisabled()
+    // No way to the months outside the range.
+    expect(screen.getByRole("button", { name: "Ir para o mês anterior" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    )
+  })
+
+  it("disabledDays applies to typed dates as well as to the calendar", async () => {
+    const spy = vi.fn()
+    render(<Controlled disabledDays="weekends" onChangeSpy={spy} />)
+    // 15/03/2025 is a Saturday.
+    await userEvent.type(input(), "15032025")
+    expect(spy).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole("button", { name: "Fora" }))
+    expect(screen.getByRole("alert")).toHaveTextContent("Esta data não está disponível.")
+    await userEvent.clear(input())
+    await userEvent.type(input(), "14032025")
+    expect(spy).toHaveBeenLastCalledWith("2025-03-14")
+  })
+
+  it("readOnly: readable and focusable, but typing, pasting and the calendar do nothing", async () => {
+    const spy = vi.fn()
+    const { container } = render(
+      <form>
+        <DateInput label="Data" name="data" value="2025-03-14" readOnly onValueChange={spy} />
+      </form>,
+    )
+    const field = input()
+    expect(field).toHaveAttribute("readonly")
+    expect(field).not.toBeDisabled()
+    await userEvent.click(field)
+    expect(field).toHaveFocus()
+    await userEvent.keyboard("{Backspace}1{Alt>}{ArrowDown}{/Alt}")
+    fireEvent.paste(field, { clipboardData: { getData: () => "01/01/2000" } })
+    expect(field).toHaveValue("14/03/2025")
+    expect(spy).not.toHaveBeenCalled()
+    expect(screen.queryByRole("button", { name: "Abrir calendário" })).toBeNull()
+    expect(screen.queryByRole("grid")).toBeNull()
+    expect(new FormData(container.querySelector("form") as HTMLFormElement).get("data")).toBe(
+      "2025-03-14",
+    )
+  })
+
+  it("size sets the field's height from the control sizes (md by default)", () => {
+    const { rerender } = render(<DateInput label="Data" value="" />)
+    expect(input().className).toContain("h-control-md")
+    rerender(<DateInput label="Data" value="" size="sm" />)
+    expect(input().className).toContain("h-control-sm")
+    rerender(<DateInput label="Data" value="" size="lg" />)
+    expect(input().className).toContain("h-control-lg")
+  })
+
+  it("forwards the ref to the text field", () => {
+    const ref = React.createRef<HTMLInputElement>()
     render(<DateInput value="" ref={ref} />)
-    expect(ref.current).not.toBeNull()
-    expect(ref.current?.tagName.toLowerCase()).toBe("button")
+    expect(ref.current).toBe(input())
   })
 
-  it("respects the consumer-provided id on the trigger", () => {
+  it("puts the consumer's id on the text field", () => {
     render(<DateInput id="my-date" value="" />)
-    expect(screen.getByRole("button")).toHaveAttribute("id", "my-date")
+    expect(input()).toHaveAttribute("id", "my-date")
   })
 })

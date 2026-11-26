@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
 import { Input } from "./input"
@@ -30,9 +31,13 @@ describe("Input", () => {
     expect(screen.getByLabelText("Busca")).toBeInTheDocument()
   })
 
-  it("renders required asterisk", () => {
+  it("is required once: the native attribute says it, the asterisk only shows it", () => {
     render(<Input label="Nome" required />)
-    expect(screen.getByLabelText("obrigatório")).toBeInTheDocument()
+    const input = screen.getByRole("textbox")
+    expect(input).toBeRequired()
+    // Not "Nome obrigatório": a screen reader would say "required" twice.
+    expect(input).toHaveAccessibleName("Nome")
+    expect(document.querySelector('[data-slot="label-required"]')).toHaveTextContent("*")
   })
 
   it("renders leadingIcon inside the input wrapper", () => {
@@ -68,6 +73,130 @@ describe("Input", () => {
     expect(screen.getByLabelText("X")).toBeDisabled()
     rerender(<Input label="X" readOnly />)
     expect(screen.getByLabelText("X")).toHaveAttribute("readonly")
+  })
+
+  // The measured heights (32, 40 and 44px, border included) are asserted in a
+  // real browser by tests/e2e/control-size.spec.ts.
+  describe("size", () => {
+    const wrapper = () => document.querySelector('[data-slot="input-wrapper"]') as HTMLElement
+
+    it("gives the bordered box the shared control height, md by default", () => {
+      const { rerender } = render(<Input label="X" />)
+      expect(wrapper()).toHaveClass("h-control-md")
+      expect(screen.getByLabelText("X")).toHaveClass("px-3", "h-full")
+      // The height comes from the box, never from padding on the <input>.
+      expect(screen.getByLabelText("X").className).not.toMatch(/(^|\s)py-/)
+
+      rerender(<Input label="X" size="sm" />)
+      expect(wrapper()).toHaveClass("h-control-sm")
+      expect(screen.getByLabelText("X")).toHaveClass("px-2.5")
+
+      rerender(<Input label="X" size="lg" />)
+      expect(wrapper()).toHaveClass("h-control-lg")
+      expect(screen.getByLabelText("X")).toHaveClass("px-4")
+    })
+
+    it("is our prop, not the native `size` attribute", () => {
+      render(<Input label="X" size="sm" />)
+      expect(screen.getByLabelText("X")).not.toHaveAttribute("size")
+    })
+  })
+
+  // The look itself (fill, no hover ring) is measured in a real browser by
+  // tests/e2e/primitives.spec.ts ("Input read-only").
+  describe("readOnly", () => {
+    const wrapper = () => document.querySelector('[data-slot="input-wrapper"]')
+
+    it("is readable, focusable and submitted, but cannot be edited", async () => {
+      const user = userEvent.setup()
+      render(
+        <form data-testid="form">
+          <Input label="Código" name="codigo" readOnly defaultValue="PRP-1042" />
+        </form>,
+      )
+      const input = screen.getByRole("textbox", { name: "Código" })
+      await user.click(input)
+      expect(input).toHaveFocus()
+      await user.type(input, "x")
+      expect(input).toHaveValue("PRP-1042")
+      const form = screen.getByTestId("form") as HTMLFormElement
+      expect(new FormData(form).get("codigo")).toBe("PRP-1042")
+      expect(wrapper()).toHaveAttribute("data-readonly")
+    })
+
+    it("is not marked read-only when it is disabled: disabled wins", () => {
+      render(<Input label="Código" readOnly disabled defaultValue="PRP-1042" />)
+      expect(wrapper()).not.toHaveAttribute("data-readonly")
+    })
+
+    it("is not marked read-only by default", () => {
+      render(<Input label="Código" />)
+      expect(wrapper()).not.toHaveAttribute("data-readonly")
+    })
+  })
+
+  // `className` stays on the <input> (text alignment, tabular numbers). The
+  // box that draws the border, and the field around label and messages, had
+  // no way in: a DataTable search drew its own icon with `pl-9` instead.
+  describe("class names", () => {
+    it("puts wrapperClassName on the bordered box and fieldClassName on the field", () => {
+      render(
+        <Input
+          label="Busca"
+          className="text-right"
+          wrapperClassName="bg-muted"
+          fieldClassName="max-w-sm"
+        />,
+      )
+      const box = document.querySelector('[data-slot="input-wrapper"]')
+      expect(box).toHaveClass("bg-muted")
+      // The override replaces the default fill instead of fighting it.
+      expect(box).not.toHaveClass("bg-card")
+      expect(document.querySelector('[data-slot="field-shell"]')).toHaveClass("max-w-sm")
+      expect(screen.getByRole("textbox")).toHaveClass("text-right")
+      expect(box).not.toHaveClass("text-right")
+    })
+  })
+
+  describe("a click on the box", () => {
+    it("on the leading icon focuses the field, as a click on the text would", async () => {
+      const user = userEvent.setup()
+      render(<Input label="Busca" leadingIcon={<svg data-testid="icon" />} />)
+      await user.click(screen.getByTestId("icon"))
+      expect(screen.getByRole("textbox")).toHaveFocus()
+    })
+
+    it("on the padding of the box focuses the field", async () => {
+      const user = userEvent.setup()
+      render(<Input label="Busca" trailingIcon={<svg data-testid="icon" />} />)
+      await user.click(document.querySelector('[data-slot="input-wrapper"]') as HTMLElement)
+      expect(screen.getByRole("textbox")).toHaveFocus()
+    })
+
+    it("on a button in a slot leaves the click to the button", async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      render(
+        <Input
+          label="Senha"
+          trailingIcon={
+            <button type="button" onClick={onClick}>
+              Mostrar
+            </button>
+          }
+        />,
+      )
+      await user.click(screen.getByRole("button", { name: "Mostrar" }))
+      expect(onClick).toHaveBeenCalledTimes(1)
+      expect(screen.getByRole("button", { name: "Mostrar" })).toHaveFocus()
+    })
+
+    it("does nothing when the field is disabled", async () => {
+      const user = userEvent.setup()
+      render(<Input label="Busca" disabled leadingIcon={<svg data-testid="icon" />} />)
+      await user.click(screen.getByTestId("icon"))
+      expect(screen.getByRole("textbox")).not.toHaveFocus()
+    })
   })
 
   it("forwards ref to the input element", () => {

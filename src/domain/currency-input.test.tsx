@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
@@ -134,5 +135,806 @@ describe("CurrencyInput", () => {
     )
     const shell = container.querySelector("[data-slot='field-shell']")
     expect(shell?.getAttribute("data-label-position")).toBe("left")
+  })
+
+  // Regressão: a colagem passava pelo mesmo caminho da digitação ("centavos
+  // primeiro"), então "350.000" da planilha virava R$ 3.500,00 na proposta.
+  describe("colagem", () => {
+    async function pasteInto(text: string, initial = 0) {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      function Harness() {
+        const [value, setValue] = React.useState(initial)
+        return (
+          <CurrencyInput
+            label="Valor"
+            value={value}
+            onValueChange={(next) => {
+              onValueChange(next)
+              setValue(next)
+            }}
+          />
+        )
+      }
+      render(<Harness />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.paste(text)
+      return { input, onValueChange }
+    }
+
+    it.each([
+      ["1500", 1500, "1.500,00"],
+      ["1.500", 1500, "1.500,00"],
+      ["350.000", 350000, "350.000,00"],
+      ["350000", 350000, "350.000,00"],
+      ["1500,5", 1500.5, "1.500,50"],
+      ["1.234,5", 1234.5, "1.234,50"],
+      ["2350.9", 2350.9, "2.350,90"],
+      ["1.500,00", 1500, "1.500,00"],
+      ["1500.00", 1500, "1.500,00"],
+      ["R$ 2.350,90", 2350.9, "2.350,90"],
+      ["0,05", 0.05, "0,05"],
+    ])("%s vira %d reais", async (text, value, shown) => {
+      const { input, onValueChange } = await pasteInto(text)
+      expect(onValueChange).toHaveBeenLastCalledWith(value)
+      expect(input).toHaveValue(shown)
+    })
+
+    it("o valor colado substitui o que estava no campo", async () => {
+      const { input, onValueChange } = await pasteInto("1.500,00", 99.9)
+      expect(onValueChange).toHaveBeenLastCalledWith(1500)
+      expect(input).toHaveValue("1.500,00")
+    })
+
+    it("arredonda para centavos o que vem com mais casas", async () => {
+      const { onValueChange } = await pasteInto("10,999")
+      expect(onValueChange).toHaveBeenLastCalledWith(11)
+    })
+
+    it("texto sem número não muda o campo", async () => {
+      const { input, onValueChange } = await pasteInto("a combinar", 250)
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(input).toHaveValue("250,00")
+    })
+
+    it("um número grande demais para o campo não entra", async () => {
+      const { input, onValueChange } = await pasteInto("99999999999999999999", 250)
+      expect(onValueChange).not.toHaveBeenCalled()
+      expect(input).toHaveValue("250,00")
+    })
+
+    it("o onPaste de quem usa o campo é chamado e pode cancelar a colagem", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const onPaste = vi.fn((e: React.ClipboardEvent<HTMLInputElement>) => e.preventDefault())
+      render(<CurrencyInput value={0} onValueChange={onValueChange} onPaste={onPaste} />)
+      await user.click(screen.getByRole("textbox"))
+      await user.paste("1500")
+      expect(onPaste).toHaveBeenCalledTimes(1)
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("a digitação continua sendo de centavos primeiro", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCurrencyInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}1500")
+      expect(input).toHaveValue("15,00")
+    })
+  })
+
+  // Regressão: com `name`, o form nativo recebia o texto com máscara
+  // ("1.234,56") enquanto onValueChange entregava o valor limpo.
+  describe("em um formulário nativo", () => {
+    it("envia o valor limpo, não a máscara", () => {
+      const { container } = render(
+        <form>
+          <CurrencyInput name="valor" value={1234.56} onValueChange={vi.fn()} />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      const data = new FormData(form)
+      expect(data.get("valor")).toBe("1234.56")
+      expect([...data.keys()]).toEqual(["valor"])
+      // O campo visível mostra a máscara e não leva o name.
+      expect(screen.getByRole("textbox")).toHaveValue("1.234,56")
+      expect(screen.getByRole("textbox")).not.toHaveAttribute("name")
+    })
+
+    it("acompanha o que é digitado", async () => {
+      const user = userEvent.setup()
+      function Harness() {
+        const [value, setValue] = React.useState<number>(0)
+        return (
+          <form>
+            <CurrencyInput name="valor" value={value} onValueChange={setValue} />
+          </form>
+        )
+      }
+      const { container } = render(<Harness />)
+      await user.click(screen.getByRole("textbox"))
+      await user.keyboard("{End}123456")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("valor")).toBe("1234.56")
+    })
+
+    it("desabilitado, não é enviado", () => {
+      const { container } = render(
+        <form>
+          <CurrencyInput name="valor" value={1234.56} onValueChange={vi.fn()} disabled />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).has("valor")).toBe(false)
+    })
+
+    it("sem name não cria input oculto", () => {
+      const { container } = render(<CurrencyInput value={1234.56} onValueChange={vi.fn()} />)
+      expect(container.querySelector("input[type=hidden]")).toBeNull()
+    })
+
+    it("o input oculto acompanha o atributo form", () => {
+      const { container } = render(
+        <CurrencyInput name="valor" form="cadastro" value={1234.56} onValueChange={vi.fn()} />,
+      )
+      expect(container.querySelector("input[type=hidden]")).toHaveAttribute("form", "cadastro")
+    })
+  })
+
+  // Tela de consulta: o valor fica legível e é enviado, mas não é editável.
+  // Antes só dava para fingir isso com `disabled`, a 50% de opacidade.
+  describe("somente leitura", () => {
+    it("mostra o valor, recebe foco e não aceita digitação", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<CurrencyInput label="Campo" value={1234.56} onValueChange={onValueChange} readOnly />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveAttribute("readonly")
+      expect(input).not.toBeDisabled()
+      await user.tab()
+      expect(input).toHaveFocus()
+      await user.keyboard("{End}1{Backspace}")
+      expect(input).toHaveValue("1.234,56")
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("não aceita colagem", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<CurrencyInput label="Campo" value={1234.56} onValueChange={onValueChange} readOnly />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.paste("9.999,99")
+      expect(input).toHaveValue("1.234,56")
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("continua sendo enviado no formulário", () => {
+      const { container } = render(
+        <form>
+          <CurrencyInput name="campo" value={1234.56} onValueChange={vi.fn()} readOnly />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("campo")).toBe("1234.56")
+    })
+
+    it("tem aparência própria, diferente do campo editável e do desabilitado", () => {
+      const { container } = render(
+        <CurrencyInput label="Campo" value={1234.56} onValueChange={vi.fn()} readOnly />,
+      )
+      expect(screen.getByRole("textbox").className).toMatch(/bg-muted/)
+      // Sem a opacidade de desabilitado no shell.
+      expect(container.querySelector("[data-slot='field-shell']")?.className).not.toMatch(
+        /opacity-50/,
+      )
+    })
+  })
+
+  // A altura vem do token de controle (32, 40 e 44px), não do padding: o
+  // campo alinha com botões e selects do mesmo tamanho. A medida em px está
+  // em tests/e2e/domain.spec.ts.
+  describe("size", () => {
+    it("usa a altura md por padrão", () => {
+      render(<CurrencyInput value={10} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox").className).toMatch(/\bh-control-md\b/)
+    })
+
+    it.each(["sm", "md", "lg"] as const)(
+      "size=%s usa a altura de controle correspondente",
+      (size) => {
+        render(<CurrencyInput value={10} onValueChange={vi.fn()} size={size} />)
+        const input = screen.getByRole("textbox")
+        expect(input.className).toMatch(new RegExp(`\\bh-control-${size}\\b`))
+        // `size` é o tamanho do controle, não o atributo nativo de largura.
+        expect(input).not.toHaveAttribute("size")
+      },
+    )
+  })
+
+  // Regressão: a cada tecla o valor era reescrito e o cursor ia para o fim;
+  // corrigir um dígito no meio de "1.234,56" espalhava os dígitos seguintes.
+  describe("edição no meio do valor", () => {
+    it("o dígito entra no ponto do cursor e o cursor fica depois dele", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCurrencyInput initial={1234.56} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "1.2|34,56" → digita 9 → "12.9|34,56"
+      await user.type(input, "9", { initialSelectionStart: 3, initialSelectionEnd: 3 })
+      expect(input).toHaveValue("12.934,56")
+      expect(input.selectionStart).toBe(4)
+      await user.keyboard("0")
+      expect(input).toHaveValue("129.034,56")
+      expect(input.selectionStart).toBe(5)
+    })
+
+    it("Backspace no meio apaga aquele dígito e o cursor fica no lugar", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCurrencyInput initial={1234.56} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "1.2|34,56" → Backspace → "1|34,56"
+      await user.type(input, "{Backspace}", { initialSelectionStart: 3, initialSelectionEnd: 3 })
+      expect(input).toHaveValue("134,56")
+      expect(input.selectionStart).toBe(1)
+      await user.keyboard("2")
+      expect(input).toHaveValue("1.234,56")
+      expect(input.selectionStart).toBe(3)
+    })
+
+    it("Backspace logo depois do ponto de milhar apaga o dígito antes dele", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCurrencyInput initial={1234.56} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "1.|234,56"
+      await user.type(input, "{Backspace}", { initialSelectionStart: 2, initialSelectionEnd: 2 })
+      expect(input).toHaveValue("234,56")
+      expect(input.selectionStart).toBe(0)
+    })
+
+    it("Delete logo antes da vírgula apaga o dígito depois dela", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCurrencyInput initial={1234.56} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "1.234|,56" → "123,4|6": o cursor continua depois do 4.
+      await user.type(input, "{Delete}", { initialSelectionStart: 5, initialSelectionEnd: 5 })
+      expect(input).toHaveValue("123,46")
+      expect(input.selectionStart).toBe(5)
+    })
+
+    it("com o campo em zero, os centavos entram primeiro mesmo com o cursor no início", async () => {
+      const user = userEvent.setup()
+      render(<ControlledCurrencyInput />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // É onde um foco por script (autoFocus, setFocus do formulário) deixa o cursor.
+      await user.type(input, "1500", { initialSelectionStart: 0, initialSelectionEnd: 0 })
+      expect(input).toHaveValue("15,00")
+      expect(input.selectionStart).toBe(5)
+    })
+
+    it("uma letra digitada no meio não muda o valor nem move o cursor", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<CurrencyInput value={1234.56} onValueChange={onValueChange} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.type(input, "x", { initialSelectionStart: 3, initialSelectionEnd: 3 })
+      expect(input).toHaveValue("1.234,56")
+      expect(input.selectionStart).toBe(3)
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("o 16º dígito digitado é recusado", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<CurrencyInput value={9999999999999.99} onValueChange={onValueChange} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}1")
+      expect(input).toHaveValue("9.999.999.999.999,99")
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+  })
+
+  // Regressão: value undefined (o que o react-hook-form entrega sem
+  // defaultValues) renderizava "NaN,NaN".
+  describe("valor que não é número", () => {
+    it.each([
+      ["undefined", undefined],
+      ["NaN", Number.NaN],
+      ["null", null],
+    ])("%s mostra 0,00", (_name, value) => {
+      render(<CurrencyInput value={value as unknown as number} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveValue("0,00")
+    })
+
+    it("o form recebe 0, não NaN", () => {
+      const { container } = render(
+        <form>
+          <CurrencyInput name="valor" value={Number.NaN} onValueChange={vi.fn()} />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("valor")).toBe("0")
+    })
+  })
+
+  // Regressão: digitar "-50" dava 0,50, e um valor -50 vindo de fora mostrava
+  // "-50,00" e perdia o sinal na primeira tecla. Não havia como lançar
+  // estorno, desconto ou saldo devedor.
+  describe("allowNegative", () => {
+    function Negative({ initial = 0 }: { initial?: number }) {
+      const [value, setValue] = React.useState(initial)
+      return (
+        <>
+          <CurrencyInput label="Ajuste" allowNegative value={value} onValueChange={setValue} />
+          <output data-testid="value">{String(value)}</output>
+        </>
+      )
+    }
+
+    it("digitar -50 dá -0,50", async () => {
+      const user = userEvent.setup()
+      render(<Negative />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}-50")
+      expect(input).toHaveValue("-0,50")
+      expect(screen.getByTestId("value")).toHaveTextContent("-0.5")
+    })
+
+    it("o sinal digitado em zero aparece, mas só vira valor com um dígito", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      render(<CurrencyInput allowNegative value={0} onValueChange={onValueChange} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}-")
+      expect(input).toHaveValue("-0,00")
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
+    it("o sinal sem dígito some quando o campo perde o foco", async () => {
+      const user = userEvent.setup()
+      render(<Negative />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}-")
+      expect(input).toHaveValue("-0,00")
+      await user.tab()
+      expect(input).toHaveValue("0,00")
+    })
+
+    it("um valor negativo continua negativo ao digitar mais um dígito", async () => {
+      const user = userEvent.setup()
+      render(<Negative initial={-50} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      expect(input).toHaveValue("-50,00")
+      await user.click(input)
+      await user.keyboard("{End}1")
+      expect(input).toHaveValue("-500,01")
+      expect(screen.getByTestId("value")).toHaveTextContent("-500.01")
+    })
+
+    it("digitar o sinal de novo volta a positivo, e + também", async () => {
+      const user = userEvent.setup()
+      render(<Negative initial={-12.34} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}-")
+      expect(input).toHaveValue("12,34")
+      await user.keyboard("-")
+      expect(input).toHaveValue("-12,34")
+      await user.keyboard("+")
+      expect(input).toHaveValue("12,34")
+    })
+
+    it("Backspace logo depois do sinal tira o sinal, não um dígito", async () => {
+      const user = userEvent.setup()
+      render(<Negative initial={-12.34} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      // "-|12,34"
+      await user.type(input, "{Backspace}", { initialSelectionStart: 1, initialSelectionEnd: 1 })
+      expect(input).toHaveValue("12,34")
+      expect(input.selectionStart).toBe(0)
+    })
+
+    it("um número negativo colado entra com o sinal", async () => {
+      const user = userEvent.setup()
+      render(<Negative />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.paste("R$ -1.234,56")
+      expect(input).toHaveValue("-1.234,56")
+      expect(screen.getByTestId("value")).toHaveTextContent("-1234.56")
+    })
+
+    it("o form recebe o número com o sinal", () => {
+      const { container } = render(
+        <form>
+          <CurrencyInput name="ajuste" allowNegative value={-1234.56} onValueChange={vi.fn()} />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("ajuste")).toBe("-1234.56")
+    })
+
+    it("abre o teclado de texto, porque o numérico do iOS não tem o sinal de menos", () => {
+      render(<CurrencyInput allowNegative value={0} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveAttribute("inputmode", "text")
+    })
+
+    describe("sem allowNegative (padrão)", () => {
+      it("o sinal digitado é ignorado", async () => {
+        const user = userEvent.setup()
+        render(<ControlledCurrencyInput />)
+        const input = screen.getByRole("textbox") as HTMLInputElement
+        await user.click(input)
+        await user.keyboard("{End}-50")
+        expect(input).toHaveValue("0,50")
+      })
+
+      it("um número negativo colado entra sem o sinal", async () => {
+        const user = userEvent.setup()
+        render(<ControlledCurrencyInput />)
+        const input = screen.getByRole("textbox") as HTMLInputElement
+        await user.click(input)
+        await user.paste("-50")
+        expect(input).toHaveValue("50,00")
+      })
+
+      it("o teclado continua numérico", () => {
+        render(<CurrencyInput value={0} onValueChange={vi.fn()} />)
+        expect(screen.getByRole("textbox")).toHaveAttribute("inputmode", "numeric")
+      })
+    })
+  })
+
+  // Regressão: o campo não sabia ficar vazio. Limpar voltava a "0,00", o
+  // `required` nativo nunca falhava e "não informado" era igual a zero.
+  describe('emptyValue="null"', () => {
+    function Nullable({ initial = null }: { initial?: number | null }) {
+      const [value, setValue] = React.useState<number | null>(initial)
+      return (
+        <>
+          <CurrencyInput
+            label="Campo"
+            emptyValue="null"
+            placeholder="Informe"
+            value={value}
+            onValueChange={setValue}
+          />
+          <output data-testid="value">{String(value)}</output>
+        </>
+      )
+    }
+
+    it("value null mostra o campo vazio, com o placeholder", () => {
+      render(<Nullable />)
+      const input = screen.getByRole("textbox")
+      expect(input).toHaveValue("")
+      expect(input).toHaveAttribute("placeholder", "Informe")
+    })
+
+    it("sem placeholder próprio, sugere o formato", () => {
+      render(<CurrencyInput emptyValue="null" value={null} onValueChange={vi.fn()} />)
+      expect(screen.getByRole("textbox")).toHaveAttribute("placeholder", "0,00")
+    })
+
+    it("o primeiro dígito já vale, como centavo", async () => {
+      const user = userEvent.setup()
+      render(<Nullable />)
+      const input = screen.getByRole("textbox")
+      await user.type(input, "5")
+      expect(input).toHaveValue("0,05")
+      expect(screen.getByTestId("value")).toHaveTextContent("0.05")
+    })
+
+    it("zero digitado é um valor, diferente de vazio", async () => {
+      const user = userEvent.setup()
+      render(<Nullable />)
+      const input = screen.getByRole("textbox")
+      await user.type(input, "0")
+      expect(input).toHaveValue("0,00")
+      expect(screen.getByTestId("value")).toHaveTextContent("0")
+    })
+
+    it("apagar tudo de uma vez reporta null", async () => {
+      const user = userEvent.setup()
+      render(<Nullable initial={12.5} />)
+      const input = screen.getByRole("textbox")
+      await user.clear(input)
+      expect(input).toHaveValue("")
+      expect(screen.getByTestId("value")).toHaveTextContent("null")
+    })
+
+    it("Backspace passa por zero e depois esvazia", async () => {
+      const user = userEvent.setup()
+      render(<Nullable />)
+      const input = screen.getByRole("textbox")
+      await user.type(input, "5")
+      await user.keyboard("{Backspace}")
+      expect(input).toHaveValue("0,00")
+      expect(screen.getByTestId("value")).toHaveTextContent("0")
+      await user.keyboard("{Backspace}")
+      expect(input).toHaveValue("")
+      expect(screen.getByTestId("value")).toHaveTextContent("null")
+    })
+
+    it("vazio, o form recebe texto vazio e o required nativo acusa", () => {
+      const { container } = render(
+        <form>
+          <CurrencyInput
+            name="campo"
+            emptyValue="null"
+            value={null}
+            onValueChange={vi.fn()}
+            required
+          />
+        </form>,
+      )
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(new FormData(form).get("campo")).toBe("")
+      expect((screen.getByRole("textbox") as HTMLInputElement).validity.valueMissing).toBe(true)
+      expect(form.checkValidity()).toBe(false)
+    })
+
+    it("um valor que não é número é campo vazio", () => {
+      render(
+        <CurrencyInput
+          emptyValue="null"
+          value={Number.NaN}
+          onValueChange={vi.fn()}
+          placeholder="Informe"
+        />,
+      )
+      expect(screen.getByRole("textbox")).toHaveValue("")
+    })
+
+    it("colar um número preenche o campo vazio", async () => {
+      const user = userEvent.setup()
+      render(<Nullable />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.paste("12,5")
+      expect(input).toHaveValue("12,50")
+      expect(screen.getByTestId("value")).toHaveTextContent("12.5")
+    })
+  })
+
+  describe('emptyValue="zero" (padrão)', () => {
+    it("limpar o campo volta a zero, como sempre foi", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      function Harness() {
+        const [value, setValue] = React.useState(12.5)
+        return (
+          <CurrencyInput
+            value={value}
+            onValueChange={(next) => {
+              onValueChange(next)
+              setValue(next)
+            }}
+          />
+        )
+      }
+      render(<Harness />)
+      const input = screen.getByRole("textbox")
+      await user.clear(input)
+      expect(input).toHaveValue("0,00")
+      expect(onValueChange).toHaveBeenLastCalledWith(0)
+    })
+
+    it('onValueChange recebe sempre número; null só existe com emptyValue="null"', () => {
+      const onNumber = (_value: number) => {}
+      const onNullable = (_value: number | null) => {}
+      render(
+        <>
+          <CurrencyInput value={1} onValueChange={onNumber} />
+          <CurrencyInput emptyValue="null" value={null} onValueChange={onNullable} />
+          {/* @ts-expect-error sem emptyValue="null", value não aceita null */}
+          <CurrencyInput value={null} onValueChange={onNumber} />
+          {/* @ts-expect-error com emptyValue="null", o callback precisa aceitar null */}
+          <CurrencyInput emptyValue="null" value={null} onValueChange={onNumber} />
+        </>,
+      )
+      expect(screen.getAllByRole("textbox")).toHaveLength(4)
+    })
+  })
+
+  describe("modo não controlado", () => {
+    it("sem value, parte de defaultValue e guarda o que é digitado", async () => {
+      const user = userEvent.setup()
+      const onValueChange = vi.fn()
+      const { container } = render(
+        <form>
+          <CurrencyInput name="campo" defaultValue={12.5} onValueChange={onValueChange} />
+          <button type="reset">Desfazer</button>
+        </form>,
+      )
+      const input = screen.getByRole("textbox")
+      const form = container.querySelector("form") as HTMLFormElement
+      expect(input).toHaveValue("12,50")
+      await user.click(input)
+      await user.keyboard("{End}{Backspace}")
+      expect(input).toHaveValue("1,25")
+      expect(onValueChange).toHaveBeenLastCalledWith(1.25)
+      expect(new FormData(form).get("campo")).toBe("1.25")
+      await user.click(screen.getByRole("button", { name: "Desfazer" }))
+      expect(input).toHaveValue("12,50")
+      expect(new FormData(form).get("campo")).toBe("12.5")
+    })
+
+    it("sem value nem defaultValue começa em zero e funciona sem onValueChange", async () => {
+      const user = userEvent.setup()
+      render(<CurrencyInput />)
+      const input = screen.getByRole("textbox")
+      expect(input).toHaveValue("0,00")
+      await user.click(input)
+      await user.keyboard("{End}1250")
+      expect(input).toHaveValue("12,50")
+    })
+
+    it('com emptyValue="null" e sem defaultValue começa vazio', () => {
+      render(<CurrencyInput emptyValue="null" />)
+      expect(screen.getByRole("textbox")).toHaveValue("")
+    })
+  })
+
+  describe("min e max", () => {
+    function Limited(props: {
+      initial?: number
+      min?: number
+      max?: number
+      allowNegative?: boolean
+    }) {
+      const { initial = 0, ...limits } = props
+      const [value, setValue] = React.useState(initial)
+      return (
+        <>
+          <CurrencyInput label="Valor" value={value} onValueChange={setValue} {...limits} />
+          <output data-testid="value">{String(value)}</output>
+        </>
+      )
+    }
+
+    function InForm({ onSend, error }: { onSend: (value: unknown) => void; error?: string }) {
+      return (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            onSend(new FormData(event.currentTarget).get("valor"))
+          }}
+        >
+          <CurrencyInput name="valor" label="Valor" min={10} max={50} error={error} />
+          <button type="submit">Enviar</button>
+        </form>
+      )
+    }
+
+    it("acima do máximo, o campo guarda o que foi digitado e acusa ao sair", async () => {
+      const user = userEvent.setup()
+      render(<Limited max={50} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}5001")
+      expect(input).toHaveValue("50,01")
+      expect(screen.queryByRole("alert")).toBeNull()
+      await user.tab()
+      expect(screen.getByRole("alert")).toHaveTextContent("O valor máximo é R$ 50,00.")
+      expect(input).toHaveValue("50,01")
+      expect(input).toHaveAttribute("aria-invalid", "true")
+      expect(input.validity.valid).toBe(false)
+      expect(screen.getByTestId("value")).toHaveTextContent("50.01")
+    })
+
+    it("um valor colado acima do máximo entra e é acusado", async () => {
+      const user = userEvent.setup()
+      render(<Limited max={50} />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.paste("75")
+      await user.tab()
+      expect(input).toHaveValue("75,00")
+      expect(screen.getByRole("alert")).toHaveTextContent("O valor máximo é R$ 50,00.")
+    })
+
+    it("abaixo do mínimo, só acusa ao sair do campo e não troca o valor", async () => {
+      const user = userEvent.setup()
+      render(<Limited min={10} />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.keyboard("{End}500")
+      expect(screen.queryByRole("alert")).toBeNull()
+      await user.tab()
+      expect(input).toHaveValue("5,00")
+      expect(screen.getByRole("alert")).toHaveTextContent("O valor mínimo é R$ 10,00.")
+      expect(screen.getByTestId("value")).toHaveTextContent("5")
+    })
+
+    it("o erro some quando o valor volta para a faixa", async () => {
+      const user = userEvent.setup()
+      render(<Limited min={10} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      await user.click(input)
+      await user.keyboard("{End}500")
+      await user.tab()
+      await user.click(input)
+      await user.keyboard("{End}0")
+      expect(input).toHaveValue("50,00")
+      expect(screen.queryByRole("alert")).toBeNull()
+      expect(input.validity.valid).toBe(true)
+    })
+
+    it("fora da faixa, Enter não envia o formulário e mostra o erro", async () => {
+      const user = userEvent.setup()
+      const onSend = vi.fn()
+      render(<InForm onSend={onSend} />)
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.keyboard("{End}500{Enter}")
+      expect(onSend).not.toHaveBeenCalled()
+      expect(input).toHaveValue("5,00")
+      expect(screen.getByRole("alert")).toHaveTextContent("O valor mínimo é R$ 10,00.")
+      await user.keyboard("0{Enter}")
+      expect(onSend).toHaveBeenCalledWith("50")
+    })
+
+    it("sem edição, o envio é barrado e o erro aparece", async () => {
+      const user = userEvent.setup()
+      const onSend = vi.fn()
+      render(<InForm onSend={onSend} />)
+      await user.tab()
+      await user.tab()
+      expect(screen.queryByRole("alert")).toBeNull()
+      await user.click(screen.getByRole("button", { name: "Enviar" }))
+      expect(onSend).not.toHaveBeenCalled()
+      expect(screen.getByRole("alert")).toHaveTextContent("O valor mínimo é R$ 10,00.")
+    })
+
+    it("o error do app vale no lugar da mensagem de limite", async () => {
+      const user = userEvent.setup()
+      render(<InForm onSend={vi.fn()} error="Informe a parcela." />)
+      await user.click(screen.getByRole("button", { name: "Enviar" }))
+      expect(screen.getByRole("alert")).toHaveTextContent("Informe a parcela.")
+    })
+
+    it("o reset do formulário limpa o erro", async () => {
+      const user = userEvent.setup()
+      render(<InForm onSend={vi.fn()} />)
+      await user.click(screen.getByRole("button", { name: "Enviar" }))
+      act(() => (screen.getByRole("textbox") as HTMLInputElement).form?.reset())
+      expect(screen.queryByRole("alert")).toBeNull()
+    })
+
+    it.each([{ readOnly: true }, { disabled: true }])("%o não é acusado", (state) => {
+      render(<CurrencyInput label="Valor" value={75} max={50} {...state} />)
+      const input = screen.getByRole("textbox") as HTMLInputElement
+      fireEvent.invalid(input)
+      expect(input.validationMessage).toBe("")
+      expect(screen.queryByRole("alert")).toBeNull()
+    })
+
+    it("a mensagem vem de labels", async () => {
+      const user = userEvent.setup()
+      render(
+        <CurrencyInput
+          label="Valor"
+          max={50}
+          defaultValue={75}
+          labels={{ aboveMax: (max) => `Teto: ${max}` }}
+        />,
+      )
+      await user.click(screen.getByRole("textbox"))
+      await user.keyboard("{Enter}")
+      expect(screen.getByRole("alert")).toHaveTextContent("Teto: R$ 50,00")
+    })
+
+    it("min e max não vão para o input como atributos nativos", () => {
+      render(<CurrencyInput value={0} onValueChange={vi.fn()} min={1} max={10} />)
+      const input = screen.getByRole("textbox")
+      expect(input).not.toHaveAttribute("min")
+      expect(input).not.toHaveAttribute("max")
+    })
   })
 })

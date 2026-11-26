@@ -1,9 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import type { ColumnDef, PaginationState } from "@tanstack/react-table"
+import { MoreHorizontal } from "lucide-react"
 import { useState } from "react"
+import type { ColumnDef, PaginationState } from "./data-table"
 
+import { DropdownMenu } from "../overlays/dropdown-menu"
 import { Badge } from "../primitives/badge"
-import { dateColumn } from "./columns"
+import { Button } from "../primitives/button"
+import { IconButton } from "../primitives/icon-button"
+import { dateColumn, formattedColumn } from "./columns"
 import { DataTable } from "./data-table"
 
 interface Contrato {
@@ -132,6 +136,8 @@ const columns: ColumnDef<Contrato>[] = [
     accessorKey: "valor",
     header: "Valor",
     cell: ({ row }) => brl.format(row.original.valor),
+    // Money reads down the right edge.
+    meta: { align: "right" },
   },
   {
     accessorKey: "status",
@@ -139,11 +145,16 @@ const columns: ColumnDef<Contrato>[] = [
     cell: ({ row }) => {
       const variant =
         row.original.status === "aprovado"
-          ? "default"
+          ? "success"
           : row.original.status === "vencido"
             ? "destructive"
-            : "secondary"
-      return <Badge variant={variant}>{row.original.status}</Badge>
+            : "warning"
+      // Dot + label: a column of filled badges would outweigh the data.
+      return (
+        <Badge variant={variant} dot>
+          {row.original.status}
+        </Badge>
+      )
     },
   },
 ]
@@ -154,43 +165,41 @@ const meta = {
   tags: ["autodocs"],
   parameters: {
     layout: "fullscreen",
-    a11y: {
-      // muted-foreground used for column-header secondary text + Badge variants on row data
-      // does not pass 4.5:1 against background. Tracked in design-tokens roadmap.
-      config: { rules: [{ id: "color-contrast", enabled: false }] },
-    },
     docs: {
       description: {
         component: [
           "Tabela rica baseada em [`@tanstack/react-table`](https://tanstack.com/table/latest) e nos primitives `Table*` do DS. Suporta busca global escopada (`searchableColumns`), ordenação por coluna, paginação opcional e props controladas para uso server-side.",
           "",
           "**Props:**",
-          "- `columns: ColumnDef<TData>[]` — definição das colunas (tipo do `@tanstack/react-table`).",
+          '- `columns: ColumnDef<TData>[]` — definição das colunas (tipo do `@tanstack/react-table`, reexportado pela lib: `import type { ColumnDef } from "@amfernandesinc/ui"`).',
           "- `data: TData[]` — array de linhas. `TData` é o seu tipo de domínio.",
-          "- `searchableColumns?: string[]` — `accessorKey`s das colunas incluídas na busca global. Sem isso, o campo de busca não aparece.",
+          '- `searchableColumns?: string[]` — ids das colunas incluídas na busca global (`id` ou `accessorKey`, chave aninhada como `cliente.nome` inclusive). Sem isso, o campo de busca não aparece. A busca ignora acento e caixa e compara o texto que a célula mostra (`meta.searchText`, preenchido por `dateColumn` e `formattedColumn`): `joao` acha "João", `123.456` acha "123.456.789-01".',
           "- `sortableColumns?: string[]` — `accessorKey`s das colunas com header ordenável. Sem isso, **nenhum** header é ordenável — mesma semântica opt-in de `searchableColumns`.",
           "- `searchPlaceholder?: string` — placeholder do input de busca (default `Buscar...`).",
           "- `emptyMessage?: ReactNode` — conteúdo exibido quando `data` filtrado fica vazio (default `Nenhum resultado.`).",
           "- `pagination?: { pageSize?: number; pageSizeOptions?: number[] }` — habilita paginação. Quando `pageSizeOptions` é informado (ex.: `[10, 20, 50, 100]`), o footer mostra um `<select>` 'Linhas por página' que ao mudar reseta o cursor pra página 1 e propaga via `onPaginationChange`. Sem `pageSize` explícito, o tamanho inicial vira `pageSizeOptions[0]`.",
+          "- O rodapé usa a `Pagination` da lib: números de página, faixa (`11–20 de 243`) e o seletor de tamanho. A tabela volta à página 1 quando a busca, um filtro ou a ordenação mudam (`autoResetPage`, padrão `true`; `false` no modo servidor), não quando chega um novo array `data` com a mesma visão.",
           "- `showRowCount?: boolean` — mostra a contagem de registros no footer.",
           "- `globalFilter` / `onGlobalFilterChange` — filtro de busca controlado.",
-          "- `pageIndex` / `onPaginationChange` / `pageCount` / `manualPagination` — paginação server-side.",
+          "- `pageIndex` / `onPaginationChange` / `rowCount` / `pageCount` / `manualPagination` — paginação server-side. `rowCount` é o total no servidor: o rodapé o mostra e a contagem de páginas sai dele.",
           "- `labels?: { search?, empty?, rowCount?(filtered, total) => string }` — sobrescreve os textos default.",
-          '- `onRowClick?: (row, event) => void` — torna cada linha clicável. Adiciona `role="button"`, `tabIndex=0` e suporte a Enter/Espaço automaticamente.',
-          "- `rowClassName?: (row, index) => string | undefined` — classes por linha. Retorne `undefined` para a linha herdar o estilo padrão. Útil para colorir linhas por status.",
+          "- `onRowClick?: (row, event) => void` — torna cada linha clicável. A linha continua linha; o teclado chega à ação por um `<button>` que envolve o conteúdo da primeira célula. Clique ou tecla em controle dentro da linha (botão, link, campo, menu) não dispara `onRowClick`.",
+          "- `rowClassName?: (row, index) => string | undefined` — classes por linha. Retorne `undefined` para a linha herdar o estilo padrão. Útil para destacar linhas.",
           "- `loading?: boolean` — exibe estado skeleton: linhas (count = `pagination.pageSize ?? 5`, células = `columns.length`), input de busca, contagem e botões de paginação. Wrapper recebe `aria-busy`.",
-          "- `downloadable?: boolean | { filename?, sheetName?, rowToRecord? }` — botão `Exportar para Excel` (ghost) à direita; abre popover com 3 escopos: dados filtrados, página atual, todos. Gera `.xlsx` via `xlsx` (SheetJS) lazy-loaded.",
+          "- `downloadable?: boolean | { filename?, sheetName?, rowToRecord? }` — botão `Exportar para Excel` (ghost) à direita; abre um menu (`DropdownMenu`, com setas e Escape) com os escopos: dados filtrados, página atual, todos. Gera `.xlsx` com `write-excel-file`, carregado só no primeiro export (ou `.csv` para o Excel brasileiro, se o nome terminar em `.csv`).",
+          "- `aria-label` / `aria-labelledby` / `caption` — nome acessível da `<table>` (a `caption` também aparece, sob as linhas).",
+          '- Alinhamento: `meta: { align: "right" }` numa coluna alinha cabeçalho, células e rodapé; `formattedColumn` com números (dinheiro, quantidade) já alinha à direita.',
           "- `className?: string` — classes extras no wrapper externo.",
           "",
           "**Helpers para colunas:**",
-          "- `dateColumn({ accessorKey, header, showTime? })` — column helper para campos data/datetime. Renderiza `dd/MM/yyyy` (ou `dd/MM/yyyy HH:mm` se a linha trouxer hora/minuto), e tem `sortingFn` que ordena por timestamp — funciona até quando o valor é string BR (`19/05/2026`). Aceita `Date`, ISO (`2026-05-19[T14:30]`), string BR ou epoch (number).",
+          "- `dateColumn({ accessorKey, header, showTime? })` — column helper para campos data/datetime. Renderiza `dd/MM/yyyy` (ou `dd/MM/yyyy HH:mm` se a linha trouxer hora/minuto), e tem `sortingFn` que ordena por timestamp — funciona até quando o valor é string BR (`19/05/2026`). Aceita `Date`, ISO (`2026-05-19[T14:30]`), string BR ou epoch (number); também `id` + `accessorFn`. Data pura (`2026-05-19`) nunca muda de dia; um instante (`Date`, ISO com `Z`) aparece no fuso `timeZone` (padrão `America/Sao_Paulo`).",
           "",
           "### Como definir colunas",
           "",
           "Cada item de `columns` é um `ColumnDef<TData>` do `@tanstack/react-table`. Os campos mais usados:",
           "",
           "```tsx",
-          'import type { ColumnDef } from "@tanstack/react-table"',
+          'import type { ColumnDef } from "@amfernandesinc/ui"',
           "",
           "type Contrato = { numero: string; cliente: string; valor: number; status: string }",
           "",
@@ -212,7 +221,7 @@ const meta = {
           "  {",
           '    accessorKey: "status",',
           '    header: "Status",',
-          "    cell: ({ row }) => <Badge>{row.original.status}</Badge>,",
+          '    cell: ({ row }) => <Badge variant="success" dot>{row.original.status}</Badge>,',
           "  },",
           "]",
           "```",
@@ -220,8 +229,7 @@ const meta = {
           "**Exemplo:**",
           "",
           "```tsx",
-          'import { DataTable } from "@amfernandesinc/ui"',
-          'import type { ColumnDef } from "@tanstack/react-table"',
+          'import { DataTable, type ColumnDef } from "@amfernandesinc/ui"',
           "",
           "<DataTable",
           "  columns={columns}",
@@ -307,13 +315,13 @@ const meta = {
     onRowClick: {
       control: false,
       description:
-        "Disparado quando a linha é clicada (ou ativada via Enter/Espaço). Recebe `(row, event)`.",
+        "Disparado no clique na linha ou no botão da primeira célula (Enter/Espaço). Recebe `(row, event)`. Controles dentro da linha não o disparam.",
       table: { type: { summary: "(row: TData, event: MouseEvent) => void" } },
     },
     rowClassName: {
       control: false,
       description:
-        "Função que recebe `(row, index)` e retorna classes para a linha. Use para destacar linhas por status — ex: `row.status === 'vencido' ? 'bg-destructive/10' : undefined`.",
+        "Função que recebe `(row, index)` e retorna classes para a linha. Use para destacar linhas — ex: `row.status === 'vencido' ? 'bg-muted' : undefined`. O status em si fica na célula, com `<Badge dot>`.",
       table: { type: { summary: "(row: TData, index: number) => string | undefined" } },
     },
   },
@@ -341,6 +349,189 @@ export const Default: Story = {
       description: {
         story:
           "10 linhas, sem busca, sem paginação. Cabeçalhos das colunas listadas em `sortableColumns` ficam clicáveis (Status não).",
+      },
+    },
+  },
+}
+
+export const Compact: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        aria-label="Contratos"
+        columns={columns.slice(0, 4)}
+        data={contratos}
+        density="compact"
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+        pagination={{ pageSize: 10 }}
+        showRowCount
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`density="compact"`: linhas de cerca de 36 px (`py-2`) e paginação de 32 px, para listas densas de back-office. O padrão mantém `py-2.5 px-3` (cerca de 41 px). Conteúdo mais alto que uma linha de texto (um `Badge`, um botão) faz a linha crescer.',
+      },
+    },
+  },
+}
+
+export const StickyHeader: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        aria-label="Contratos"
+        columns={columns}
+        data={contratos}
+        maxHeight={280}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+        showRowCount
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`maxHeight` limita a altura: o corpo rola dentro da caixa e o cabeçalho fica no lugar (`stickyHeader`, ligado por padrão com `maxHeight`).",
+      },
+    },
+  },
+}
+
+export const PinnedColumns: Story = {
+  render: () => (
+    <div className="max-w-[28rem] p-6">
+      <DataTable
+        aria-label="Contratos"
+        columns={columns}
+        data={contratos.slice(0, 6)}
+        pinnedColumns={{ left: ["numero", "cliente"] }}
+        sortableColumns={["numero", "cliente", "vencimento", "valor"]}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`pinnedColumns={{ left: ["numero", "cliente"] }}`: as colunas listadas vão para a esquerda e ficam no lugar quando a tabela rola para o lado, com uma linha depois da última.',
+      },
+    },
+  },
+}
+
+export const Selectable: Story = {
+  render: () => {
+    function Wrapper() {
+      const [archived, setArchived] = useState<string[]>([])
+      return (
+        <div className="space-y-2 p-6">
+          <p className="text-muted-foreground text-xs" data-testid="selection-state">
+            Arquivados:{" "}
+            <strong className="text-foreground">{archived.join(", ") || "nenhum"}</strong>
+          </p>
+          <DataTable
+            aria-label="Contratos"
+            columns={columns}
+            data={contratos}
+            getRowId={(row) => row.numero}
+            selectable
+            defaultSelectedRowIds={["C-2026-002"]}
+            pagination={{ pageSize: 5 }}
+            selectionActions={(ids) => (
+              <Button size="sm" variant="outline" onClick={() => setArchived(ids)}>
+                Arquivar
+              </Button>
+            )}
+          />
+        </div>
+      )
+    }
+    return <Wrapper />
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: [
+          "`selectable` põe uma caixa por linha (com o nome da linha) e uma no cabeçalho, que seleciona a página e mostra o estado misto. A seleção é uma lista de ids (`getRowId`), então sobrevive à troca de página.",
+          "",
+          '`selectionActions={(ids) => ...}` aparece numa barra acima da tabela, com a contagem e "Limpar seleção", enquanto há algo selecionado. Controle com `selectedRowIds` + `onSelectionChange`, ou comece com `defaultSelectedRowIds`.',
+        ].join("\n"),
+      },
+    },
+  },
+}
+
+export const FullToolbar: Story = {
+  render: () => {
+    function Wrapper() {
+      const [filtered, setFiltered] = useState(true)
+      return (
+        <div className="p-4">
+          <DataTable
+            aria-label="Contratos"
+            columns={columns}
+            data={contratos}
+            searchableColumns={["numero", "cliente"]}
+            onClearFilters={() => setFiltered(false)}
+            clearFiltersDisabled={!filtered}
+            downloadable
+            pagination={{ pageSize: 5, pageSizeOptions: [5, 10, 20] }}
+            showRowCount
+          />
+        </div>
+      )
+    }
+    return <Wrapper />
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Barra e rodapé completos (busca, limpar filtros, exportar, contagem, tamanho de página e páginas). Num telefone eles quebram linha em vez de espremer a busca ou sair da caixa.",
+      },
+    },
+  },
+}
+
+interface Endereco {
+  numero: string
+  endereco: string
+}
+
+const enderecos: Endereco[] = [
+  {
+    numero: "C-2026-001",
+    endereco: "Avenida Brigadeiro Faria Lima, 3477, 14º andar, Itaim Bibi, São Paulo",
+  },
+  { numero: "C-2026-002", endereco: "Rua Augusta, 1200" },
+]
+
+export const TruncatedText: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        aria-label="Endereços"
+        columns={[
+          { accessorKey: "numero", header: "Número" },
+          formattedColumn<Endereco, string>({
+            accessorKey: "endereco",
+            header: "Endereço",
+            truncate: { max: 24 },
+          }),
+        ]}
+        data={enderecos}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`formattedColumn` com `truncate`: o texto cortado mostra o inteiro no hover, no foco do teclado (é uma parada de Tab) e num toque; o leitor de tela lê o texto inteiro.",
       },
     },
   },
@@ -478,10 +669,8 @@ export const PaginatedWithPageSizeSelectorServerSide: Story = {
               // quando o usuário troca o tamanho — sem fetch da página errada.
               setPagination(next)
             }}
+            rowCount={total}
             showRowCount
-            labels={{
-              rowCount: () => `${total} registros (server-side)`,
-            }}
           />
         </div>
       )
@@ -502,6 +691,7 @@ export const Sortable: Story = {
   render: () => (
     <div className="p-6">
       <DataTable
+        aria-label="Contratos"
         columns={columns}
         data={contratos.slice(0, 8)}
         sortableColumns={["numero", "cliente", "vencimento", "valor"]}
@@ -572,10 +762,8 @@ export const ServerSide: Story = {
                   : updater
               setPageIndex(next.pageIndex)
             }}
+            rowCount={total}
             showRowCount
-            labels={{
-              rowCount: (_filtered, _t) => `${total} registros (server-side)`,
-            }}
           />
         </div>
       )
@@ -586,7 +774,7 @@ export const ServerSide: Story = {
     docs: {
       description: {
         story:
-          "Server-side: o backend devolve uma página por vez. Passe `manualPagination`, `pageIndex`, `pageCount` e `onPaginationChange` — o componente não tenta paginar localmente.",
+          "Server-side: o backend devolve uma página por vez. Passe `manualPagination`, `pageIndex`, `onPaginationChange` e o total do servidor em `rowCount` (o rodapé mostra esse total e a contagem de páginas sai dele; `pageCount` continua aceito). Sem `fetchAll`/`fetchFiltered`, a exportação oferece só a página atual.",
       },
     },
   },
@@ -769,7 +957,7 @@ export const WithDateColumns: Story = {
           "]",
           "```",
           "",
-          'Aceita `Date`, ISO string, string BR (`19/05/2026 14:30`) ou epoch (number). `showTime` pode ser `"auto"` (default), `true` ou `false`.',
+          'Aceita `Date`, ISO string, string BR (`19/05/2026 14:30`) ou epoch (number). `showTime` pode ser `"auto"` (default), `true` ou `false`. Instantes aparecem em `timeZone` (padrão `America/Sao_Paulo`; use `"UTC"` para datas gravadas como meia-noite UTC).',
         ].join("\n"),
       },
     },
@@ -783,7 +971,7 @@ export const WithRowClick: Story = {
       return (
         <div className="space-y-2 p-6">
           <p className="text-muted-foreground text-xs">
-            Clique em uma linha (ou use Tab + Enter) para selecionar o contrato.
+            Clique em uma linha (ou Tab até o número + Enter) para selecionar o contrato.
             {selected ? (
               <>
                 {" "}
@@ -811,7 +999,65 @@ export const WithRowClick: Story = {
     docs: {
       description: {
         story:
-          'Passe `onRowClick={(row) => ...}` para tornar a linha inteira clicável. O componente cuida da a11y (`role="button"`, `tabIndex=0`, Enter/Espaço) e adiciona `cursor-pointer`.',
+          "Passe `onRowClick={(row) => ...}` para tornar a linha inteira clicável com o mouse. Para o teclado e o leitor de tela, o conteúdo da primeira célula vira um `<button>` com o mesmo nome (Tab, Enter, Espaço); a linha e as células continuam sendo linha e células da tabela.",
+      },
+    },
+  },
+}
+
+export const WithRowClickAndActions: Story = {
+  render: () => {
+    function Wrapper() {
+      const [opened, setOpened] = useState<string | null>(null)
+      const [action, setAction] = useState<string | null>(null)
+      const actionColumns: ColumnDef<Contrato>[] = [
+        ...columns.slice(0, 2),
+        {
+          id: "acoes",
+          header: "Ações",
+          cell: ({ row }) => (
+            <DropdownMenu
+              align="end"
+              trigger={
+                <IconButton
+                  icon={<MoreHorizontal />}
+                  label={`Ações de ${row.original.numero}`}
+                  size="sm"
+                  tooltip={false}
+                />
+              }
+              items={[
+                { label: "Editar", onSelect: () => setAction(`Editar ${row.original.numero}`) },
+                {
+                  label: "Arquivar",
+                  onSelect: () => setAction(`Arquivar ${row.original.numero}`),
+                },
+              ]}
+            />
+          ),
+        },
+      ]
+      return (
+        <div className="space-y-2 p-6">
+          <p className="text-muted-foreground text-xs" data-testid="row-click-state">
+            Linha aberta: <strong className="text-foreground">{opened ?? "nenhuma"}</strong>. Ação:{" "}
+            <strong className="text-foreground">{action ?? "nenhuma"}</strong>.
+          </p>
+          <DataTable
+            columns={actionColumns}
+            data={contratos.slice(0, 4)}
+            onRowClick={(row) => setOpened(row.numero)}
+          />
+        </div>
+      )
+    }
+    return <Wrapper />
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Linha clicável com um menu de ações por linha. Abrir o menu e escolher um item, com o mouse ou o teclado, não abre a linha: o clique e as teclas que começam num controle da linha são do controle.",
       },
     },
   },
@@ -825,8 +1071,7 @@ export const WithRowColoring: Story = {
         data={contratos.slice(0, 10)}
         sortableColumns={["numero", "cliente", "vencimento", "valor"]}
         rowClassName={(row) => {
-          if (row.status === "vencido") return "bg-destructive/10 hover:bg-destructive/15"
-          if (row.status === "pendente") return "bg-amber-50 hover:bg-amber-100/70"
+          if (row.status === "vencido") return "bg-muted"
           return undefined
         }}
       />
@@ -836,7 +1081,7 @@ export const WithRowColoring: Story = {
     docs: {
       description: {
         story:
-          "`rowClassName(row, index)` permite estilizar linhas individualmente. Aqui: vermelho-claro para `vencido`, âmbar para `pendente`. Retorne `undefined` para manter o estilo padrão.",
+          "`rowClassName(row, index)` permite estilizar linhas individualmente. Aqui as linhas `vencido` ganham o fundo neutro (`bg-muted`); quem diz o status é o ponto colorido da célula. A paleta não tem fundo claro de status. Retorne `undefined` para manter o estilo padrão.",
       },
     },
   },
@@ -863,8 +1108,8 @@ export const ClickableAndColored: Story = {
             sortableColumns={["numero", "cliente", "vencimento", "valor"]}
             onRowClick={(row) => setSelected(row.numero)}
             rowClassName={(row) => {
-              if (row.numero === selected) return "bg-primary/10 hover:bg-primary/15"
-              if (row.status === "vencido") return "bg-destructive/10 hover:bg-destructive/15"
+              if (row.numero === selected) return "bg-accent text-accent-foreground"
+              if (row.status === "vencido") return "bg-muted"
               return undefined
             }}
           />
@@ -877,7 +1122,7 @@ export const ClickableAndColored: Story = {
     docs: {
       description: {
         story:
-          "`onRowClick` e `rowClassName` se combinam — a linha selecionada usa `bg-primary/10`, vencidas ficam destacadas em vermelho.",
+          "`onRowClick` e `rowClassName` se combinam: a linha selecionada usa `bg-accent text-accent-foreground`, e as vencidas, o fundo neutro.",
       },
     },
   },
@@ -889,7 +1134,7 @@ export const WithDownload: Story = {
       <section className="space-y-2">
         <p className="text-muted-foreground text-xs">
           <strong className="text-foreground">Toolbar com busca + download</strong> — busca à
-          esquerda, botão `Exportar para Excel` (ghost) à direita. Clique pra abrir o popover com 3
+          esquerda, botão `Exportar para Excel` (ghost) à direita. Clique pra abrir o menu com os
           escopos.
         </p>
         <DataTable
@@ -926,12 +1171,12 @@ export const WithDownload: Story = {
         story: [
           "Passe `downloadable` para expor um botão `Exportar para Excel` (variante ghost, ícone Download) à direita do toolbar.",
           "",
-          "O click abre um Popover com 3 itens:",
+          "O click abre um menu (`DropdownMenu`) com até 3 itens:",
           "1. **Exportar dados filtrados** — todas as linhas que passam pela busca (`getFilteredRowModel`), ignorando paginação.",
           "2. **Exportar página atual** — só as linhas visíveis no momento (`getRowModel` — após filtro + paginação).",
           "3. **Exportar todos os dados** — o array `data` original, sem filtros nem paginação.",
           "",
-          '**Geração do arquivo**: usa `xlsx` (SheetJS) **lazy-loaded** via `await import("xlsx")` — o package só entra no bundle do consumer no primeiro clique de export. Default: 1 sheet ("Dados"), 1 linha por registro, 1 coluna por leaf column visível (label = `columnDef.header` quando string, senão `column.id`).',
+          '**Geração do arquivo**: usa `write-excel-file` **lazy-loaded** via `await import("write-excel-file/browser")` — o package só é baixado no primeiro clique de export. Datas saem como datas do Excel, no mesmo dia do calendário que a tabela mostra; o cabeçalho fica em negrito e congelado. Default: 1 sheet ("Dados"), 1 linha por registro e o que a tela mostra: 1 coluna por coluna com dado, na ordem, com o valor do acessor (chave aninhada e `accessorFn` inclusive) e o `header` como título (ou o id). Colunas sem dado (ações) ficam de fora; `meta.export: false` tira uma coluna e `meta.export: (row, value) => valor` troca o valor; `dateColumn` sai como data. "Exportar dados filtrados" mantém a ordenação da tela. Se a exportação falhar, `onExportError(error)` é chamado e a mensagem `labels.exportError` aparece sob a barra.',
           "",
           "**Customização (objeto)**: `downloadable={{ filename, sheetName, rowToRecord }}`.",
           '- `filename` — default `"export.xlsx"`.',
@@ -960,6 +1205,184 @@ export const WithDownload: Story = {
           "",
           "Botão fica `disabled` quando `data.length === 0`. Em `loading=true` vira skeleton.",
         ].join("\n"),
+      },
+    },
+  },
+}
+
+const groupedColumns: ColumnDef<Contrato>[] = [
+  { accessorKey: "numero", header: "Número" },
+  {
+    id: "contrato",
+    header: "Contrato",
+    columns: [
+      { accessorKey: "cliente", header: "Cliente" },
+      { accessorKey: "vencimento", header: "Vencimento" },
+    ],
+  },
+  {
+    accessorKey: "valor",
+    header: "Valor",
+    cell: ({ row }) => brl.format(row.original.valor),
+  },
+]
+
+export const GroupedHeaders: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        aria-label="Contratos"
+        columns={groupedColumns}
+        data={contratos.slice(0, 5)}
+        sortableColumns={["numero", "cliente", "valor"]}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Uma coluna com `columns` vira um cabeçalho de grupo que ocupa as suas colunas (`colSpan`, `scope="colgroup"`). Só os cabeçalhos das colunas finais ordenam.',
+      },
+    },
+  },
+}
+
+const totalColumns: ColumnDef<Contrato>[] = [
+  { accessorKey: "numero", header: "Número", footer: "Total" },
+  { accessorKey: "cliente", header: "Cliente" },
+  {
+    accessorKey: "valor",
+    header: "Valor",
+    cell: ({ row }) => brl.format(row.original.valor),
+    footer: ({ table }) =>
+      brl.format(
+        table
+          .getFilteredRowModel()
+          .rows.reduce((sum, row) => sum + (row.getValue("valor") as number), 0),
+      ),
+  },
+]
+
+export const WithTotals: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        aria-label="Contratos"
+        columns={totalColumns}
+        data={contratos.slice(0, 5)}
+        searchableColumns={["numero", "cliente"]}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "O `footer` de cada coluna aparece num `<tfoot>`: totais, médias, contagens. Ele recebe o contexto do TanStack (`table`, `column`), então pode somar as linhas filtradas.",
+      },
+    },
+  },
+}
+
+interface Assinatura {
+  numero: string
+  assinadoEm: Date
+}
+
+const assinaturas: Assinatura[] = [
+  { numero: "C-2026-001", assinadoEm: new Date(2026, 4, 19) },
+  { numero: "C-2026-002", assinadoEm: new Date(2026, 4, 20, 14, 30) },
+]
+
+const assinaturaColumns: ColumnDef<Assinatura>[] = [
+  { accessorKey: "numero", header: "Número" },
+  {
+    accessorKey: "assinadoEm",
+    header: "Assinado em",
+    cell: ({ row }) =>
+      row.original.assinadoEm.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }),
+  },
+]
+
+export const ExportDates: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        columns={assinaturaColumns}
+        data={assinaturas}
+        downloadable={{ filename: "assinaturas.xlsx" }}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Datas (`Date`) saem no `.xlsx` como datas do Excel, no mesmo dia e hora que a tabela mostra, em qualquer fuso do navegador.",
+      },
+    },
+  },
+}
+
+const csvContratos: Contrato[] = [
+  ...contratos.slice(0, 3),
+  {
+    numero: "C-2026-099",
+    cliente: "=SOMA(A1:A2)",
+    vencimento: "2026-10-01",
+    valor: 1234.56,
+    status: "pendente",
+  },
+]
+
+export const ExportCsv: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        columns={columns}
+        data={csvContratos}
+        downloadable={{ filename: "contratos.csv" }}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Com `filename` terminado em `.csv`, a própria lib escreve o arquivo para o Excel brasileiro: UTF-8 com BOM, `;` entre as células, vírgula decimal, datas em `dd/mm/aaaa` e `'` na frente de texto que começa com `=`, `+`, `-` ou `@` (o Excel o rodaria como fórmula).",
+      },
+    },
+  },
+}
+
+export const WithError: Story = {
+  render: () => {
+    function Wrapper() {
+      const [state, setState] = useState<"error" | "loading" | "ready">("error")
+      return (
+        <div className="p-6">
+          <DataTable
+            columns={columns}
+            data={state === "ready" ? contratos.slice(0, 5) : []}
+            loading={state === "loading"}
+            error={state === "error" ? "Não foi possível carregar os contratos." : undefined}
+            onRetry={() => {
+              setState("loading")
+              window.setTimeout(() => setState("ready"), 600)
+            }}
+            pagination={{ pageSize: 5 }}
+          />
+        </div>
+      )
+    }
+    return <Wrapper />
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`error` mostra a falha no corpo da tabela (como alerta), no lugar de "Nenhum resultado."; com `onRetry`, um botão "Tentar de novo" (`labels.retry`). `error={true}` usa o texto de `labels.error`.',
       },
     },
   },
@@ -1005,7 +1428,8 @@ export const Loading: Story = {
         story: [
           "Passe `loading` (boolean) para exibir um estado skeleton enquanto os dados carregam. O componente:",
           "",
-          "- Renderiza `pagination.pageSize ?? 5` linhas skeleton, cada uma com `columns.length` células (larguras variando entre 5 valores pra parecer natural).",
+          "- Renderiza tantas linhas skeleton quanto o tamanho de página atual (5 sem paginação), cada uma com `columns.length` células (larguras variando entre 5 valores pra parecer natural).",
+          '- Anuncia `labels.loading` ("Carregando dados…") pela região de status da tabela, que fica no DOM desde o início.',
           "- Se `searchableColumns` estiver definido, troca o `<Input>` de busca por um skeleton equivalente — sem perda de layout.",
           "- Footer: contagem (`showRowCount`) e indicador de página viram skeletons; botões prev/next ficam disabled.",
           "- Cabeçalho permanece — colunas são conhecidas estaticamente.",

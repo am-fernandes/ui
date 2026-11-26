@@ -1,69 +1,260 @@
-// OKLCH to WCAG contrast audit for the @amfernandesinc/ui tokens.
+// Colour audit for the @amfernandesinc/ui tokens, in both themes.
+//
+// Reads `src/styles/tokens.css` (the `:root` block is the light theme, `.dark`
+// the dark one), resolves every colour token and checks two things:
+//
+//   1. Contrast (WCAG) of the pairs the components actually draw: text on its
+//      surface (≥ 4.5:1) and non-text UI such as the focus ring, the field
+//      border and solid marks (≥ 3:1, WCAG 1.4.11).
+//   2. Colour-vision deficiency: colours that must be told apart (status fills,
+//      category dots, chart series) stay far enough from each other when
+//      protanopia and deuteranopia are simulated. See Foundations/Color Vision.
+//
+//   bun run audit:contrast
+//
+// Exits with 1 when any required check fails.
 
-type OKLCH = readonly [L: number, C: number, H: number]
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 
-function oklchToLinearRgb([L, C, H]: OKLCH): [number, number, number] {
-  const hRad = (H * Math.PI) / 180
-  const a = C * Math.cos(hRad)
-  const b = C * Math.sin(hRad)
-  const l_ = L + 0.3963377774 * a + 0.2158037573 * b
-  const m_ = L - 0.1055613458 * a - 0.0638541728 * b
-  const s_ = L - 0.0894841775 * a - 1.291485548 * b
-  const lc = l_ ** 3
-  const mc = m_ ** 3
-  const sc = s_ ** 3
-  const r = 4.0767416621 * lc - 3.3077115913 * mc + 0.2309699292 * sc
-  const g = -1.2684380046 * lc + 2.6097574011 * mc - 0.3413193965 * sc
-  const bl = -0.0041960863 * lc - 0.7034186147 * mc + 1.707614701 * sc
-  return [r, g, bl]
+import {
+  CVD_TARGET,
+  NORMAL_FLOOR,
+  type Rgb,
+  type Vision,
+  contrast,
+  distance,
+  hexToRgb,
+  oklchToRgb,
+  over,
+  rgbToHex,
+} from "./lib/color"
+
+// ---- parse the tokens -------------------------------------------------------
+
+const css = readFileSync(join(import.meta.dir, "../src/styles/tokens.css"), "utf8")
+
+function block(selector: string): string {
+  const start = css.search(new RegExp(`^${selector.replace(".", "\\.")} \\{`, "m"))
+  if (start < 0) throw new Error(`block ${selector} not found in tokens.css`)
+  return css.slice(start, css.indexOf("\n}", start))
 }
 
-function clamp01(x: number) {
-  return Math.max(0, Math.min(1, x))
+type Theme = Map<string, Rgb>
+
+function parseTheme(selector: string, base?: Theme): Theme {
+  const theme: Theme = new Map(base)
+  const body = block(selector)
+  const aliases: Array<[name: string, source: string]> = []
+  const translucent: Array<[name: string, source: string, alpha: number]> = []
+  for (const [, name, value] of body.matchAll(/--([a-z0-9-]+):\s*([^;]+);/g)) {
+    const oklch = value!.match(/^oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)$/)
+    if (oklch) {
+      theme.set(name!, oklchToRgb(Number(oklch[1]), Number(oklch[2]), Number(oklch[3])))
+      continue
+    }
+    if (/^#[0-9a-f]{6}$/i.test(value!)) {
+      theme.set(name!, hexToRgb(value!))
+      continue
+    }
+    const alias = value!.match(/^var\(--([a-z0-9-]+)\)$/)
+    if (alias) {
+      aliases.push([name!, alias[1]!])
+      continue
+    }
+    // color-mix(in oklch, var(--x) N%, transparent): x at N% opacity.
+    const mix = value!.match(
+      /^color-mix\(in oklch, var\(--([a-z0-9-]+)\) ([\d.]+)%, transparent\)$/,
+    )
+    if (mix) translucent.push([name!, mix[1]!, Number(mix[2]) / 100])
+  }
+  // Translucent tokens are measured as they land on a surface (the card).
+  for (const [name, source, alpha] of translucent) {
+    theme.set(name, over(get(theme, source), alpha, get(theme, "card")))
+  }
+  // `--a: var(--b)`. Two passes cover an alias of an alias.
+  for (let pass = 0; pass < 2; pass++) {
+    for (const [name, source] of aliases) {
+      const value = theme.get(source)
+      if (value) theme.set(name, value)
+    }
+  }
+  return theme
 }
 
-function relativeLuminance(oklch: OKLCH): number {
-  const [r, g, b] = oklchToLinearRgb(oklch).map(clamp01) as [number, number, number]
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+function get(theme: Theme, name: string): Rgb {
+  const value = theme.get(name)
+  if (!value) throw new Error(`token --${name} is missing`)
+  return value
 }
 
-function contrast(a: OKLCH, b: OKLCH): number {
-  const la = relativeLuminance(a)
-  const lb = relativeLuminance(b)
-  const [hi, lo] = la > lb ? [la, lb] : [lb, la]
-  return (hi + 0.05) / (lo + 0.05)
-}
+const light = parseTheme(":root")
+const dark = parseTheme(".dark", light)
+const themes = [
+  ["Light (:root)", light],
+  ["Dark (.dark)", dark],
+] as const
 
-function hex(oklch: OKLCH): string {
-  const [r, g, bl] = oklchToLinearRgb(oklch).map(clamp01) as [number, number, number]
-  const enc = (c: number) => (c >= 0.0031308 ? 1.055 * c ** (1 / 2.4) - 0.055 : 12.92 * c)
-  const toByte = (c: number) =>
-    Math.round(clamp01(enc(c)) * 255)
-      .toString(16)
-      .padStart(2, "0")
-  return `#${toByte(r)}${toByte(g)}${toByte(bl)}`
-}
+// ---- 1. contrast: the pairs the components draw -------------------------------
 
-const WHITE: OKLCH = [1, 0, 0]
+type Pair = [fg: string, bg: string, need: number | null, note?: string]
 
-const proposed: Array<[label: string, oklch: OKLCH, need: number]> = [
-  ["destructive — current      oklch(.628 .258 29.2)", [0.628, 0.258, 29.2], 4.5],
-  ["destructive — proposed     oklch(.50 .21 29.2)", [0.5, 0.21, 29.2], 4.5],
-  ["destructive — alt          oklch(.55 .19 29.2)", [0.55, 0.19, 29.2], 4.5],
-  ["info — current             oklch(.668 .151 236.3)", [0.668, 0.151, 236.3], 4.5],
-  ["info — proposed            oklch(.50 .15 236.3)", [0.5, 0.15, 236.3], 4.5],
-  ["border — current           oklch(.875 .01 252)", [0.875, 0.01, 252], 3.0],
-  ["border — proposed          oklch(.80 .01 252)", [0.8, 0.01, 252], 3.0],
-  ["placeholder — current      oklch(.875 .01 252)", [0.875, 0.01, 252], 4.5],
-  ["placeholder — proposed     oklch(.55 .005 252)", [0.55, 0.005, 252], 4.5],
+const STATUS = ["destructive", "warning", "success", "info"]
+const CATEGORIES = ["gray", "red", "orange", "yellow", "green", "teal", "blue", "purple", "pink"]
+const CHARTS = ["chart-1", "chart-2", "chart-3", "chart-4", "chart-5", "chart-6"]
+const SURFACES = ["background", "card", "popover"]
+
+const pairs: Pair[] = [
+  ["foreground", "background", 4.5],
+  ["card-foreground", "card", 4.5],
+  ["popover-foreground", "popover", 4.5],
+  ["primary-foreground", "primary", 4.5],
+  ["primary-foreground", "primary-hover", 4.5],
+  ["primary-foreground", "primary-pressed", 4.5],
+  ["secondary-foreground", "secondary", 4.5],
+  ["muted-foreground", "muted", 4.5],
+  ...SURFACES.map((s): Pair => ["muted-foreground", s, 4.5]),
+  ...SURFACES.map((s): Pair => ["subtle-foreground", s, 4.5, "third text level"]),
+  ["placeholder", "card", 4.5, "fields paint the card"],
+  // Reported only: a read-only field paints --muted and shows no placeholder
+  // (src/contracts/read-only-placeholder.test.tsx), because this pair misses
+  // 4.5:1 in both themes.
+  ["placeholder", "muted", null, "not drawn: read-only fields hide the placeholder"],
+  ["accent-foreground", "accent", 4.5],
+  ["muted-foreground", "accent", 4.5, "secondary text in a selected row"],
+  ...SURFACES.map((s): Pair => ["link", s, 4.5]),
+  ["link", "muted", 4.5],
+  ["link", "accent", 4.5, "marker and links in a selected row"],
+  ...STATUS.map((s): Pair => [`${s}-foreground`, s, 4.5]),
+  ...SURFACES.map((s): Pair => ["destructive-text", s, 4.5, "error message"]),
+  ["selection-foreground", "selection", 4.5],
+  ["sidebar-foreground", "sidebar", 4.5],
+  ["sidebar-accent-foreground", "sidebar-accent", 4.5],
+  ["sidebar-primary-foreground", "sidebar-primary", 4.5],
+  ...CATEGORIES.map((c): Pair => [`category-${c}-text`, `category-${c}-bg`, 4.5]),
+  ...SURFACES.map((s): Pair => ["ring", s, 3, "focus ring"]),
+  ["primary", "card", 3, "checked controls, solid buttons"],
+  ...SURFACES.map((s): Pair => ["input", s, 3, "field border, unchecked controls"]),
+  ...["card", "popover"].flatMap((bg) =>
+    STATUS.map((s): Pair => [s, bg, 3, "status fill and dot"]),
+  ),
+  ...CATEGORIES.map((c): Pair => [`category-${c}-solid`, "card", 3, "bars, dots"]),
+  ...["card", "popover"].flatMap((bg) => CHARTS.map((c): Pair => [c, bg, 3, "chart mark"])),
+  ["card", "background", null, "the two backgrounds (reported only)"],
+  ["popover", "card", null, "floating layer over a surface (reported only)"],
+  ["border", "card", null, "divider (reported only)"],
+  ["border-strong", "card", null, "frame (reported only)"],
 ]
 
-console.log("Contrast against white (#ffffff):")
-console.log("=".repeat(85))
-for (const [label, c, needed] of proposed) {
-  const r = contrast(WHITE, c)
-  const pass = r >= needed ? "PASS" : "FAIL"
-  console.log(
-    `${label.padEnd(54)} ratio=${r.toFixed(2).padStart(5)}  need≥${needed.toFixed(1)}  ${pass}  ${hex(c)}`,
-  )
+let failures = 0
+for (const [label, theme] of themes) {
+  console.log(`\n${label} · contrast`)
+  console.log("=".repeat(100))
+  for (const [fg, bg, need, note] of pairs) {
+    const ratio = contrast(get(theme, fg), get(theme, bg))
+    const status = need === null ? "info" : ratio >= need ? "PASS" : "FAIL"
+    if (status === "FAIL") failures++
+    const target = need === null ? "      " : `≥${need.toFixed(1)}`
+    console.log(
+      `${`${fg} / ${bg}`.padEnd(48)} ${ratio.toFixed(2).padStart(6)}  ${target}  ${status.padEnd(4)}  ${rgbToHex(get(theme, fg))} on ${rgbToHex(get(theme, bg))}${note ? `  ${note}` : ""}`,
+    )
+  }
 }
+
+// ---- 2. colour-vision deficiency ----------------------------------------------
+
+const SIMULATED: Vision[] = ["protan", "deutan"]
+
+interface Closest {
+  value: number
+  a: string
+  b: string
+  vision: Vision
+}
+
+/** The closest pair among `pairsOf(names)`, for each vision in `visions`. */
+function closest(theme: Theme, pairList: Array<[string, string]>, visions: Vision[]): Closest {
+  let worst: Closest = { value: Number.POSITIVE_INFINITY, a: "", b: "", vision: "normal" }
+  for (const vision of visions) {
+    for (const [a, b] of pairList) {
+      const value = distance(get(theme, a), get(theme, b), vision)
+      if (value < worst.value) worst = { value, a, b, vision }
+    }
+  }
+  return worst
+}
+
+const allPairs = (names: string[]): Array<[string, string]> =>
+  names.flatMap((a, i) => names.slice(i + 1).map((b): [string, string] => [a, b]))
+const neighbours = (names: string[]): Array<[string, string]> =>
+  names.slice(1).map((b, i): [string, string] => [names[i]!, b])
+
+interface Check {
+  label: string
+  pairs: Array<[string, string]>
+  visions: Vision[]
+  need: number | null
+}
+
+const solids = CATEGORIES.map((c) => `category-${c}-solid`)
+const checks: Check[] = [
+  {
+    label: "status fills, any pair",
+    pairs: allPairs(STATUS),
+    visions: ["normal", ...SIMULATED],
+    need: CVD_TARGET,
+  },
+  {
+    label: "status fills, tritanopia (reported only)",
+    pairs: allPairs(STATUS),
+    visions: ["tritan"],
+    need: null,
+  },
+  {
+    label: "category dots, any pair",
+    pairs: allPairs(solids),
+    visions: ["normal", ...SIMULATED],
+    need: CVD_TARGET,
+  },
+  {
+    label: "chart series, neighbours",
+    pairs: neighbours(CHARTS),
+    visions: SIMULATED,
+    need: CVD_TARGET,
+  },
+  {
+    label: "chart series, neighbours (typical vision)",
+    pairs: neighbours(CHARTS),
+    visions: ["normal"],
+    need: NORMAL_FLOOR,
+  },
+  {
+    label: "chart series 1-3, any pair",
+    pairs: allPairs(CHARTS.slice(0, 3)),
+    visions: SIMULATED,
+    need: CVD_TARGET,
+  },
+  {
+    label: "chart series 1-3, any pair (typical vision)",
+    pairs: allPairs(CHARTS.slice(0, 3)),
+    visions: ["normal"],
+    need: NORMAL_FLOOR,
+  },
+]
+
+for (const [label, theme] of themes) {
+  console.log(`\n${label} · colour-vision deficiency (closest pair, OKLab distance)`)
+  console.log("=".repeat(100))
+  for (const check of checks) {
+    const worst = closest(theme, check.pairs, check.visions)
+    const status = check.need === null ? "info" : worst.value >= check.need ? "PASS" : "FAIL"
+    if (status === "FAIL") failures++
+    const target = check.need === null ? "      " : `≥${check.need.toFixed(2)}`
+    console.log(
+      `${check.label.padEnd(48)} ${worst.value.toFixed(3).padStart(6)}  ${target}  ${status.padEnd(4)}  ${worst.a} × ${worst.b} (${worst.vision})`,
+    )
+  }
+}
+
+console.log(failures === 0 ? "\nAll required checks pass." : `\n${failures} check(s) fail.`)
+process.exit(failures === 0 ? 0 : 1)
