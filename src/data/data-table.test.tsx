@@ -2232,3 +2232,62 @@ describe("DataTable: one export at a time", () => {
     expect(screen.getByRole("menu")).toBeInTheDocument()
   })
 })
+
+describe("DataTable: empty cells in the default order", () => {
+  type Item = { id: string; valor?: string | null }
+  const items: Item[] = [
+    { id: "A", valor: "banana" },
+    { id: "B", valor: null },
+    { id: "C" },
+    { id: "D", valor: "abacate" },
+    { id: "E", valor: "" },
+  ]
+  const order = () =>
+    screen
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => within(row).getAllByRole("cell")[0]?.textContent)
+      .join("")
+  const columns: ColumnDef<Item>[] = [
+    { accessorKey: "id", header: "Linha" },
+    { accessorKey: "valor", header: "Valor" },
+  ]
+
+  it("keeps null, undefined and empty text together, first ascending and last descending", async () => {
+    render(<DataTable columns={columns} data={items} sortableColumns={["valor"]} />)
+    const header = screen.getByRole("button", { name: /Valor/ })
+    await userEvent.click(header)
+    expect(order()).toBe("BCEDA")
+    await userEvent.click(header)
+    expect(order()).toBe("ADBCE")
+  })
+
+  it("still keeps undefined away from a column's own sortingFn", async () => {
+    const seen: unknown[] = []
+    render(
+      <DataTable
+        data={items}
+        sortableColumns={["valor"]}
+        columns={[
+          columns[0] as ColumnDef<Item>,
+          {
+            header: "Grupo",
+            columns: [
+              {
+                accessorKey: "valor",
+                header: "Valor",
+                sortingFn: (a, b) => {
+                  seen.push(a.original.valor, b.original.valor)
+                  return 0
+                },
+              },
+            ],
+          },
+        ]}
+      />,
+    )
+    await userEvent.click(screen.getByRole("button", { name: /Valor/ }))
+    expect(seen.length).toBeGreaterThan(0)
+    expect(seen).not.toContain(undefined)
+  })
+})

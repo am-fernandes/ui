@@ -598,6 +598,15 @@ function defaultSortingFn<TData>(rowA: Row<TData>, rowB: Row<TData>, columnId: s
   return compareCellValues(rowA.getValue(columnId), rowB.getValue(columnId))
 }
 
+function sortEmptyCells<TData>(columns: ColumnDef<TData>[]): ColumnDef<TData>[] {
+  return columns.map((column) => {
+    if ("columns" in column && column.columns) {
+      return { ...column, columns: sortEmptyCells(column.columns) }
+    }
+    return column.sortingFn === undefined ? { sortUndefined: false, ...column } : column
+  })
+}
+
 /** Width classes used to vary skeleton cell widths so rows don't look uniform. */
 const SKELETON_CELL_WIDTHS = ["w-3/4", "w-1/2", "w-2/3", "w-5/6", "w-3/5"] as const
 
@@ -794,10 +803,10 @@ function DataTable<TData>({
     [isSelectionControlled, onSelectionChange],
   )
   const selectedSet = React.useMemo(() => new Set(selection), [selection])
-  const tableColumns = React.useMemo(
-    () => (selectable ? [selectionColumn<TData>(), ...columns] : columns),
-    [selectable, columns],
-  )
+  const tableColumns = React.useMemo(() => {
+    const sorted = sortEmptyCells(columns)
+    return selectable ? [selectionColumn<TData>(), ...sorted] : sorted
+  }, [selectable, columns])
 
   const pinnedLeftKey = pinnedColumns?.left?.join("\u0000") ?? ""
   // The checkbox column, when there is one, is pinned in front of the others.

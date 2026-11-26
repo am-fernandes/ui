@@ -146,6 +146,7 @@ export function dateColumn<TData>(opts: DateColumnOptions<TData>): ColumnDef<TDa
       if (text === null) return emptyText
       return className ? <span className={className}>{text}</span> : text
     },
+    sortUndefined: false,
     sortingFn: (rowA, rowB, columnId) => {
       const a = instantMs(toDateInput(rowA.getValue(columnId)), timeZone)
       const b = instantMs(toDateInput(rowB.getValue(columnId)), timeZone)
