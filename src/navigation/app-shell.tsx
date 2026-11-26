@@ -326,7 +326,7 @@ function AppShell({
           }}
           className={cn(
             "sr-only",
-            "focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[var(--z-toast)] focus:rounded-element",
+            "focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-(--z-toast) focus:rounded-element",
             "focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground",
             "focus:focus-outline",
           )}
@@ -467,7 +467,7 @@ function AppShell({
                   data-slot="app-shell-menu"
                   aria-describedby={undefined}
                   className={cn(
-                    "fixed inset-y-0 left-0 z-[var(--z-modal)] flex w-72 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground",
+                    "fixed inset-y-0 left-0 z-(--z-modal) flex w-72 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground",
                     motionSheet,
                     "data-[state=open]:animate-in data-[state=closed]:animate-out",
                     "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
