@@ -16,6 +16,7 @@ import {
   strokeClass,
   useChartCursor,
   useChartWidth,
+  useHiddenSeries,
   useWebFontsLoaded,
 } from "./_internal/chart-frame"
 import {
@@ -101,7 +102,7 @@ function LineChart<T extends Record<string, unknown>>({
 
   const [containerRef, width] = useChartWidth()
   useWebFontsLoaded()
-  const [hidden, setHidden] = React.useState<Set<string>>(new Set())
+  const [hidden, toggle] = useHiddenSeries(series)
   const slots = seriesSlots(series)
   const visible = series.slice(0, 6).filter((s) => !hidden.has(s.key))
   const xs = data.map((record) => record[x])
@@ -160,14 +161,6 @@ function LineChart<T extends Record<string, unknown>>({
     plotWidth,
     Math.max(...xText.map((t) => measureText(t)), 0) + 12,
   )
-
-  const toggle = (key: string) =>
-    setHidden((current) => {
-      const next = new Set(current)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
 
   const describe = (index: number) => {
     const parts = visible.map((s, j) => {

@@ -187,6 +187,20 @@ export interface LegendEntry {
   hidden: boolean
 }
 
+export function useHiddenSeries(series: { key: string }[]) {
+  const [chosen, setChosen] = React.useState<Set<string>>(new Set())
+  const applied = (keys: Set<string>) =>
+    series.slice(0, 6).every((s) => keys.has(s.key)) ? new Set<string>() : keys
+  const toggle = (key: string) =>
+    setChosen((current) => {
+      const next = new Set(applied(current))
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  return [applied(chosen), toggle] as const
+}
+
 /**
  * Two or more series: the legend, whose entries show and hide their series
  * (the colours stay with the series). One series: no legend, the title names it.

@@ -218,3 +218,21 @@ describe("BarChart", () => {
     )
   })
 })
+
+describe("BarChart: a hidden series left alone", () => {
+  it("comes back instead of leaving an empty chart, and can be hidden again", async () => {
+    const chart = (shown: typeof series) => (
+      <BarChart title="Vendas" data={data} category="trimestre" series={shown} />
+    )
+    const two = series.slice(0, 2)
+    const { container, rerender } = render(chart(two))
+    await userEvent.click(screen.getByRole("button", { name: "Torre Norte" }))
+    rerender(chart(two.slice(1)))
+    expect(container.querySelector('[data-series="torre"]')).not.toBeNull()
+    rerender(chart(two))
+    expect(screen.getByRole("button", { name: "Torre Norte" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    )
+  })
+})

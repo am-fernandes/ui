@@ -15,6 +15,7 @@ import {
   measureText,
   useChartCursor,
   useChartWidth,
+  useHiddenSeries,
   useWebFontsLoaded,
 } from "./_internal/chart-frame"
 import {
@@ -102,7 +103,7 @@ function BarChart<T extends Record<string, unknown>>({
 
   const [containerRef, width] = useChartWidth()
   useWebFontsLoaded()
-  const [hidden, setHidden] = React.useState<Set<string>>(new Set())
+  const [hidden, toggle] = useHiddenSeries(series)
   const slots = seriesSlots(series)
   const visible = series.slice(0, 6).filter((s) => !hidden.has(s.key))
   const categories = data.map((record) => String(record[category] ?? ""))
@@ -165,14 +166,6 @@ function BarChart<T extends Record<string, unknown>>({
     ? labelStride(data.length, plotHeight, 16)
     : labelStride(data.length, plotWidth, shortest)
   const labelRoom = horizontal ? left - MARGIN.gapToLabels : bands.step * stride - 6
-
-  const toggle = (key: string) =>
-    setHidden((current) => {
-      const next = new Set(current)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
 
   const describe = (index: number) => {
     const name = categories[index] ?? ""
