@@ -147,6 +147,11 @@ describe("Schedule", () => {
       expect(screen.queryByRole("radiogroup")).not.toBeInTheDocument()
     })
 
+    it.each([["date"], ["defaultDate"]])("shows today's period when %s is invalid", (prop) => {
+      renderSchedule({ [prop]: new Date("abc") })
+      expect(screen.getByRole("heading", { name: /novembro de 2026/i })).toBeInTheDocument()
+    })
+
     it("shows the loading state", () => {
       const { container } = renderSchedule({ loading: true })
       expect(screen.getByText("Carregando…").closest("output")).toBeInTheDocument()

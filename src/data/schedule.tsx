@@ -1,6 +1,7 @@
 "use client"
 
 import { TZDate } from "@date-fns/tz"
+import { isValid } from "date-fns"
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import * as React from "react"
 
@@ -272,7 +273,7 @@ function Schedule({
   // appeared in the browser, and stays: the clock moves "today", not the
   // period the user is looking at.
   const [mountedAt] = React.useState(() => new Date())
-  const focused = dateProp ?? innerDate ?? (hydrated ? mountedAt : null)
+  const focused = [dateProp, innerDate, today, hydrated ? mountedAt : null].find(isValid) ?? null
   const setDate = (next: Date) => {
     if (dateProp === undefined) setInnerDate(plain(next))
     onDateChange?.(plain(next))
