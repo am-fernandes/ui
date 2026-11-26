@@ -14,8 +14,9 @@
  * Padrões demonstrados:
  *   - FieldShell + useFieldIds (ARIA wiring de label/description/error)
  *   - aria-invalid / aria-describedby / aria-required
- *   - className canônico de input (border-input, py-3, focus-visible tier 1)
- *   - Estado de erro substituindo o ring por destructive
+ *   - visual de campo (`field-states`, `rounded-element`, altura por `controlHeight`)
+ *   - estados de erro (`field-error`) e somente leitura (`fieldReadOnlyClass`)
+ *   - textos trocáveis por `labels`, com padrão pt-BR
  *   - ref encaminhado para o <input>
  *   - displayName setado
  *
@@ -26,8 +27,21 @@
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { FieldShell, type LabelPosition } from "../primitives/_internal/field-shell"
+import { controlHeight, controlPaddingX } from "../primitives/_internal/control-size"
+import {
+  FieldShell,
+  type LabelPosition,
+  fieldReadOnlyClass,
+} from "../primitives/_internal/field-shell"
 import { useFieldIds } from "../primitives/_internal/use-field-ids"
+
+export interface ComponentLabels {
+  placeholder: string
+}
+
+export const defaultComponentLabels: ComponentLabels = {
+  placeholder: "Digite aqui",
+}
 
 export interface ComponentProps extends React.InputHTMLAttributes<HTMLInputElement> {
   /** Texto da label. Quando omitido, o `FieldShell` não renderiza nada. */
@@ -40,6 +54,7 @@ export interface ComponentProps extends React.InputHTMLAttributes<HTMLInputEleme
   error?: string
   /** Marca o campo como obrigatório (renderiza asterisco + `aria-required`). */
   required?: boolean
+  labels?: Partial<ComponentLabels>
   /** Forwarded para o `<input>` real. */
   ref?: React.Ref<HTMLInputElement>
 }
@@ -52,11 +67,16 @@ function Component({
   error,
   required,
   disabled,
+  readOnly,
   className,
+  labels,
+  placeholder,
   ref,
   ...props
 }: ComponentProps) {
   const ids = useFieldIds(id)
+  const texts = { ...defaultComponentLabels, ...labels }
+  const isReadOnly = Boolean(readOnly) && !disabled
   const hasError = error != null && error !== ""
   const hasDescription = description != null && description !== ""
 
@@ -71,6 +91,7 @@ function Component({
       error={error}
       labelPosition={labelPosition}
       required={required}
+      nativeRequired
       disabled={disabled}
     >
       <input
@@ -82,14 +103,19 @@ function Component({
         aria-required={required ? true : undefined}
         required={required}
         disabled={disabled}
+        readOnly={readOnly}
+        data-readonly={isReadOnly ? "" : undefined}
         className={cn(
-          "flex w-full rounded-md border border-input bg-transparent px-3 py-3 text-sm transition-colors",
-          "focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-ring",
-          "disabled:cursor-not-allowed",
-          hasError && "border-destructive focus-visible:ring-1 focus-visible:ring-destructive",
+          "w-full min-w-0 rounded-element border border-input bg-card text-sm outline-none field-states",
+          "placeholder:text-placeholder disabled:cursor-default",
+          fieldReadOnlyClass,
+          controlHeight.md,
+          controlPaddingX.md,
+          hasError && "border-destructive-text field-error",
           className,
         )}
         {...props}
+        placeholder={isReadOnly ? undefined : (placeholder ?? texts.placeholder)}
       />
     </FieldShell>
   )
