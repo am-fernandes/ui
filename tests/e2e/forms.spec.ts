@@ -83,8 +83,9 @@ test.describe("Calendar", () => {
     expect((await outline("2025-06-25")).style).toBe("none")
 
     await gotoStory(page, "forms-calendar--quick-nav-year-month")
-    const today = new Date()
-    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+    const iso = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(
+      new Date(),
+    )
     await page.getByRole("button", { name: "Ir para o próximo mês" }).waitFor()
     // Walk to the current month, where "today" is.
     for (
