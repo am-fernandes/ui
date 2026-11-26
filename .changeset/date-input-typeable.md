@@ -1,7 +1,0 @@
----
-"@amfernandesinc/ui": minor
----
-
-**`DateInput` é digitável.** O campo era um botão: só dava para escolher a data no calendário, e uma data de nascimento pedia gatilho, legenda, ano, mês e dia. Agora é um campo de texto com máscara `dd/mm/aaaa` (as barras entram sozinhas, o cursor fica onde estava ao editar no meio, colar `15/03/1990` ou `1990-03-15` preenche) e um botão "Abrir calendário" no fim. O valor continua a string ISO `yyyy-MM-dd` e é sempre a data da tela: uma data inteira e válida reporta o ISO; enquanto o texto está incompleto, não existe (`31/02/2026`) ou cai fora de `min`/`max`, o campo reporta `""` e o texto fica para ser corrigido (como o `<input type="date">` nativo). Ao sair do campo nesse estado, ele mostra "Data inválida" (texto em `labels.invalidDate`, a menos que você passe `error`). Num formulário nativo, um texto que não é data deixa o campo inválido para o navegador, com a mesma mensagem: Enter, que envia sem tirar o foco, para no campo em vez de enviar a data anterior. O calendário abre com o foco no dia escolhido, e Enter nele mantém a data em vez de apagá-la. O nome acessível vem do `label` e o leitor de tela lê o valor do campo.
-
-**Migração.** `ref` agora aponta para o `<input>` de texto, não para o botão: troque `useRef<HTMLButtonElement>` por `useRef<HTMLInputElement>`. Testes que procuravam o campo como `getByRole("button", { name: "Data…" })` passam a usar `getByRole("textbox", { name: "Data…" })`; o botão do calendário se chama "Abrir calendário" (`labels.openCalendar`).
