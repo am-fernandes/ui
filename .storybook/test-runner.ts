@@ -49,7 +49,7 @@ const config: TestRunnerConfig = {
       },
     }
 
-    await checkA11y(page, "#storybook-root", axeOptions)
+    await checkA11y(page, "body", axeOptions)
 
     // Same story in the dark theme: the tokens flip under `.dark`, so every
     // text/background pair is measured again.
@@ -63,7 +63,7 @@ const config: TestRunnerConfig = {
       document.documentElement.classList.add("dark")
     })
     try {
-      await checkA11y(page, "#storybook-root", axeOptions)
+      await checkA11y(page, "body", axeOptions)
     } finally {
       await page.evaluate(() => {
         document.documentElement.classList.remove("dark")
