@@ -3,6 +3,7 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useHydrated } from "../../primitives/_internal/use-hydrated"
 import { Skeleton } from "../../primitives/skeleton"
 import { tableStyles } from "../table-styles"
 
@@ -119,8 +120,14 @@ export function useWebFontsLoaded() {
 }
 
 let measureContext: CanvasRenderingContext2D | null | undefined
+const estimateText = (text: string, _weight?: number) => text.length * 6.6
+
+export function useTextMeasure() {
+  return useHydrated() ? measureText : estimateText
+}
+
 /** Width in px of `text` at 12px in the page's font; an estimate where there is no canvas. */
-export function measureText(text: string, weight = 400): number {
+function measureText(text: string, weight = 400): number {
   if (measureContext === undefined) {
     measureContext = null
     const isBrowser =
@@ -129,7 +136,7 @@ export function measureText(text: string, weight = 400): number {
       !navigator.userAgent.includes("jsdom")
     if (isBrowser) measureContext = document.createElement("canvas").getContext("2d")
   }
-  if (!measureContext) return text.length * 6.6
+  if (!measureContext) return estimateText(text)
   const family = getComputedStyle(document.body).fontFamily || "sans-serif"
   measureContext.font = `${weight} 12px ${family}`
   return measureContext.measureText(text).width

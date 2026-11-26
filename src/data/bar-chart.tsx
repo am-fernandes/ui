@@ -12,10 +12,10 @@ import {
   ChartTooltip,
   defaultChartLabels,
   fillClass,
-  measureText,
   useChartCursor,
   useChartWidth,
   useHiddenSeries,
+  useTextMeasure,
   useWebFontsLoaded,
 } from "./_internal/chart-frame"
 import {
@@ -103,6 +103,7 @@ function BarChart<T extends Record<string, unknown>>({
 
   const [containerRef, width] = useChartWidth()
   useWebFontsLoaded()
+  const measureText = useTextMeasure()
   const [hidden, toggle] = useHiddenSeries(series)
   const slots = seriesSlots(series)
   const visible = series.slice(0, 6).filter((s) => !hidden.has(s.key))
