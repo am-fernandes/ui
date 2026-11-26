@@ -565,14 +565,24 @@ describe("Combobox: não controlado e formulário nativo", () => {
     expect(new FormData(form).get("status")).toBe("b")
   })
 
-  it("name, multiple: the values go comma-joined", () => {
+  it("name, multiple: one entry per value, so a comma inside a value survives", () => {
     const { container } = render(
       <form>
-        <Combobox multiple name="areas" options={options} value={["a", "c"]} />
+        <Combobox multiple name="areas" options={options} value={["Rua A, 123", "c"]} />
       </form>,
     )
     const form = container.querySelector("form") as HTMLFormElement
-    expect(new FormData(form).get("areas")).toBe("a,c")
+    expect(new FormData(form).getAll("areas")).toEqual(["Rua A, 123", "c"])
+  })
+
+  it("name, multiple with nothing chosen: nothing is submitted", () => {
+    const { container } = render(
+      <form>
+        <Combobox multiple name="areas" options={options} value={[]} />
+      </form>,
+    )
+    const form = container.querySelector("form") as HTMLFormElement
+    expect(new FormData(form).has("areas")).toBe(false)
   })
 
   it("name, disabled: nothing is submitted", () => {

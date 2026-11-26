@@ -426,7 +426,7 @@ export const UncontrolledInForm: Story = {
         onSubmit={(event) => {
           event.preventDefault()
           const data = new FormData(event.currentTarget)
-          setSent(`status=${data.get("status")}; areas=${data.get("areas")}`)
+          setSent(`status=${data.get("status")}; areas=${data.getAll("areas").join(" | ")}`)
         }}
       >
         <Combobox name="status" options={plainOptions} label="Status" defaultValue="pendente" />

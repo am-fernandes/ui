@@ -29,7 +29,7 @@ A lib é uma biblioteca de UI, não um framework de formulário: não há `<Form
 | `PercentageInput` | `number` (`12.5` = 12,5 %) (ou `null` com `emptyValue="null"`) | `0` (ou `null`) | `onValueChange(p)` | número com ponto |
 | `CPFInput`, `CNPJInput`, `CEPInput`, `PhoneInput` | `string` só dígitos (CNPJ alfanumérico: dígitos e maiúsculas) | `""` / `null` | `onValueChange(digitos)` | os dígitos, sem máscara |
 | `Select` | `string` | `""` | `onValueChange(v)` | o valor; nada escolhido não envia nada |
-| `Combobox` | `string` (ou `string[]` com `multiple`) | `""` / `[]` | `onValueChange(v)` | o valor (vários: separados por vírgula) |
+| `Combobox` | `string` (ou `string[]` com `multiple`) | `""` / `[]` | `onValueChange(v)` | o valor (vários: uma entrada por valor, via `getAll`) |
 | `RadioGroup`, `SegmentedControl` | `string` | `""` | `onValueChange(v)` | o valor |
 | `Checkbox` | `boolean \| "indeterminate"` | `false` | `onCheckedChange(c)` | `"on"` quando marcado |
 | `Switch` | `boolean` | `false` | `onCheckedChange(c)` | `"on"` quando ligado |

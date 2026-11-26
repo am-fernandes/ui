@@ -130,8 +130,8 @@ interface ComboboxBaseProps {
   maxVisibleOptions?: number
   /**
    * Name of the field in a native form. The form receives the raw value
-   * (the option's `value`; in multiple mode, the values joined by commas),
-   * carried by a hidden input.
+   * (the option's `value`), carried by a hidden input. In multiple mode there
+   * is one entry per value: read them with `FormData.getAll`.
    */
   name?: string
   /**
@@ -666,9 +666,11 @@ export function Combobox(props: ComboboxProps) {
           </Popover>
           {clearButton}
         </div>
-        {name != null && name !== "" ? (
-          <input type="hidden" name={name} value={chosen.join(",")} disabled={disabled} />
-        ) : null}
+        {name != null && name !== ""
+          ? (props.multiple ? chosen : [chosen[0] ?? ""]).map((entry) => (
+              <input key={entry} type="hidden" name={name} value={entry} disabled={disabled} />
+            ))
+          : null}
       </div>
     </FieldShell>
   )
