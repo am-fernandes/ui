@@ -473,14 +473,12 @@ function FileUpload({
           seen.add(key)
           return true
         })
-        next = fresh.length === 0 ? files : [...files, ...fresh]
-        // The items already take part of the room.
-        const room = maxFiles == null ? next.length : Math.max(0, maxFiles - items.length)
-        if (next.length > room) {
-          const overflow = next.slice(room)
-          for (const file of overflow) rejections.push({ file, reason: "max-files" })
-          next = next.slice(0, room)
-        }
+        // The items and the files already chosen take part of the room.
+        const room =
+          maxFiles == null ? fresh.length : Math.max(0, maxFiles - items.length - files.length)
+        for (const file of fresh.slice(room)) rejections.push({ file, reason: "max-files" })
+        const added = fresh.slice(0, room)
+        next = added.length === 0 ? files : [...files, ...added]
       } else {
         next = accepted.length > 0 ? [accepted[0] as File] : files
         if (accepted.length > 1) {

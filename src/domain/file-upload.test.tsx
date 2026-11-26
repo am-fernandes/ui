@@ -1359,6 +1359,28 @@ describe("FileUpload", () => {
       expect(onReject).toHaveBeenCalledWith([{ file: b, reason: "max-files" }])
     })
 
+    it("acima de maxFiles, recusa só o novo e mantém os já escolhidos", () => {
+      const onValueChange = vi.fn()
+      const onReject = vi.fn()
+      const a = makeFile("a.txt")
+      const b = makeFile("b.txt")
+      render(
+        <FileUpload
+          multiple
+          maxFiles={2}
+          items={[saved]}
+          value={[a, b]}
+          onValueChange={onValueChange}
+          onReject={onReject}
+        />,
+      )
+      const input = document.querySelector("input[type=file]") as HTMLInputElement
+      const c = makeFile("c.txt", "text/plain", 20)
+      fireEvent.change(input, { target: { files: [c] } })
+      expect(onReject).toHaveBeenCalledWith([{ file: c, reason: "max-files" }])
+      expect(onValueChange).not.toHaveBeenCalled()
+    })
+
     it("preview='none' esconde também os anexos existentes", () => {
       render(<FileUpload preview="none" items={[saved]} />)
       expect(screen.queryByText("contrato.pdf")).not.toBeInTheDocument()
