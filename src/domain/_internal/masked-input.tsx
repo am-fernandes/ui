@@ -101,7 +101,8 @@ export function applyEdit(
 
   const normalized = normalize(spec, significant)
   const typed = inputType === "insertText" || inputType === "insertCompositionText"
-  if (typed && normalized.value.length > spec.maxLength) {
+  const pastedOverTail = inputType === "insertFromPaste" && spec.filter(edited.slice(caret)) !== ""
+  if ((typed || pastedOverTail) && normalized.value.length > spec.maxLength) {
     return { raw: previous, caret: caretBefore }
   }
   // A typed key can also cost a character that was already there, when the

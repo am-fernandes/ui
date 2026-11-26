@@ -174,6 +174,11 @@ describe("applyPaste", () => {
     expect(applyPaste(spec, "", "a 12-34-56", 0, 0)).toEqual({ raw: "1234", caret: 5 })
   })
 
+  it("recusa a colagem que empurraria para fora o que já estava no campo", () => {
+    expect(applyPaste(spec, "1234", "9", 1, 1)).toEqual({ raw: "1234", caret: 1 })
+    expect(applyPaste(spec, "123", "99", 1, 1)).toEqual({ raw: "123", caret: 1 })
+  })
+
   it("texto sem caractere significativo não muda nada", () => {
     expect(applyPaste(withExtract, "1234", "abc", 2, 2)).toEqual({ raw: "1234", caret: 2 })
   })
