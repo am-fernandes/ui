@@ -178,11 +178,11 @@ export const defaultFileUploadLabels: ResolvedFileUploadLabels = {
 }
 
 export interface FileUploadProps {
-  /** MIME pattern(s) accepted by the picker. Examples: `"image/*"`, `["image/png", "application/pdf"]`. Same syntax as native `<input accept>`. */
+  /** MIME pattern(s) accepted by the picker. Examples: `"image/*"`, `["image/png", "application/pdf"]`. Same syntax as native `<input accept>`. Checked only in the browser, against the type it infers from the file name: validate the file again on the server. */
   accept?: string | string[]
   /** Allow selecting more than one file. Default `false`. */
   multiple?: boolean
-  /** Maximum bytes per file. Files larger than this are rejected. Compose with the `kb()` / `mb()` / `gb()` helpers from `@amfernandesinc/ui`. */
+  /** Maximum bytes per file. Files larger than this are rejected. Compose with the `kb()` / `mb()` / `gb()` helpers from `@amfernandesinc/ui`. Checked only in the browser: enforce the limit on the server too. */
   maxSize?: number
   /** Maximum number of files when `multiple`. Extra files are rejected. */
   maxFiles?: number

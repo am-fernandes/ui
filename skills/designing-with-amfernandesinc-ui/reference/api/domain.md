@@ -235,9 +235,9 @@ type CurrencyInputProps = CurrencyInputZeroProps | CurrencyInputNullProps
 
 | Prop | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `accept` | `string \| string[]` | — | MIME pattern(s) accepted by the picker. Examples: `"image/*"`, `["image/png", "application/pdf"]`. Same syntax as native `<input accept>`. |
+| `accept` | `string \| string[]` | — | MIME pattern(s) accepted by the picker. Examples: `"image/*"`, `["image/png", "application/pdf"]`. Same syntax as native `<input accept>`. Checked only in the browser, against the type it infers from the file name: validate the file again on the server. |
 | `multiple` | `boolean` | `false` | Allow selecting more than one file. Default `false`. |
-| `maxSize` | `number` | — | Maximum bytes per file. Files larger than this are rejected. Compose with the `kb()` / `mb()` / `gb()` helpers from `@amfernandesinc/ui`. |
+| `maxSize` | `number` | — | Maximum bytes per file. Files larger than this are rejected. Compose with the `kb()` / `mb()` / `gb()` helpers from `@amfernandesinc/ui`. Checked only in the browser: enforce the limit on the server too. |
 | `maxFiles` | `number` | — | Maximum number of files when `multiple`. Extra files are rejected. |
 | `preview` | `"thumbnail" \| "none"` | `"thumbnail"` | How to display selected files. `"thumbnail"` (default) shows an image preview tile (clickable: an image opens fullscreen, a PDF opens in a new tab, any other file is downloaded). `"none"` hides previews. |
 | `camera` | `boolean` | `false` | Show an extra "Capturar foto" button that opens the device camera and snapshots a photo as `image/jpeg`. Requires HTTPS or localhost (`getUserMedia`). |
@@ -441,11 +441,11 @@ export interface FileUploadLabels {
 
 ```ts
 export interface FileUploadProps {
-  /** MIME pattern(s) accepted by the picker. Examples: `"image/*"`, `["image/png", "application/pdf"]`. Same syntax as native `<input accept>`. */
+  /** MIME pattern(s) accepted by the picker. Examples: `"image/*"`, `["image/png", "application/pdf"]`. Same syntax as native `<input accept>`. Checked only in the browser, against the type it infers from the file name: validate the file again on the server. */
   accept?: string | string[]
   /** Allow selecting more than one file. Default `false`. */
   multiple?: boolean
-  /** Maximum bytes per file. Files larger than this are rejected. Compose with the `kb()` / `mb()` / `gb()` helpers from `@amfernandesinc/ui`. */
+  /** Maximum bytes per file. Files larger than this are rejected. Compose with the `kb()` / `mb()` / `gb()` helpers from `@amfernandesinc/ui`. Checked only in the browser: enforce the limit on the server too. */
   maxSize?: number
   /** Maximum number of files when `multiple`. Extra files are rejected. */
   maxFiles?: number
