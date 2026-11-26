@@ -261,4 +261,33 @@ describe("NumberInput", () => {
     render(<NumberInput label="Andar" ref={ref} />)
     expect(ref.current).toBe(screen.getByRole("spinbutton"))
   })
+
+  it.each([
+    ["max", "500", "50"],
+    ["min", "1", "5"],
+  ])("sends a value within %s when Enter submits the form", async (_, typed, expected) => {
+    const sent = vi.fn()
+    const onValueChange = vi.fn()
+    render(
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          sent(new FormData(event.currentTarget).get("andares"))
+        }}
+      >
+        <NumberInput
+          label="Andares"
+          name="andares"
+          min={5}
+          max={50}
+          onValueChange={onValueChange}
+        />
+        <button type="submit">Enviar</button>
+      </form>,
+    )
+    await userEvent.type(screen.getByRole("spinbutton"), `${typed}{Enter}`)
+    expect(sent).toHaveBeenCalledWith(expected)
+    expect(onValueChange).toHaveBeenLastCalledWith(Number(expected))
+    expect(screen.getByRole("spinbutton")).toHaveValue(expected)
+  })
 })

@@ -2,6 +2,7 @@
 
 import { Minus, Plus } from "lucide-react"
 import * as React from "react"
+import { flushSync } from "react-dom"
 
 import { parseBRNumber } from "@/lib/currency"
 import { cn } from "@/lib/utils"
@@ -44,11 +45,11 @@ export interface NumberInputProps
   /** Decimal places allowed and shown (up to). `0` takes whole numbers only. @default 0 */
   decimals?: number
   /**
-   * Smallest value. Applied when the field loses focus, not while typing. A
-   * negative `min` lets the minus sign be typed.
+   * Smallest value. Applied when the field loses focus and on Enter, not while
+   * typing. A negative `min` lets the minus sign be typed.
    */
   min?: number
-  /** Largest value. Applied when the field loses focus, not while typing. */
+  /** Largest value. Applied when the field loses focus and on Enter, not while typing. */
   max?: number
   /** What the arrows and the stepper buttons add or take. PageUp/PageDown move ten steps. @default 1 */
   step?: number
@@ -165,6 +166,13 @@ function NumberInput({
   const commit = (next: number | null) => {
     if (!controlled) setInnerValue(next)
     if (next !== value) onValueChange?.(next)
+  }
+
+  const settle = () => {
+    const typed = editing != null ? parseText(editing) : value
+    const next = typed == null ? null : clamp(roundTo(typed, places))
+    commit(next)
+    return next
   }
 
   // An uncontrolled field goes back to `defaultValue` when its form is reset,
@@ -314,10 +322,8 @@ function NumberInput({
           onFocus?.(event)
         }}
         onBlur={(event) => {
-          const typed = editing != null ? parseText(editing) : value
-          const next = typed == null ? null : clamp(roundTo(typed, places))
+          settle()
           setEditing(null)
-          commit(next)
           onBlur?.(event)
         }}
         onChange={(event) => {
@@ -350,6 +356,10 @@ function NumberInput({
         onKeyDown={(event) => {
           onKeyDown?.(event)
           if (event.defaultPrevented || !editable) return
+          if (event.key === "Enter") {
+            flushSync(() => setEditing(plain(settle())))
+            return
+          }
           const keys: Record<string, () => void> = {
             ArrowUp: () => stepBy(1),
             ArrowDown: () => stepBy(-1),

@@ -339,7 +339,7 @@ export function FiltroNativo({ onFilter }: { onFilter: (dados: Record<string, st
 | Dinheiro em reais | `CurrencyInput` (`allowNegative` para estorno/desconto, `min`/`max` em reais) |
 | Percentual | `PercentageInput` (`decimals` 0, 1 ou 2; padrão 2; `max` 100) |
 
-- `NumberInput` vazio é `null`, nunca `0`. Setas do teclado e PageUp/PageDown ajustam; `min`/`max` se aplicam ao sair do campo.
+- `NumberInput` vazio é `null`, nunca `0`. Setas do teclado e PageUp/PageDown ajustam; `min`/`max` se aplicam ao sair do campo e no Enter.
 - `CurrencyInput` guarda **reais** e arredonda para centavos. Faça contas com `toCents`/`fromCents`.
 - `emptyValue="null"` nos dois quando "não informado" é diferente de zero (ex.: desconto opcional).
 - O que for digitado que passe do `max` é recusado (o campo não mostra número que o usuário não digitou).
