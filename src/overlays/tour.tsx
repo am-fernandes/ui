@@ -208,7 +208,8 @@ function Tour({
   stepsRef.current = steps
   const [target, setTarget] = React.useState<HTMLElement | null>(null)
   React.useLayoutEffect(() => {
-    const element = open ? resolveTarget(stepsRef.current[index]?.target) : null
+    if (!open) return
+    const element = resolveTarget(stepsRef.current[index]?.target)
     setTarget(element)
     element?.scrollIntoView?.({ block: "nearest", inline: "nearest" })
   }, [open, index])

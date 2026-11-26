@@ -331,6 +331,30 @@ describe("Tour", () => {
       expect(calledOn()).toEqual(["Por ref", "Por seletor", "Por função"])
     })
 
+    it("stays on its target while the exit animation runs", async () => {
+      const computed = window.getComputedStyle.bind(window)
+      vi.spyOn(window, "getComputedStyle").mockImplementation((element, pseudo) => {
+        const style = computed(element, pseudo)
+        if (element.getAttribute("data-slot") === "tour-step") {
+          Object.defineProperty(style, "animationName", {
+            configurable: true,
+            get: () => element.getAttribute("data-state"),
+          })
+        }
+        return style
+      })
+      const { rerender } = renderTour()
+      await waitFor(() => expect(dialog()).toHaveAttribute("data-align", "start"))
+      rerender(
+        <Page>
+          <Tour steps={steps} open={false} />
+        </Page>,
+      )
+      await act(async () => {})
+      expect(dialog()).toHaveAttribute("data-state", "closed")
+      expect(dialog()).toHaveAttribute("data-align", "start")
+    })
+
     it("uses the step's side and align", () => {
       renderTour({ steps: [{ target: "#novo", title: "A", side: "right", align: "end" }] })
       expect(dialog()).toHaveAttribute("data-align", "end")
