@@ -69,8 +69,12 @@ function csvDate(date: Date): string {
   return midnight ? day : `${day} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
-/** Text Excel would run as a formula (`=`, `+`, `-`, `@`, tab, CR) gets a `'` in front. */
-const FORMULA_START = /^[=+\-@\t\r]/
+/**
+ * Text Excel would run as a formula (`=`, `+`, `-`, `@`, tab, CR) gets a `'` in
+ * front. So does the same after a comma or a tab inside the text: a file opened
+ * with that separator starts a cell there.
+ */
+const FORMULA_START = /^(?=[=+\-@\t\r])|(?<=[,\t])(?=[=+\-@])/g
 
 function csvCell(value: ExportValue): string {
   let text: string
@@ -79,7 +83,7 @@ function csvCell(value: ExportValue): string {
   else if (typeof value === "bigint") text = value.toString()
   else if (typeof value === "boolean") text = value ? "VERDADEIRO" : "FALSO"
   else if (value instanceof Date) text = csvDate(value)
-  else text = FORMULA_START.test(value) ? `'${value}` : value
+  else text = value.replace(FORMULA_START, "'")
   return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
 

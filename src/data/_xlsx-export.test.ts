@@ -179,6 +179,14 @@ describe("CSV for Brazilian Excel", () => {
     ])
   })
 
+  it("defuses a formula after a comma or a tab inside the text", () => {
+    const csv = buildCsv({
+      headers: ["Texto"],
+      rows: [["x,=1+1"], ["x\t@SUM(A1)"], ["a, b - c"]],
+    })
+    expect(csv.split("\r\n").slice(1, 4)).toEqual(["x,'=1+1", "x\t'@SUM(A1)", "a, b - c"])
+  })
+
   it("quotes cells with ';', quotes or line breaks, and leaves empty cells empty", () => {
     const csv = buildCsv({
       headers: ["A", "B", "C"],
