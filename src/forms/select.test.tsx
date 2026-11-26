@@ -216,4 +216,14 @@ describe("Select", () => {
     expect(screen.getByRole("dialog", { name: "Dados do imóvel" })).toBeInTheDocument()
     expect(screen.getByRole("combobox", { name: "Estágio" })).toHaveTextContent("Novo")
   })
+
+  it("sends a value that is not among the options, not the first option", () => {
+    render(
+      <form aria-label="negociação">
+        <Select options={estagios} label="Estágio" name="estagio" value="arquivado" />
+      </form>,
+    )
+    const form = screen.getByRole<HTMLFormElement>("form")
+    expect(new FormData(form).get("estagio")).toBe("arquivado")
+  })
 })

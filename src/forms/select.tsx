@@ -305,6 +305,9 @@ function Select({
               className="pointer-events-none absolute inset-0 size-full opacity-0"
             >
               <option value="" disabled hidden />
+              {value !== "" && !flatOptions.some((option) => option.value === value) ? (
+                <option value={value} hidden />
+              ) : null}
               {flatOptions.map((option) => (
                 <option key={option.value} value={option.value} disabled={option.disabled}>
                   {option.label}
