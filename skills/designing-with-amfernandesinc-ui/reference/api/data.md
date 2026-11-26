@@ -1398,7 +1398,7 @@ export type TableStyles = ReturnType<typeof tableStyles>
 | `selected` | `string` | — | Selected node id (controlled, single selection). |
 | `defaultSelected` | `string` | — | Selected node id at first render (uncontrolled). |
 | `onSelectedChange` | `(id: string) => void` | — | Called when a node is selected, with its id. |
-| `onLoadChildren` | `(node: TreeNodeData) => void` | — | Called once when a node with `hasChildren` and no `children` is opened. Load its children and pass them in `data`. |
+| `onLoadChildren` | `(node: TreeNodeData) => void` | — | Called when a node with `hasChildren` and no `children` is opened. Load its children and pass them in `data`. Closing the node and opening it again calls it again, so a load that failed can be retried. |
 | `maxDepth` | `number` | `DEFAULT_MAX_DEPTH` | Maximum recursion depth. Default `64`. |
 | `indentSize` | `number` | `DEFAULT_INDENT` | Horizontal indent per nesting level in pixels. Default `16`. |
 | `labels` | `Partial<TreeLabels>` | — | — |
@@ -1473,8 +1473,9 @@ export interface TreeProps
   /** Called when a node is selected, with its id. */
   onSelectedChange?: (id: string) => void
   /**
-   * Called once when a node with `hasChildren` and no `children` is opened.
-   * Load its children and pass them in `data`.
+   * Called when a node with `hasChildren` and no `children` is opened. Load
+   * its children and pass them in `data`. Closing the node and opening it
+   * again calls it again, so a load that failed can be retried.
    */
   onLoadChildren?: (node: TreeNodeData) => void
   /** Maximum recursion depth. Default `64`. */

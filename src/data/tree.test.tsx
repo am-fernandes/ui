@@ -428,6 +428,21 @@ describe("Tree: props", () => {
     expect(onLoadChildren).toHaveBeenCalledTimes(1)
   })
 
+  it("asks again for children that never arrived when the node is reopened", async () => {
+    const onLoadChildren = vi.fn()
+    render(
+      <Tree
+        data={[{ id: "emp", label: "Residencial Aurora", hasChildren: true }]}
+        onLoadChildren={onLoadChildren}
+      />,
+    )
+    screen.getByRole("treeitem").focus()
+    await userEvent.keyboard("{ArrowRight}{ArrowLeft}")
+    expect(onLoadChildren).toHaveBeenCalledTimes(1)
+    await userEvent.keyboard("{ArrowRight}")
+    expect(onLoadChildren).toHaveBeenCalledTimes(2)
+  })
+
   it("takes its fixed texts from labels", () => {
     const deepChain: TreeNodeData[] = [
       {

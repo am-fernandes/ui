@@ -49,8 +49,9 @@ export interface TreeProps
   /** Called when a node is selected, with its id. */
   onSelectedChange?: (id: string) => void
   /**
-   * Called once when a node with `hasChildren` and no `children` is opened.
-   * Load its children and pass them in `data`.
+   * Called when a node with `hasChildren` and no `children` is opened. Load
+   * its children and pass them in `data`. Closing the node and opening it
+   * again calls it again, so a load that failed can be retried.
    */
   onLoadChildren?: (node: TreeNodeData) => void
   /** Maximum recursion depth. Default `64`. */
@@ -251,18 +252,18 @@ function Tree({
     })
   }, [store, expandedSet, selectedId, visible])
 
-  // Ask for the children of an opened node once, until they arrive.
+  // Ask for the children of a node once each time it is opened.
   const requested = React.useRef(new Set<string>())
   React.useEffect(() => {
     if (!onLoadChildren) return
     for (const flat of visible) {
       const { node } = flat
       const waiting = node.hasChildren === true && !node.children
-      if (!waiting) {
+      if (!waiting || !expandedSet.has(node.id)) {
         requested.current.delete(node.id)
         continue
       }
-      if (expandedSet.has(node.id) && !requested.current.has(node.id)) {
+      if (!requested.current.has(node.id)) {
         requested.current.add(node.id)
         onLoadChildren(node)
       }
