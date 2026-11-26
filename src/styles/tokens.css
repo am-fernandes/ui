@@ -329,7 +329,7 @@
 
 /* Dark theme. Same roles. A higher layer is lighter: page grafite-950, surfaces
    grafite-900, floating layers grafite-850. Status fills are the light ones,
-   except info, which climbs to marinho-500 to stay 3:1 from the surface. */
+   except info, which is lighter to stay 3:1 from the card and the popover. */
 .dark {
   color-scheme: dark;
 
@@ -366,7 +366,7 @@
   --warning-foreground: oklch(0.173 0.038 249.2);
   --success: oklch(0.52 0.1 168.2);
   --success-foreground: oklch(1 0 0);
-  --info: oklch(0.514 0.1 248.8); /* marinho-500 */
+  --info: oklch(0.528 0.1 248.8);
   --info-foreground: oklch(1 0 0);
   /* The fill red would be 3.3:1 as text here, so error text gets lighter. */
   --destructive-text: oklch(0.759 0.14 29.2);
@@ -409,8 +409,8 @@
 
   /* seq inverts here: the dark end is "little". */
   --chart-1: oklch(0.641 0.11 249.2);
-  --chart-2: oklch(0.525 0.1302 53.8);
-  --chart-3: oklch(0.536 0.13 302.8);
+  --chart-2: oklch(0.538 0.1302 53.8);
+  --chart-3: oklch(0.541 0.134 302.8);
   --chart-4: oklch(0.667 0.103 112.7);
   --chart-5: oklch(0.556 0.102 2.5);
   --chart-6: oklch(0.669 0.101 185);

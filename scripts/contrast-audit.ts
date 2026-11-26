@@ -135,9 +135,11 @@ const pairs: Pair[] = [
   ...SURFACES.map((s): Pair => ["ring", s, 3, "focus ring"]),
   ["primary", "card", 3, "checked controls, solid buttons"],
   ...SURFACES.map((s): Pair => ["input", s, 3, "field border, unchecked controls"]),
-  ...STATUS.map((s): Pair => [s, "card", 3, "status fill and dot"]),
+  ...["card", "popover"].flatMap((bg) =>
+    STATUS.map((s): Pair => [s, bg, 3, "status fill and dot"]),
+  ),
   ...CATEGORIES.map((c): Pair => [`category-${c}-solid`, "card", 3, "bars, dots"]),
-  ...CHARTS.map((c): Pair => [c, "card", 3, "chart mark"]),
+  ...["card", "popover"].flatMap((bg) => CHARTS.map((c): Pair => [c, bg, 3, "chart mark"])),
   ["card", "background", null, "the two backgrounds (reported only)"],
   ["popover", "card", null, "floating layer over a surface (reported only)"],
   ["border", "card", null, "divider (reported only)"],
