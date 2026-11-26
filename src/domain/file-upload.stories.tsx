@@ -26,6 +26,7 @@ const meta = {
           "- `camera` — adiciona botão de captura via `getUserMedia` (HTTPS/localhost).",
           "- `value` / `onValueChange` — modo controlado.",
           "- `items` / `onRemoveItem` — anexos que já estão no servidor e envios em andamento (`status`, `progress`, `error`), na mesma lista.",
+          "- Anexo com nome `.pdf` e `url` do próprio domínio abre em outra aba na origem da aplicação. O servidor precisa enviar `Content-Type: application/pdf` e `X-Content-Type-Options: nosniff`; sem isso, um HTML ou SVG renomeado roda script ali.",
           "- `onReject` — chamado com `{ file, reason: 'type' | 'size' | 'max-files' }[]`.",
           "- `showRejections` — mostra, embaixo da dropzone, por que cada arquivo da última tentativa foi recusado (padrão `true`; os textos ficam em `labels`). Passe `false` quando `onReject` já avisa, com um toast por exemplo.",
           "- `label`, `description`, `error`, `className`, `dropzoneClassName` — customização visual.",

@@ -505,6 +505,7 @@ export function FaixaDePreco() {
 - Recusas (tipo, tamanho, quantidade) aparecem embaixo da área e chegam em `onReject`.
 - `accept`, `maxSize` e `maxFiles` valem só no navegador, que deduz o tipo pelo nome do arquivo: o servidor precisa validar tipo, conteúdo, tamanho e quantidade de novo.
 - Anexos que já estão no servidor e envios em andamento: `items` (`{ id, name, url, status, progress, error }`) + `onRemoveItem`.
+- Anexo com nome `.pdf` e `url` do próprio domínio abre em outra aba na origem da aplicação: o servidor precisa enviar `Content-Type: application/pdf` e `X-Content-Type-Options: nosniff`, senão um HTML ou SVG renomeado roda script ali.
 - `camera` abre a câmera (HTTPS); `preview="thumbnail"` mostra miniaturas; `removable={false}` deixa só adicionar.
 
 ```tsx
