@@ -21,7 +21,7 @@ import "@amfernandesinc/ui/styles"
 import "@amfernandesinc/ui/fonts"
 ```
 
-O `styles` já importa o Tailwind e declara o `@source` da própria lib, então as classes usadas só dentro dos componentes são geradas sem configuração no app. Na 0.5.x, acrescente no CSS de entrada `@source "../node_modules/@amfernandesinc/ui/dist";` (caminho relativo a esse CSS); com ele, Dialog, Popover e Select aparecem sem estilo.
+O `styles` já importa o Tailwind e declara o `@source` da própria lib, então as classes usadas só dentro dos componentes são geradas sem configuração no app. Na 0.5.x, acrescente no CSS de entrada `@source "../node_modules/@amfernandesinc/ui/dist";` (caminho relativo a esse CSS); sem ele, Dialog, Popover e Select aparecem sem estilo.
 
 As famílias **Geist** e **Geist Mono** são self-hosted via `@fontsource/geist` e `@fontsource/geist-mono` — vêm como dependências do pacote, sem chamadas externas a Google Fonts.
 
