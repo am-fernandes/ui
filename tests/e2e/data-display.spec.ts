@@ -183,7 +183,7 @@ test.describe("Image", () => {
 test.describe("Video", () => {
   // 90×160 px, one second of VP9: a vertical phone video, served locally.
   const VERTICAL = readFileSync(new URL("./fixtures/vertical.webm", import.meta.url))
-  const SAMPLE = /commondatastorage\.googleapis\.com/
+  const SAMPLE = /samplelib\.com/
   const serve = (page: Page) =>
     page.route(SAMPLE, (route) => route.fulfill({ contentType: "video/webm", body: VERTICAL }))
 
