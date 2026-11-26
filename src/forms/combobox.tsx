@@ -131,7 +131,9 @@ interface ComboboxBaseProps {
   /**
    * Name of the field in a native form. The form receives the raw value
    * (the option's `value`), carried by a hidden input. In multiple mode there
-   * is one entry per value: read them with `FormData.getAll`.
+   * is one entry per value: read them with `FormData.getAll`. With nothing
+   * chosen, a single field sends `""` and a multiple one sends no entry, as a
+   * native `<select multiple>` (`getAll` gives `[]`, `get` gives `null`).
    */
   name?: string
   /**

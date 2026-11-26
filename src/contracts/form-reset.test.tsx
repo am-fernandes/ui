@@ -208,6 +208,29 @@ const cases: FieldCase[] = [
       expect(screen.getByRole("combobox", { name: /Status/ })).toHaveTextContent("Alpha"),
   },
   {
+    name: "Combobox multiple",
+    uncontrolled: () => (
+      <Combobox multiple label="Áreas" name="campo" options={options} defaultValue={["a"]} />
+    ),
+    controlled: () => (
+      <Combobox
+        multiple
+        label="Áreas"
+        name="campo"
+        options={options}
+        value={["a"]}
+        onValueChange={noop}
+      />
+    ),
+    edit: async (user) => {
+      await user.click(screen.getByRole("combobox", { name: /Áreas/ }))
+      await user.click(await screen.findByRole("option", { name: "Bravo" }))
+    },
+    sent: { initial: "campo=a", edited: "campo=a,b" },
+    showsInitial: () =>
+      expect(screen.getByRole("combobox", { name: /Áreas/ })).toHaveTextContent("1 selecionado"),
+  },
+  {
     name: "DateInput",
     uncontrolled: () => <DateInput label="Data" name="campo" defaultValue="2024-05-10" />,
     controlled: () => (

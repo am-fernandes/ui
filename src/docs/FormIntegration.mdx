@@ -24,7 +24,7 @@ O prop `error: string` em todos os campos é **puramente visual**: ele pinta a b
 | `Switch` | sim (`checked: boolean`) | sim (`defaultChecked`) | `onCheckedChange(checked)` | Mesmo perfil de `Checkbox`. |
 | `RadioGroup` | sim (`value: string`) | sim | `onValueChange(value)` | Itens em `values: RadioGroupItemData[]`. |
 | `Select` | sim (`value: string`, `""` = nada escolhido) | sim | `onValueChange(value)` | Com `name`, um `<select>` nativo leva o valor; nada escolhido não envia nada. |
-| `Combobox` | sim (`string`, ou `string[]` com `multiple`) | sim | `onValueChange(value)` | Com `name` e `multiple`, uma entrada por valor (`formData.getAll`). |
+| `Combobox` | sim (`string`, ou `string[]` com `multiple`) | sim | `onValueChange(value)` | Com `name` e `multiple`, uma entrada por valor (`formData.getAll`); sem nada escolhido, nenhuma entrada (`get` dá `null`), como num `<select multiple>`. |
 | `DateInput` | sim (`value: string` ISO `yyyy-MM-dd`, `""` = sem data) | sim | `onValueChange(value)` | Digitável. `onChange` antigo segue como alias, obsoleto. |
 | `DateRangePicker` | sim (`{ from, to }` em ISO) | sim | `onValueChange(value)` | |
 | `TimePicker` | sim (`"HH:MM"`, `""` = vazio) | sim | `onValueChange(value)` | `onChange` antigo segue como alias, obsoleto. |
