@@ -63,6 +63,17 @@ describe("Tour", () => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
     })
 
+    it("closes the callout when the steps empty while open past the first one", () => {
+      const { rerender } = renderTour({ defaultStep: 1 })
+      rerender(
+        <Page>
+          <Tour steps={[]} open onClose={() => {}} defaultStep={1} />
+        </Page>,
+      )
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Novo lead" })).toBeInTheDocument()
+    })
+
     it("opens a dialog named by the step title and described by its content", () => {
       renderTour()
       expect(dialog()).toHaveAccessibleName("Crie leads")

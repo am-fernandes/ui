@@ -252,12 +252,12 @@ function Tour({
       setAnnouncement("")
       return
     }
-    if (previousIndex.current !== null && previousIndex.current !== index) {
+    const heading = titleRef.current
+    if (heading && previousIndex.current !== null && previousIndex.current !== index) {
       primaryRef.current?.focus()
-      // The callout is mounted whenever the tour is open, so the title is
-      // there. The content goes too: the focus stays on "Próximo", so
-      // nothing else would read the new step's description.
-      const title = titleRef.current!.textContent?.trim() ?? ""
+      // The content goes too: the focus stays on "Próximo", so nothing else
+      // would read the new step's description.
+      const title = heading.textContent?.trim() ?? ""
       const content = descriptionRef.current?.textContent?.trim()
       const text = content ? `${title}${/[.!?:]$/.test(title) ? "" : "."} ${content}` : title
       setAnnouncement(`${l.progress(index + 1, total)}: ${text}`)
