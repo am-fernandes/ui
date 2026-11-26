@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { flushSync } from "react-dom"
 
 import { parseBRNumber } from "@/lib/currency"
 import {
@@ -67,6 +68,7 @@ function DecimalInput({
   ref,
   onPaste,
   onBlur,
+  onKeyDown,
   ...props
 }: DecimalInputProps) {
   // Anything that is not a number (undefined, NaN) is an empty field, never
@@ -183,13 +185,23 @@ function DecimalInput({
     commit(next, false, (text) => text.length)
   }
 
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    onBlur?.(e)
-    setNegativeDraft(false)
+  const applyLimits = () => {
     // While typing the value passes below `min` on its way up, so the near
     // limit is only applied when the user is done.
     if (editedSinceFocus.current && units != null) change(clampUnits(units, minUnits, maxUnits))
     editedSinceFocus.current = false
+  }
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    onBlur?.(e)
+    setNegativeDraft(false)
+    applyLimits()
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    onKeyDown?.(e)
+    if (e.key !== "Enter" || e.defaultPrevented || props.readOnly) return
+    flushSync(applyLimits)
   }
 
   return (
@@ -207,6 +219,7 @@ function DecimalInput({
       onChange={handleChange}
       onPaste={handlePaste}
       onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
     />
   )
 }

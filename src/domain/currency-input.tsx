@@ -13,7 +13,8 @@ interface CurrencyInputBaseProps extends DecimalFieldProps {
   allowNegative?: boolean
   /**
    * Smallest value, in reais. While typing, the value passes below it on its
-   * way up, so it is applied when the field loses focus after an edit: a
+   * way up, so it is applied when the field loses focus, or on Enter, after an
+   * edit: a
    * smaller value is raised to `min`.
    */
   min?: number

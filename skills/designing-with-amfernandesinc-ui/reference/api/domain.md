@@ -181,7 +181,7 @@ As props são uma união: cada forma abaixo é um jeito de usar o componente.
 | `defaultValue` | `number` | — | Initial value of an uncontrolled field. |
 | `onValueChange` | `(value: number) => void` | — | Called with the value in reais after every edit. |
 | `allowNegative` | `boolean` | `false` | Accepts negative values (a refund, a discount, a balance owed). The minus key makes the value negative, a second one or `+` makes it positive again, and a pasted negative number keeps its sign. The field then opens the text keyboard on phones: the iOS numeric keypad has no minus key. |
-| `min` | `number` | — | Smallest value, in reais. While typing, the value passes below it on its way up, so it is applied when the field loses focus after an edit: a smaller value is raised to `min`. |
+| `min` | `number` | — | Smallest value, in reais. While typing, the value passes below it on its way up, so it is applied when the field loses focus, or on Enter, after an edit: a smaller value is raised to `min`. |
 | `max` | `number` | — | Largest value, in reais. A key (or a paste) that would take the value past it is refused: the field keeps what it had, and never shows a number the user did not type. |
 | `required` | `boolean` | — | — |
 | `size` | `ControlSize` | `"md"` | Height of the field: `sm` 32px, `md` 40px, `lg` 44px, the same as a button or select of that size. |
@@ -204,7 +204,7 @@ Repassa também: atributos HTML do React (`Attributes`, `HTMLAttributes`, `Input
 | `defaultValue` | `number \| null` | — | — |
 | `onValueChange` | `(value: number \| null) => void` | — | Called with the value in reais, or `null` when the field is cleared. |
 | `allowNegative` | `boolean` | `false` | Accepts negative values (a refund, a discount, a balance owed). The minus key makes the value negative, a second one or `+` makes it positive again, and a pasted negative number keeps its sign. The field then opens the text keyboard on phones: the iOS numeric keypad has no minus key. |
-| `min` | `number` | — | Smallest value, in reais. While typing, the value passes below it on its way up, so it is applied when the field loses focus after an edit: a smaller value is raised to `min`. |
+| `min` | `number` | — | Smallest value, in reais. While typing, the value passes below it on its way up, so it is applied when the field loses focus, or on Enter, after an edit: a smaller value is raised to `min`. |
 | `max` | `number` | — | Largest value, in reais. A key (or a paste) that would take the value past it is refused: the field keeps what it had, and never shows a number the user did not type. |
 | `required` | `boolean` | — | — |
 | `size` | `ControlSize` | `"md"` | Height of the field: `sm` 32px, `md` 40px, `lg` 44px, the same as a button or select of that size. |
@@ -745,7 +745,7 @@ As props são uma união: cada forma abaixo é um jeito de usar o componente.
 | `defaultValue` | `number` | — | Initial value of an uncontrolled field. |
 | `onValueChange` | `(value: number) => void` | — | Called with the percentage after every edit. |
 | `max` | `number` | `100` | Largest percentage. A key (or a paste) that would take the value past it is refused: the field keeps what it had, and never shows a number the user did not type. |
-| `min` | `number` | — | Smallest percentage. While typing, the value passes below it on its way up, so it is applied when the field loses focus after an edit: a smaller value is raised to `min`. A negative `min` lets the field take negative percentages, with the minus key. |
+| `min` | `number` | — | Smallest percentage. While typing, the value passes below it on its way up, so it is applied when the field loses focus, or on Enter, after an edit: a smaller value is raised to `min`. A negative `min` lets the field take negative percentages, with the minus key. |
 | `decimals` | `0 \| 1 \| 2` | `2` | Decimal places shown and kept: `2` (12,50), `1` (12,5) or `0` (12). Typed digits fill the last place first, and a value with more places is rounded. |
 | `required` | `boolean` | — | — |
 | `size` | `ControlSize` | `"md"` | Height of the field: `sm` 32px, `md` 40px, `lg` 44px, the same as a button or select of that size. |
@@ -768,7 +768,7 @@ Repassa também: atributos HTML do React (`Attributes`, `HTMLAttributes`, `Input
 | `defaultValue` | `number \| null` | — | — |
 | `onValueChange` | `(value: number \| null) => void` | — | Called with the percentage, or `null` when the field is cleared. |
 | `max` | `number` | `100` | Largest percentage. A key (or a paste) that would take the value past it is refused: the field keeps what it had, and never shows a number the user did not type. |
-| `min` | `number` | — | Smallest percentage. While typing, the value passes below it on its way up, so it is applied when the field loses focus after an edit: a smaller value is raised to `min`. A negative `min` lets the field take negative percentages, with the minus key. |
+| `min` | `number` | — | Smallest percentage. While typing, the value passes below it on its way up, so it is applied when the field loses focus, or on Enter, after an edit: a smaller value is raised to `min`. A negative `min` lets the field take negative percentages, with the minus key. |
 | `decimals` | `0 \| 1 \| 2` | `2` | Decimal places shown and kept: `2` (12,50), `1` (12,5) or `0` (12). Typed digits fill the last place first, and a value with more places is rounded. |
 | `required` | `boolean` | — | — |
 | `size` | `ControlSize` | `"md"` | Height of the field: `sm` 32px, `md` 40px, `lg` 44px, the same as a button or select of that size. |

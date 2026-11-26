@@ -836,6 +836,27 @@ describe("CurrencyInput", () => {
       expect(screen.getByTestId("value")).toHaveTextContent("100")
     })
 
+    it("Enter aplica o mínimo antes de o formulário ser enviado", async () => {
+      const user = userEvent.setup()
+      const sent = vi.fn()
+      render(
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            sent(new FormData(event.currentTarget).get("valor"))
+          }}
+        >
+          <CurrencyInput name="valor" label="Valor" min={10} />
+          <button type="submit">Enviar</button>
+        </form>,
+      )
+      const input = screen.getByRole("textbox")
+      await user.click(input)
+      await user.keyboard("{End}500{Enter}")
+      expect(sent).toHaveBeenCalledWith("10")
+      expect(input).toHaveValue("10,00")
+    })
+
     it("passar pelo campo sem editar não muda um valor fora dos limites", async () => {
       const user = userEvent.setup()
       const onValueChange = vi.fn()
