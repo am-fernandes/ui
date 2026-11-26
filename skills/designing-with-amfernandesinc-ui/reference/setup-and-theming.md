@@ -2,13 +2,7 @@
 
 ## Instalação
 
-O pacote é privado, no GitHub Packages. Uma vez por máquina (ou no CI), aponte o escopo para o registro:
-
-```bash
-# ~/.npmrc (ou .npmrc do projeto, sem o token commitado)
-@amfernandesinc:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-```
+O pacote é publicado no npm público: não há registro nem token para configurar. Se o `.npmrc` do projeto (ou do CI) aponta o escopo `@amfernandesinc` para outro registro, apague essas linhas.
 
 ```bash
 bun add @amfernandesinc/ui      # ou npm install / pnpm add

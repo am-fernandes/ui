@@ -11,7 +11,7 @@ Toda a documentação aqui é a regra prática — se algo diverge do que está 
 
 - **Stack**: React 19, TypeScript, Tailwind CSS v4 (`@theme inline`), Radix UI, Storybook 10, Vitest, Playwright, Biome.
 - **Runtime**: Bun (ver `CLAUDE.md`).
-- **Distribuição**: registro privado (`@amfernandesinc` no GitHub Packages). Cada componente tem um subpath export em `package.json`.
+- **Distribuição**: npm público (`@amfernandesinc/ui`). Cada componente tem um subpath export em `package.json`.
 - **Mantenedores**: equipe de engenharia AM Fernandes. PRs externos só após convite.
 - **Cultura**: pt-BR first (strings de UI em pt-BR, código e identificadores em inglês).
 
