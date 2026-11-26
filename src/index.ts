@@ -1,9 +1,5 @@
 /**
  * `@amfernandesinc/ui` public API.
- *
- * Single entry point. Each phase of the API simplification plan adds exports here.
- *
- * See: docs/superpowers/plans/2026-05-18-api-simplification.md
  */
 
 // Data

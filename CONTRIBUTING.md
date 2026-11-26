@@ -10,7 +10,7 @@ Toda a documentação aqui é a regra prática — se algo diverge do que está 
 `@amfernandesinc/ui` é o design system interno da **AM Fernandes & Associados** (incorporadora). Empacota componentes React/TypeScript prontos para uso em todas as apps internas (ex.: `requerimento-contratos-pf`, `assistencia-tecnica`) e substitui as cópias locais de shadcn/ui por uma fonte única versionada.
 
 - **Stack**: React 19, TypeScript, Tailwind CSS v4 (`@theme inline`), Radix UI, Storybook 10, Vitest, Playwright, Biome.
-- **Runtime**: Bun (ver `CLAUDE.md`).
+- **Runtime**: Bun.
 - **Distribuição**: npm público (`@amfernandesinc/ui`). Cada componente tem um subpath export em `package.json`.
 - **Mantenedores**: equipe de engenharia AM Fernandes. PRs externos só após convite.
 - **Cultura**: pt-BR first (strings de UI em pt-BR, código e identificadores em inglês).
