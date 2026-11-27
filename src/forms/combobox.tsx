@@ -601,7 +601,7 @@ export function Combobox(props: ComboboxProps) {
                 label={l.list}
                 ref={setListRef}
                 onTouchMove={(e) => e.stopPropagation()}
-                className="max-h-75 overflow-y-auto overflow-x-hidden overscroll-y-contain p-1"
+                className="max-h-75 overflow-y-auto overflow-x-hidden overscroll-y-contain p-0.75"
               >
                 {!showCreateOption && !loading ? (
                   <CommandPrimitive.Empty className="py-6 text-center text-sm text-muted-foreground">

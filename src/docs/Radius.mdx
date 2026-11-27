@@ -5,7 +5,7 @@ import * as React from "react"
 
 # Radius
 
-Três níveis de raio, escolhidos pelo **papel** da peça, não pelo tamanho. Cada componente usa o nível do seu papel e não existe nenhum outro valor na lib.
+Três níveis de raio, escolhidos pelo **papel** da peça, não pelo tamanho. Cada componente usa o nível do seu papel. A única exceção é o trilho das Tabs e do SegmentedControl, com `rounded-track` (8px), para manter 4px de borda em volta das abas.
 
 export const Level = ({ name, value, role }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "10px 0" }}>
@@ -33,8 +33,8 @@ export const Level = ({ name, value, role }) => (
 ## Os três níveis
 
 <Level name="inner" value="4px" role="Peças dentro de um controle e peças pequenas: a caixa do checkbox, uma aba dentro do trilho, um chip, um badge." />
-<Level name="element" value="8px" role="O próprio controle: botão, campo, item de menu, item de navegação, tooltip." />
-<Level name="container" value="12px" role="Superfícies que agrupam ou flutuam: card, dialog, popover, menu." />
+<Level name="element" value="6px" role="O próprio controle: botão, campo, item de menu, item de navegação, tooltip." />
+<Level name="container" value="10px" role="Superfícies que agrupam ou flutuam: card, dialog, popover, menu." />
 
 export const Tag = ({ children, side = "top" }) => (
   <span
@@ -73,7 +73,7 @@ export const Composition = () => (
       margin: "16px 0 24px",
     }}
   >
-    <Tag>container · 12</Tag>
+    <Tag>container · 10</Tag>
     <div style={{ fontWeight: 600 }}>Nova proposta</div>
     <div
       style={{
@@ -83,10 +83,10 @@ export const Composition = () => (
         gap: 4,
         padding: 4,
         background: "var(--muted)",
-        borderRadius: "var(--radius-element)",
+        borderRadius: "var(--radius-track)",
       }}
     >
-      <Tag side="right">element · 8</Tag>
+      <Tag side="right">track · 8</Tag>
       {["Dados", "Unidade", "Pagamento"].map((t, i) => (
         <span
           key={t}
@@ -113,7 +113,7 @@ export const Composition = () => (
         borderRadius: "var(--radius-element)",
       }}
     >
-      <Tag side="right">element · 8</Tag>
+      <Tag side="right">element · 6</Tag>
       {["Torre A", "Torre B"].map((t) => (
         <span
           key={t}
@@ -157,7 +157,7 @@ export const Composition = () => (
   </div>
 )
 
-Numa tela, os três aparecem juntos: o card é `container`, o trilho das abas e o campo são `element`, as abas e os chips dentro deles são `inner`, e os botões voltam a ser `element`.
+Numa tela, os três aparecem juntos: o card é `container`, o campo e os botões são `element`, e as abas e os chips são `inner`. O trilho das abas usa `track`.
 
 <Composition />
 
@@ -165,9 +165,10 @@ Numa tela, os três aparecem juntos: o card é `container`, o trilho das abas e 
 
 | Nível | Componentes |
 |---|---|
-| **container** · 12px | Card, Alert, Dialog e AlertDialog, Popover, DropdownMenu (o painel), balão do Tour, moldura da DataTable e do Schedule, Video, prévias do FileUpload |
-| **element** · 8px | Button, IconButton, Toggle, Tooltip (uma linha só: com 12px viraria pílula), Input, Textarea, inputs brasileiros (CPF, CNPJ, CEP, telefone, valor, percentual), MultiInput, TimePicker, InputOTP (o grupo), gatilhos de Combobox, DateInput e DateRangePicker, seletor de itens por página, trilho das Tabs e do SegmentedControl, itens do DropdownMenu, do Combobox e da CommandPalette, itens do menu do AppShell, linhas da Tree, gatilho do Collapsible, etapas clicáveis do Stepper, área de upload do FileUpload, ícone do EmptyState |
-| **inner** · 4px | Badge e Token (peças baixas: com 8px virariam pílula), caixa do Checkbox, abas (dentro do trilho), segmentos do SegmentedControl, chips dentro do Combobox e do MultiInput (e o × deles), × do Token, dias do Calendar, eventos do Schedule e o "+N mais", selo "Hoje" da lista do Schedule, indicador do Combobox múltiplo, Skeleton, botão de fechar do Dialog e do Sheet, barras (Progress, linha do Stepper, barra de rolagem) |
+| **container** · 10px | Card, Alert, Dialog e AlertDialog, Popover, DropdownMenu (o painel), balão do Tour, moldura da DataTable e do Schedule, Video, prévias do FileUpload |
+| **track** · 8px | trilho das Tabs e do SegmentedControl |
+| **element** · 6px | Button, IconButton, Toggle, Tooltip (uma linha só: um raio maior a aproximaria de uma pílula), Input, Textarea, inputs brasileiros (CPF, CNPJ, CEP, telefone, valor, percentual), MultiInput, TimePicker, InputOTP (o grupo), gatilhos de Combobox, DateInput e DateRangePicker, seletor de itens por página, itens do DropdownMenu, do Combobox e da CommandPalette, itens do menu do AppShell, linhas da Tree, gatilho do Collapsible, etapas clicáveis do Stepper, área de upload do FileUpload, ícone do EmptyState |
+| **inner** · 4px | Badge e Token (peças baixas: um raio maior as aproximaria de uma pílula), caixa do Checkbox, abas (dentro do trilho), segmentos do SegmentedControl, chips dentro do Combobox e do MultiInput (e o × deles), × do Token, dias, setas e grade de mês e ano do Calendar, eventos do Schedule e o "+N mais", selo "Hoje" da lista do Schedule, indicador do Combobox múltiplo, Skeleton, botão de fechar do Dialog e do Sheet, barras (Progress, linha do Stepper, barra de rolagem) |
 
 **Círculos não são nível de raio.** Radio, Avatar, Switch, os pontos e marcadores do Schedule e os marcadores do Stepper são círculos por forma, e só eles usam `rounded-full`.
 
@@ -256,22 +257,23 @@ Mexa nos valores e compare:
 
 ## Concêntrico na AMF
 
-Os níveis sobem de 4 em 4, o mesmo passo do espaço interno mais usado na lib (`p-1`, 4px). Por isso a conta fecha exata a cada encaixe:
+O espaço entre as bordas é a **diferença entre os dois níveis**. Em menus e popovers, a linha de 1px faz parte desse espaço, então o espaço interno é 1px menor. Assim a conta fecha exata a cada encaixe:
 
 | Fora | Espaço | Conta | Dentro |
 |---|---|---|---|
-| Menu: DropdownMenu, Combobox, CommandPalette (**container**, 12px) | `p-1`, 4px | 12 − 4 = 8 | **element**: os itens |
-| Trilho das Tabs e do SegmentedControl (**element**, 8px) | `p-1`, 4px | 8 − 4 = 4 | **inner**: abas e segmentos |
-| Calendar no popover (**container**, 12px) | `p-2`, 8px | 12 − 8 = 4 | **inner**: os dias |
-| Campo: Input, MultiInput, Combobox (**element**, 8px) | 10px ou mais | 8 − 10 < 0 | livre; os chips usam **inner**, por serem parte do controle |
-| Card, Dialog (**container**, 12px) | `p-4` a `p-6`, 16 a 24px | 12 − 16 < 0 | livre: cada peça usa o nível do próprio papel |
+| Menu: DropdownMenu, Select, Combobox, CommandPalette (**container**, 10px) | 1px + `p-0.75`, 4px | 10 − 4 = 6 | **element**: os itens |
+| Trilho das Tabs e do SegmentedControl (**track**, 8px) | `p-1`, 4px | 8 − 4 = 4 | **inner**: abas e segmentos |
+| Calendar e lista de eventos do Schedule no popover (**container**, 10px) | 1px + `p-1.25`, 6px | 10 − 6 = 4 | **inner**: dias, setas, meses, anos e eventos |
+| Campo: Input, MultiInput, Combobox (**element**, 6px) | 10px ou mais | 6 − 10 < 0 | livre; os chips usam **inner**, por serem parte do controle |
+| Card, Dialog (**container**, 10px) | `p-4` a `p-6`, 16 a 24px | 10 − 16 < 0 | livre: cada peça usa o nível do próprio papel |
 
-Por isso um item de menu tem o mesmo raio de um botão, e uma aba tem menos raio que o trilho em volta dela. Se um encaixe novo não fechar exato, use o nível mais próximo do resultado, nunca abaixo de `inner`.
+Por isso um item de menu tem o mesmo raio de um botão, e uma aba tem menos raio que o trilho em volta dela.
 
 ## Como usar
 
 - Use os nomes por papel: `rounded-inner`, `rounded-element` e `rounded-container`; em CSS, `var(--radius-inner)`, `var(--radius-element)` e `var(--radius-container)`.
 - A escala do Tailwind também cai nos três níveis: `rounded-xs` e `rounded-sm` → inner, `rounded-md` → element, `rounded-lg` até `rounded-4xl` → container. Código antigo continua funcionando, mas prefira os nomes por papel.
-- Peça nova dentro de outra: comece pela conta do concêntrico e escolha o nível mais próximo.
+- Peça nova dentro de outra: a de fora é `container`, com `p-1` em volta de `element` ou `p-1.5` em volta de `inner`. Se a de fora tem borda de 1px, use `p-0.75` ou `p-1.25`.
+- `rounded-track` é exclusivo do trilho das Tabs e do SegmentedControl.
 - `rounded-full` só para círculo de verdade (radio, avatar, switch, pontos).
-- `--radius` continua como sinônimo de `--radius-element` (agora 8px) e está deprecated.
+- `--radius` continua como sinônimo de `--radius-element` (agora 6px) e está deprecated.

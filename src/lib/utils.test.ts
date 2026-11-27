@@ -6,6 +6,7 @@ describe("cn", () => {
   it("lets a later radius replace a component's radius level", () => {
     expect(cn("rounded-element", "rounded-none")).toBe("rounded-none")
     expect(cn("rounded-inner", "rounded-container")).toBe("rounded-container")
+    expect(cn("rounded-track", "rounded-none")).toBe("rounded-none")
   })
 
   it("lets a later height replace a component's control height", () => {

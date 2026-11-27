@@ -152,7 +152,7 @@ Mudanças que quebram:
 | `Sidebar` sai, entra `AppShell` (subpath `/app-shell`) | `items` iguais (`SidebarItem` virou `AppShellItem`, com alias). Usuário, perfil e sair vão no `footer`. O `<main>` com rolagem sai do app: o conteúdo vai como `children`. Sob outra barra fixa, `className="h-full"`. |
 | `Button` nasce `type="button"` | Ponha `type="submit"` nos botões que enviam formulário. |
 | `Badge` é `<span>` | Só muda se você estilizava `div` dentro dele. |
-| Raio em três níveis | `rounded-md` passa de 4px a 8px e `rounded-lg`+ a 12px nas suas telas: revise cantos. |
+| Raio em três níveis | `rounded-md` passa de 4px a 6px e `rounded-lg`+ a 10px nas suas telas: revise cantos. |
 | Borda translúcida em dois níveis | Molduras entre camadas: `border-border-strong`; divisórias internas: `border-border`. |
 | `Video` mostra o quadro inteiro (`objectFit="contain"`) | Para o corte antigo: `objectFit="cover"`. |
 | `Image` com `src` vazio mostra "Sem imagem" | Não é mais erro; use `fallback` para personalizar. |

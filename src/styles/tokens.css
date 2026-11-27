@@ -14,16 +14,19 @@
 
 /* Radius — three levels, by role (Foundations/Radius in Storybook):
    inner      4px  parts inside a control and small pieces (checkbox box, tab,
-                   segment, badge, token, chip in a field)
-   element    8px  the control itself (button, field, menu item, nav item)
-   container 12px  surfaces that group or float (card, dialog, popover, menu)
-   They step by 4px, like the default inner padding (p-1), so nesting closes
-   exactly: a 12px menu with p-1 holds 8px items; an 8px track holds 4px tabs.
+                   segment, badge, token, chip in a field, calendar day)
+   element    6px  the control itself (button, field, menu item, nav item)
+   container 10px  surfaces that group or float (card, dialog, popover, menu)
+   track      8px  only the track of Tabs and SegmentedControl
+   Nesting closes when the gap equals the difference, the outer 1px border
+   included: p-1 on a track of tabs, p-0.75 on a bordered menu of items,
+   p-1.25 on a bordered popover of inner pieces (calendar).
    Use `rounded-inner`, `rounded-element` and `rounded-container`. */
 @theme {
   --radius-inner: 4px;
-  --radius-element: 8px;
-  --radius-container: 12px;
+  --radius-element: 6px;
+  --radius-container: 10px;
+  --radius-track: 8px;
 
   /* Altura dos controles (botão, campo, gatilho, toggle): a caixa inteira,
      borda incluída. `h-control-md`, `min-h-control-md`, `size-control-md`.

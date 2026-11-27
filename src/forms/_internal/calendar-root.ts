@@ -4,4 +4,4 @@
  * `--cell-size` is the caption and navigation row; `--day-size` a day.
  */
 export const CALENDAR_ROOT_CLASS =
-  "group/calendar p-2 [--cell-radius:var(--radius-inner)] [--cell-size:--spacing(7)] [--day-size:--spacing(10)]"
+  "group/calendar p-1.25 [--cell-radius:var(--radius-inner)] [--cell-size:--spacing(7)] [--day-size:--spacing(10)]"

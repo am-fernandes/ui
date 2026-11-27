@@ -47,7 +47,7 @@ O caminho é **relativo ao arquivo CSS**. Exemplos:
 | `src/app/globals.css` | `"../../node_modules/@amfernandesinc/ui/dist"` |
 | `apps/web/src/index.css` em monorepo com hoisting | `"../../../node_modules/@amfernandesinc/ui/dist"` |
 
-Para conferir: abra um `Dialog` no app. Se ele aparece centralizado, com fundo `bg-popover`, borda e cantos de 12px, o setup está certo.
+Para conferir: abra um `Dialog` no app. Se ele aparece centralizado, com fundo `bg-popover`, borda e cantos de 10px, o setup está certo.
 
 ### Ordem e duplicação
 
@@ -159,10 +159,10 @@ Regras:
 | Nível | Classe | Onde |
 |---|---|---|
 | `inner` 4px | `rounded-inner` (= `rounded-xs`, `rounded-sm`) | peças dentro de um controle: caixa do checkbox, chip dentro de campo, aba |
-| `element` 8px | `rounded-element` (= `rounded-md`, `rounded`) | o controle: botão, campo, item de menu, linha clicável |
-| `container` 12px | `rounded-container` (= `rounded-lg` e acima) | card, dialog, sheet, popover, painel, imagem em destaque |
+| `element` 6px | `rounded-element` (= `rounded-md`, `rounded`) | o controle: botão, campo, item de menu, linha clicável |
+| `container` 10px | `rounded-container` (= `rounded-lg` e acima) | card, dialog, sheet, popover, painel, imagem em destaque |
 
-O raio de dentro sai do de fora: um bloco com `p-1` dentro de um `rounded-container` usa `rounded-element`. `rounded-full` só para avatar, ponto de status, pílula.
+O raio de dentro sai do de fora: um bloco a 4px da borda de um `rounded-container` usa `rounded-element` (`p-0.75` mais a borda de 1px, ou `p-1` sem borda). `rounded-full` só para avatar, ponto de status, pílula.
 
 ## Altura de controle e densidade
 

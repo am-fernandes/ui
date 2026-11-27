@@ -265,7 +265,7 @@ export function CalendarQuickNav({
                 }
                 aria-current={isSelected ? "date" : undefined}
                 className={cn(
-                  "h-(--cell-size) px-0 text-sm font-normal",
+                  "h-(--cell-size) rounded-(--cell-radius) px-0 text-sm font-normal",
                   isSelected && SELECTED_CLASS,
                   !isSelected && year === currentYear && "border border-input",
                 )}
@@ -318,7 +318,7 @@ export function CalendarQuickNav({
                   }
                   aria-current={isSelected ? "date" : undefined}
                   className={cn(
-                    "h-(--cell-size) px-0 text-sm font-normal",
+                    "h-(--cell-size) rounded-(--cell-radius) px-0 text-sm font-normal",
                     isSelected && SELECTED_CLASS,
                   )}
                   onClick={() => onSelectMonth(monthIndex)}
