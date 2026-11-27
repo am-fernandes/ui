@@ -55,7 +55,7 @@ function Marker({
       <span
         aria-hidden="true"
         data-slot="timeline-icon"
-        className="flex size-8 shrink-0 items-center justify-center rounded-full border-2 border-border-strong text-muted-foreground"
+        className="flex size-8 shrink-0 items-center justify-center rounded-full border-2 border-connector text-muted-foreground"
       >
         <Icon className="size-4" />
       </span>
@@ -70,7 +70,7 @@ function Marker({
       alt={named ? words.join(" ") : labels.system}
       fallback={named ? initialsOf(words) : labels.systemInitials}
       allowedProtocols={allowedProtocols}
-      className="size-8 font-medium"
+      className="size-8 border-2 border-connector font-medium"
     />
   )
 }
@@ -111,7 +111,7 @@ function Timeline({
                 <span
                   aria-hidden="true"
                   data-slot="timeline-connector"
-                  className={cn("flex-1 bg-border", vertical ? "w-0.5" : "h-0.5")}
+                  className={cn("flex-1 bg-connector", vertical ? "w-0.5" : "h-0.5")}
                 />
               ) : null}
             </div>
