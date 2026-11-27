@@ -1405,7 +1405,7 @@ test.describe("Toaster", () => {
       const s = getComputedStyle(el)
       return { shadow: s.boxShadow, fontSize: s.fontSize, radius: s.borderTopLeftRadius }
     })
-    expect(look).toEqual({ shadow: "none", fontSize: "14px", radius: "12px" })
+    expect(look).toEqual({ shadow: "none", fontSize: "14px", radius: "10px" })
     const close = (await toast.getByRole("button", { name: "Fechar notificação" }).boundingBox())!
     expect(close.width).toBeGreaterThanOrEqual(24)
     expect(close.height).toBeGreaterThanOrEqual(24)
