@@ -355,6 +355,38 @@ export function SemLeads({ novo }: { novo: () => void }) {
 }
 ```
 
+## Timeline
+
+Histórico de eventos: atividades de um chamado, trocas de responsável, avaliações. `items: TimelineItemData[]`, na ordem em que aparecem:
+
+- `id` e `content` (obrigatórios): o conteúdo é livre, quebra linha e nunca é cortado. Texto digitado pelo usuário pede `whitespace-pre-wrap`.
+- `actorName` e `avatarUrl`: o avatar do marcador, com as iniciais das duas primeiras palavras. Sem nome, "Sistema".
+- `icon` (componente): substitui o avatar.
+
+`orientation` é `"vertical"` (padrão) ou `"horizontal"`, que divide a largura entre os eventos: use com poucos eventos e textos curtos. `allowedProtocols` vale para todas as fotos. Dê um `aria-label` que diga qual histórico é (padrão "Histórico"). Para o progresso de um fluxo em etapas, use `Stepper`.
+
+```tsx
+import { UserCheck } from "lucide-react"
+import { Timeline } from "@amfernandesinc/ui"
+
+type Atividade = { id: string; autor?: string; foto: string | null; texto: string; atribuicao: boolean }
+
+export function Atividades({ atividades }: { atividades: Atividade[] }) {
+  return (
+    <Timeline
+      aria-label="Atividades do chamado"
+      items={atividades.map((atividade) => ({
+        id: atividade.id,
+        actorName: atividade.autor,
+        avatarUrl: atividade.foto,
+        icon: atividade.atribuicao ? UserCheck : undefined,
+        content: <p className="whitespace-pre-wrap">{atividade.texto}</p>,
+      }))}
+    />
+  )
+}
+```
+
 ## Estados de carregamento
 
 - Lista ou tabela: `loading` da `DataTable` (linhas esqueleto do tamanho da página).

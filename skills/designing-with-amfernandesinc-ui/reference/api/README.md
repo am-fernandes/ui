@@ -4,7 +4,7 @@
 
 Todo export de `@amfernandesinc/ui`, com o arquivo desta pasta onde ele está documentado. Procure o nome aqui e abra só o arquivo da categoria.
 
-## Componentes (63)
+## Componentes (64)
 
 - `Accordion` → [navigation.md](./navigation.md)
 - `Alert` → [overlays.md](./overlays.md)
@@ -60,6 +60,7 @@ Todo export de `@amfernandesinc/ui`, com o arquivo desta pasta onde ele está do
 - `Switch` → [primitives.md](./primitives.md)
 - `Tabs` → [navigation.md](./navigation.md)
 - `Textarea` → [primitives.md](./primitives.md)
+- `Timeline` → [data.md](./data.md)
 - `TimePicker` → [forms.md](./forms.md)
 - `Toaster` → [overlays.md](./overlays.md)
 - `Toggle` → [primitives.md](./primitives.md)
@@ -128,7 +129,7 @@ Todo export de `@amfernandesinc/ui`, com o arquivo desta pasta onde ele está do
 - `toBRLMoney` → [helpers.md](./helpers.md)
 - `toCents` → [helpers.md](./helpers.md)
 
-## Constantes (40)
+## Constantes (41)
 
 - `alertVariants` → [overlays.md](./overlays.md)
 - `badgeVariants` → [primitives.md](./primitives.md)
@@ -160,6 +161,7 @@ Todo export de `@amfernandesinc/ui`, com o arquivo desta pasta onde ele está do
 - `defaultSliderLabels` → [primitives.md](./primitives.md)
 - `defaultStepperLabels` → [navigation.md](./navigation.md)
 - `defaultTextareaLabels` → [primitives.md](./primitives.md)
+- `defaultTimelineLabels` → [data.md](./data.md)
 - `defaultTimePickerLabels` → [forms.md](./forms.md)
 - `defaultToasterLabels` → [overlays.md](./overlays.md)
 - `defaultTokenLabels` → [primitives.md](./primitives.md)
@@ -171,7 +173,7 @@ Todo export de `@amfernandesinc/ui`, com o arquivo desta pasta onde ele está do
 - `toggleVariants` → [primitives.md](./primitives.md)
 - `typographyVariants` → [primitives.md](./primitives.md)
 
-## Tipos (154)
+## Tipos (157)
 
 - `AccordionItemData` → [navigation.md](./navigation.md)
 - `AccordionProps` → [navigation.md](./navigation.md)
@@ -304,6 +306,9 @@ Todo export de `@amfernandesinc/ui`, com o arquivo desta pasta onde ele está do
 - `TabsProps` → [navigation.md](./navigation.md)
 - `TextareaLabels` → [primitives.md](./primitives.md)
 - `TextareaProps` → [primitives.md](./primitives.md)
+- `TimelineItemData` → [data.md](./data.md)
+- `TimelineLabels` → [data.md](./data.md)
+- `TimelineProps` → [data.md](./data.md)
 - `TimePickerLabels` → [forms.md](./forms.md)
 - `TimePickerProps` → [forms.md](./forms.md)
 - `ToasterLabels` → [overlays.md](./overlays.md)

@@ -166,6 +166,7 @@ São decisões de produto, garantidas no CI da lib. Quebrá-las deixa a tela for
 | Abas | `Tabs` |
 | Paginação fora da DataTable | `Pagination` |
 | Assistente em etapas | `Stepper` |
+| Histórico de eventos (atividades, trocas de responsável) | `Timeline` (`items` com `content`, `actorName`/`avatarUrl` ou `icon`) |
 | Busca de comandos ⌘K | `CommandPalette` (você registra o atalho) |
 
 **Select × Combobox:** `Select` é a lista simples, sem busca (como um `<select>`). Passou de ~15 opções, precisa buscar, escolher várias ou criar valor: `Combobox`.
@@ -272,7 +273,7 @@ Todo texto embutido vem de um objeto `labels` com padrão pt-BR (`defaultDataTab
 
 - Barrel (`import { Button } from "@amfernandesinc/ui"`) ou subpath (`"@amfernandesinc/ui/button"`, `"@amfernandesinc/ui/lib/date"`): mesmo código, os dois são tree-shakeable.
 - Componentes já têm `"use client"`: em Next.js App Router podem ser importados de Server Components; handlers e estado ficam num componente seu com `"use client"`. Os helpers de `lib/*` funcionam no servidor.
-- Ícones: `lucide-react`, tamanho padrão `size-4`. Props de componente pedem o **elemento** (`<IconButton icon={<Trash2 />} />`, `leadingIcon={<Search />}`, `Alert`/`EmptyState` `icon`); `Token` e os dados (`items` do `AppShell`, `DropdownMenu`, `CommandPalette`, nós da `Tree`, opções de `RadioGroup`/`SegmentedControl`) pedem o **componente** (`icon: Trash2`).
+- Ícones: `lucide-react`, tamanho padrão `size-4`. Props de componente pedem o **elemento** (`<IconButton icon={<Trash2 />} />`, `leadingIcon={<Search />}`, `Alert`/`EmptyState` `icon`); `Token` e os dados (`items` do `AppShell`, `DropdownMenu`, `CommandPalette`, nós da `Tree`, eventos da `Timeline`, opções de `RadioGroup`/`SegmentedControl`) pedem o **componente** (`icon: Trash2`).
 - Links de navegação (`AppShell`, `Breadcrumb`, `Pagination`, `Token`): passe `renderLink` para usar o `<Link>` do seu roteador.
 
 ## Acessibilidade que é sua
@@ -319,7 +320,7 @@ Receitas completas (cadastro, listagem com filtros, detalhe em Sheet, dashboard,
 | [`reference/api/README.md`](reference/api/README.md) | Índice de **todo** export → arquivo. A pasta `api/` é gerada do código: props, tipos, padrões, `labels` padrão. Fonte da verdade para nomes e formatos. |
 | [`reference/setup-and-theming.md`](reference/setup-and-theming.md) | Instalação, CSS, `@source`, fontes, tema escuro, tokens de cor, raio, altura, utilitários (`focus-outline`, `state-layer`), Next.js e Vite |
 | [`reference/forms.md`](reference/forms.md) | Cada campo, valores, react-hook-form, `FormData`, reset, validação, `readOnly`, layouts de formulário |
-| [`reference/data-display.md`](reference/data-display.md) | `DataTable` a fundo (servidor, seleção, export), colunas, `Card`, `EmptyState`, `Tree`, `Schedule`, `Image`, `Video` |
+| [`reference/data-display.md`](reference/data-display.md) | `DataTable` a fundo (servidor, seleção, export), colunas, `Card`, `EmptyState`, `Tree`, `Timeline`, `Schedule`, `Image`, `Video` |
 | [`reference/charts.md`](reference/charts.md) | `BarChart`, `LineChart`, `Sparkline` e as regras de visualização |
 | [`reference/overlays.md`](reference/overlays.md) | `Dialog`, `Sheet`, `AlertDialog`, `Popover`, `DropdownMenu`, `Tooltip`, toasts, `Tour` |
 | [`reference/navigation.md`](reference/navigation.md) | `AppShell`, roteadores (`renderLink`), `Breadcrumb`, `Tabs`, `Accordion`, `Pagination`, `Stepper`, `CommandPalette` |

@@ -14,7 +14,7 @@ Decisões deliberadas:
 - **Defaults exportados.** Cada componente exporta também `defaultXLabels` para que consumers possam compor traduções completas a partir do default pt-BR (útil quando 90% das strings já está OK e você só quer trocar 1 ou 2).
 - **`Partial` na prop.** Você sempre passa só o que quer mudar; o componente faz `merge` interno com o default.
 
-30 objetos de `labels`, em 31 componentes (`BarChart` e `LineChart` dividem o mesmo):
+31 objetos de `labels`, em 32 componentes (`BarChart` e `LineChart` dividem o mesmo):
 
 ## Tabela de componentes localizáveis
 
@@ -45,6 +45,7 @@ Decisões deliberadas:
 | `DataTable` | `DataTableLabels` | `defaultDataTableLabels` | 24 |
 | `Schedule` | `ScheduleLabels` | `defaultScheduleLabels` | 11 |
 | `Tree` | `TreeLabels` | `defaultTreeLabels` | 3 |
+| `Timeline` | `TimelineLabels` | `defaultTimelineLabels` | 3 |
 | `BarChart`, `LineChart` | `ChartLabels` | `defaultChartLabels` | 6 |
 | `Image` | `ImageLabels` | `defaultImageLabels` | 2 |
 | `Video` | `VideoLabels` | `defaultVideoLabels` | 3 |

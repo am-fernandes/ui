@@ -108,6 +108,7 @@
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-input: var(--input);
+  --color-connector: var(--connector);
   --color-placeholder: var(--placeholder);
   --color-ring: var(--ring);
   --color-link: var(--link);
@@ -292,6 +293,7 @@
   --border: color-mix(in oklch, var(--primary) 10%, transparent);
   --border-strong: color-mix(in oklch, var(--primary) 18%, transparent);
   --input: oklch(0.63 0.011 248); /* grafite-450 */
+  --connector: var(--border-strong);
   --placeholder: var(--subtle-foreground);
 
   /* Charts. 1-6: series identity, always in this order (neighbours differ in
@@ -403,6 +405,7 @@
   --border: color-mix(in oklch, var(--primary) 10%, transparent);
   --border-strong: color-mix(in oklch, var(--primary) 18%, transparent);
   --input: oklch(0.539 0.012 248); /* grafite-550 */
+  --connector: var(--input);
   --placeholder: var(--subtle-foreground);
   --focus-outline-color: var(--ring);
   --field-focus-ring: color-mix(in oklch, var(--ring) 25%, transparent);
@@ -501,6 +504,7 @@
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-input: var(--input);
+  --color-connector: var(--connector);
   --color-placeholder: var(--placeholder);
   --color-ring: var(--ring);
   --color-link: var(--link);

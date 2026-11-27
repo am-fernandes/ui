@@ -37,7 +37,7 @@ import { Button, DataTable } from "@amfernandesinc/ui"
 import { Button } from "@amfernandesinc/ui/button"
 ```
 
-## Componentes (61 no total)
+## Componentes (62 no total)
 
 | Categoria  | Count | Componentes                                                                                          |
 | ---------- | ----- | ---------------------------------------------------------------------------------------------------- |
@@ -45,7 +45,7 @@ import { Button } from "@amfernandesinc/ui/button"
 | Overlays   | 11    | Alert, AlertDialog, Collapsible, Dialog, DropdownMenu, Popover, Progress, Sheet, Toaster, Tooltip, Tour |
 | Forms      | 6     | Calendar, Combobox, DateInput, DateRangePicker, Select, TimePicker                                   |
 | Navigation | 7     | Accordion, AppShell, Breadcrumb, CommandPalette, Pagination, Stepper, Tabs                          |
-| Data       | 11    | BarChart, Card, DataTable, EmptyState, Image, LineChart, Schedule, ScrollArea, Sparkline, Tree, Video + helpers `columns` / `tableStyles` |
+| Data       | 12    | BarChart, Card, DataTable, EmptyState, Image, LineChart, Schedule, ScrollArea, Sparkline, Timeline, Tree, Video + helpers `columns` / `tableStyles` |
 | Domain     | 9     | CEPInput, CNPJInput, CPFInput, CurrencyInput, FileUpload, InputOTP, MultiInput, PercentageInput, PhoneInput |
 
 Helpers utilitários (BRL em centavos, tamanhos em bytes, `cn`, hooks) estão documentados na aba **Hooks** do Storybook.

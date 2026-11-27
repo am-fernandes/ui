@@ -223,6 +223,10 @@
       "types": "./dist/data/table-styles.d.ts",
       "import": "./dist/data/table-styles.js"
     },
+    "./timeline": {
+      "types": "./dist/data/timeline.d.ts",
+      "import": "./dist/data/timeline.js"
+    },
     "./tree": {
       "types": "./dist/data/tree.d.ts",
       "import": "./dist/data/tree.js"
