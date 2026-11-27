@@ -1384,6 +1384,74 @@ tableStyles(): { readonly table: "w-full caption-bottom text-sm"; readonly heade
 export type TableStyles = ReturnType<typeof tableStyles>
 ```
 
+## `data/timeline` — `@amfernandesinc/ui/timeline`
+
+### Timeline
+
+`import { Timeline } from "@amfernandesinc/ui"` ou `"@amfernandesinc/ui/timeline"`
+
+| Prop | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `items` | `TimelineItemData[]` | **obrigatória** | — |
+| `allowedProtocols` | `string[]` | — | — |
+| `orientation` | `"horizontal" \| "vertical"` | `"vertical"` | — |
+| `labels` | `Partial<TimelineLabels>` | — | — |
+| `ref` | `React.Ref<HTMLOListElement>` | — | — |
+
+Repassa também: atributos HTML do React (`Attributes`, `HTMLAttributes`, `OlHTMLAttributes`).
+
+### defaultTimelineLabels
+
+`import { defaultTimelineLabels } from "@amfernandesinc/ui"` ou `"@amfernandesinc/ui/timeline"`
+
+```ts
+const defaultTimelineLabels: TimelineLabels = {
+  list: "Histórico",
+  system: "Sistema",
+  systemInitials: "SI",
+}
+```
+
+### TimelineItemData
+
+`import type { TimelineItemData } from "@amfernandesinc/ui"`
+
+```ts
+export interface TimelineItemData {
+  id: string
+  content: React.ReactNode
+  actorName?: string
+  avatarUrl?: string | null
+  icon?: LucideIcon
+}
+```
+
+### TimelineLabels
+
+`import type { TimelineLabels } from "@amfernandesinc/ui"`
+
+```ts
+export interface TimelineLabels {
+  list: string
+  system: string
+  systemInitials: string
+}
+```
+
+### TimelineProps
+
+`import type { TimelineProps } from "@amfernandesinc/ui"`
+
+```ts
+export interface TimelineProps extends Omit<React.ComponentPropsWithoutRef<"ol">, "children"> {
+  items: TimelineItemData[]
+  allowedProtocols?: string[]
+  orientation?: "horizontal" | "vertical"
+  labels?: Partial<TimelineLabels>
+  ref?: React.Ref<HTMLOListElement>
+}
+```
+
 ## `data/tree` — `@amfernandesinc/ui/tree`
 
 ### Tree

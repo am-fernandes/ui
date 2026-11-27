@@ -37,6 +37,13 @@ export {
 export { EmptyState, type EmptyStateProps } from "./data/empty-state"
 export { defaultImageLabels, Image, type ImageLabels, type ImageProps } from "./data/image"
 export {
+  Timeline,
+  defaultTimelineLabels,
+  type TimelineItemData,
+  type TimelineLabels,
+  type TimelineProps,
+} from "./data/timeline"
+export {
   ScrollArea,
   ScrollBar,
   type ScrollAreaOrientation,
