@@ -1,5 +1,7 @@
 import { type Locator, type Page, expect } from "@playwright/test"
-import { checkA11y, injectAxe } from "axe-playwright"
+import { checkA11y, configureAxe, injectAxe } from "axe-playwright"
+
+import { whiteOnWarningContrast } from "../../.storybook/a11y-exceptions"
 
 /** The rule set the Storybook test-runner enforces: WCAG 2.1 levels A and AA. */
 export const WCAG_21_AA = {
@@ -24,6 +26,7 @@ export async function expectNoA11yViolations(page: Page, context: Parameters<typ
       { timeout: 15_000 },
     )
     try {
+      await configureAxe(page, { rules: [whiteOnWarningContrast] })
       await checkA11y(page, context, { axeOptions: WCAG_21_AA })
       return
     } catch (error) {

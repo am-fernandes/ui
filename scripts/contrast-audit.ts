@@ -125,7 +125,12 @@ const pairs: Pair[] = [
   ...SURFACES.map((s): Pair => ["link", s, 4.5]),
   ["link", "muted", 4.5],
   ["link", "accent", 4.5, "marker and links in a selected row"],
-  ...STATUS.map((s): Pair => [`${s}-foreground`, s, 4.5]),
+  ...STATUS.map(
+    (s): Pair =>
+      s === "warning"
+        ? [`${s}-foreground`, s, 3, "accepted exception to 4.5:1 (AM-683)"]
+        : [`${s}-foreground`, s, 4.5],
+  ),
   ...SURFACES.map((s): Pair => ["destructive-text", s, 4.5, "error message"]),
   ["selection-foreground", "selection", 4.5],
   ["sidebar-foreground", "sidebar", 4.5],

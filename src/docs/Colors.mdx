@@ -172,12 +172,12 @@ Dois níveis da primária, translúcidos, e a borda sólida dos campos.
 
 ## Status
 
-**Um fundo forte para cada status, nunca uma versão de fundo claro.** O texto sobre ele é o `-foreground` do token: branco em erro, sucesso e informação; escuro no alerta, porque branco sobre ouro não chega a 4,5:1 sem virar marrom.
+**Um fundo forte para cada status, nunca uma versão de fundo claro.** O texto sobre ele é o `-foreground` do token: branco nos quatro. No alerta, branco sobre ouro fica em 3,2:1, abaixo dos 4,5:1 da WCAG AA para texto pequeno: é a única exceção aceita (AM-683), registrada em `bun run audit:contrast` (mínimo de 3:1) e na regra de contraste do axe.
 
 Cada status tem a sua luminosidade, e o verde puxa para o azul. Assim nenhum par depende só do eixo vermelho-verde, que 1 em cada 12 homens não distingue bem (veja **Foundations / Color Vision**).
 
 <Swatch name="Destructive" varName="--destructive" note="erro, excluir" />
-<Swatch name="Warning" varName="--warning" note="alerta. Texto: --warning-foreground (escuro)" />
+<Swatch name="Warning" varName="--warning" note="alerta. Texto: --warning-foreground (branco)" />
 <Swatch name="Success" varName="--success" note="sucesso, concluído" />
 <Swatch name="Info" varName="--info" note="informação, novidade. No escuro sobe um tom para não sumir no fundo" />
 <Swatch name="Destructive text" varName="--destructive-text" note="erro sobre uma superfície, sem fundo: borda e mensagem de campo" />

@@ -3,9 +3,11 @@ import type { Preview } from "@storybook/react-vite"
 
 import "../src/styles/fonts.css"
 import "../src/styles/tokens.css"
+import { whiteOnWarningContrast } from "./a11y-exceptions"
 
 const preview: Preview = {
   parameters: {
+    a11y: { config: { rules: [whiteOnWarningContrast] } },
     options: {
       storySort: {
         order: [

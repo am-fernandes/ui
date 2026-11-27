@@ -12,8 +12,8 @@ const badgeVariants = cva(
         default: "border-transparent bg-primary text-primary-foreground",
         secondary: "border-transparent bg-secondary text-secondary-foreground",
         destructive: "border-transparent bg-destructive text-destructive-foreground",
-        // Status: one strong fill each, with the foreground the token names
-        // (dark on warning, white on the others). There is no tinted version.
+        // Status: one strong fill each, with the foreground the token names.
+        // There is no tinted version.
         info: "border-transparent bg-info text-info-foreground",
         success: "border-transparent bg-success text-success-foreground",
         warning: "border-transparent bg-warning text-warning-foreground",

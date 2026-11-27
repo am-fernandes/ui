@@ -243,11 +243,11 @@
 
   /* Status: one strong fill each, never a tinted version. Each sits at its own
      lightness and the green leans to blue, so no pair depends on the red-green
-     axis alone (Foundations/Color Vision). Warning takes dark text. */
+     axis alone (Foundations/Color Vision). */
   --destructive: oklch(0.551 0.19 29.3);
   --destructive-foreground: oklch(1 0 0);
   --warning: oklch(0.66 0.137 80.2);
-  --warning-foreground: oklch(0.173 0.038 249.2);
+  --warning-foreground: oklch(1 0 0);
   --success: oklch(0.52 0.1 168.2);
   --success-foreground: oklch(1 0 0);
   --info: oklch(0.358 0.088 244);
@@ -363,7 +363,7 @@
   --destructive: oklch(0.551 0.19 29.3);
   --destructive-foreground: oklch(1 0 0);
   --warning: oklch(0.66 0.137 80.2);
-  --warning-foreground: oklch(0.173 0.038 249.2);
+  --warning-foreground: oklch(1 0 0);
   --success: oklch(0.52 0.1 168.2);
   --success-foreground: oklch(1 0 0);
   --info: oklch(0.528 0.1 248.8);

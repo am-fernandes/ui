@@ -55,7 +55,7 @@ Helpers utilitários (BRL em centavos, tamanhos em bytes, `cn`, hooks) estão do
 - **Claro e escuro, flat** — sem shadows; o tema escuro liga com a classe `dark` no `<html>`.
 - **Paleta do grupo, sóbria** — grafite e o marinho que AM Fernandes e Ponto Forte dividem; cada status tem um fundo forte só, e as cores são conferidas também sob daltonismo simulado (`bun run audit:contrast`).
 - **Raio por papel em três níveis** (4, 8 e 12px), densidade enterprise (`text-sm` no body; controles de 32, 40 ou 44px de altura pelo `size`, campos e botões alinhados).
-- **WCAG AA** de contraste e foco; cursor pointer em tudo que é clicável.
+- **WCAG AA** de contraste e foco, com uma exceção aceita (texto branco sobre `warning`, 3,2:1); cursor pointer em tudo que é clicável.
 - **Textos em pt-BR, trocáveis** — todo texto sai de `labels` com padrão pt-BR (ver Foundations/i18n).
 - **Testado em navegador** — além dos testes de unidade, specs Playwright por componente (teclado, axe, 360px, cores forçadas) rodam na CI.
 

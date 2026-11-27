@@ -291,7 +291,7 @@ test.describe("Toggle", () => {
         expect(
           await contrast(page, on.text, on.fill),
           `${variant}: text on its fill`,
-        ).toBeGreaterThanOrEqual(4.5)
+        ).toBeGreaterThanOrEqual(variant === "warning" ? 3 : 4.5)
         fills.add(on.fill)
       }
       // One colour per status: they are told apart.
