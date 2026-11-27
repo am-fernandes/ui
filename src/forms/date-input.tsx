@@ -427,7 +427,7 @@ function DateInput({
           className={cn(
             // 16px on touch screens: iOS zooms the page into a focused field
             // whose text is smaller.
-            "flex w-full rounded-element border border-input bg-card text-sm pointer-coarse:text-base tabular-nums field-states disabled:cursor-default",
+            "flex w-full rounded-element border border-border-strong bg-card text-sm pointer-coarse:text-base tabular-nums field-states disabled:cursor-default",
             controlHeight[size],
             controlPaddingX[size],
             // Room for the calendar button.

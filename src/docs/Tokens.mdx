@@ -10,7 +10,7 @@ A filosofia é simples: cada propriedade visual do design system passa por um to
 
 ## Radius
 
-Três níveis, por papel: `--radius-inner` (4px), `--radius-element` (8px) e `--radius-container` (12px), com os utilitários `rounded-inner`, `rounded-element` e `rounded-container`. A escala do Tailwind cai neles: `rounded-xs`/`rounded-sm` → inner, `rounded-md` → element, `rounded-lg` até `rounded-4xl` → container.
+Três níveis, por papel: `--radius-inner` (4px), `--radius-element` (6px) e `--radius-container` (10px), com os utilitários `rounded-inner`, `rounded-element` e `rounded-container`. A escala do Tailwind cai neles: `rounded-xs`/`rounded-sm` → inner, `rounded-md` → element, `rounded-lg` até `rounded-4xl` → container. `--radius-track` (8px, `rounded-track`) é exclusivo do trilho das Tabs e do SegmentedControl.
 
 A explicação completa, a lista por componente e a regra do concêntrico estão em [Radius](?path=/docs/foundations-radius--docs).
 
@@ -85,8 +85,8 @@ Input, Textarea, os inputs brasileiros, MultiInput, TimePicker, os selects de pa
 
 | Estado | Visual |
 |---|---|
-| repouso | borda sólida `--input` |
-| hover (só com mouse, nunca desabilitado) | anel interno de 2px na cor da borda a 30% |
+| repouso | borda `--border-strong` |
+| hover (só com mouse, nunca desabilitado) | anel interno de 2px de `--input` a 30% |
 | foco | borda `--ring` e anel interno de 2px dela a 20% (`--field-focus-ring`; 25% no escuro) |
 | erro (`border-destructive-text field-error`) | borda vermelha, também no foco; hover com o vermelho a 30% |
 
@@ -117,10 +117,10 @@ Dois níveis da cor primária, translúcidos, que leem igual sobre qualquer supe
 | Token | Valor | Uso |
 |---|---|---|
 | `--border` | 10% da primária | divisores de dentro de uma superfície: linhas de tabela, separadores de menu |
-| `--border-strong` | 18% da primária | molduras que separam camadas: card, tabela, menu, popover, dialog, menu lateral |
-| `--input` | sólida, 3:1 ou mais | borda de campo, checkbox e radio desmarcados, trilho do switch desligado |
+| `--border-strong` | 18% da primária | molduras que separam camadas: card, tabela, campo, checkbox, radio, toggle, menu, popover, dialog, menu lateral |
+| `--input` | sólida, 3:1 ou mais | botão outline, trilho do switch desligado e do slider, marcação do combobox múltiplo, ano atual do calendário |
 
-Sem sombra, é a borda forte que separa um menu aberto do conteúdo. `--input` é sólida e mais escura porque o contorno é o que identifica um campo (WCAG 1.4.11).
+Sem sombra, é a borda forte que separa um menu aberto do conteúdo. `--input` é sólida e mais escura, a 3:1 ou mais. Campos, checkbox, radio e toggle usam `--border-strong`, como o resto das molduras, e ficam abaixo de 3:1.
 
 ## Z-index scale
 

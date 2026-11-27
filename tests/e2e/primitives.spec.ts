@@ -44,15 +44,17 @@ async function setDarkTheme(page: Page) {
  * WCAG contrast ratio between two CSS colours, resolved by the browser (the
  * tokens are oklch, and computed styles come back in that notation).
  */
-function contrast(page: Page, first: string, second: string) {
+function contrast(page: Page, first: string, second: string, backdrop = "#ffffff") {
   return page.evaluate(
-    ([a, b]) => {
+    ([a, b, under]) => {
       const canvas = document.createElement("canvas")
       canvas.width = canvas.height = 1
       const context = canvas.getContext("2d", { willReadFrequently: true })
       if (!context) throw new Error("no 2d context")
       const luminance = (color: string) => {
         context.fillStyle = "#ffffff"
+        context.fillRect(0, 0, 1, 1)
+        context.fillStyle = under as string
         context.fillRect(0, 0, 1, 1)
         context.fillStyle = color
         context.fillRect(0, 0, 1, 1)
@@ -65,7 +67,7 @@ function contrast(page: Page, first: string, second: string) {
       const [high, low] = [luminance(a as string), luminance(b as string)].sort((x, y) => y - x)
       return ((high ?? 0) + 0.05) / ((low ?? 0) + 0.05)
     },
-    [first, second],
+    [first, second, backdrop],
   )
 }
 
@@ -269,7 +271,7 @@ test.describe("Toggle", () => {
         "pressed border against its own fill",
       ).toBeGreaterThanOrEqual(3)
       // Pressed must never be the fainter of the two states.
-      expect(onEdge).toBeGreaterThanOrEqual(await contrast(page, off.border, surface))
+      expect(onEdge).toBeGreaterThanOrEqual(await contrast(page, off.border, surface, surface))
     })
 
     // The unit test only saw class names; this is what the eye gets.

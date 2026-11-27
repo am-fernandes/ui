@@ -9,7 +9,7 @@ import { Label } from "./label"
 export type LabelPosition = "up" | "left" | "hidden"
 
 const fieldTriggerBase =
-  "inline-flex w-full cursor-pointer items-center gap-2 whitespace-nowrap rounded-element border border-input bg-card text-left text-sm font-normal field-states disabled:pointer-events-none disabled:cursor-default [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+  "inline-flex w-full cursor-pointer items-center gap-2 whitespace-nowrap rounded-element border border-border-strong bg-card text-left text-sm font-normal field-states disabled:pointer-events-none disabled:cursor-default [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
 
 /**
  * A button that looks and reacts like a text field (Astryx field look): the

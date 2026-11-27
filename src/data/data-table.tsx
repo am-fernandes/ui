@@ -1491,7 +1491,10 @@ function DataTable<TData>({
                           <button
                             type="button"
                             onClick={header.column.getToggleSortingHandler()}
-                            className="-mx-2 inline-flex h-8 items-center gap-2 rounded-element px-2 text-left cursor-pointer transition-colors state-layer focus-visible:focus-outline-inset"
+                            className={cn(
+                              "-mx-2 inline-flex h-8 items-center gap-2 rounded-element px-2 text-left cursor-pointer transition-colors state-layer focus-visible:focus-outline-inset",
+                              compact && "-mx-2.25 -my-px h-8.5 px-2.25",
+                            )}
                             aria-describedby={sortHintId}
                           >
                             <span id={sortHintId} hidden>

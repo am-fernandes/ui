@@ -331,7 +331,7 @@ function Select({
             <SelectPrimitive.ScrollUpButton className={scrollButtonClass}>
               <ChevronUp aria-hidden="true" />
             </SelectPrimitive.ScrollUpButton>
-            <SelectPrimitive.Viewport className="p-1">
+            <SelectPrimitive.Viewport className="p-0.75">
               {options.map((entry, index) =>
                 isGroup(entry) ? (
                   <React.Fragment key={`group-${entry.label}`}>

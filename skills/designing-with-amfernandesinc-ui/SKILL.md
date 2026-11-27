@@ -66,7 +66,7 @@ São decisões de produto, garantidas no CI da lib. Quebrá-las deixa a tela for
 | Regra | Na prática |
 |---|---|
 | **Flat, sem sombra** | Nunca `shadow-*`. Hierarquia vem de borda (`border-border` / `border-border-strong`), superfície (`bg-background` → `bg-card`), espaço e tipografia. |
-| **Raio por papel, 3 níveis** | `rounded-inner` 4px (peças dentro de controles), `rounded-element` 8px (o controle: botão, campo, item de menu), `rounded-container` 12px (card, dialog, painel). A escala do Tailwind cai nesses três (`rounded-sm`=4, `rounded-md`=8, `rounded-lg`…`rounded-4xl`=12). Nada de `rounded-[10px]`. `rounded-full` só para avatar, pílula, ponto. |
+| **Raio por papel, 3 níveis** | `rounded-inner` 4px (peças dentro de controles), `rounded-element` 6px (o controle: botão, campo, item de menu), `rounded-container` 10px (card, dialog, painel). A escala do Tailwind cai nesses três (`rounded-sm`=4, `rounded-md`=6, `rounded-lg`…`rounded-4xl`=10). Nada de `rounded-[10px]`. `rounded-full` só para avatar, pílula, ponto. |
 | **Claro e escuro** | Use só tokens de cor: a tela acompanha o tema sozinha. Ajuste exclusivo do escuro: variante `dark:`. Teste os dois temas. |
 | **Densidade enterprise** | Corpo `text-sm` (14px). Controles com `size` `sm` 32px, `md` 40px (padrão), `lg` 44px; campos e botões do mesmo `size` alinham. Para algo seu na mesma altura: `h-control-md`. |
 | **Foco único** | Um anel de foco para tudo: em elemento clicável seu, `focus-visible:focus-outline` (ou `focus-visible:focus-outline-inset` em célula/linha). Não remova o foco dos componentes. |

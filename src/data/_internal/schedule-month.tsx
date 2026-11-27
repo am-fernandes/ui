@@ -201,7 +201,7 @@ function MoreEvents({
       align="start"
       collisionPadding={8}
       aria-label={dayLabel}
-      className="w-64 p-2"
+      className="w-64 p-1.25"
     >
       <p className="px-1 pb-1.5 text-xs font-medium text-muted-foreground first-letter:uppercase">
         {dayLabel}

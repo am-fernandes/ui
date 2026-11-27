@@ -105,11 +105,11 @@ function Tabs({
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
         className={cn(
-          "relative inline-flex items-center rounded-element bg-muted p-1 text-muted-foreground",
+          "relative inline-flex items-stretch rounded-track bg-muted p-1 text-muted-foreground",
           // Wider than its container: the list scrolls instead of spilling out
           // (start-aligned, or what overflows on the left would be out of reach).
           isVertical
-            ? "flex-col items-stretch justify-center"
+            ? "flex-col justify-center"
             : "max-w-full justify-start overflow-x-auto [scrollbar-width:thin]",
         )}
       >

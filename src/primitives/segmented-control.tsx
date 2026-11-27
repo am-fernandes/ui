@@ -194,7 +194,7 @@ function SegmentedControl({
       loop
       className={cn(
         // The track has the control height; the segments stretch to fill it.
-        "items-stretch gap-1 rounded-element bg-muted p-1 text-muted-foreground",
+        "items-stretch gap-1 rounded-track bg-muted p-1 text-muted-foreground",
         // On paper the track and the chosen segment keep their fills.
         "[print-color-adjust:exact] forced-colors:border forced-colors:border-[ButtonText]",
         controlHeight[size],

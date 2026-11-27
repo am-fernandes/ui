@@ -162,7 +162,7 @@ function Calendar({
   // the user-provided `classNames` override changes — not on every render.
   const finalClassNames = React.useMemo(() => {
     const buttonNavClass =
-      "pointer-events-auto size-(--cell-size) p-0 select-none aria-disabled:opacity-50"
+      "pointer-events-auto size-(--cell-size) rounded-(--cell-radius) p-0 select-none aria-disabled:opacity-50"
     const variantClass = buttonVariants({ variant: buttonVariant })
     return {
       ...STATIC_CLASS_NAMES,
@@ -317,11 +317,11 @@ const DAY_BUTTON_DEFAULTS = getDefaultClassNames()
 const DAY_BUTTON_BASE_CLASS = [
   // A day is --day-size wide, whatever the width of its number: the quick
   // navigation panels are sized from it.
-  "relative isolate z-10 flex aspect-square size-auto w-full min-w-(--day-size) px-0 flex-col gap-1 border-0 leading-none font-normal",
+  "relative isolate z-10 flex aspect-square size-auto w-full min-w-(--day-size) rounded-(--cell-radius) px-0 flex-col gap-1 border-0 leading-none font-normal",
   "transition-colors duration-150",
-  "data-[range-end=true]:rounded-(--cell-radius) data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground",
+  "data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground",
   "data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-muted data-[range-middle=true]:text-foreground",
-  "data-[range-start=true]:rounded-(--cell-radius) data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground",
+  "data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground",
   "data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground",
   // Forced colours (Windows high contrast) drop every fill: the chosen days
   // get a solid outline, the days between the ends of a range a dashed one.

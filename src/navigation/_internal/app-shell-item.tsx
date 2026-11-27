@@ -20,7 +20,7 @@ function isSafeHref(href: string | undefined): href is string {
 
 const flyoutContentClass = cn(
   "z-(--z-popover) min-w-48 overflow-y-auto overflow-x-hidden",
-  "max-h-(--radix-dropdown-menu-content-available-height) rounded-container border border-border-strong bg-popover p-1 text-popover-foreground outline-none",
+  "max-h-(--radix-dropdown-menu-content-available-height) rounded-container border border-border-strong bg-popover p-0.75 text-popover-foreground outline-none",
   motionMenu,
   "data-[state=open]:animate-in data-[state=closed]:animate-out",
   "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",

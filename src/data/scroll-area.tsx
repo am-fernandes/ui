@@ -80,7 +80,7 @@ function ScrollBar({ className, orientation = "vertical", ref, ...props }: Scrol
     >
       <ScrollAreaPrimitive.ScrollAreaThumb
         data-slot="scroll-area-thumb"
-        // The field-border colour: 3:1 or more against the surface in both themes.
+        // The --input colour: 3:1 or more against the surface in both themes.
         className="relative flex-1 rounded-inner bg-input forced-colors:bg-[CanvasText]"
       />
     </ScrollAreaPrimitive.ScrollAreaScrollbar>

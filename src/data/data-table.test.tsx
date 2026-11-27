@@ -779,6 +779,7 @@ describe("DataTable", () => {
           columns={columns}
           data={data}
           density="compact"
+          sortableColumns={["name"]}
           pagination={{ pageSize: 2 }}
           data-testid="tabela"
         />,
@@ -786,12 +787,21 @@ describe("DataTable", () => {
       expect(screen.getByTestId("tabela")).toHaveAttribute("data-density", "compact")
       expect(screen.getByRole("cell", { name: "Bravo" })).toHaveClass("py-2")
       expect(screen.getByRole("button", { name: "Próxima página" })).toHaveClass("size-control-sm")
+      expect(screen.getByRole("button", { name: "Name" })).toHaveClass(
+        "-mx-2.25",
+        "-my-px",
+        "h-8.5",
+        "px-2.25",
+      )
     })
 
     it("keeps the default rows otherwise", () => {
-      render(<DataTable columns={columns} data={data} data-testid="tabela" />)
+      render(
+        <DataTable columns={columns} data={data} sortableColumns={["name"]} data-testid="tabela" />,
+      )
       expect(screen.getByTestId("tabela")).toHaveAttribute("data-density", "default")
       expect(screen.getByRole("cell", { name: "Bravo" })).toHaveClass("py-2.5")
+      expect(screen.getByRole("button", { name: "Name" })).toHaveClass("-mx-2", "h-8", "px-2")
     })
   })
 

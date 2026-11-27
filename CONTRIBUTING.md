@@ -48,8 +48,8 @@ Antes de qualquer push: `bun run typecheck && bun run test && bun run build`.
 Estas decisões são deliberadas. Não as questione num PR sem antes abrir issue separada.
 
 - **Claro e escuro.** Os dois temas usam os mesmos papéis de cor; o escuro liga com a classe `dark` no `<html>` (ou num ancestral). Componentes não usam `dark:`: quem muda são os tokens de `src/styles/tokens.css` (`:root` e `.dark`). Toda cor nova entra nos dois blocos e passa em `bun run audit:contrast`.
-- **Flat.** Sem shadows, sem elevation tokens. Hierarquia é dada por borda, espaço e tipografia. A borda tem dois níveis da cor primária, translúcidos: `--border` (10%) para divisores e `--border-strong` (18%) para molduras; a dos campos (`--input`) é sólida, a 3:1 ou mais.
-- **Raio por papel, três níveis.** `inner` 4px (peças dentro de um controle e peças baixas, como Badge e Token), `element` 8px (o controle), `container` 12px (superfícies que agrupam ou flutuam). Use `rounded-inner`, `rounded-element` e `rounded-container`; a escala do Tailwind cai nos três. Peça dentro de peça segue a conta do concêntrico (raio de dentro = raio de fora − espaço). `rounded-full` só para círculo. Detalhes e a lista por componente em Foundations/Radius.
+- **Flat.** Sem shadows, sem elevation tokens. Hierarquia é dada por borda, espaço e tipografia. A borda tem dois níveis da cor primária, translúcidos: `--border` (10%) para divisores e `--border-strong` (18%) para molduras, campos e controles; a do botão outline (`--input`) é sólida, a 3:1 ou mais.
+- **Raio por papel, três níveis.** `inner` 4px (peças dentro de um controle e peças baixas, como Badge e Token), `element` 6px (o controle), `container` 10px (superfícies que agrupam ou flutuam). Use `rounded-inner`, `rounded-element` e `rounded-container`; a escala do Tailwind cai nos três. Peça dentro de peça segue a conta do concêntrico (raio de dentro = raio de fora − espaço). `rounded-track` (8px) é exclusivo do trilho das Tabs e do SegmentedControl. `rounded-full` só para círculo. Detalhes e a lista por componente em Foundations/Radius.
 - **Densidade enterprise.**
   - Body: `text-sm`.
   - Controles (botões, campos, gatilhos): altura fixa pelo `size` — `sm` 32px, `md` 40px (padrão), `lg` 44px, borda incluída — com `controlHeight`/`controlPaddingX` de `src/primitives/_internal/control-size.ts` (`h-control-*`). A altura não sai do padding: um campo e um botão do mesmo tamanho se alinham.
@@ -229,7 +229,7 @@ Definidos em `src/styles/tokens.css` dentro de `@theme inline`. Os mais usados:
 
 | Token | Valor | Quando usar |
 |---|---|---|
-| `--radius-inner` / `--radius-element` / `--radius-container` | `4px` / `8px` / `12px` | Cantos por papel: `rounded-inner`, `rounded-element`, `rounded-container`. Ver Foundations/Radius. |
+| `--radius-inner` / `--radius-element` / `--radius-container` | `4px` / `6px` / `10px` | Cantos por papel: `rounded-inner`, `rounded-element`, `rounded-container`. Ver Foundations/Radius. |
 | `--duration-fast` | 175ms | Hover, Tooltip, DropdownMenu, Accordion, Collapsible; padrão de todo `transition*`. |
 | `--duration-medium-min` | 310ms | Popover, Tour (entrada). |
 | `--duration-medium` | 410ms | Sheet, menu mobile do AppShell. |
@@ -246,7 +246,7 @@ Definidos em `src/styles/tokens.css` dentro de `@theme inline`. Os mais usados:
 | `--color-destructive` | fundo forte | Erros, ações destrutivas. Texto de erro sobre superfície: `--color-destructive-text`. |
 | `--color-success` / `--color-warning` / `--color-info` | fundo forte | Estados não-erro. Sempre com o `-foreground` do token; não existe versão de fundo claro. |
 | `--color-muted-foreground` / `--color-subtle-foreground` | — | Texto de apoio (description, captions) e terceiro nível (placeholder, dica). |
-| `--color-input` / `--color-border` / `--color-border-strong` | — | Borda de campo, divisor e moldura. |
+| `--color-input` / `--color-border` / `--color-border-strong` | — | Botão outline e trilhos; divisor; moldura, campo e controle. |
 | `--font-sans` | Geist | Texto. |
 | `--font-mono` | Geist Mono | Campos numéricos, código, IDs (`tabular-nums`). |
 
