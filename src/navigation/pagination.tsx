@@ -468,7 +468,7 @@ function Pagination({
                   if (current !== 1) onPageChange(1)
                 }}
                 className={cn(
-                  "rounded-element border border-input bg-card px-2 text-xs text-foreground field-states disabled:cursor-default disabled:opacity-50",
+                  "rounded-element border border-border-strong bg-card px-2 text-xs text-foreground field-states disabled:cursor-default disabled:opacity-50",
                   size === "sm" ? "h-8" : "h-9",
                 )}
               >

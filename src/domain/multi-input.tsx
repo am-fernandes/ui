@@ -381,7 +381,7 @@ function MultiInput(props: MultiInputProps) {
         className={cn(
           // The height comes from the control size; the vertical padding only
           // spaces the rows once the items wrap.
-          "flex flex-wrap items-center gap-1.5 rounded-element border border-input bg-card text-sm field-states cursor-text",
+          "flex flex-wrap items-center gap-1.5 rounded-element border border-border-strong bg-card text-sm field-states cursor-text",
           controlMinHeight[size],
           controlPaddingX[size],
           size === "sm" ? "py-1" : "py-1.5",

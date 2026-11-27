@@ -215,7 +215,7 @@ function Textarea({
         onChange?.(e)
       }}
       className={cn(
-        "w-full rounded-element border border-input bg-card text-sm field-states",
+        "w-full rounded-element border border-border-strong bg-card text-sm field-states",
         fieldReadOnlyClass,
         textareaSize[size],
         "placeholder:text-placeholder",

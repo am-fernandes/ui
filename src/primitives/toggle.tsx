@@ -42,32 +42,31 @@ const toggleVariants = cva(
   {
     variants: {
       variant: {
-        // Off = plain outline (`border-input bg-card`, same as
-        // Button's `outline` variant so a Toggle in its idle state lines
-        // up next to outline buttons without looking thinner).
+        // Off = plain outline (`border-border-strong bg-card`, the frame of
+        // fields and cards).
         // On = the colour of the variant. The status variants take a solid
         // fill. The default takes the selection tone (`accent`), which alone
         // is only 1.2:1 from the surface, so its edge is the functional blue
         // (`ring`): 5.6:1 against the surface and 4.6:1 against the fill
         // (8.2 and 5.9 in the dark theme). Pressed is never the fainter state.
         default: [
-          "border-input bg-card",
+          "border-border-strong bg-card",
           "data-[state=on]:bg-accent data-[state=on]:text-accent-foreground data-[state=on]:border-ring",
         ].join(" "),
         info: [
-          "border-input bg-card",
+          "border-border-strong bg-card",
           "data-[state=on]:bg-info data-[state=on]:text-info-foreground data-[state=on]:border-info",
         ].join(" "),
         success: [
-          "border-input bg-card",
+          "border-border-strong bg-card",
           "data-[state=on]:bg-success data-[state=on]:text-success-foreground data-[state=on]:border-success",
         ].join(" "),
         warning: [
-          "border-input bg-card",
+          "border-border-strong bg-card",
           "data-[state=on]:bg-warning data-[state=on]:text-warning-foreground data-[state=on]:border-warning",
         ].join(" "),
         destructive: [
-          "border-input bg-card",
+          "border-border-strong bg-card",
           "data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground data-[state=on]:border-destructive",
         ].join(" "),
       },

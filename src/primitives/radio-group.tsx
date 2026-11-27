@@ -136,7 +136,7 @@ function RadioGroup({
                 data-invalid={hasError ? "" : undefined}
                 className={cn(
                   // 2px down: centred on the first 20px line of its label.
-                  "mt-0.5 aspect-square size-4 shrink-0 cursor-pointer rounded-full border border-input text-primary data-[state=checked]:border-primary",
+                  "mt-0.5 aspect-square size-4 shrink-0 cursor-pointer rounded-full border border-border-strong text-primary data-[state=checked]:border-primary",
                   "focus-visible:focus-outline",
                   "disabled:cursor-default",
                   // The error marks the radios too, not only the text below.

@@ -142,7 +142,7 @@ Use sempre os pares superfície + texto. Todas existem como `bg-*`, `text-*`, `b
 | Destaque leve | `bg-accent`, `text-accent-foreground` |
 | Erro / perigo | `bg-destructive`, `text-destructive-foreground`; texto de erro sobre superfície: `text-destructive-text` |
 | Status | `success`, `warning`, `info` (cada um com `-foreground`) |
-| Linhas e campos | `border-border` (divisória), `border-border-strong` (contorno), `border-input` (campo), `text-placeholder`, `ring` (foco), `text-link` |
+| Linhas e campos | `border-border` (divisória), `border-border-strong` (contorno, campo e controle), `border-input` (botão outline, marcação do combobox múltiplo, ano atual do calendário), `text-placeholder`, `ring` (foco), `text-link` |
 | Categorias (tags, agenda) | `category-{gray,red,orange,yellow,green,teal,blue,purple,pink}-{bg,text,solid}` |
 | Menu lateral | `sidebar`, `sidebar-foreground`, `sidebar-primary`, `sidebar-accent`, `sidebar-border`, `sidebar-ring` |
 | Gráficos | `chart-1`…`chart-6` (séries), `chart-seq-1`…`5` (sequencial), `chart-div-1`…`7` (divergente) |

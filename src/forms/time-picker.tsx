@@ -21,7 +21,7 @@ const MAX_MINUTE = 59
 // text on touch screens: iOS zooms the page into a focused field whose text
 // is smaller.
 const containerClasses =
-  "inline-flex items-center gap-1 rounded-element border border-input bg-card text-sm pointer-coarse:text-base field-states"
+  "inline-flex items-center gap-1 rounded-element border border-border-strong bg-card text-sm pointer-coarse:text-base field-states"
 
 const fieldClasses =
   "w-7 bg-transparent text-center tabular-nums outline-none placeholder:text-placeholder disabled:cursor-default"

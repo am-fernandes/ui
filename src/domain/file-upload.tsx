@@ -582,7 +582,7 @@ function FileUpload({
             aria-labelledby={labelId}
             aria-describedby={describedBy === "" ? undefined : describedBy}
             className={cn(
-              "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-element border border-dashed border-input bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
+              "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-element border border-dashed border-border-strong bg-transparent px-4 py-6 text-sm transition-colors cursor-pointer",
               "state-layer",
               "focus-visible:focus-outline",
               isDragging && "border-primary bg-accent/60",

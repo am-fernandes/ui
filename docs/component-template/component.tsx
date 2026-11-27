@@ -106,7 +106,7 @@ function Component({
         readOnly={readOnly}
         data-readonly={isReadOnly ? "" : undefined}
         className={cn(
-          "w-full min-w-0 rounded-element border border-input bg-card text-sm outline-none field-states",
+          "w-full min-w-0 rounded-element border border-border-strong bg-card text-sm outline-none field-states",
           "placeholder:text-placeholder disabled:cursor-default",
           fieldReadOnlyClass,
           controlHeight.md,

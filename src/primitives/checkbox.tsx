@@ -72,7 +72,7 @@ function Checkbox({
           className={cn(
             // 2px down: centred on the first 20px line of the label, however
             // many lines the label takes.
-            "peer mt-0.5 size-4 shrink-0 cursor-pointer rounded-inner border border-input",
+            "peer mt-0.5 size-4 shrink-0 cursor-pointer rounded-inner border border-border-strong",
             "focus-visible:focus-outline",
             "disabled:cursor-default",
             "data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",

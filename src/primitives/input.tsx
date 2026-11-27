@@ -86,7 +86,7 @@ function Input({
         input.focus()
       }}
       className={cn(
-        "relative flex w-full items-center rounded-element border border-input bg-card text-sm field-states",
+        "relative flex w-full items-center rounded-element border border-border-strong bg-card text-sm field-states",
         fieldReadOnlyClass,
         controlHeight[size],
         hasError && "border-destructive-text field-error",

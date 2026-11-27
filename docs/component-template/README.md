@@ -46,7 +46,7 @@ Arquivos-modelo para criar um novo componente em `@amfernandesinc/ui` seguindo a
 
 - `FieldShell` + `useFieldIds` para wiring de label/description/error.
 - ARIA mínimo: `aria-invalid`, `aria-describedby`, `aria-required`.
-- Visual de campo: `rounded-element border border-input bg-card field-states`, com a altura de `controlHeight`.
+- Visual de campo: `rounded-element border border-border-strong bg-card field-states`, com a altura de `controlHeight`.
 - Estado de erro com `border-destructive-text field-error` e somente leitura com `fieldReadOnlyClass`, sem placeholder.
 - Textos em `labels`, com `defaultComponentLabels` exportado.
 - `ref` encaminhado para o `<input>`.

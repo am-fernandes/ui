@@ -4,8 +4,8 @@
 // the dark one), resolves every colour token and checks two things:
 //
 //   1. Contrast (WCAG) of the pairs the components actually draw: text on its
-//      surface (≥ 4.5:1) and non-text UI such as the focus ring, the field
-//      border and solid marks (≥ 3:1, WCAG 1.4.11).
+//      surface (≥ 4.5:1) and non-text UI such as the focus ring, the outline
+//      button border and solid marks (≥ 3:1, WCAG 1.4.11).
 //   2. Colour-vision deficiency: colours that must be told apart (status fills,
 //      category dots, chart series) stay far enough from each other when
 //      protanopia and deuteranopia are simulated. See Foundations/Color Vision.
@@ -134,7 +134,7 @@ const pairs: Pair[] = [
   ...CATEGORIES.map((c): Pair => [`category-${c}-text`, `category-${c}-bg`, 4.5]),
   ...SURFACES.map((s): Pair => ["ring", s, 3, "focus ring"]),
   ["primary", "card", 3, "checked controls, solid buttons"],
-  ...SURFACES.map((s): Pair => ["input", s, 3, "field border, unchecked controls"]),
+  ...SURFACES.map((s): Pair => ["input", s, 3, "outline button, switch and slider tracks"]),
   ...["card", "popover"].flatMap((bg) =>
     STATUS.map((s): Pair => [s, bg, 3, "status fill and dot"]),
   ),

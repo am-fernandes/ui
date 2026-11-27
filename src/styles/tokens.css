@@ -287,8 +287,9 @@
   --category-pink-solid: oklch(0.665 0.111 340.1);
 
   /* Borders. Two levels of the primary: 10% for dividers inside a surface,
-     18% for the frames that separate layers (card, table, menu, dialog).
-     Fields keep a solid border at 3:1 or more, so they can be found. */
+     18% for the frames that separate layers (card, table, menu, dialog) and
+     for fields and controls. --input stays solid at 3:1 or more for the
+     outline button and the switch and slider tracks. */
   --border: color-mix(in oklch, var(--primary) 10%, transparent);
   --border-strong: color-mix(in oklch, var(--primary) 18%, transparent);
   --input: oklch(0.63 0.011 248); /* grafite-450 */
@@ -587,10 +588,10 @@
 }
 
 /* ---- Fields -----------------------------------------------------------------
-   The look of a text field, select or date trigger (Astryx Field): solid
-   --input border; hover (pointer only, never disabled) adds a 2px inner ring
-   of it at 30%; any focus turns the border to --ring with a 2px inner ring
-   of it at 20% (25% in dark). `border-destructive-text field-error` keeps
+   The look of a text field, select or date trigger (Astryx Field):
+   --border-strong border; hover (pointer only, never disabled) adds a 2px
+   inner ring of --input at 30%; any focus turns the border to --ring with a
+   2px inner ring of it at 20% (25% in dark). `border-destructive-text field-error` keeps
    the border red, focused too, and tints the hover ring. Put it on the element
    that draws the border (a shell with the <input> inside, or the input). */
 @utility field-states {
@@ -621,7 +622,7 @@
   }
 }
 /* Use together with `border-destructive-text`: that class sets the resting
-   border (and lets cn() drop `border-input`); this one keeps it red on focus. */
+   border (and lets cn() drop `border-border-strong`); this one keeps it red on focus. */
 @utility field-error {
   --field-focus-border: var(--destructive-text);
   --field-hover-ring: color-mix(in oklch, var(--destructive-text) 30%, transparent);

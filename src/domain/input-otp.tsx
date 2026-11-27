@@ -58,7 +58,7 @@ function Slot({
       data-active={slot.isActive || undefined}
       data-invalid={invalid || undefined}
       className={cn(
-        "relative flex h-10 w-10 items-center justify-center border-y border-r border-input font-mono text-sm tabular-nums transition-colors",
+        "relative flex h-10 w-10 items-center justify-center border-y border-r border-border-strong font-mono text-sm tabular-nums transition-colors",
         "first:rounded-l-element first:border-l last:rounded-r-element",
         "data-[active=true]:z-10 data-[active=true]:outline-1 data-[active=true]:-outline-offset-1 data-[active=true]:outline-ring data-[active=true]:shadow-[inset_0_0_0_2px_var(--field-focus-ring)]",
         // With an error the boxes are red, like the border of any other field,

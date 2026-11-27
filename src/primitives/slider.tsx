@@ -244,7 +244,7 @@ function Slider(props: SliderProps) {
       >
         <SliderPrimitive.Track
           data-slot="slider-track"
-          // The field-border colour: the track's ends read at 3:1 against the surface.
+          // The --input colour: the track's ends read at 3:1 against the surface.
           className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-input forced-colors:border forced-colors:border-[CanvasText]"
         >
           <SliderPrimitive.Range

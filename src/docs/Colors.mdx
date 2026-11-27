@@ -84,7 +84,7 @@ export const Strip = ({ steps }) => (
 
 Cada token tem um valor no tema claro (`:root`) e outro no escuro (`.dark`), com o mesmo papel. As amostras desta página mostram o tema que estiver ligado; para trocar, abra qualquer story e use **Claro / Escuro** na barra de ferramentas.
 
-`bun run audit:contrast` mede, nos dois temas, os pares que os componentes desenham (texto ≥ 4,5:1; anel de foco, borda de campo e marcas sólidas ≥ 3:1) e a distância entre as cores que precisam ser distinguidas quando se simula daltonismo. Falha se algum não passar. As regras de daltonismo estão em **Foundations / Color Vision**.
+`bun run audit:contrast` mede, nos dois temas, os pares que os componentes desenham (texto ≥ 4,5:1; anel de foco, borda do botão outline e marcas sólidas ≥ 3:1) e a distância entre as cores que precisam ser distinguidas quando se simula daltonismo. Falha se algum não passar. As regras de daltonismo estão em **Foundations / Color Vision**.
 
 export const Swatch = ({ name, varName, note }) => {
   const [value, setValue] = React.useState("")
@@ -164,11 +164,11 @@ O botão principal, o checkbox marcado e a aba ativa usam a **primária**. O **a
 
 ## Bordas
 
-Dois níveis da primária, translúcidos, e a borda sólida dos campos.
+Dois níveis da primária, translúcidos, e a cor sólida de `--input`.
 
 <Swatch name="Border" varName="--border" note="10%: divisores de dentro de uma superfície (linhas de tabela, separadores de menu)" />
-<Swatch name="Border strong" varName="--border-strong" note="18%: molduras que separam camadas (card, tabela, menu, popover, dialog)" />
-<Swatch name="Input" varName="--input" note="borda de campo, checkbox e radio desmarcados, trilho do switch desligado. 3:1 ou mais" />
+<Swatch name="Border strong" varName="--border-strong" note="18%: molduras que separam camadas (card, tabela, menu, popover, dialog) e borda de campo, checkbox, radio e toggle" />
+<Swatch name="Input" varName="--input" note="botão outline, trilho do switch desligado e do slider, marcação do combobox múltiplo, ano atual do calendário. 3:1 ou mais" />
 
 ## Status
 
